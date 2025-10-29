@@ -1,0 +1,5 @@
+{
+  "name": "Suivi des Dépenses Mensuelles",
+  "description": "Une application web simple et élégante pour suivre vos dépenses mensuelles. Ajoutez des transactions, classez-les et visualisez la répartition de vos dépenses avec des graphiques interactifs.",
+  "requestFramePermissions": []
+}
