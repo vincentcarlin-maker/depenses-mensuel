@@ -215,7 +215,7 @@ const ExpenseListItem: React.FC<{
 
     const formattedDate = new Date(expense.date).toLocaleString('fr-FR', {
         day: 'numeric',
-        month: 'long',
+        month: 'short',
         hour: '2-digit',
         minute: '2-digit',
     });
@@ -253,7 +253,8 @@ const ExpenseListItem: React.FC<{
                             </div>
                             <div className="min-w-0">
                                 <p className="font-semibold truncate">{expense.description}</p>
-                                <p className="text-sm text-slate-500">{expense.category} · {formattedDate}</p>
+                                <p className="text-sm text-slate-500 truncate">{expense.category}</p>
+                                <p className="text-xs text-slate-400">{formattedDate}</p>
                             </div>
                         </div>
                         <div className="flex items-center justify-end pl-4 flex-shrink-0">

@@ -8,13 +8,14 @@ import ExpenseList from './components/ExpenseList';
 import CategoryTotals from './components/CategoryChart';
 import EditExpenseModal from './components/EditExpenseModal';
 import Toast from './components/Toast';
+import YearlySummary from './components/YearlySummary';
 
 const App: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly'>('dashboard');
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -129,6 +130,14 @@ const App: React.FC = () => {
     });
   }, [expenses, currentMonth, currentYear, searchTerm]);
 
+  const yearlyExpenses = useMemo(() => {
+    return expenses.filter(expense => new Date(expense.date).getFullYear() === currentYear);
+  }, [expenses, currentYear]);
+
+  const previousYearlyExpenses = useMemo(() => {
+    return expenses.filter(expense => new Date(expense.date).getFullYear() === currentYear - 1);
+  }, [expenses, currentYear]);
+
   const sophieTotal = useMemo(() => {
     return filteredExpenses
       .filter(e => e.user === User.Sophie)
@@ -150,6 +159,10 @@ const App: React.FC = () => {
       }
       setCurrentMonth(date.getMonth());
       setCurrentYear(date.getFullYear());
+  };
+
+  const handleYearChange = (direction: 'prev' | 'next') => {
+    setCurrentYear(prevYear => direction === 'next' ? prevYear + 1 : prevYear - 1);
   };
   
   const monthName = new Date(currentYear, currentMonth).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
@@ -181,6 +194,17 @@ const App: React.FC = () => {
               aria-current={activeTab === 'analysis' ? 'page' : undefined}
             >
               Analyse
+            </button>
+            <button
+              onClick={() => setActiveTab('yearly')}
+              className={`${
+                activeTab === 'yearly'
+                  ? 'border-cyan-500 text-cyan-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
+              aria-current={activeTab === 'yearly' ? 'page' : undefined}
+            >
+              Annuel
             </button>
           </nav>
         </div>
@@ -239,6 +263,21 @@ const App: React.FC = () => {
         {activeTab === 'analysis' && (
           <div className="max-w-4xl mx-auto">
             <CategoryTotals expenses={filteredExpenses} />
+          </div>
+        )}
+
+        {activeTab === 'yearly' && (
+          <div className="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
+             <div className="flex justify-between items-center mb-4">
+                <button onClick={() => handleYearChange('prev')} className="p-2 rounded-full hover:bg-slate-200 transition-colors" aria-label="Année précédente">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <h2 className="text-xl font-bold text-center">{currentYear}</h2>
+                <button onClick={() => handleYearChange('next')} className="p-2 rounded-full hover:bg-slate-200 transition-colors" aria-label="Année suivante">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                </button>
+            </div>
+            <YearlySummary expenses={yearlyExpenses} previousYearExpenses={previousYearlyExpenses} year={currentYear} />
           </div>
         )}
       </main>
