@@ -20,4 +20,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .       # Publie tout le contenu de la racine
-          keep_files: false    # Supprime les anciens fichiers dans gh-pages avant de publier
+          destination_branch: gh-pages  # Branche de publication
+          user_name: github-actions    # Nom d'utilisateur pour Git
+          user_email: github-actions@github.com
+          force_orphan: true           # Crée la branche si elle n'existe pas
