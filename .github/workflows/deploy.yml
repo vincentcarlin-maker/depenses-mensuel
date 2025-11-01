@@ -10,11 +10,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Étape 1 : Récupérer le dépôt
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Étape 2 : Déployer tout le contenu de la racine sur GitHub Pages
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v6
+        uses: peaceiris/actions-gh-pages@v6.3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .       # Publie tout le contenu de la racine
