@@ -3,7 +3,7 @@ name: Deploy PWA to GitHub Pages
 on:
   push:
     branches:
-      - main  # ou master si ton dépôt utilise master
+      - main  # ou master selon ton dépôt
 
 jobs:
   deploy:
@@ -12,22 +12,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up Ruby (pour Jekyll si besoin)
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: 3.2  # ou la version dont tu as besoin
-          bundler-cache: true
-
-      - name: Install dependencies
-        run: |
-          gem install bundler
-          bundle install
-
-      - name: Build site with Jekyll
-        run: bundle exec jekyll build -d _site
-
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v6
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./_site
+          publish_dir: .  # publie tout ce qui est à la racine
