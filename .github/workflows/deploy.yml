@@ -16,7 +16,8 @@ jobs:
 
       # Étape 2 : Déployer tout le contenu de la racine sur GitHub Pages
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v6.3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .       # Publie tout le contenu de la racine
+          keep_files: false    # Supprime les anciens fichiers dans gh-pages avant de publier
