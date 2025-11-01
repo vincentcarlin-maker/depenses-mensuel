@@ -8,6 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -16,4 +17,4 @@ jobs:
         uses: peaceiris/actions-gh-pages@v6
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .  # publie tout ce qui est à la racine
+          publish_dir: .       # Publie tout le contenu de la racine
