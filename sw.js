@@ -1,9 +1,9 @@
-const CACHE_NAME = 'suivi-depenses-v2';
+const CACHE_NAME = 'suivi-depenses-v3';
 const urlsToCache = [
-  '/',
+  './',
   './index.html',
-  './index.tsx',
-  './logo.svg',
+  './manifest.json',
+  './public/logo.svg',
   './apple-touch-icon.png',
   './icon-192x192.png',
   './icon-512x512.png'
