@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { type Expense, User, Category } from '../types';
 import EditIcon from './icons/EditIcon';
+import TrashIcon from './icons/TrashIcon';
 import ConfirmationModal from './ConfirmationModal';
 
 interface ExpenseListProps {
@@ -133,72 +134,10 @@ const ExpenseListItem: React.FC<{
     expense: Expense;
     onDeleteExpense: (id: string) => void;
     onEditExpense: (expense: Expense) => void;
-    openExpenseId: string | null;
-    setOpenExpenseId: (id: string | null) => void;
-}> = ({ expense, onDeleteExpense, onEditExpense, openExpenseId, setOpenExpenseId }) => {
-    const [dragState, setDragState] = useState<{ startX: number; currentX: number } | null>(null);
+}> = ({ expense, onDeleteExpense, onEditExpense }) => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     
-    const isSwiped = openExpenseId === expense.id;
-    const isDragging = dragState !== null;
-    const SWIPE_THRESHOLD = -60;
-    const DELETE_BUTTON_WIDTH = 80;
-
-    const getPointerX = (e: React.PointerEvent | PointerEvent) => e.clientX;
-
-    const handlePointerDown = (e: React.PointerEvent) => {
-        if ((e.target as HTMLElement).closest('button')) return;
-        
-        if (openExpenseId && openExpenseId !== expense.id) {
-            setOpenExpenseId(null);
-        }
-        
-        setDragState({ startX: getPointerX(e), currentX: getPointerX(e) });
-        (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    };
-    
-     useEffect(() => {
-        if (!dragState) return;
-
-        const handlePointerMove = (e: PointerEvent) => {
-             setDragState(prev => prev ? { ...prev, currentX: getPointerX(e) } : null);
-        };
-
-        const handlePointerUp = (e: PointerEvent) => {
-            const finalX = getPointerX(e);
-            // Use a local copy of dragState because the state might not have updated yet
-            setDragState(currentDragState => {
-                if (!currentDragState) return null;
-                const deltaX = finalX - currentDragState.startX;
-                if (deltaX < SWIPE_THRESHOLD) {
-                    setOpenExpenseId(expense.id);
-                } else {
-                    setOpenExpenseId(null);
-                }
-                return null;
-            });
-        };
-    
-        window.addEventListener('pointermove', handlePointerMove);
-        window.addEventListener('pointerup', handlePointerUp);
-        window.addEventListener('pointercancel', handlePointerUp);
-
-        return () => {
-            window.removeEventListener('pointermove', handlePointerMove);
-            window.removeEventListener('pointerup', handlePointerUp);
-            window.removeEventListener('pointercancel', handlePointerUp);
-        };
-    }, [dragState, expense.id, setOpenExpenseId]);
-
-    let transformX = 0;
-    if (isDragging) {
-        const deltaX = dragState.currentX - dragState.startX;
-        transformX = Math.max(-DELETE_BUTTON_WIDTH * 1.2, Math.min(0, deltaX));
-    } else if (isSwiped) {
-        transformX = -DELETE_BUTTON_WIDTH;
-    }
-
     const handleDeleteClick = () => {
         setIsConfirmModalOpen(true);
     };
@@ -223,61 +162,46 @@ const ExpenseListItem: React.FC<{
     return (
         <>
             <div className={`
-                relative bg-slate-100 rounded-lg overflow-hidden transition-all duration-300 ease-out
+                relative bg-slate-50 p-3 rounded-lg border border-slate-200
+                transition-all duration-300 ease-out
                 ${isDeleting ? 'opacity-0 max-h-0 !my-0 !py-0 !border-0' : 'max-h-40'}
             `}>
-                <div className="absolute top-0 right-0 h-full flex items-center z-0">
-                    <button
-                        onClick={handleDeleteClick}
-                        className="bg-red-600 text-white font-bold h-full flex items-center justify-center transition-colors hover:bg-red-700"
-                        style={{ width: `${DELETE_BUTTON_WIDTH}px` }}
-                        aria-label={`Supprimer ${expense.description}`}
-                    >
-                        Supprimer
-                    </button>
-                </div>
-                <div
-                    onPointerDown={handlePointerDown}
-                    className="relative bg-slate-50 p-3 w-full touch-pan-y"
-                    style={{ 
-                        transform: `translateX(${transformX}px)`,
-                        transition: isDragging ? 'none' : 'transform 0.2s ease-out',
-                        cursor: isDragging ? 'grabbing' : 'grab'
-                    }}
-                >
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center flex-grow min-w-0">
-                            <UserIndicator user={expense.user} />
-                            <div className="w-8 h-8 flex items-center justify-center mr-4 flex-shrink-0">
-                                {getExpenseVisual(expense.description, expense.category)}
-                            </div>
-                            <div className="min-w-0">
-                                <p className="font-semibold truncate">{expense.description}</p>
-                                <p className="text-sm text-slate-500 truncate">{expense.category}</p>
-                                <p className="text-xs text-slate-400">{formattedDate}</p>
-                            </div>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center flex-grow min-w-0">
+                        <UserIndicator user={expense.user} />
+                        <div className="w-8 h-8 flex items-center justify-center mr-4 flex-shrink-0">
+                            {getExpenseVisual(expense.description, expense.category)}
                         </div>
-                        <div className="flex items-center justify-end pl-4 flex-shrink-0">
-                             <p className="font-bold text-slate-700 text-right mr-2 min-w-[80px]">
-                                {expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                            </p>
-                            <button
-                                onClick={() => onEditExpense(expense)}
-                                className="p-2 text-slate-400 hover:text-cyan-600 hover:bg-cyan-100 rounded-full transition-colors z-10"
-                                aria-label="Modifier la dépense"
-                            >
-                                <EditIcon />
-                            </button>
+                        <div className="min-w-0">
+                            <p className="font-semibold truncate">{expense.description}</p>
+                            <p className="text-sm text-slate-500 truncate">{expense.category}</p>
+                            <p className="text-xs text-slate-400">{formattedDate}</p>
                         </div>
+                    </div>
+                    <div className="flex items-center justify-end pl-4 flex-shrink-0">
+                         <p className="font-bold text-slate-700 text-right mr-2 min-w-[80px]">
+                            {expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                        </p>
+                        <button
+                            onClick={handleDeleteClick}
+                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors z-10"
+                            aria-label="Supprimer la dépense"
+                        >
+                            <TrashIcon />
+                        </button>
+                        <button
+                            onClick={() => onEditExpense(expense)}
+                            className="p-2 text-slate-400 hover:text-cyan-600 hover:bg-cyan-100 rounded-full transition-colors z-10"
+                            aria-label="Modifier la dépense"
+                        >
+                            <EditIcon />
+                        </button>
                     </div>
                 </div>
             </div>
             <ConfirmationModal
                 isOpen={isConfirmModalOpen}
-                onClose={() => {
-                    setIsConfirmModalOpen(false);
-                    setOpenExpenseId(null);
-                }}
+                onClose={() => setIsConfirmModalOpen(false)}
                 onConfirm={executeDelete}
                 title="Confirmer la suppression"
                 message={`Êtes-vous sûr de vouloir supprimer la dépense "${expense.description}" ? Cette action est irréversible.`}
@@ -288,8 +212,6 @@ const ExpenseListItem: React.FC<{
 
 
 const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onDeleteExpense, onEditExpense }) => {
-  const [openExpenseId, setOpenExpenseId] = useState<string | null>(null);
-
   if (expenses.length === 0) {
     return (
       <div className="text-center py-10">
@@ -308,8 +230,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onDeleteExpense, on
                 expense={expense}
                 onDeleteExpense={onDeleteExpense}
                 onEditExpense={onEditExpense}
-                openExpenseId={openExpenseId}
-                setOpenExpenseId={setOpenExpenseId}
             />
         ))}
     </div>

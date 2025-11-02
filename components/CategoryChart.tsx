@@ -4,6 +4,14 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recha
 
 const COLORS = ['#06b6d4', '#ec4899', '#f97316', '#8b5cf6', '#10b981', '#f59e0b'];
 
+const CategoryEmojiMap: { [key: string]: string } = {
+  "Dépenses obligatoires": '📄',
+  "Gasoil": '⛽',
+  "Courses": '🛒',
+  "Chauffage": '🔥',
+  "Divers": '🎉',
+};
+
 const RADIAN = Math.PI / 180;
 const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
   if (percent * 100 < 5) return null; // Ne pas afficher le label pour les petites parts
@@ -16,6 +24,20 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
       {`${(percent * 100).toFixed(0)}%`}
     </text>
   );
+};
+
+const CustomLegend = (props: any) => {
+    const { payload } = props;
+    return (
+      <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-4 list-none p-0">
+        {payload.map((entry: any, index: number) => (
+          <li key={`item-${index}`} className="flex items-center text-sm text-slate-600">
+            <span className="mr-2 text-lg">{CategoryEmojiMap[entry.value] || '❓'}</span>
+            <span>{entry.value}</span>
+          </li>
+        ))}
+      </ul>
+    );
 };
 
 
@@ -92,7 +114,7 @@ const CategoryTotals: React.FC<{ expenses: Expense[] }> = ({ expenses }) => {
                 boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
               }}
             />
-            <Legend iconType="circle" />
+            <Legend content={<CustomLegend />} verticalAlign="bottom" wrapperStyle={{ bottom: -10 }} />
           </PieChart>
         </ResponsiveContainer>
       </div>
