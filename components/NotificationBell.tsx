@@ -58,17 +58,6 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
             setIsLoading(false);
             return;
         }
-        
-        // FIX: This comparison was always false because VAPID_PUBLIC_KEY has a value.
-        // The check was likely a remnant from a template and caused a TypeScript error.
-        /*
-        if (VAPID_PUBLIC_KEY === 'REMPLACER_PAR_VOTRE_CLE_PUBLIQUE_VAPID') {
-            console.error('VAPID_PUBLIC_KEY n\'a pas été définie.');
-            onSetToast({ message: "La configuration des notifications est incomplète.", type: 'error' });
-            setIsLoading(false);
-            return;
-        }
-        */
 
         try {
             const reg = await navigator.serviceWorker.ready;
