@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase/client';
 
-const VAPID_PUBLIC_KEY = 'BPEhT9-4Z1g_l-Y8t-W_m5r_f-j_b-v_p-h_c-g_d-a_s-k_o-q-i-u-y-t-r-e-w_1234567890';
+// TODO: Remplacez cette clé par votre propre clé publique VAPID.
+// Vous pouvez en générer une avec des outils comme `web-push` (https://www.npmjs.com/package/web-push).
+// La clé privée correspondante devra être utilisée sur votre backend pour envoyer les notifications.
+const VAPID_PUBLIC_KEY = 'REMPLACER_PAR_VOTRE_CLE_PUBLIQUE_VAPID';
 
 // Helper pour convertir la clé VAPID pour l'API Push
 const urlBase64ToUint8Array = (base64String: string) => {
@@ -51,6 +54,13 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
                 message: "Notifications bloquées. Veuillez les autoriser dans les paramètres du navigateur.",
                 type: 'error'
             });
+            setIsLoading(false);
+            return;
+        }
+        
+        if (VAPID_PUBLIC_KEY === 'REMPLACER_PAR_VOTRE_CLE_PUBLIQUE_VAPID') {
+            console.error('VAPID_PUBLIC_KEY n\'a pas été définie.');
+            onSetToast({ message: "La configuration des notifications est incomplète.", type: 'error' });
             setIsLoading(false);
             return;
         }

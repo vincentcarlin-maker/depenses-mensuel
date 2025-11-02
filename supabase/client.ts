@@ -32,4 +32,14 @@ export type Database = {
   };
 };
 
+// REMARQUE : Pour que les abonnements aux notifications fonctionnent,
+// assurez-vous que la table 'subscriptions' autorise les insertions pour les
+// utilisateurs anonymes. Si vous utilisez la RLS (Row Level Security),
+// vous devez créer une politique pour le rôle 'anon'.
+//
+// Exemple de politique SQL à exécuter dans l'éditeur SQL de Supabase :
+// CREATE POLICY "Allow anon insert on subscriptions"
+// ON public.subscriptions
+// FOR INSERT TO anon
+// WITH CHECK (true);
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
