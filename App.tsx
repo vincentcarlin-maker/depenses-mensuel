@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { supabase } from './supabase/client';
 import { type Expense, User } from './types';
 import Header from './components/Header';
@@ -20,23 +20,25 @@ const App: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
 
-  useEffect(() => {
-    const fetchExpenses = async () => {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('*')
-        .order('date', { ascending: false });
+  const fetchExpenses = useCallback(async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from('expenses')
+      .select('*')
+      .order('date', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching expenses:', error.message || error);
-      } else if (data) {
-        setExpenses(data);
-      }
-      setIsLoading(false);
-    };
-    fetchExpenses();
+    if (error) {
+      console.error('Error fetching expenses:', error.message || error);
+      setToastInfo({ message: "Erreur lors de la récupération des dépenses.", type: 'error' });
+    } else if (data) {
+      setExpenses(data);
+    }
+    setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchExpenses();
+  }, [fetchExpenses]);
 
   useEffect(() => {
     const channel = supabase
@@ -166,11 +168,16 @@ const App: React.FC = () => {
     setCurrentYear(prevYear => direction === 'next' ? prevYear + 1 : prevYear - 1);
   };
   
+  const handleRefresh = useCallback(async () => {
+    await fetchExpenses();
+    setToastInfo({ message: 'Données actualisées !', type: 'info' });
+  }, [fetchExpenses]);
+
   const monthName = new Date(currentYear, currentMonth).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
-      <Header onSetToast={setToastInfo} />
+      <Header onSetToast={setToastInfo} onRefresh={handleRefresh} />
       <main className="container mx-auto p-4 md:p-8">
         <div className="mb-8 border-b border-slate-200">
           <nav className="-mb-px flex space-x-6" aria-label="Tabs">
