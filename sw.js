@@ -1,4 +1,4 @@
-const CACHE_NAME = 'suivi-depenses-v3';
+const CACHE_NAME = 'suivi-depenses-v4';
 const urlsToCache = [
   './',
   './index.html',
@@ -38,13 +38,26 @@ self.addEventListener('activate', (event) => {
 
 
 self.addEventListener('fetch', (event) => {
+  // Stratégie "Network First" pour les requêtes de navigation (HTML).
+  // Cela garantit que l'utilisateur obtient toujours la dernière version de la page
+  // s'il est en ligne, évitant les problèmes de cache après un déploiement.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        // En cas d'échec (hors ligne), on sert la page depuis le cache.
+        return caches.match('./index.html');
+      })
+    );
+    return;
+  }
+
+  // Stratégie "Cache First" pour toutes les autres ressources (JS, CSS, images).
+  // Ces fichiers sont généralement versionnés par le build, donc le cache est fiable.
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request).catch(() => caches.match('./index.html'));
+        // Si la ressource est en cache, on la sert. Sinon, on la récupère sur le réseau.
+        return response || fetch(event.request);
       }
     )
   );
