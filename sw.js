@@ -1,9 +1,8 @@
-const CACHE_NAME = 'suivi-depenses-v5';
+const CACHE_NAME = 'suivi-depenses-v6';
 const urlsToCache = [
   '/depenses-mensuel/',
   '/depenses-mensuel/index.html',
   '/depenses-mensuel/manifest.json',
-  '/depenses-mensuel/logo.svg',
   '/depenses-mensuel/apple-touch-icon.png',
   '/depenses-mensuel/icon-192x192.png',
   '/depenses-mensuel/icon-512x512.png'
