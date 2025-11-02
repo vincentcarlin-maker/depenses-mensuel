@@ -16,9 +16,10 @@ root.render(
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // Utiliser un chemin relatif pour le Service Worker pour assurer la compatibilité
-    // avec les déploiements en sous-répertoire comme sur GitHub Pages.
-    navigator.serviceWorker.register('sw.js').then(registration => {
+    // Utiliser un chemin relatif pour l'enregistrement du Service Worker
+    // afin de garantir la compatibilité avec les déploiements en sous-dossier (GitHub Pages).
+    const swUrl = './sw.js';
+    navigator.serviceWorker.register(swUrl).then(registration => {
       console.log('Service Worker registered: ', registration);
     }).catch(registrationError => {
       console.log('Service Worker registration failed: ', registrationError);
