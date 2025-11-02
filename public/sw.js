@@ -1,14 +1,13 @@
 const CACHE_NAME = 'suivi-depenses-v12';
-// Les URLs sont maintenant relatives à la racine du site.
-// La configuration `base` de Vite s'assure qu'elles pointent au bon endroit.
+// Les URLs sont relatives pour fonctionner sur GitHub Pages (déploiement en sous-dossier)
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json?v=12',
-  '/apple-touch-icon.png?v=12',
-  '/icon-192x192.png?v=12',
-  '/icon-512x512.png?v=12',
-  '/logo.svg?v=12'
+  './',
+  './index.html',
+  './manifest.json?v=12',
+  './apple-touch-icon.png?v=12',
+  './icon-192x192.png?v=12',
+  './icon-512x512.png?v=12',
+  './logo.svg?v=12'
 ];
 
 self.addEventListener('install', (event) => {
@@ -82,11 +81,11 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: '/icon-192x192.png?v=12', // Chemin relatif à la racine
-    badge: '/logo.svg?v=12',        // Chemin relatif à la racine
+    icon: './icon-192x192.png?v=12', // Chemin relatif
+    badge: './logo.svg?v=12',        // Chemin relatif
     vibrate: [100, 50, 100],
     data: {
-      url: '/', // URL à ouvrir au clic
+      url: './', // URL à ouvrir au clic (relative)
     },
   };
 

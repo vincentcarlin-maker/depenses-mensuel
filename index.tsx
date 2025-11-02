@@ -16,9 +16,9 @@ root.render(
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // Utiliser un chemin absolu depuis la racine. Vite et la configuration `base`
-    // s'occuperont de le résoudre correctement en production.
-    navigator.serviceWorker.register('/sw.js').then(registration => {
+    // Utiliser un chemin relatif pour le Service Worker pour assurer la compatibilité
+    // avec les déploiements en sous-répertoire comme sur GitHub Pages.
+    navigator.serviceWorker.register('sw.js').then(registration => {
       console.log('Service Worker registered: ', registration);
     }).catch(registrationError => {
       console.log('Service Worker registration failed: ', registrationError);
