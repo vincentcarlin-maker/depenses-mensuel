@@ -9,13 +9,13 @@
   "theme_color": "#06b6d4",
   "icons": [
     {
-      "src": "/depenses-mensuel/icon-192x192.png",
+      "src": "/depenses-mensuel/icon-192x192.png?v=10",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/depenses-mensuel/icon-512x512.png",
+      "src": "/depenses-mensuel/icon-512x512.png?v=10",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
