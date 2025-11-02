@@ -1,11 +1,11 @@
-const CACHE_NAME = 'suivi-depenses-v10';
+const CACHE_NAME = 'suivi-depenses-v11';
 const urlsToCache = [
   '/depenses-mensuel/',
   '/depenses-mensuel/index.html',
-  '/depenses-mensuel/manifest.json?v=10',
-  '/depenses-mensuel/apple-touch-icon.png?v=10',
-  '/depenses-mensuel/icon-192x192.png?v=10',
-  '/depenses-mensuel/icon-512x512.png?v=10'
+  '/depenses-mensuel/manifest.json?v=11',
+  '/depenses-mensuel/apple-touch-icon.png?v=11',
+  '/depenses-mensuel/icon-192x192.png?v=11',
+  '/depenses-mensuel/icon-512x512.png?v=11'
 ];
 
 self.addEventListener('install', (event) => {
