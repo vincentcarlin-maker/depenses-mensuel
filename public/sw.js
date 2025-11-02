@@ -4,9 +4,6 @@ const urlsToCache = [
   './',
   './index.html',
   './manifest.json?v=12',
-  './apple-touch-icon.png?v=12',
-  './icon-192x192.png?v=12',
-  './icon-512x512.png?v=12',
   './logo.svg?v=12'
 ];
 
@@ -81,8 +78,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: './icon-192x192.png?v=12', // Chemin relatif
-    badge: './logo.svg?v=12',        // Chemin relatif
+    icon: './logo.svg?v=12', // Chemin relatif vers le logo existant
+    badge: './logo.svg?v=12',      // Chemin relatif vers le logo existant
     vibrate: [100, 50, 100],
     data: {
       url: './', // URL à ouvrir au clic (relative)
