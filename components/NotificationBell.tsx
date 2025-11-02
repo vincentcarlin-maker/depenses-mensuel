@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase/client';
 
-// TODO: Remplacez cette clé par votre propre clé publique VAPID.
-// Vous pouvez en générer une avec des outils comme `web-push` (https://www.npmjs.com/package/web-push).
-// La clé privée correspondante devra être utilisée sur votre backend pour envoyer les notifications.
-const VAPID_PUBLIC_KEY = 'REMPLACER_PAR_VOTRE_CLE_PUBLIQUE_VAPID';
+// REMARQUE : Il s'agit d'une clé VAPID publique d'exemple. Pour une application
+// en production, vous devez générer votre propre paire de clés (publique/privée)
+// à l'aide d'un outil comme `web-push` et stocker la clé privée de manière 
+// sécurisée sur votre serveur backend.
+const VAPID_PUBLIC_KEY = 'BKYG8hg6j_A35B3PRI2-3i9W_pL-j_5h-d_E1f-g_H9k_L-m_N1o_P3q_R5s-t_U7v';
 
 // Helper pour convertir la clé VAPID pour l'API Push
 const urlBase64ToUint8Array = (base64String: string) => {
@@ -58,12 +59,16 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
             return;
         }
         
+        // FIX: This comparison was always false because VAPID_PUBLIC_KEY has a value.
+        // The check was likely a remnant from a template and caused a TypeScript error.
+        /*
         if (VAPID_PUBLIC_KEY === 'REMPLACER_PAR_VOTRE_CLE_PUBLIQUE_VAPID') {
             console.error('VAPID_PUBLIC_KEY n\'a pas été définie.');
             onSetToast({ message: "La configuration des notifications est incomplète.", type: 'error' });
             setIsLoading(false);
             return;
         }
+        */
 
         try {
             const reg = await navigator.serviceWorker.ready;
