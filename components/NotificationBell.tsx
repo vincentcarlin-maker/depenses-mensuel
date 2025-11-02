@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase/client';
 
-const VAPID_PUBLIC_KEY = 'BPD-n-y_kP-8dC-2y5-uUPlwR2yHAnJ-2-6G-gqfbXcT1a-Zp4Jz1-k8k_y3Y6X5z6n8w7X9y8j7e6r5t4o3Z2k';
+const VAPID_PUBLIC_KEY = 'BPEhT9-4Z1g_l-Y8t-W_m5r_f-j_b-v_p-h_c-g_d-a_s-k_o-q-i-u-y-t-r-e-w_1234567890';
 
 // Helper pour convertir la clé VAPID pour l'API Push
 const urlBase64ToUint8Array = (base64String: string) => {
@@ -17,7 +17,11 @@ const urlBase64ToUint8Array = (base64String: string) => {
     return outputArray;
 };
 
-const NotificationBell: React.FC = () => {
+interface NotificationBellProps {
+  onSetToast: (info: { message: string; type: 'info' | 'error' }) => void;
+}
+
+const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [permission, setPermission] = useState<NotificationPermission>('default');
     const [isLoading, setIsLoading] = useState(true);
@@ -43,7 +47,10 @@ const NotificationBell: React.FC = () => {
     const subscribeUser = async () => {
         setIsLoading(true);
         if (permission === 'denied') {
-            alert("Vous avez bloqué les notifications. Veuillez les autoriser dans les paramètres de votre navigateur.");
+            onSetToast({
+                message: "Notifications bloquées. Veuillez les autoriser dans les paramètres du navigateur.",
+                type: 'error'
+            });
             setIsLoading(false);
             return;
         }
@@ -61,15 +68,20 @@ const NotificationBell: React.FC = () => {
 
             if (error) {
                 console.error('Erreur lors de la sauvegarde de l\'abonnement:', error);
-                alert("Une erreur est survenue lors de l'enregistrement de votre abonnement aux notifications. La cause la plus fréquente est une règle de sécurité manquante sur la base de données (RLS).");
+                onSetToast({
+                    message: "Échec de l'abonnement. Vérifiez les règles de sécurité (RLS) sur la table 'subscriptions'.",
+                    type: 'error'
+                });
                 await sub.unsubscribe();
                 setIsSubscribed(false);
             } else {
                 console.log('Utilisateur abonné.');
+                onSetToast({ message: "Notifications activées avec succès !", type: 'info' });
                 setIsSubscribed(true);
             }
         } catch (error) {
             console.error('Échec de l\'abonnement de l\'utilisateur: ', error);
+            onSetToast({ message: "Une erreur est survenue lors de l'abonnement.", type: 'error' });
         }
         setIsLoading(false);
     };
@@ -88,15 +100,17 @@ const NotificationBell: React.FC = () => {
 
                 if (error) {
                     console.error('Erreur lors de la suppression de l\'abonnement:', error);
-                    alert("Une erreur est survenue lors de la désactivation des notifications. Veuillez réessayer.");
+                    onSetToast({ message: "Erreur lors du désabonnement.", type: 'error' });
                 } else {
                     await sub.unsubscribe();
                     console.log('Utilisateur désabonné.');
+                    onSetToast({ message: "Notifications désactivées.", type: 'info' });
                     setIsSubscribed(false);
                 }
             }
         } catch (error) {
             console.error('Erreur lors du désabonnement', error);
+            onSetToast({ message: "Une erreur est survenue lors du désabonnement.", type: 'error' });
         }
         setIsLoading(false);
     };

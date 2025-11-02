@@ -1,14 +1,16 @@
 import React, { useEffect } from 'react';
 import InfoIcon from './icons/InfoIcon';
 import CloseIcon from './icons/CloseIcon';
+import WarningIcon from './icons/WarningIcon';
 
 interface ToastProps {
   message: string;
   onClose: () => void;
   duration?: number;
+  type?: 'info' | 'error';
 }
 
-const Toast: React.FC<ToastProps> = ({ message, onClose, duration = 5000 }) => {
+const Toast: React.FC<ToastProps> = ({ message, onClose, duration = 5000, type = 'info' }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose();
@@ -19,13 +21,19 @@ const Toast: React.FC<ToastProps> = ({ message, onClose, duration = 5000 }) => {
     };
   }, [onClose, duration]);
 
+  const isError = type === 'error';
+
+  const iconContainerClass = isError 
+    ? "inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-red-500 bg-red-100 rounded-lg"
+    : "inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-cyan-500 bg-cyan-100 rounded-lg";
+
   return (
     <div
       className="fixed bottom-5 right-5 z-50 flex items-center w-full max-w-xs p-4 text-slate-600 bg-white rounded-lg shadow-lg border border-slate-200 animate-slide-in-right"
       role="alert"
     >
-      <div className="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-cyan-500 bg-cyan-100 rounded-lg">
-        <InfoIcon />
+      <div className={iconContainerClass}>
+        {isError ? <WarningIcon /> : <InfoIcon />}
       </div>
       <div className="ml-3 text-sm font-normal">{message}</div>
       <button

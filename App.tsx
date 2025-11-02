@@ -18,7 +18,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly'>('dashboard');
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
 
   useEffect(() => {
     const fetchExpenses = async () => {
@@ -52,9 +52,10 @@ const App: React.FC = () => {
               return prevExpenses;
             }
             
-            setToastMessage(
-              `${newExpense.user} a ajouté : ${newExpense.description} (${newExpense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`
-            );
+            setToastInfo({
+              message: `${newExpense.user} a ajouté : ${newExpense.description} (${newExpense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`,
+              type: 'info'
+            });
 
             return [newExpense, ...prevExpenses];
           });
@@ -169,7 +170,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
-      <Header />
+      <Header onSetToast={setToastInfo} />
       <main className="container mx-auto p-4 md:p-8">
         <div className="mb-8 border-b border-slate-200">
           <nav className="-mb-px flex space-x-6" aria-label="Tabs">
@@ -289,10 +290,11 @@ const App: React.FC = () => {
           onClose={() => setExpenseToEdit(null)}
         />
       )}
-      {toastMessage && (
+      {toastInfo && (
         <Toast
-          message={toastMessage}
-          onClose={() => setToastMessage(null)}
+          message={toastInfo.message}
+          type={toastInfo.type}
+          onClose={() => setToastInfo(null)}
         />
       )}
     </div>

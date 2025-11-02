@@ -17,8 +17,11 @@ const Logo = () => (
     </svg>
 );
 
+interface HeaderProps {
+  onSetToast: (info: { message: string; type: 'info' | 'error' }) => void;
+}
 
-const Header: React.FC = () => {
+const Header: React.FC<HeaderProps> = ({ onSetToast }) => {
   return (
     <header className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg">
       <div className="container mx-auto px-4 py-5 md:px-8 flex items-center justify-between">
@@ -28,7 +31,7 @@ const Header: React.FC = () => {
             Suivi des Dépenses
           </h1>
         </div>
-        <NotificationBell />
+        <NotificationBell onSetToast={onSetToast} />
       </div>
     </header>
   );
