@@ -1,4 +1,4 @@
-const CACHE_NAME = 'suivi-depenses-v8';
+const CACHE_NAME = 'suivi-depenses-v9';
 const urlsToCache = [
   '/depenses-mensuel/',
   '/depenses-mensuel/index.html',
