@@ -61,6 +61,7 @@ const NotificationBell: React.FC = () => {
 
             if (error) {
                 console.error('Erreur lors de la sauvegarde de l\'abonnement:', error);
+                alert("Une erreur est survenue lors de l'enregistrement de votre abonnement aux notifications. La cause la plus fréquente est une règle de sécurité manquante sur la base de données (RLS).");
                 await sub.unsubscribe();
                 setIsSubscribed(false);
             } else {
@@ -87,6 +88,7 @@ const NotificationBell: React.FC = () => {
 
                 if (error) {
                     console.error('Erreur lors de la suppression de l\'abonnement:', error);
+                    alert("Une erreur est survenue lors de la désactivation des notifications. Veuillez réessayer.");
                 } else {
                     await sub.unsubscribe();
                     console.log('Utilisateur désabonné.');
