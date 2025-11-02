@@ -1,12 +1,14 @@
 const CACHE_NAME = 'suivi-depenses-v12';
+// Les URLs sont maintenant relatives à la racine du site.
+// La configuration `base` de Vite s'assure qu'elles pointent au bon endroit.
 const urlsToCache = [
-  '/depenses-mensuel/',
-  '/depenses-mensuel/index.html',
-  '/depenses-mensuel/manifest.json?v=12',
-  '/depenses-mensuel/apple-touch-icon.png?v=12',
-  '/depenses-mensuel/icon-192x192.png?v=12',
-  '/depenses-mensuel/icon-512x512.png?v=12',
-  '/depenses-mensuel/logo.svg?v=12'
+  '/',
+  '/index.html',
+  '/manifest.json?v=12',
+  '/apple-touch-icon.png?v=12',
+  '/icon-192x192.png?v=12',
+  '/icon-512x512.png?v=12',
+  '/logo.svg?v=12'
 ];
 
 self.addEventListener('install', (event) => {
@@ -41,13 +43,17 @@ self.addEventListener('activate', (event) => {
 });
 
 // Stratégie "Network falling back to cache" pour toutes les requêtes.
-// C'est plus fiable pour les déploiements sur GH Pages.
 self.addEventListener('fetch', (event) => {
+  // On ne met pas en cache les requêtes vers Supabase ou des API externes
+  if (event.request.url.startsWith('https://xcdyshzyxpngbpceilym.supabase.co')) {
+    return;
+  }
+  
   event.respondWith(
     fetch(event.request)
       .then((response) => {
         // Si la réponse est valide, on la met en cache pour le mode hors ligne.
-        if (response && response.status === 200) {
+        if (response && response.status === 200 && event.request.method === 'GET') {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME)
             .then((cache) => {
@@ -76,11 +82,11 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: '/depenses-mensuel/icon-192x192.png?v=12',
-    badge: '/depenses-mensuel/logo.svg?v=12',
+    icon: '/icon-192x192.png?v=12', // Chemin relatif à la racine
+    badge: '/logo.svg?v=12',        // Chemin relatif à la racine
     vibrate: [100, 50, 100],
     data: {
-      url: '/depenses-mensuel/', // URL à ouvrir au clic
+      url: '/', // URL à ouvrir au clic
     },
   };
 
@@ -92,7 +98,7 @@ self.addEventListener('push', (event) => {
 // Écouteur pour le clic sur la notification
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const urlToOpen = event.notification.data.url || '/depenses-mensuel/';
+  const urlToOpen = new URL(self.registration.scope).pathname; // Ouvre la page d'accueil de la PWA
   
   event.waitUntil(
     clients.matchAll({

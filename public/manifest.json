@@ -2,26 +2,26 @@
   "name": "Suivi des Dépenses Mensuelles",
   "short_name": "Dépenses",
   "description": "Une application web simple et élégante pour suivre vos dépenses mensuelles. Ajoutez des transactions, classez-les et visualisez la répartition de vos dépenses avec des graphiques interactifs.",
-  "start_url": "/depenses-mensuel/",
-  "scope": "/depenses-mensuel/",
+  "start_url": ".",
+  "scope": ".",
   "display": "standalone",
   "background_color": "#f8fafc",
   "theme_color": "#06b6d4",
   "icons": [
     {
-      "src": "/depenses-mensuel/logo.svg?v=12",
+      "src": "/logo.svg?v=12",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/depenses-mensuel/icon-192x192.png?v=12",
+      "src": "/icon-192x192.png?v=12",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/depenses-mensuel/icon-512x512.png?v=12",
+      "src": "/icon-512x512.png?v=12",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
