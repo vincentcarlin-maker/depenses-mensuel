@@ -166,22 +166,27 @@ const ExpenseListItem: React.FC<{
                 transition-all duration-300 ease-out
                 ${isDeleting ? 'opacity-0 max-h-0 !my-0 !py-0 !border-0' : 'max-h-40'}
             `}>
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center flex-grow min-w-0">
+                <div className="flex items-start justify-between">
+                    <div className="flex items-center min-w-0 flex-1">
                         <UserIndicator user={expense.user} />
-                        <div className="w-8 h-8 flex items-center justify-center mr-4 flex-shrink-0">
+                        <div className="w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
                             {getExpenseVisual(expense.description, expense.category)}
                         </div>
-                        <div className="min-w-0">
-                            <p className="font-semibold truncate">{expense.description}</p>
-                            <p className="text-sm text-slate-500 truncate">{expense.category}</p>
-                            <p className="text-xs text-slate-400">{formattedDate}</p>
-                        </div>
+                        <p className="font-semibold truncate" title={expense.description}>{expense.description}</p>
                     </div>
-                    <div className="flex items-center justify-end pl-4 flex-shrink-0">
-                         <p className="font-bold text-slate-700 text-right mr-2 min-w-[80px]">
+                    <div className="pl-4 flex-shrink-0">
+                        <p className="font-bold text-slate-700 text-right min-w-[80px]">
                             {expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                         </p>
+                    </div>
+                </div>
+                <div className="flex items-center justify-between mt-1">
+                     <div className="flex items-center space-x-2 text-xs text-slate-500 pl-10 min-w-0">
+                        <span className="truncate" title={expense.category}>{expense.category}</span>
+                        <span className="text-slate-300">•</span>
+                        <span>{formattedDate}</span>
+                    </div>
+                    <div className="flex items-center">
                         <button
                             onClick={handleDeleteClick}
                             className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors z-10"
