@@ -17,6 +17,17 @@ export type Database = {
         Insert: Omit<Expense, 'id' | 'created_at'>;
         Update: Partial<Expense>;
       };
+      subscriptions: {
+        Row: {
+          id: string;
+          created_at: string;
+          subscription_data: any; // Champ pour stocker l'objet d'abonnement
+        };
+        Insert: {
+          subscription_data: any;
+        };
+        Update: {};
+      };
     };
   };
 };

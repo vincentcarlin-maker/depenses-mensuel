@@ -1,4 +1,5 @@
 import React from 'react';
+import NotificationBell from './NotificationBell';
 
 const Logo = () => (
     <svg width="36" height="36" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3">
@@ -20,11 +21,14 @@ const Logo = () => (
 const Header: React.FC = () => {
   return (
     <header className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg">
-      <div className="container mx-auto px-4 py-5 md:px-8 flex items-center">
-        <Logo />
-        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-          Suivi des Dépenses
-        </h1>
+      <div className="container mx-auto px-4 py-5 md:px-8 flex items-center justify-between">
+        <div className="flex items-center">
+          <Logo />
+          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+            Suivi des Dépenses
+          </h1>
+        </div>
+        <NotificationBell />
       </div>
     </header>
   );
