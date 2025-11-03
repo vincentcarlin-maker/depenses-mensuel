@@ -70,6 +70,7 @@ const PullToRefresh: React.FC<PullToRefreshProps> = ({ onRefresh, children }) =>
 
   return (
     <div
+      className="relative" // Correction : Ajout de la position relative
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
