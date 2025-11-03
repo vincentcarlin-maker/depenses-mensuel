@@ -19,34 +19,70 @@ const CategoryEmojiMap: { [key: string]: string } = {
 };
 
 const KeywordIconMap: { [key: string]: string } = {
+  // Restauration rapide
   'mcdo': '🍔',
   'mcdonald': '🍔',
+  'mcdonalds': '🍔',
   'burger king': '🍔',
   'kfc': '🍗',
+  // Supermarchés
   'leclerc': '🛒',
   'carrefour': '🛒',
   'auchan': '🛒',
   'lidl': '🛒',
   'intermarché': '🛒',
   'super u': '🛒',
+  'cora': '🛒',
+  'géant': '🛒',
+  // E-commerce & Services
   'amazon': '📦',
   'netflix': '🎬',
   'spotify': '🎵',
   'disney+': '🎬',
+  // Logement
   'loyer': '🏠',
   'crédit': '🏠',
+  // Divers
   'boulangerie': '🥖',
   'pharmacie': '⚕️',
+  'doctolib': '🧑‍⚕️',
+  'médecin': '🧑‍⚕️',
+  // Transport
   'sncf': '🚆',
   'ratp': '🚇',
+  'train': '🚆',
+  'avion': '✈️',
+  'air france': '✈️',
+  'uber': '🚗',
+  'taxi': '🚕',
+  'blablacar': '🚗',
   'essence': '⛽',
   'gasoil': '⛽',
   'total': '⛽',
   'shell': '⛽',
   'esso': '⛽',
+  'péage': '🛣️',
+  'autoroute': '🛣️',
+  // Tech & Fournisseurs
+  'boulanger': '🔌',
+  'darty': '🔌',
+  'orange': '📱',
+  'sfr': '📱',
+  'bouygues': '📱',
+  'free': '📱',
+  'edf': '💡',
+  'engie': '💡',
+  // Vêtements & Bricolage
+  'vêtements': '👕',
+  'kiabi': '👕',
+  'zara': '👕',
+  'h&m': '👕',
+  'brico dépôt': '🛠️',
+  'mr.bricolage': '🛠️',
 };
 
 const KeywordDomainMap: { [key: string]: string } = {
+  // Supermarchés
   'leclerc': 'e.leclerc',
   'carrefour': 'carrefour.fr',
   'auchan': 'auchan.fr',
@@ -56,29 +92,54 @@ const KeywordDomainMap: { [key: string]: string } = {
   'monoprix': 'monoprix.fr',
   'franprix': 'franprix.fr',
   'casino': 'supercasino.fr',
+  'géant': 'geantcasino.fr',
+  'cora': 'cora.fr',
   'picard': 'picard.fr',
+  // Restauration rapide
   'mcdo': 'mcdonalds.fr',
   'mcdonald\'s': 'mcdonalds.fr',
+  'mcdonalds': 'mcdonalds.fr',
   'burger king': 'burgerking.fr',
   'kfc': 'kfc.fr',
   'quick': 'quick.fr',
   'domino\'s': 'dominos.fr',
   'pizza hut': 'pizzahut.fr',
+  // E-commerce & Magasins
   'amazon': 'amazon.fr',
   'fnac': 'fnac.com',
   'décathlon': 'decathlon.fr',
   'ikea': 'ikea.com',
   'leroy merlin': 'leroymerlin.fr',
   'castorama': 'castorama.fr',
+  'brico dépôt': 'bricodepot.fr',
+  'mr.bricolage': 'mr-bricolage.fr',
   'sephora': 'sephora.fr',
+  'kiabi': 'kiabi.com',
+  'zara': 'zara.com',
+  'h&m': 'hm.com',
+  'boulanger': 'boulanger.com',
+  'darty': 'darty.com',
+  // Services
   'netflix': 'netflix.com',
   'spotify': 'spotify.com',
   'disney+': 'disneyplus.com',
   'sncf': 'sncf-connect.com',
+  'air france': 'airfrance.fr',
   'ratp': 'ratp.fr',
+  'uber': 'uber.com',
+  'blablacar': 'blablacar.fr',
+  'doctolib': 'doctolib.fr',
+  // Énergie & Fournisseurs
   'total': 'totalenergies.fr',
   'shell': 'shell.fr',
   'esso': 'esso.fr',
+  'orange': 'orange.fr',
+  'sfr': 'sfr.fr',
+  'bouygues telecom': 'bouyguestelecom.fr',
+  'bouygues': 'bouyguestelecom.fr',
+  'free': 'free.fr',
+  'edf': 'edf.fr',
+  'engie': 'engie.fr',
 };
 
 const Logo: React.FC<{ domain: string, alt: string, fallback: React.ReactNode }> = ({ domain, alt, fallback }) => {
@@ -103,21 +164,27 @@ const Logo: React.FC<{ domain: string, alt: string, fallback: React.ReactNode }>
     );
 };
 
+// Trie les mots-clés par longueur (décroissant) pour trouver les correspondances les plus spécifiques en premier.
+const sortedDomainKeywords = Object.keys(KeywordDomainMap).sort((a, b) => b.length - a.length);
+const sortedIconKeywords = Object.keys(KeywordIconMap).sort((a, b) => b.length - a.length);
+
 const getExpenseVisual = (description: string, category: Category): React.ReactNode => {
     const lowerDesc = description.toLowerCase();
 
-    for (const keyword in KeywordDomainMap) {
+    for (const keyword of sortedDomainKeywords) {
         if (lowerDesc.includes(keyword)) {
             const domain = KeywordDomainMap[keyword];
             const fallbackEmoji = KeywordIconMap[keyword] || CategoryEmojiMap[category] || '❓';
             return <Logo domain={domain} alt={description} fallback={<span className="text-2xl">{fallbackEmoji}</span>} />;
         }
     }
-    for (const keyword in KeywordIconMap) {
+
+    for (const keyword of sortedIconKeywords) {
         if (lowerDesc.includes(keyword)) {
             return <span className="text-2xl">{KeywordIconMap[keyword]}</span>;
         }
     }
+
     return <span className="text-2xl">{CategoryEmojiMap[category] || '❓'}</span>;
 };
 
@@ -181,9 +248,8 @@ const ExpenseListItem: React.FC<{
                     </div>
                 </div>
                 <div className="flex items-center justify-between mt-1">
-                     <div className="flex items-center space-x-2 text-xs text-slate-500 pl-10 min-w-0">
+                     <div className="flex flex-col items-start text-xs text-slate-500 pl-10 min-w-0">
                         <span className="truncate" title={expense.category}>{expense.category}</span>
-                        <span className="text-slate-300">•</span>
                         <span>{formattedDate}</span>
                     </div>
                     <div className="flex items-center">
