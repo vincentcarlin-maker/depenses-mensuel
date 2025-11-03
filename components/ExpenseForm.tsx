@@ -1,16 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { type Expense, Category, User } from '../types';
 
 interface ExpenseFormProps {
   onAddExpense: (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => void;
+  expenses: Expense[];
 }
 
-const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense }) => {
+const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<Category>(Category.Groceries);
   const [user, setUser] = useState<User>(User.Sophie);
   const [error, setError] = useState('');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+
+  const uniqueDescriptions = useMemo(() => {
+    const allDescriptions = expenses.map(e => e.description.trim());
+    return [...new Set(allDescriptions)];
+  }, [expenses]);
+
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setDescription(value);
+
+    if (value.trim().length > 1) {
+      const lowerValue = value.toLowerCase();
+      const filteredSuggestions = uniqueDescriptions
+        .filter(d => 
+            d.toLowerCase().includes(lowerValue) && 
+            d.toLowerCase() !== lowerValue
+        )
+        .slice(0, 5);
+      setSuggestions(filteredSuggestions);
+    } else {
+      setSuggestions([]);
+    }
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setDescription(suggestion);
+    setSuggestions([]);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +65,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense }) => {
     setAmount('');
     setCategory(Category.Groceries);
     setError('');
+    setSuggestions([]);
   };
 
   return (
@@ -73,14 +104,32 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense }) => {
           <label htmlFor="description" className="block text-sm font-medium text-slate-600">
             Description
           </label>
-          <input
-            type="text"
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
-            placeholder="Ex: McDo, Courses Leclerc..."
-          />
+          <div className="relative">
+            <input
+              type="text"
+              id="description"
+              value={description}
+              onChange={handleDescriptionChange}
+              onFocus={(e) => handleDescriptionChange(e)}
+              onBlur={() => setTimeout(() => setSuggestions([]), 150)}
+              className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
+              placeholder="Ex: McDo, Courses Leclerc..."
+              autoComplete="off"
+            />
+            {suggestions.length > 0 && (
+              <ul className="absolute z-10 w-full bg-white border border-slate-200 rounded-md mt-1 shadow-lg max-h-48 overflow-y-auto">
+                {suggestions.map((suggestion, index) => (
+                  <li
+                    key={index}
+                    className="px-4 py-2 cursor-pointer hover:bg-slate-100 text-slate-700 text-sm"
+                    onMouseDown={() => handleSuggestionClick(suggestion)}
+                  >
+                    {suggestion}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
         <div>
           <label htmlFor="amount" className="block text-sm font-medium text-slate-600">
