@@ -1,10 +1,12 @@
-const CACHE_NAME = 'suivi-depenses-v12';
-// Les URLs sont relatives pour fonctionner sur GitHub Pages (déploiement en sous-dossier)
+const CACHE_NAME = 'suivi-depenses-v13';
+const REPO_NAME = '/depenses-mensuel/'; // Le chemin de base de votre dépôt
+
+// Les URLs sont maintenant absolues pour être plus robustes
 const urlsToCache = [
-  './',
-  './index.html',
-  './manifest.json?v=12',
-  './logo.svg?v=12'
+  REPO_NAME,
+  `${REPO_NAME}index.html`,
+  `${REPO_NAME}manifest.json?v=12`,
+  `${REPO_NAME}logo.svg?v=12`
 ];
 
 self.addEventListener('install', (event) => {
@@ -12,8 +14,6 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Opened cache and caching new assets');
-        // addAll peut échouer si une seule ressource n'est pas trouvée.
-        // On ignore l'échec pour ne pas bloquer l'installation.
         return cache.addAll(urlsToCache).catch(err => {
           console.error('Failed to cache all assets during install:', err);
         });
@@ -38,9 +38,7 @@ self.addEventListener('activate', (event) => {
   return self.clients.claim();
 });
 
-// Stratégie "Network falling back to cache" pour toutes les requêtes.
 self.addEventListener('fetch', (event) => {
-  // On ne met pas en cache les requêtes vers Supabase ou des API externes
   if (event.request.url.startsWith('https://xcdyshzyxpngbpceilym.supabase.co')) {
     return;
   }
@@ -48,7 +46,6 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Si la réponse est valide, on la met en cache pour le mode hors ligne.
         if (response && response.status === 200 && event.request.method === 'GET') {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME)
@@ -59,13 +56,11 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => {
-        // En cas d'échec du réseau, on cherche dans le cache.
         return caches.match(event.request);
       })
   );
 });
 
-// Écouteur pour les notifications push
 self.addEventListener('push', (event) => {
   let data = { title: 'Nouvelle dépense !', body: 'Une nouvelle dépense a été ajoutée.' };
   if (event.data) {
@@ -78,11 +73,11 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: './logo.svg?v=12', // Chemin relatif vers le logo existant
-    badge: './logo.svg?v=12',      // Chemin relatif vers le logo existant
+    icon: `${REPO_NAME}logo.svg?v=12`,
+    badge: `${REPO_NAME}logo.svg?v=12`,
     vibrate: [100, 50, 100],
     data: {
-      url: './', // URL à ouvrir au clic (relative)
+      url: new URL(REPO_NAME, self.location.origin).href,
     },
   };
 
@@ -91,21 +86,23 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// Écouteur pour le clic sur la notification
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const urlToOpen = new URL(self.registration.scope).pathname; // Ouvre la page d'accueil de la PWA
+  const urlToOpen = event.notification.data.url || new URL(self.registration.scope).href;
   
   event.waitUntil(
     clients.matchAll({
       type: 'window',
       includeUncontrolled: true,
     }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url === urlToOpen && 'focus' in client) {
-          return client.focus();
-        }
+      const existingClient = clientList.find(
+        client => client.url === urlToOpen && 'focus' in client
+      );
+
+      if (existingClient) {
+        return existingClient.focus();
       }
+      
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }
