@@ -223,14 +223,14 @@ const App: React.FC = () => {
       <PullToRefresh onRefresh={handleRefresh}>
         <main className="container mx-auto p-4 md:p-8">
           <div className="mb-8 border-b border-slate-200">
-            <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+            <nav className="-mb-px flex space-x-4 sm:space-x-6 overflow-x-auto no-scrollbar" aria-label="Tabs">
               <button
                 onClick={() => setActiveTab('dashboard')}
                 className={`${
                   activeTab === 'dashboard'
                     ? 'border-cyan-500 text-cyan-600'
                     : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
+                } whitespace-nowrap py-4 px-3 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
                 aria-current={activeTab === 'dashboard' ? 'page' : undefined}
               >
                 Tableau de bord
@@ -241,7 +241,7 @@ const App: React.FC = () => {
                   activeTab === 'analysis'
                     ? 'border-cyan-500 text-cyan-600'
                     : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
+                } whitespace-nowrap py-4 px-3 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
                 aria-current={activeTab === 'analysis' ? 'page' : undefined}
               >
                 Analyse
@@ -252,7 +252,7 @@ const App: React.FC = () => {
                   activeTab === 'yearly'
                     ? 'border-cyan-500 text-cyan-600'
                     : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
+                } whitespace-nowrap py-4 px-3 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
                 aria-current={activeTab === 'yearly' ? 'page' : undefined}
               >
                 Annuel
@@ -263,7 +263,7 @@ const App: React.FC = () => {
                   activeTab === 'search'
                     ? 'border-cyan-500 text-cyan-600'
                     : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
+                } whitespace-nowrap py-4 px-3 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
                 aria-current={activeTab === 'search' ? 'page' : undefined}
               >
                 Recherche

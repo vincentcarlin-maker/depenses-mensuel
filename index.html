@@ -52,6 +52,14 @@
       .animate-fade-in-up {
         animation: fade-in-up 0.5s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
       }
+      /* Added for scrollable tabs */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
     </style>
 <script type="importmap">
 {
