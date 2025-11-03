@@ -10,15 +10,17 @@ import EditExpenseModal from './components/EditExpenseModal';
 import Toast from './components/Toast';
 import YearlySummary from './components/YearlySummary';
 import PullToRefresh from './components/PullToRefresh';
+import GroupedExpenseList from './components/GroupedExpenseList';
 
 const App: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly' | 'search'>('dashboard');
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [globalSearchTerm, setGlobalSearchTerm] = useState('');
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
 
   const fetchExpenses = useCallback(async () => {
@@ -164,6 +166,15 @@ const App: React.FC = () => {
     });
   }, [expenses, currentMonth, currentYear, searchTerm]);
 
+  const globalFilteredExpenses = useMemo(() => {
+    if (globalSearchTerm.trim().length < 2) {
+        return [];
+    }
+    return expenses.filter(expense =>
+        expense.description.toLowerCase().includes(globalSearchTerm.toLowerCase())
+    );
+  }, [expenses, globalSearchTerm]);
+
   const yearlyExpenses = useMemo(() => {
     return expenses.filter(expense => new Date(expense.date).getFullYear() === currentYear);
   }, [expenses, currentYear]);
@@ -246,6 +257,17 @@ const App: React.FC = () => {
               >
                 Annuel
               </button>
+              <button
+                onClick={() => setActiveTab('search')}
+                className={`${
+                  activeTab === 'search'
+                    ? 'border-cyan-500 text-cyan-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
+                aria-current={activeTab === 'search' ? 'page' : undefined}
+              >
+                Recherche
+              </button>
             </nav>
           </div>
 
@@ -323,6 +345,52 @@ const App: React.FC = () => {
                     </button>
                 </div>
                 <YearlySummary expenses={yearlyExpenses} previousYearExpenses={previousYearlyExpenses} year={currentYear} />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'search' && (
+            <div key="search" className="animate-fade-in-up">
+              <div className="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
+                <h2 className="text-xl font-bold mb-4">Rechercher dans toutes les dépenses</h2>
+                <div className="relative mb-6">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                    <svg className="w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                  </span>
+                  <input
+                    type="search"
+                    placeholder="Rechercher par description (ex: McDo, Loyer...)"
+                    value={globalSearchTerm}
+                    onChange={(e) => setGlobalSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors"
+                    autoFocus
+                  />
+                </div>
+                
+                {globalSearchTerm.trim().length < 2 && (
+                    <div className="text-center py-10">
+                        <p className="text-slate-500">Commencez à taper pour rechercher dans toutes vos dépenses.</p>
+                    </div>
+                )}
+                
+                {globalSearchTerm.trim().length >= 2 && globalFilteredExpenses.length === 0 && (
+                    <div className="text-center py-10">
+                        <p className="text-slate-500">Aucune dépense trouvée pour "{globalSearchTerm}".</p>
+                    </div>
+                )}
+                
+                {globalFilteredExpenses.length > 0 && (
+                    <div className="max-h-[60vh] overflow-y-auto pr-2">
+                        <GroupedExpenseList 
+                            expenses={globalFilteredExpenses}
+                            onDeleteExpense={deleteExpense}
+                            onEditExpense={setExpenseToEdit}
+                        />
+                    </div>
+                )}
               </div>
             </div>
           )}
