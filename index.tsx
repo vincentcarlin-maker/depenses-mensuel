@@ -16,14 +16,16 @@ root.render(
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // The Vite-specific `import.meta.env.BASE_URL` is not available in the
-    // current execution environment, causing a runtime error.
-    // We replace it with the hardcoded base path to ensure the service worker
-    // registers correctly. This is consistent with other files like sw.js.
-    const basePath = '/depenses-mensuel/';
-    const swUrl = `${basePath}sw.js`; 
+    // Pour le déploiement sur GitHub Pages, le processus de build de Vite
+    // gère automatiquement le chemin de base. Nous devons enregistrer le
+    // Service Worker en utilisant un chemin absolu depuis la racine du site.
+    // Vite le transformera correctement en /depenses-mensuel/sw.js.
+    const swUrl = `/sw.js`; 
     
-    navigator.serviceWorker.register(swUrl, { scope: basePath }).then(registration => {
+    // Le scope est essentiel pour que le SW contrôle les bonnes pages.
+    const scope = '/depenses-mensuel/';
+    
+    navigator.serviceWorker.register(swUrl, { scope: scope }).then(registration => {
       console.log('Service Worker registered with scope: ', registration.scope);
     }).catch(registrationError => {
       console.log('Service Worker registration failed: ', registrationError);
