@@ -9,6 +9,7 @@ import CategoryTotals from './components/CategoryChart';
 import EditExpenseModal from './components/EditExpenseModal';
 import Toast from './components/Toast';
 import YearlySummary from './components/YearlySummary';
+import PullToRefresh from './components/PullToRefresh';
 
 const App: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -178,117 +179,119 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
       <Header onSetToast={setToastInfo} onRefresh={handleRefresh} />
-      <main className="container mx-auto p-4 md:p-8">
-        <div className="mb-8 border-b border-slate-200">
-          <nav className="-mb-px flex space-x-6" aria-label="Tabs">
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`${
-                activeTab === 'dashboard'
-                  ? 'border-cyan-500 text-cyan-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
-              aria-current={activeTab === 'dashboard' ? 'page' : undefined}
-            >
-              Tableau de bord
-            </button>
-            <button
-              onClick={() => setActiveTab('analysis')}
-              className={`${
-                activeTab === 'analysis'
-                  ? 'border-cyan-500 text-cyan-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
-              aria-current={activeTab === 'analysis' ? 'page' : undefined}
-            >
-              Analyse
-            </button>
-            <button
-              onClick={() => setActiveTab('yearly')}
-              className={`${
-                activeTab === 'yearly'
-                  ? 'border-cyan-500 text-cyan-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
-              aria-current={activeTab === 'yearly' ? 'page' : undefined}
-            >
-              Annuel
-            </button>
-          </nav>
-        </div>
+      <PullToRefresh onRefresh={handleRefresh}>
+        <main className="container mx-auto p-4 md:p-8">
+          <div className="mb-8 border-b border-slate-200">
+            <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+              <button
+                onClick={() => setActiveTab('dashboard')}
+                className={`${
+                  activeTab === 'dashboard'
+                    ? 'border-cyan-500 text-cyan-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
+                aria-current={activeTab === 'dashboard' ? 'page' : undefined}
+              >
+                Tableau de bord
+              </button>
+              <button
+                onClick={() => setActiveTab('analysis')}
+                className={`${
+                  activeTab === 'analysis'
+                    ? 'border-cyan-500 text-cyan-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
+                aria-current={activeTab === 'analysis' ? 'page' : undefined}
+              >
+                Analyse
+              </button>
+              <button
+                onClick={() => setActiveTab('yearly')}
+                className={`${
+                  activeTab === 'yearly'
+                    ? 'border-cyan-500 text-cyan-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
+                aria-current={activeTab === 'yearly' ? 'page' : undefined}
+              >
+                Annuel
+              </button>
+            </nav>
+          </div>
 
-        {activeTab === 'dashboard' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-1 space-y-8">
-              <ExpenseForm onAddExpense={addExpense} />
-              <ExpenseSummary 
-                allExpenses={expenses} 
-                currentMonth={currentMonth} 
-                currentYear={currentYear}
-                sophieTotalMonth={sophieTotal}
-                vincentTotalMonth={vincentTotal}
-              />
-            </div>
+          {activeTab === 'dashboard' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-1 space-y-8">
+                <ExpenseForm onAddExpense={addExpense} />
+                <ExpenseSummary 
+                  allExpenses={expenses} 
+                  currentMonth={currentMonth} 
+                  currentYear={currentYear}
+                  sophieTotalMonth={sophieTotal}
+                  vincentTotalMonth={vincentTotal}
+                />
+              </div>
 
-            <div className="lg:col-span-2 space-y-8">
-              <div className="bg-white p-6 rounded-2xl shadow-lg">
-                  <div className="flex justify-between items-center mb-4">
-                      <button onClick={() => handleMonthChange('prev')} className="p-2 rounded-full hover:bg-slate-200 transition-colors" aria-label="Mois précédent">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                      </button>
-                      <h2 className="text-xl font-bold text-center capitalize">{monthName}</h2>
-                      <button onClick={() => handleMonthChange('next')} className="p-2 rounded-full hover:bg-slate-200 transition-colors" aria-label="Mois suivant">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                      </button>
-                  </div>
-                  <div className="relative mb-4">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                        <svg className="w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                    </span>
-                    <input
-                        type="search"
-                        placeholder="Rechercher une dépense..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors"
-                    />
-                  </div>
-                  {isLoading ? (
-                    <div className="text-center py-10">
-                      <p className="text-slate-500">Chargement des dépenses...</p>
+              <div className="lg:col-span-2 space-y-8">
+                <div className="bg-white p-6 rounded-2xl shadow-lg">
+                    <div className="flex justify-between items-center mb-4">
+                        <button onClick={() => handleMonthChange('prev')} className="p-2 rounded-full hover:bg-slate-200 transition-colors" aria-label="Mois précédent">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                        </button>
+                        <h2 className="text-xl font-bold text-center capitalize">{monthName}</h2>
+                        <button onClick={() => handleMonthChange('next')} className="p-2 rounded-full hover:bg-slate-200 transition-colors" aria-label="Mois suivant">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                        </button>
                     </div>
-                  ) : (
-                    <ExpenseList expenses={filteredExpenses} onDeleteExpense={deleteExpense} onEditExpense={setExpenseToEdit} />
-                  )}
+                    <div className="relative mb-4">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                          <svg className="w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="11" cy="11" r="8"></circle>
+                              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                          </svg>
+                      </span>
+                      <input
+                          type="search"
+                          placeholder="Rechercher une dépense..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors"
+                      />
+                    </div>
+                    {isLoading ? (
+                      <div className="text-center py-10">
+                        <p className="text-slate-500">Chargement des dépenses...</p>
+                      </div>
+                    ) : (
+                      <ExpenseList expenses={filteredExpenses} onDeleteExpense={deleteExpense} onEditExpense={setExpenseToEdit} />
+                    )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {activeTab === 'analysis' && (
-          <div className="max-w-4xl mx-auto">
-            <CategoryTotals expenses={filteredExpenses} />
-          </div>
-        )}
-
-        {activeTab === 'yearly' && (
-          <div className="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
-             <div className="flex justify-between items-center mb-4">
-                <button onClick={() => handleYearChange('prev')} className="p-2 rounded-full hover:bg-slate-200 transition-colors" aria-label="Année précédente">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                </button>
-                <h2 className="text-xl font-bold text-center">{currentYear}</h2>
-                <button onClick={() => handleYearChange('next')} className="p-2 rounded-full hover:bg-slate-200 transition-colors" aria-label="Année suivante">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                </button>
+          {activeTab === 'analysis' && (
+            <div className="max-w-4xl mx-auto">
+              <CategoryTotals expenses={filteredExpenses} />
             </div>
-            <YearlySummary expenses={yearlyExpenses} previousYearExpenses={previousYearlyExpenses} year={currentYear} />
-          </div>
-        )}
-      </main>
+          )}
+
+          {activeTab === 'yearly' && (
+            <div className="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
+               <div className="flex justify-between items-center mb-4">
+                  <button onClick={() => handleYearChange('prev')} className="p-2 rounded-full hover:bg-slate-200 transition-colors" aria-label="Année précédente">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                  </button>
+                  <h2 className="text-xl font-bold text-center">{currentYear}</h2>
+                  <button onClick={() => handleYearChange('next')} className="p-2 rounded-full hover:bg-slate-200 transition-colors" aria-label="Année suivante">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                  </button>
+              </div>
+              <YearlySummary expenses={yearlyExpenses} previousYearExpenses={previousYearlyExpenses} year={currentYear} />
+            </div>
+          )}
+        </main>
+      </PullToRefresh>
 
       {expenseToEdit && (
         <EditExpenseModal 
