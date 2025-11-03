@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
 import NotificationBell from './NotificationBell';
-import RefreshIcon from './icons/RefreshIcon';
 
 const Logo = () => (
     <svg width="36" height="36" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3">
@@ -20,21 +19,9 @@ const Logo = () => (
 
 interface HeaderProps {
   onSetToast: (info: { message: string; type: 'info' | 'error' }) => void;
-  onRefresh: () => Promise<void>;
 }
 
-const Header: React.FC<HeaderProps> = ({ onSetToast, onRefresh }) => {
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const handleRefreshClick = async () => {
-    setIsRefreshing(true);
-    await onRefresh();
-    // Use timeout to let the spin animation be visible for a moment
-    setTimeout(() => {
-        setIsRefreshing(false);
-    }, 500);
-  };
-
+const Header: React.FC<HeaderProps> = ({ onSetToast }) => {
   return (
     <header className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg">
       <div className="container mx-auto px-4 py-5 md:px-8 flex items-center justify-between">
@@ -45,17 +32,6 @@ const Header: React.FC<HeaderProps> = ({ onSetToast, onRefresh }) => {
           </h1>
         </div>
         <div className="flex items-center space-x-2">
-            <button
-              onClick={handleRefreshClick}
-              disabled={isRefreshing}
-              className="p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white disabled:opacity-50 disabled:cursor-wait"
-              aria-label="Actualiser les données"
-              title="Actualiser les données"
-            >
-              <div className={isRefreshing ? 'animate-spin' : ''}>
-                <RefreshIcon />
-              </div>
-            </button>
             <NotificationBell onSetToast={onSetToast} />
         </div>
       </div>

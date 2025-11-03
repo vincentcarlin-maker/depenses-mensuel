@@ -43,25 +43,53 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const channel = supabase
-      .channel('expenses-changes')
+      .channel('expenses-realtime')
       .on<Expense>(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'expenses' },
         (payload) => {
           const newExpense = payload.new;
-
           setExpenses(prevExpenses => {
             if (prevExpenses.some(e => e.id === newExpense.id)) {
               return prevExpenses;
             }
-            
             setToastInfo({
               message: `${newExpense.user} a ajouté : ${newExpense.description} (${newExpense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`,
               type: 'info'
             });
-
             return [newExpense, ...prevExpenses];
           });
+        }
+      )
+      .on<Expense>(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'expenses' },
+        (payload) => {
+          const updatedExpense = payload.new;
+          setExpenses(prevExpenses =>
+            prevExpenses.map(expense =>
+              expense.id === updatedExpense.id ? updatedExpense : expense
+            )
+          );
+           setToastInfo({
+              message: `Dépense "${updatedExpense.description}" mise à jour.`,
+              type: 'info'
+            });
+        }
+      )
+      .on<Expense>(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'expenses' },
+        (payload) => {
+          const deletedExpense = payload.old as Partial<Expense>;
+          if (deletedExpense && deletedExpense.id) {
+              setExpenses(prevExpenses => prevExpenses.filter(expense => expense.id !== deletedExpense.id));
+              const desc = deletedExpense.description || 'une dépense';
+              setToastInfo({
+                  message: `Dépense "${desc}" supprimée.`,
+                  type: 'info'
+              });
+          }
         }
       )
       .subscribe();
@@ -86,6 +114,8 @@ const App: React.FC = () => {
     if (error) {
       console.error('Error adding expense:', error.message || error);
     } else if (data) {
+      // L'état est mis à jour localement pour la réactivité, 
+      // et le broadcast Supabase mettra à jour les autres clients.
       setExpenses(prevExpenses => [data, ...prevExpenses]);
     }
   };
@@ -178,7 +208,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
-      <Header onSetToast={setToastInfo} onRefresh={handleRefresh} />
+      <Header onSetToast={setToastInfo} />
       <PullToRefresh onRefresh={handleRefresh}>
         <main className="container mx-auto p-4 md:p-8">
           <div className="mb-8 border-b border-slate-200">
