@@ -1,26 +1,14 @@
-const CACHE_NAME = 'suivi-depenses-v15'; // Version incrémentée pour forcer la mise à jour
+const CACHE_NAME = 'suivi-depenses-v16'; // Version incrémentée pour forcer la mise à jour
 const REPO_NAME = '/depenses-mensuel/';
 
-// Fichiers essentiels à mettre en cache lors de l'installation
-const urlsToCache = [
-  REPO_NAME,
-  `${REPO_NAME}index.html`,
-  `${REPO_NAME}manifest.json?v=12`,
-  `${REPO_NAME}logo.svg?v=12`
-];
-
-// Étape d'installation : mise en cache des ressources de base de l'application
+// 1. Installation: Le SW est installé.
+// On utilise skipWaiting() pour qu'il devienne actif immédiatement.
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      console.log('Service Worker: Caching App Shell');
-      return cache.addAll(urlsToCache);
-    })
-  );
   self.skipWaiting();
 });
 
-// Étape d'activation : nettoyage des anciens caches pour ne garder que le plus récent
+// 2. Activation: Le nouveau SW est activé.
+// On nettoie tous les anciens caches pour éviter les conflits.
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
@@ -34,21 +22,23 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Étape de fetch : interception des requêtes avec une stratégie "Réseau d'abord"
+// 3. Fetch: Interception des requêtes réseau.
+// Stratégie: "Network falling back to cache" (Réseau d'abord, puis cache).
+// C'est une stratégie simple et robuste.
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Ignorer les requêtes vers l'API Supabase et les extensions Chrome
-  if (url.origin.startsWith('https://xcdyshzyxpngbpceilym.supabase.co') || request.url.startsWith('chrome-extension://')) {
+  // On ignore les requêtes non-HTTP/HTTPS et les requêtes vers l'API Supabase.
+  if (!request.url.startsWith('http') || url.origin.includes('supabase.co')) {
     return;
   }
 
   event.respondWith(
-    // Tenter de récupérer la ressource depuis le réseau en premier
+    // Essayer de récupérer depuis le réseau.
     fetch(request)
       .then(networkResponse => {
-        // Si la requête réseau réussit, on met la nouvelle ressource en cache
+        // Si la réponse est valide, on la met en cache pour une utilisation future (hors ligne).
         if (networkResponse && networkResponse.status === 200) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then(cache => {
@@ -58,7 +48,7 @@ self.addEventListener('fetch', event => {
         return networkResponse;
       })
       .catch(() => {
-        // Si la requête réseau échoue (ex: hors ligne), on cherche dans le cache
+        // Si le réseau échoue, on cherche une correspondance dans le cache.
         return caches.match(request);
       })
   );
