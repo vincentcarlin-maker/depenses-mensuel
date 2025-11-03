@@ -16,11 +16,13 @@ root.render(
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // Utiliser un chemin relatif pour l'enregistrement du Service Worker
-    // afin de garantir la compatibilité avec les déploiements en sous-dossier (GitHub Pages).
-    const swUrl = './sw.js';
-    navigator.serviceWorker.register(swUrl).then(registration => {
-      console.log('Service Worker registered: ', registration);
+    // Le chemin de base de l'application, tel que défini dans vite.config.ts.
+    // Utiliser un chemin absolu et un scope explicite rend l'enregistrement plus fiable.
+    const basePath = '/depenses-mensuel/'; 
+    const swUrl = `${basePath}sw.js`; 
+    
+    navigator.serviceWorker.register(swUrl, { scope: basePath }).then(registration => {
+      console.log('Service Worker registered with scope: ', registration.scope);
     }).catch(registrationError => {
       console.log('Service Worker registration failed: ', registrationError);
     });
