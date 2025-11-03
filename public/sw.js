@@ -1,5 +1,5 @@
-const CACHE_NAME = 'suivi-depenses-v14';
-const REPO_NAME = '/depenses-mensuel/'; // Le chemin de base de votre dépôt
+const CACHE_NAME = 'suivi-depenses-v15'; // Version incrémentée pour forcer la mise à jour
+const REPO_NAME = '/depenses-mensuel/';
 
 // Fichiers essentiels à mettre en cache lors de l'installation
 const urlsToCache = [
@@ -9,7 +9,7 @@ const urlsToCache = [
   `${REPO_NAME}logo.svg?v=12`
 ];
 
-// Étape d'installation : mise en cache des ressources de base
+// Étape d'installation : mise en cache des ressources de base de l'application
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
@@ -20,7 +20,7 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-// Étape d'activation : nettoyage des anciens caches
+// Étape d'activation : nettoyage des anciens caches pour ne garder que le plus récent
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
@@ -34,7 +34,7 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Étape de fetch : interception des requêtes réseau
+// Étape de fetch : interception des requêtes avec une stratégie "Réseau d'abord"
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
@@ -44,24 +44,11 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Stratégie "Réseau d'abord" pour les pages HTML (navigation)
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request).catch(() => {
-        // En cas d'échec (hors ligne), servir la page d'accueil depuis le cache
-        return caches.match(`${REPO_NAME}index.html`);
-      })
-    );
-    return;
-  }
-
-  // Stratégie "Cache d'abord" pour toutes les autres ressources (JS, CSS, images, etc.)
   event.respondWith(
-    caches.match(request).then(cachedResponse => {
-      // Si la ressource est en cache, on la sert directement
-      // Sinon, on la récupère sur le réseau
-      return cachedResponse || fetch(request).then(networkResponse => {
-        // Si la requête réseau réussit, on met la nouvelle ressource en cache pour plus tard
+    // Tenter de récupérer la ressource depuis le réseau en premier
+    fetch(request)
+      .then(networkResponse => {
+        // Si la requête réseau réussit, on met la nouvelle ressource en cache
         if (networkResponse && networkResponse.status === 200) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then(cache => {
@@ -69,13 +56,15 @@ self.addEventListener('fetch', event => {
           });
         }
         return networkResponse;
-      });
-    })
+      })
+      .catch(() => {
+        // Si la requête réseau échoue (ex: hors ligne), on cherche dans le cache
+        return caches.match(request);
+      })
   );
 });
 
-
-// --- Gestion des Notifications Push ---
+// --- Gestion des Notifications Push (inchangée) ---
 
 self.addEventListener('push', (event) => {
   let data = { title: 'Nouvelle dépense !', body: 'Une nouvelle dépense a été ajoutée.' };
