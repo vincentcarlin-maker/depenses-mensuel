@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { type Expense } from '../types';
+import { type Expense, type Reminder } from '../types';
 
 // -----------------------------------------------------------------------------
 // La configuration de votre projet Supabase est maintenant terminée !
@@ -16,6 +16,11 @@ export type Database = {
         Row: Expense;
         Insert: Omit<Expense, 'id' | 'created_at'>;
         Update: Partial<Expense>;
+      };
+      reminders: {
+        Row: Reminder;
+        Insert: Omit<Reminder, 'id' | 'created_at'>;
+        Update: Partial<Reminder>;
       };
       subscriptions: {
         Row: {

@@ -20,3 +20,14 @@ export interface Expense {
   user: User;
   created_at: string;
 }
+
+export interface Reminder {
+  id: string;
+  description: string;
+  amount: number;
+  category: Category;
+  user: User;
+  day_of_month: number;
+  is_active: boolean;
+  created_at: string;
+}

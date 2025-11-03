@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { supabase } from './supabase/client';
-import { type Expense, User } from './types';
+import { type Expense, User, type Reminder } from './types';
 import Header from './components/Header';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseSummary from './components/ExpenseSummary';
@@ -11,20 +11,22 @@ import Toast from './components/Toast';
 import YearlySummary from './components/YearlySummary';
 import PullToRefresh from './components/PullToRefresh';
 import GroupedExpenseList from './components/GroupedExpenseList';
+import ReminderAlerts from './components/ReminderAlerts';
+import RemindersTab from './components/RemindersTab';
 
 const App: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly' | 'search'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly' | 'search' | 'reminders'>('dashboard');
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
 
   const fetchExpenses = useCallback(async () => {
-    setIsLoading(true);
     const { data, error } = await supabase
       .from('expenses')
       .select('*')
@@ -36,15 +38,34 @@ const App: React.FC = () => {
     } else if (data) {
       setExpenses(data);
     }
-    setIsLoading(false);
   }, []);
 
-  useEffect(() => {
-    fetchExpenses();
-  }, [fetchExpenses]);
+  const fetchReminders = useCallback(async () => {
+    const { data, error } = await supabase
+        .from('reminders')
+        .select('*')
+        .order('day_of_month', { ascending: true });
+
+    if (error) {
+        console.error('Error fetching reminders:', error.message || error);
+        setToastInfo({ message: "Erreur lors de la récupération des rappels.", type: 'error' });
+    } else if (data) {
+        setReminders(data);
+    }
+  }, []);
+
 
   useEffect(() => {
-    const channel = supabase
+    const fetchData = async () => {
+        setIsLoading(true);
+        await Promise.all([fetchExpenses(), fetchReminders()]);
+        setIsLoading(false);
+    };
+    fetchData();
+  }, [fetchExpenses, fetchReminders]);
+
+  useEffect(() => {
+    const expensesChannel = supabase
       .channel('expenses-realtime')
       .on<Expense>(
         'postgres_changes',
@@ -96,10 +117,22 @@ const App: React.FC = () => {
       )
       .subscribe();
 
+    const remindersChannel = supabase
+      .channel('reminders-realtime')
+      .on<Reminder>(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'reminders' },
+        (payload) => {
+          fetchReminders();
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(expensesChannel);
+      supabase.removeChannel(remindersChannel);
     };
-  }, []);
+  }, [fetchReminders]);
 
   const addExpense = async (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => {
     const newExpense: Omit<Expense, 'id' | 'created_at'> = {
@@ -116,8 +149,6 @@ const App: React.FC = () => {
     if (error) {
       console.error('Error adding expense:', error.message || error);
     } else if (data) {
-      // L'état est mis à jour localement pour la réactivité, 
-      // et le broadcast Supabase mettra à jour les autres clients.
       setExpenses(prevExpenses => [data, ...prevExpenses]);
     }
   };
@@ -152,6 +183,37 @@ const App: React.FC = () => {
       );
     }
     setExpenseToEdit(null);
+  };
+
+  const addReminder = async (reminder: Omit<Reminder, 'id' | 'created_at'>) => {
+    const { error } = await supabase.from('reminders').insert(reminder);
+    if (error) {
+        console.error('Error adding reminder:', error.message || error);
+        setToastInfo({ message: "Erreur lors de l'ajout du rappel.", type: 'error' });
+    } else {
+        setToastInfo({ message: "Rappel ajouté avec succès.", type: 'info' });
+        await fetchReminders();
+    }
+  };
+
+  const updateReminder = async (updatedReminder: Reminder) => {
+      const { id, created_at, ...updatePayload } = updatedReminder;
+      const { error } = await supabase.from('reminders').update(updatePayload).eq('id', id);
+      if (error) {
+          console.error('Error updating reminder:', error.message || error);
+          setToastInfo({ message: "Erreur lors de la mise à jour du rappel.", type: 'error' });
+      }
+  };
+
+  const deleteReminder = async (id: string) => {
+      const { error } = await supabase.from('reminders').delete().eq('id', id);
+      if (error) {
+          console.error('Error deleting reminder:', error.message || error);
+          setToastInfo({ message: "Erreur lors de la suppression du rappel.", type: 'error' });
+      } else {
+          setToastInfo({ message: "Rappel supprimé.", type: 'info' });
+          await fetchReminders();
+      }
   };
 
   const filteredExpenses = useMemo(() => {
@@ -211,9 +273,9 @@ const App: React.FC = () => {
   };
   
   const handleRefresh = useCallback(async () => {
-    await fetchExpenses();
+    await Promise.all([fetchExpenses(), fetchReminders()]);
     setToastInfo({ message: 'Données actualisées !', type: 'info' });
-  }, [fetchExpenses]);
+  }, [fetchExpenses, fetchReminders]);
 
   const monthName = new Date(currentYear, currentMonth).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
 
@@ -257,6 +319,17 @@ const App: React.FC = () => {
               >
                 Annuel
               </button>
+               <button
+                onClick={() => setActiveTab('reminders')}
+                className={`${
+                  activeTab === 'reminders'
+                    ? 'border-cyan-500 text-cyan-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                } whitespace-nowrap py-4 px-3 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
+                aria-current={activeTab === 'reminders' ? 'page' : undefined}
+              >
+                Rappels
+              </button>
               <button
                 onClick={() => setActiveTab('search')}
                 className={`${
@@ -275,6 +348,13 @@ const App: React.FC = () => {
             <div key="dashboard" className="animate-fade-in-up">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-1 space-y-8">
+                  <ReminderAlerts
+                    reminders={reminders}
+                    monthlyExpenses={filteredExpenses}
+                    onAddExpense={addExpense}
+                    currentYear={currentYear}
+                    currentMonth={currentMonth}
+                  />
                   <ExpenseForm onAddExpense={addExpense} expenses={expenses} />
                   <ExpenseSummary 
                     allExpenses={expenses} 
@@ -346,6 +426,17 @@ const App: React.FC = () => {
                 </div>
                 <YearlySummary expenses={yearlyExpenses} previousYearExpenses={previousYearlyExpenses} year={currentYear} />
               </div>
+            </div>
+          )}
+          
+          {activeTab === 'reminders' && (
+            <div key="reminders" className="animate-fade-in-up">
+                <RemindersTab
+                    reminders={reminders}
+                    onAddReminder={addReminder}
+                    onUpdateReminder={updateReminder}
+                    onDeleteReminder={deleteReminder}
+                />
             </div>
           )}
 
