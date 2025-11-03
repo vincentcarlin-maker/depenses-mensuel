@@ -13,6 +13,11 @@
     <meta name="apple-mobile-web-app-title" content="Dépenses">
     <link rel="apple-touch-icon" href="./logo.svg?v=12" />
     <style>
+      /* Prevents horizontal scrolling for a more native app feel */
+      html, body {
+        width: 100%;
+        overflow-x: hidden;
+      }
       @keyframes slide-in-right {
         from {
           transform: translateX(100%);
