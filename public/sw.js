@@ -1,14 +1,15 @@
-const CACHE_NAME = 'suivi-depenses-v16'; // Version incrémentée pour forcer la mise à jour
+const CACHE_NAME = 'suivi-depenses-v17'; // Version incrémentée
 const REPO_NAME = '/depenses-mensuel/';
 
 // 1. Installation: Le SW est installé.
-// On utilise skipWaiting() pour qu'il devienne actif immédiatement.
+// skipWaiting() force le nouveau service worker à s'activer dès qu'il a terminé l'installation.
 self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
 // 2. Activation: Le nouveau SW est activé.
-// On nettoie tous les anciens caches pour éviter les conflits.
+// On nettoie tous les anciens caches et on s'assure que le SW prend le contrôle
+// de la page immédiatement.
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
@@ -17,14 +18,11 @@ self.addEventListener('activate', event => {
           .filter(name => name !== CACHE_NAME)
           .map(name => caches.delete(name))
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// 3. Fetch: Interception des requêtes réseau.
-// Stratégie: "Network falling back to cache" (Réseau d'abord, puis cache).
-// C'est une stratégie simple et robuste.
+// 3. Fetch: Interception des requêtes réseau avec une stratégie double.
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
@@ -34,25 +32,54 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // Stratégie 1: "Network Falling Back to Cache" pour les pages HTML.
+  // Cela garantit que l'utilisateur reçoit toujours la version la plus récente de l'app,
+  // tout en permettant un accès hors ligne.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          // Si la réponse est valide, on la met en cache pour une utilisation future.
+          if (response && response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Si le réseau échoue, on cherche une correspondance dans le cache.
+          return caches.match(request);
+        })
+    );
+    return;
+  }
+
+  // Stratégie 2: "Cache First, Falling Back to Network" pour toutes les autres ressources.
+  // (JS, CSS, images, polices, etc.). C'est idéal pour la performance.
   event.respondWith(
-    // Essayer de récupérer depuis le réseau.
-    fetch(request)
-      .then(networkResponse => {
-        // Si la réponse est valide, on la met en cache pour une utilisation future (hors ligne).
-        if (networkResponse && networkResponse.status === 200) {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(request, responseToCache);
-          });
+    caches.match(request)
+      .then(cachedResponse => {
+        // Si la ressource est dans le cache, on la sert directement.
+        if (cachedResponse) {
+          return cachedResponse;
         }
-        return networkResponse;
-      })
-      .catch(() => {
-        // Si le réseau échoue, on cherche une correspondance dans le cache.
-        return caches.match(request);
+        // Sinon, on la récupère sur le réseau.
+        return fetch(request).then(networkResponse => {
+          // On met en cache la nouvelle ressource pour la prochaine fois.
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return networkResponse;
+        });
       })
   );
 });
+
 
 // --- Gestion des Notifications Push (inchangée) ---
 
