@@ -16,12 +16,12 @@ root.render(
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // Pour le déploiement sur GitHub Pages, le chemin vers le service worker
-    // doit inclure le nom du dépôt (le "base path").
-    const swUrl = `/depenses-mensuel/sw.js`; 
-    
-    // Le scope est essentiel pour que le SW contrôle les bonnes pages.
-    const scope = '/depenses-mensuel/';
+    // Déterminer dynamiquement le chemin de base à partir de l'URL de la page,
+    // car `import.meta.url` n'est pas fiable dans tous les environnements.
+    const path = window.location.pathname;
+    // Extrait le chemin du répertoire, en s'assurant qu'il se termine par un slash.
+    const scope = path.substring(0, path.lastIndexOf('/') + 1);
+    const swUrl = `${scope}sw.js`;
     
     navigator.serviceWorker.register(swUrl, { scope: scope }).then(registration => {
       console.log('Service Worker registered with scope: ', registration.scope);

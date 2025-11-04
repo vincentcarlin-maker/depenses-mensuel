@@ -1,5 +1,4 @@
 const CACHE_NAME = 'suivi-depenses-v18'; // Version incrémentée
-const REPO_NAME = '/depenses-mensuel/';
 
 // 1. Installation: Le SW est installé.
 // skipWaiting() force le nouveau service worker à s'activer dès qu'il a terminé l'installation.
@@ -81,7 +80,7 @@ self.addEventListener('fetch', event => {
 });
 
 
-// --- Gestion des Notifications Push (inchangée) ---
+// --- Gestion des Notifications Push (Mise à jour pour être dynamique) ---
 
 self.addEventListener('push', (event) => {
   let data = { title: 'Nouvelle dépense !', body: 'Une nouvelle dépense a été ajoutée.' };
@@ -93,13 +92,16 @@ self.addEventListener('push', (event) => {
     }
   }
 
+  // Dérive dynamiquement le chemin de base à partir du scope du service worker
+  const basePath = new URL(self.registration.scope).pathname;
+
   const options = {
     body: data.body,
-    icon: `${REPO_NAME}logo.svg?v=13`,
-    badge: `${REPO_NAME}logo.svg?v=13`,
+    icon: `${basePath}logo.svg?v=13`,
+    badge: `${basePath}logo.svg?v=13`,
     vibrate: [100, 50, 100],
     data: {
-      url: new URL(REPO_NAME, self.location.origin).href,
+      url: self.registration.scope, // Le scope est l'URL complète à ouvrir au clic
     },
   };
 
@@ -110,7 +112,7 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const urlToOpen = event.notification.data.url || new URL(self.registration.scope).href;
+  const urlToOpen = event.notification.data.url || self.registration.scope;
   
   event.waitUntil(
     clients.matchAll({
