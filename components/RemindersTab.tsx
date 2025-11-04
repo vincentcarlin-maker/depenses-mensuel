@@ -114,12 +114,11 @@ const ReminderList: React.FC<{ reminders: Reminder[], onUpdateReminder: Reminder
                                 <div className="flex items-center space-x-1">
                                     <label htmlFor={`toggle-${reminder.id}`} className="flex items-center cursor-pointer" title={reminder.is_active ? 'Désactiver' : 'Activer'}>
                                         <div className="relative">
-                                            <input type="checkbox" id={`toggle-${reminder.id}`} className="sr-only" checked={reminder.is_active} onChange={() => handleToggleActive(reminder)} />
-                                            <div className="block bg-slate-300 w-10 h-6 rounded-full"></div>
-                                            <div className="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform"></div>
+                                            <input type="checkbox" id={`toggle-${reminder.id}`} className="sr-only peer" checked={reminder.is_active} onChange={() => handleToggleActive(reminder)} />
+                                            <div className="block bg-slate-300 w-10 h-6 rounded-full peer-checked:bg-cyan-600 transition-colors"></div>
+                                            <div className="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4"></div>
                                         </div>
                                     </label>
-                                    <style>{`#toggle-${reminder.id}:checked ~ .dot { transform: translateX(1rem); } #toggle-${reminder.id}:checked ~ .block { background-color: #06b6d4; }`}</style>
                                     
                                     <button onClick={() => onDeleteReminder(reminder.id)} className="p-2 text-slate-400 hover:text-red-600 rounded-full" aria-label="Supprimer le rappel"><TrashIcon /></button>
                                 </div>
