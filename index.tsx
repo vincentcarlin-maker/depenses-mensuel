@@ -16,14 +16,14 @@ root.render(
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // Déterminer dynamiquement le chemin de base à partir de l'URL de la page,
-    // car `import.meta.url` n'est pas fiable dans tous les environnements.
+    // Déterminer le chemin de base dynamiquement à partir de l'URL de la page.
+    // C'est une méthode robuste qui fonctionne en local et en production sur GitHub Pages.
     const path = window.location.pathname;
-    // Extrait le chemin du répertoire, en s'assurant qu'il se termine par un slash.
-    const scope = path.substring(0, path.lastIndexOf('/') + 1);
-    const swUrl = `${scope}sw.js`;
+    // Assure que le chemin de base se termine par un '/'
+    const base = path.substring(0, path.lastIndexOf('/') + 1);
+    const swUrl = `${base}sw.js`;
     
-    navigator.serviceWorker.register(swUrl, { scope: scope }).then(registration => {
+    navigator.serviceWorker.register(swUrl, { scope: base }).then(registration => {
       console.log('Service Worker registered with scope: ', registration.scope);
     }).catch(registrationError => {
       console.log('Service Worker registration failed: ', registrationError);
