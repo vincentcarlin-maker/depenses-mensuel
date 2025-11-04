@@ -9,7 +9,7 @@ interface RemindersTabProps {
   onDeleteReminder: (id: string) => Promise<void>;
 }
 
-const ReminderForm: React.FC<{ onAddReminder: (reminder: Omit<Reminder, 'id' | 'created_at' | 'is_active'>) => Promise<void> }> = ({ onAddReminder }) => {
+const ReminderForm: React.FC<{ onAddReminder: (reminder: Omit<Reminder, 'id' | 'created_at'>) => Promise<void> }> = ({ onAddReminder }) => {
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
     const [category, setCategory] = useState<Category>(Category.Mandatory);
@@ -35,7 +35,14 @@ const ReminderForm: React.FC<{ onAddReminder: (reminder: Omit<Reminder, 'id' | '
             return;
         }
 
-        await onAddReminder({ description, amount: parsedAmount, category, user, day_of_month: parsedDay });
+        await onAddReminder({ 
+            description, 
+            amount: parsedAmount, 
+            category, 
+            user, 
+            day_of_month: parsedDay,
+            is_active: true // Les nouveaux rappels sont actifs par défaut
+        });
 
         setDescription('');
         setAmount('');
