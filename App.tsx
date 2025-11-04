@@ -12,7 +12,7 @@ import YearlySummary from './components/YearlySummary';
 import PullToRefresh from './components/PullToRefresh';
 import GroupedExpenseList from './components/GroupedExpenseList';
 import ReminderAlerts from './components/ReminderAlerts';
-import RemindersTab from './components/RemindersTab';
+import SettingsModal from './components/SettingsModal';
 
 const App: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -20,11 +20,12 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly' | 'search' | 'reminders'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly' | 'search'>('dashboard');
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const fetchExpenses = useCallback(async () => {
     const { data, error } = await supabase
@@ -281,7 +282,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
-      <Header onSetToast={setToastInfo} />
+      <Header onSetToast={setToastInfo} onOpenSettings={() => setIsSettingsOpen(true)} />
       <PullToRefresh onRefresh={handleRefresh}>
         <main className="container mx-auto p-4 md:p-8">
           <div className="mb-8 border-b border-slate-200">
@@ -318,17 +319,6 @@ const App: React.FC = () => {
                 aria-current={activeTab === 'yearly' ? 'page' : undefined}
               >
                 Annuel
-              </button>
-               <button
-                onClick={() => setActiveTab('reminders')}
-                className={`${
-                  activeTab === 'reminders'
-                    ? 'border-cyan-500 text-cyan-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                } whitespace-nowrap py-4 px-3 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
-                aria-current={activeTab === 'reminders' ? 'page' : undefined}
-              >
-                Rappels
               </button>
               <button
                 onClick={() => setActiveTab('search')}
@@ -429,17 +419,6 @@ const App: React.FC = () => {
             </div>
           )}
           
-          {activeTab === 'reminders' && (
-            <div key="reminders" className="animate-fade-in-up">
-                <RemindersTab
-                    reminders={reminders}
-                    onAddReminder={addReminder}
-                    onUpdateReminder={updateReminder}
-                    onDeleteReminder={deleteReminder}
-                />
-            </div>
-          )}
-
           {activeTab === 'search' && (
             <div key="search" className="animate-fade-in-up">
               <div className="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
@@ -502,6 +481,14 @@ const App: React.FC = () => {
           onClose={() => setToastInfo(null)}
         />
       )}
+       <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        reminders={reminders}
+        onAddReminder={addReminder}
+        onUpdateReminder={updateReminder}
+        onDeleteReminder={deleteReminder}
+      />
     </div>
   );
 };

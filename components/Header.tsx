@@ -1,5 +1,6 @@
 import React from 'react';
 import NotificationBell from './NotificationBell';
+import SettingsIcon from './icons/SettingsIcon';
 
 const Logo = () => (
     <svg width="36" height="36" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3">
@@ -19,9 +20,10 @@ const Logo = () => (
 
 interface HeaderProps {
   onSetToast: (info: { message: string; type: 'info' | 'error' }) => void;
+  onOpenSettings: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onSetToast }) => {
+const Header: React.FC<HeaderProps> = ({ onSetToast, onOpenSettings }) => {
   return (
     <header className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg">
       <div className="container mx-auto px-4 py-5 md:px-8 flex items-center justify-between">
@@ -33,6 +35,14 @@ const Header: React.FC<HeaderProps> = ({ onSetToast }) => {
         </div>
         <div className="flex items-center space-x-2">
             <NotificationBell onSetToast={onSetToast} />
+            <button
+                onClick={onOpenSettings}
+                className="p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+                aria-label="Ouvrir les réglages"
+                title="Réglages"
+            >
+                <SettingsIcon />
+            </button>
         </div>
       </div>
     </header>
