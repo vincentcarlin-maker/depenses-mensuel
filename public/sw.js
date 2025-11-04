@@ -1,4 +1,4 @@
-const CACHE_NAME = 'suivi-depenses-v17'; // Version incrémentée
+const CACHE_NAME = 'suivi-depenses-v18'; // Version incrémentée
 const REPO_NAME = '/depenses-mensuel/';
 
 // 1. Installation: Le SW est installé.
@@ -95,8 +95,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: `${REPO_NAME}logo.svg?v=12`,
-    badge: `${REPO_NAME}logo.svg?v=12`,
+    icon: `${REPO_NAME}logo.svg?v=13`,
+    badge: `${REPO_NAME}logo.svg?v=13`,
     vibrate: [100, 50, 100],
     data: {
       url: new URL(REPO_NAME, self.location.origin).href,

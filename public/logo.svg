@@ -1,13 +1,7 @@
 <svg width="512" height="512" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="40" height="40" rx="8" fill="url(#paint0_linear_logo)"/>
+    <rect width="40" height="40" rx="8" fill="#2d3748"/>
     <path d="M10 28V20" stroke="#99f6e4" strokeWidth="3" strokeLinecap="round"/>
     <path d="M16 28V15" stroke="#99f6e4" strokeWidth="3" strokeLinecap="round"/>
     <path d="M22 28V22" stroke="#99f6e4" strokeWidth="3" strokeLinecap="round"/>
     <path d="M28 28V12" stroke="#99f6e4" strokeWidth="3" strokeLinecap="round"/>
-    <defs>
-        <linearGradient id="paint0_linear_logo" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-            <stop stop-color="#2d3748"/>
-            <stop offset="1" stop-color="#1a202c"/>
-        </linearGradient>
-    </defs>
 </svg>
