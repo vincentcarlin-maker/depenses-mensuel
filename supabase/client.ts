@@ -37,14 +37,20 @@ export type Database = {
   };
 };
 
-// REMARQUE : Pour que les abonnements aux notifications fonctionnent,
-// assurez-vous que la table 'subscriptions' autorise les insertions pour les
-// utilisateurs anonymes. Si vous utilisez la RLS (Row Level Security),
-// vous devez créer une politique pour le rôle 'anon'.
+// -----------------------------------------------------------------------------
+// ACTION REQUISE : Configuration des Notifications Push
+// -----------------------------------------------------------------------------
+// Pour que les notifications push fonctionnent, vous DEVEZ exécuter la commande
+// SQL suivante dans l'éditeur SQL de votre projet Supabase.
+// Cela autorise l'application à enregistrer de nouveaux abonnements aux notifications.
 //
-// Exemple de politique SQL à exécuter dans l'éditeur SQL de Supabase :
-// CREATE POLICY "Allow anon insert on subscriptions"
-// ON public.subscriptions
-// FOR INSERT TO anon
-// WITH CHECK (true);
+// 1. Allez sur votre projet Supabase > SQL Editor.
+// 2. Cliquez sur "+ New query".
+// 3. Copiez-collez et exécutez ceci :
+/*
+  CREATE POLICY "Allow anon insert on subscriptions"
+  ON public.subscriptions
+  FOR INSERT TO anon
+  WITH CHECK (true);
+*/
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);

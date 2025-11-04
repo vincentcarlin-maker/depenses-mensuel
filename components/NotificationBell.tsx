@@ -73,7 +73,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
             if (error) {
                 console.error('Erreur lors de la sauvegarde de l\'abonnement:', error);
                 onSetToast({
-                    message: "Échec de l'abonnement. Vérifiez les règles de sécurité (RLS) sur la table 'subscriptions'.",
+                    message: "Échec de l'abonnement. La politique de sécurité de la BDD (RLS) doit être configurée.",
                     type: 'error'
                 });
                 await sub.unsubscribe();
