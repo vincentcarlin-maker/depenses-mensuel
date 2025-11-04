@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { type Reminder, Category, User } from '../types';
 import TrashIcon from './icons/TrashIcon';
+import EditIcon from './icons/EditIcon';
+import ConfirmationModal from './ConfirmationModal';
+import EditReminderModal from './EditReminderModal';
 
 interface RemindersTabProps {
   reminders: Reminder[];
@@ -89,12 +92,68 @@ const ReminderForm: React.FC<{ onAddReminder: (reminder: Omit<Reminder, 'id' | '
     );
 };
 
-const ReminderList: React.FC<{ reminders: Reminder[], onUpdateReminder: RemindersTabProps['onUpdateReminder'], onDeleteReminder: RemindersTabProps['onDeleteReminder'] }> = ({ reminders, onUpdateReminder, onDeleteReminder }) => {
-    
-    const handleToggleActive = (reminder: Reminder) => {
+const ReminderItem: React.FC<{
+    reminder: Reminder;
+    onUpdateReminder: (reminder: Reminder) => void;
+    onDeleteReminder: (id: string) => void;
+    onEditReminder: (reminder: Reminder) => void;
+}> = ({ reminder, onUpdateReminder, onDeleteReminder, onEditReminder }) => {
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+    const handleToggleActive = () => {
         onUpdateReminder({ ...reminder, is_active: !reminder.is_active });
     };
-    
+
+    const handleDeleteClick = () => {
+        setIsConfirmModalOpen(true);
+    };
+
+    const executeDelete = () => {
+        onDeleteReminder(reminder.id);
+        setIsConfirmModalOpen(false);
+    };
+
+    return (
+        <>
+            <div className={`p-3 rounded-lg border ${reminder.is_active ? 'bg-slate-50 border-slate-200' : 'bg-slate-200 border-slate-300 opacity-60'}`}>
+                <div className="flex justify-between items-center">
+                    <div>
+                        <p className="font-semibold">{reminder.description}</p>
+                        <p className="text-sm text-slate-600">
+                            {reminder.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} - Le {reminder.day_of_month} de chaque mois
+                        </p>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                        <label htmlFor={`toggle-${reminder.id}`} className="flex items-center cursor-pointer" title={reminder.is_active ? 'Désactiver' : 'Activer'}>
+                            <div className="relative">
+                                <input type="checkbox" id={`toggle-${reminder.id}`} className="sr-only peer" checked={reminder.is_active} onChange={handleToggleActive} />
+                                <div className="block bg-slate-300 w-10 h-6 rounded-full peer-checked:bg-cyan-600 transition-colors"></div>
+                                <div className="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4"></div>
+                            </div>
+                        </label>
+                        <button onClick={() => onEditReminder(reminder)} className="p-2 text-slate-400 hover:text-cyan-600 rounded-full" aria-label="Modifier le rappel"><EditIcon /></button>
+                        <button onClick={handleDeleteClick} className="p-2 text-slate-400 hover:text-red-600 rounded-full" aria-label="Supprimer le rappel"><TrashIcon /></button>
+                    </div>
+                </div>
+            </div>
+            <ConfirmationModal
+                isOpen={isConfirmModalOpen}
+                onClose={() => setIsConfirmModalOpen(false)}
+                onConfirm={executeDelete}
+                title="Confirmer la suppression"
+                message={`Êtes-vous sûr de vouloir supprimer le rappel "${reminder.description}" ? Cette action est irréversible.`}
+            />
+        </>
+    );
+};
+
+
+const ReminderList: React.FC<{ 
+    reminders: Reminder[], 
+    onUpdateReminder: RemindersTabProps['onUpdateReminder'], 
+    onDeleteReminder: RemindersTabProps['onDeleteReminder'],
+    onEditReminder: (reminder: Reminder) => void,
+}> = ({ reminders, onUpdateReminder, onDeleteReminder, onEditReminder }) => {
     return (
         <div className="bg-white p-6 rounded-2xl shadow-lg">
             <h2 className="text-xl font-bold mb-4">Liste des Rappels</h2>
@@ -103,27 +162,13 @@ const ReminderList: React.FC<{ reminders: Reminder[], onUpdateReminder: Reminder
             ) : (
                 <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
                     {reminders.map(reminder => (
-                        <div key={reminder.id} className={`p-3 rounded-lg border ${reminder.is_active ? 'bg-slate-50 border-slate-200' : 'bg-slate-200 border-slate-300 opacity-60'}`}>
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <p className="font-semibold">{reminder.description}</p>
-                                    <p className="text-sm text-slate-600">
-                                        {reminder.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} - Le {reminder.day_of_month} de chaque mois
-                                    </p>
-                                </div>
-                                <div className="flex items-center space-x-1">
-                                    <label htmlFor={`toggle-${reminder.id}`} className="flex items-center cursor-pointer" title={reminder.is_active ? 'Désactiver' : 'Activer'}>
-                                        <div className="relative">
-                                            <input type="checkbox" id={`toggle-${reminder.id}`} className="sr-only peer" checked={reminder.is_active} onChange={() => handleToggleActive(reminder)} />
-                                            <div className="block bg-slate-300 w-10 h-6 rounded-full peer-checked:bg-cyan-600 transition-colors"></div>
-                                            <div className="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-4"></div>
-                                        </div>
-                                    </label>
-                                    
-                                    <button onClick={() => onDeleteReminder(reminder.id)} className="p-2 text-slate-400 hover:text-red-600 rounded-full" aria-label="Supprimer le rappel"><TrashIcon /></button>
-                                </div>
-                            </div>
-                        </div>
+                        <ReminderItem
+                            key={reminder.id}
+                            reminder={reminder}
+                            onUpdateReminder={onUpdateReminder}
+                            onDeleteReminder={onDeleteReminder}
+                            onEditReminder={onEditReminder}
+                        />
                     ))}
                 </div>
             )}
@@ -133,15 +178,36 @@ const ReminderList: React.FC<{ reminders: Reminder[], onUpdateReminder: Reminder
 
 
 const RemindersTab: React.FC<RemindersTabProps> = ({ reminders, onAddReminder, onUpdateReminder, onDeleteReminder }) => {
+    const [reminderToEdit, setReminderToEdit] = useState<Reminder | null>(null);
+
+    const handleUpdateReminder = async (updatedReminder: Reminder) => {
+        await onUpdateReminder(updatedReminder);
+        setReminderToEdit(null); // Close modal on success
+    };
+
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="space-y-8">
-                <ReminderForm onAddReminder={onAddReminder} />
+        <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="space-y-8">
+                    <ReminderForm onAddReminder={onAddReminder} />
+                </div>
+                <div className="space-y-8">
+                    <ReminderList 
+                        reminders={reminders} 
+                        onUpdateReminder={onUpdateReminder} 
+                        onDeleteReminder={onDeleteReminder}
+                        onEditReminder={setReminderToEdit}
+                    />
+                </div>
             </div>
-            <div className="space-y-8">
-                <ReminderList reminders={reminders} onUpdateReminder={onUpdateReminder} onDeleteReminder={onDeleteReminder} />
-            </div>
-        </div>
+            {reminderToEdit && (
+                <EditReminderModal
+                    reminder={reminderToEdit}
+                    onUpdateReminder={handleUpdateReminder}
+                    onClose={() => setReminderToEdit(null)}
+                />
+            )}
+        </>
     );
 };
 
