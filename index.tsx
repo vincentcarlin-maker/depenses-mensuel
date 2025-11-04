@@ -16,11 +16,9 @@ root.render(
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // Pour le déploiement sur GitHub Pages, le processus de build de Vite
-    // gère automatiquement le chemin de base. Nous devons enregistrer le
-    // Service Worker en utilisant un chemin absolu depuis la racine du site.
-    // Vite le transformera correctement en /depenses-mensuel/sw.js.
-    const swUrl = `/sw.js`; 
+    // Pour le déploiement sur GitHub Pages, le chemin vers le service worker
+    // doit inclure le nom du dépôt (le "base path").
+    const swUrl = `/depenses-mensuel/sw.js`; 
     
     // Le scope est essentiel pour que le SW contrôle les bonnes pages.
     const scope = '/depenses-mensuel/';
