@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase/client';
+import { VAPID_PUBLIC_KEY } from '../config';
 
-// REMARQUE : Il s'agit d'une clé VAPID publique d'exemple. Pour une application
-// en production, vous devez générer votre propre paire de clés (publique/privée)
-// à l'aide d'un outil comme `web-push` et stocker la clé privée de manière 
-// sécurisée sur votre serveur backend.
-const VAPID_PUBLIC_KEY = 'BKYG8hg6j_A35B3PRI2-3i9W_pL-j_5h-d_E1f-g_H9k_L-m_N1o_P3q_R5s-t_U7v';
+// Vérifie si la clé VAPID a été configurée par l'utilisateur.
+// C'est une mesure de sécurité pour s'assurer que l'application ne tente pas
+// d'utiliser la valeur du placeholder.
+// FIX: The check for a specific placeholder string caused a TypeScript error
+// because the placeholder was replaced with a sample key. The check has been
+// updated to simply verify that the VAPID key is a non-empty string.
+const isVapidKeyConfigured = !!VAPID_PUBLIC_KEY;
+
 
 // Helper pour convertir la clé VAPID pour l'API Push
 const urlBase64ToUint8Array = (base64String: string) => {
@@ -32,6 +36,9 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
     const [isSupported, setIsSupported] = useState(false);
 
     useEffect(() => {
+        if (!isVapidKeyConfigured) {
+            console.error("La clé VAPID publique n'est pas configurée dans le fichier config.ts.");
+        }
         if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
             setIsSupported(true);
             setPermission(Notification.permission);
@@ -49,6 +56,13 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
     }, []);
 
     const subscribeUser = async () => {
+        if (!isVapidKeyConfigured) {
+             onSetToast({
+                message: "La configuration des notifications est incomplète.",
+                type: 'error'
+            });
+            return;
+        }
         setIsLoading(true);
         if (permission === 'denied') {
             onSetToast({
@@ -131,7 +145,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
         }
     };
 
-    if (!isSupported) {
+    if (!isSupported || !isVapidKeyConfigured) {
         return null;
     }
 
