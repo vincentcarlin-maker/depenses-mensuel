@@ -26,7 +26,6 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
     const [category, setCategory] = useState<Category>(expense.category);
     const [user, setUser] = useState<User>(expense.user);
     const [date, setDate] = useState(toDatetimeLocal(expense.date));
-    const [comment, setComment] = useState(expense.comment || '');
     const [error, setError] = useState('');
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
@@ -61,7 +60,6 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
             category,
             user,
             date: new Date(date).toISOString(),
-            comment,
         });
     };
 
@@ -116,17 +114,6 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                         <div>
                           <label htmlFor="edit-amount" className="block text-sm font-medium text-slate-600">Montant (€)</label>
                           <input type="number" id="edit-amount" value={amount} onChange={(e) => setAmount(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm" step="0.01" />
-                        </div>
-                        <div>
-                            <label htmlFor="edit-comment" className="block text-sm font-medium text-slate-600">Commentaire</label>
-                            <textarea
-                                id="edit-comment"
-                                value={comment}
-                                onChange={(e) => setComment(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
-                                rows={3}
-                                placeholder="Aucun commentaire"
-                            />
                         </div>
                         {error && <p className="text-red-500 text-sm">{error}</p>}
                         <div className="flex justify-between items-center pt-2">

@@ -19,7 +19,6 @@ export interface Expense {
   date: string; // ISO 8601 format (TIMESTAMPTZ)
   user: User;
   created_at: string;
-  comment?: string;
 }
 
 export interface Reminder {

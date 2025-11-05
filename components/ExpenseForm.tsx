@@ -11,7 +11,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<Category>(Category.Groceries);
   const [user, setUser] = useState<User>(User.Sophie);
-  const [comment, setComment] = useState('');
   const [error, setError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
@@ -60,12 +59,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
       amount: parsedAmount,
       category,
       user,
-      comment,
     });
 
     setDescription('');
     setAmount('');
-    setComment('');
     setCategory(Category.Groceries);
     setError('');
     setSuggestions([]);
@@ -147,19 +144,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
             placeholder="0.00"
             step="0.01"
           />
-        </div>
-        <div>
-          <label htmlFor="comment" className="block text-sm font-medium text-slate-600">
-            Commentaire (facultatif)
-          </label>
-          <textarea
-            id="comment"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
-            placeholder="Ex: Achat pour le repas de ce soir..."
-            rows={2}
-          ></textarea>
         </div>
         {error && <p className="text-red-500 text-sm">{error}</p>}
         <button
