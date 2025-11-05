@@ -99,7 +99,13 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
             }
         } catch (error) {
             console.error('Échec de l\'abonnement de l\'utilisateur: ', error);
-            onSetToast({ message: "Une erreur est survenue lors de l'abonnement.", type: 'error' });
+            let message = "Une erreur est survenue lors de l'abonnement.";
+            // Specific check for VAPID key issues. Browsers often throw a generic DOMException.
+            // A more helpful message can guide the user.
+            if (error instanceof DOMException) {
+                 message = "Échec de l'abonnement. Cela peut être dû à une clé VAPID publique incorrecte ou à un problème avec le service de notification. Veuillez vérifier votre configuration.";
+            }
+            onSetToast({ message, type: 'error' });
         }
         setIsLoading(false);
     };
