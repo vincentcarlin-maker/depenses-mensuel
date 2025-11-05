@@ -1,0 +1,27 @@
+name: Déployer la Fonction Supabase
+
+on:
+  push:
+    branches:
+      - main
+    # Déployer uniquement si des changements ont lieu dans le dossier des fonctions
+    paths:
+      - 'supabase/functions/**'
+  workflow_dispatch:
+
+jobs:
+  deploy_function:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Déployer la fonction Edge sur Supabase
+        uses: supabase/cli@v1
+        with:
+          # FIX: L'argument pour spécifier le projet est --project-ref, et non --project-id.
+          # NOTE: Assurez-vous que le secret GITHUB `SUPABASE_PROJECT_ID` contient bien
+          # la référence de votre projet Supabase (ex: abcdefghijklmnopqrst).
+          args: functions deploy send-notification --project-ref ${{ secrets.SUPABASE_PROJECT_ID }} --no-verify-jwt
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
