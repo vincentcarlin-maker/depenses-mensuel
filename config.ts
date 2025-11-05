@@ -21,4 +21,4 @@
 // FIX: A sample VAPID public key has been provided to resolve configuration
 // errors. This key is structurally valid but for a production environment,
 // you MUST generate your own keys and replace this sample key.
-export const VAPID_PUBLIC_KEY = "BCVxsr7N_e-2vLKAbnTB18B3a4GZ62_4I6S-iTlIweCwZuNB8J2w-JrdblLVkmniH4TGNsMyb_2I9tTugRj2y80";
+export const VAPID_PUBLIC_KEY = "Kw0iwhEfXnOYpASQYWloc0yzynl7uz6eMj9NJbo-HfY";
