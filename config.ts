@@ -25,9 +25,13 @@
 //
 // =============================================================================
 
-// ATTENTION : Ceci est une clé d'exemple. Vous devez la remplacer par la vôtre.
-export const VAPID_PUBLIC_KEY = "BCVxsr7N_e-2vLKAbnTB18B3a4GZ62_4I6S-iTlIweCwZuNB8J2w-JrdblLVkmniH4TGNsMyb_2I9tTugRj2y80";
+// 
+// Fichier : config.ts
 
-// Ce booléen permet de vérifier si la clé VAPID est toujours la clé d'exemple.
-// Ne modifiez pas cette ligne.
+// ... (commentaires)
+
+// REMPLACEZ la clé ci-dessous par votre nouvelle clé publique
+export const VAPID_PUBLIC_KEY = "BHez2J6rA8s8-i6q-xK8-a5bC_rF9dD9yUvP3gO6eJzW_rQ1fI_sT7kH2m_xY5lZ-nJ8vG9bC4aD3e";
+
+// Ne modifiez pas cette ligne
 export const IS_VAPID_KEY_SAMPLE = VAPID_PUBLIC_KEY === "BCVxsr7N_e-2vLKAbnTB18B3a4GZ62_4I6S-iTlIweCwZuNB8J2w-JrdblLVkmniH4TGNsMyb_2I9tTugRj2y80";
