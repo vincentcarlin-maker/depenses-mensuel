@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useTransition } from 'react';
 import { supabase } from './supabase/client';
 import { type Expense, User, type Reminder } from './types';
 import Header from './components/Header';
@@ -21,6 +21,7 @@ const App: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly' | 'search'>('dashboard');
+  const [isPending, startTransition] = useTransition();
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
@@ -217,6 +218,12 @@ const App: React.FC = () => {
       }
   };
 
+  const handleTabChange = (tab: 'dashboard' | 'analysis' | 'yearly' | 'search') => {
+    startTransition(() => {
+      setActiveTab(tab);
+    });
+  };
+
   const filteredExpenses = useMemo(() => {
     return expenses.filter(expense => {
       const expenseDate = new Date(expense.date);
@@ -288,7 +295,7 @@ const App: React.FC = () => {
           <div className="mb-8 border-b border-slate-200">
             <nav className="-mb-px flex space-x-4 sm:space-x-6 overflow-x-auto no-scrollbar" aria-label="Tabs">
               <button
-                onClick={() => setActiveTab('dashboard')}
+                onClick={() => handleTabChange('dashboard')}
                 className={`${
                   activeTab === 'dashboard'
                     ? 'border-cyan-500 text-cyan-600'
@@ -299,7 +306,7 @@ const App: React.FC = () => {
                 Tableau de bord
               </button>
               <button
-                onClick={() => setActiveTab('analysis')}
+                onClick={() => handleTabChange('analysis')}
                 className={`${
                   activeTab === 'analysis'
                     ? 'border-cyan-500 text-cyan-600'
@@ -310,7 +317,7 @@ const App: React.FC = () => {
                 Analyse
               </button>
               <button
-                onClick={() => setActiveTab('yearly')}
+                onClick={() => handleTabChange('yearly')}
                 className={`${
                   activeTab === 'yearly'
                     ? 'border-cyan-500 text-cyan-600'
@@ -321,7 +328,7 @@ const App: React.FC = () => {
                 Annuel
               </button>
               <button
-                onClick={() => setActiveTab('search')}
+                onClick={() => handleTabChange('search')}
                 className={`${
                   activeTab === 'search'
                     ? 'border-cyan-500 text-cyan-600'
