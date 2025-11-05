@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase/client';
 import { VAPID_PUBLIC_KEY, IS_VAPID_KEY_SAMPLE } from '../config';
+import VapidKeyInstructionsModal from './VapidKeyInstructionsModal';
 
 // Vérifie si la clé VAPID a été configurée par l'utilisateur.
 // C'est une mesure de sécurité pour s'assurer que l'application ne tente pas
@@ -34,6 +35,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
     const [permission, setPermission] = useState<NotificationPermission>('default');
     const [isLoading, setIsLoading] = useState(true);
     const [isSupported, setIsSupported] = useState(false);
+    const [isInstructionsModalOpen, setIsInstructionsModalOpen] = useState(false);
 
     useEffect(() => {
         if (!isVapidKeyConfigured) {
@@ -65,10 +67,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
         }
 
         if (IS_VAPID_KEY_SAMPLE) {
-            onSetToast({
-                message: "Action requise: Veuillez configurer vos propres clés de notification dans le fichier config.ts.",
-                type: 'error'
-            });
+            setIsInstructionsModalOpen(true);
             return;
         }
         
@@ -174,15 +173,21 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
     const { label, disabled, icon } = getButtonState();
 
     return (
-        <button
-            onClick={handleToggleSubscription}
-            disabled={disabled}
-            className="p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label={label}
-            title={label}
-        >
-            {icon}
-        </button>
+        <>
+            <button
+                onClick={handleToggleSubscription}
+                disabled={disabled}
+                className="p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label={label}
+                title={label}
+            >
+                {icon}
+            </button>
+            <VapidKeyInstructionsModal
+                isOpen={isInstructionsModalOpen}
+                onClose={() => setIsInstructionsModalOpen(false)}
+            />
+        </>
     );
 };
 
