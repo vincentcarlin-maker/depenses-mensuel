@@ -386,7 +386,7 @@ const App: React.FC = () => {
                           <p className="text-slate-500">Chargement des dépenses...</p>
                         </div>
                       ) : (
-                        <ExpenseList expenses={filteredExpenses} onDeleteExpense={deleteExpense} onEditExpense={setExpenseToEdit} />
+                        <ExpenseList expenses={filteredExpenses} onEditExpense={setExpenseToEdit} />
                       )}
                   </div>
                 </div>
@@ -456,7 +456,6 @@ const App: React.FC = () => {
                     <div className="max-h-[60vh] overflow-y-auto pr-2">
                         <GroupedExpenseList 
                             expenses={globalFilteredExpenses}
-                            onDeleteExpense={deleteExpense}
                             onEditExpense={setExpenseToEdit}
                         />
                     </div>
@@ -471,6 +470,7 @@ const App: React.FC = () => {
         <EditExpenseModal 
           expense={expenseToEdit}
           onUpdateExpense={updateExpense}
+          onDeleteExpense={deleteExpense}
           onClose={() => setExpenseToEdit(null)}
         />
       )}

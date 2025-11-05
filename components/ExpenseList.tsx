@@ -4,11 +4,10 @@ import ExpenseListItem from './ExpenseListItem';
 
 interface ExpenseListProps {
   expenses: Expense[];
-  onDeleteExpense: (id: string) => void;
   onEditExpense: (expense: Expense) => void;
 }
 
-const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onDeleteExpense, onEditExpense }) => {
+const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEditExpense }) => {
   if (expenses.length === 0) {
     return (
       <div className="text-center py-10">
@@ -25,7 +24,6 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onDeleteExpense, on
             <ExpenseListItem
                 key={expense.id}
                 expense={expense}
-                onDeleteExpense={onDeleteExpense}
                 onEditExpense={onEditExpense}
             />
         ))}

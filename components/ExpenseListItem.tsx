@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { type Expense, User, Category } from '../types';
-import EditIcon from './icons/EditIcon';
-import TrashIcon from './icons/TrashIcon';
 import ConfirmationModal from './ConfirmationModal';
 
 const CategoryEmojiMap: { [key: string]: string } = {
@@ -137,10 +135,10 @@ const KeywordDomainMap: { [key: string]: string } = {
 };
 
 const Logo: React.FC<{ domain: string, alt: string, fallback: React.ReactNode }> = ({ domain, alt, fallback }) => {
-    const [hasError, setHasError] = useState(false);
+    const [hasError, setHasError] = React.useState(false);
     const src = `https://logo.clearbit.com/${domain}`;
 
-    useEffect(() => {
+    React.useEffect(() => {
         setHasError(false);
     }, [src]);
 
@@ -193,25 +191,8 @@ const UserIndicator: React.FC<{ user: User }> = ({ user }) => {
 
 const ExpenseListItem: React.FC<{
     expense: Expense;
-    onDeleteExpense: (id: string) => void;
     onEditExpense: (expense: Expense) => void;
-}> = ({ expense, onDeleteExpense, onEditExpense }) => {
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-    
-    const handleDeleteClick = () => {
-        setIsConfirmModalOpen(true);
-    };
-    
-    const executeDelete = () => {
-        setIsConfirmModalOpen(false);
-        setIsDeleting(true);
-        // The timeout allows the fade-out animation to finish before the
-        // component is removed from the DOM.
-        setTimeout(() => {
-            onDeleteExpense(expense.id);
-        }, 300); // This duration must match the CSS transition duration.
-    };
+}> = ({ expense, onEditExpense }) => {
 
     const formattedDate = new Date(expense.date).toLocaleString('fr-FR', {
         day: 'numeric',
@@ -221,57 +202,37 @@ const ExpenseListItem: React.FC<{
     });
 
     return (
-        <>
-            <div className={`
+        <div
+            onClick={() => onEditExpense(expense)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onEditExpense(expense); }}
+            role="button"
+            tabIndex={0}
+            className={`
                 relative bg-slate-50 p-3 rounded-lg border border-slate-200
-                transition-all duration-300 ease-out
-                ${isDeleting ? 'opacity-0 max-h-0 !my-0 !py-0 !border-0' : 'max-h-40'}
-            `}>
-                <div className="flex items-start justify-between">
-                    <div className="flex items-center min-w-0 flex-1">
-                        <UserIndicator user={expense.user} />
-                        <div className="w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
-                            {getExpenseVisual(expense.description, expense.category)}
-                        </div>
-                        <p className="font-semibold truncate" title={expense.description}>{expense.description}</p>
+                transition-all duration-300 ease-out cursor-pointer hover:bg-slate-100 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500
+            `}
+        >
+            <div className="flex items-start justify-between">
+                <div className="flex items-center min-w-0 flex-1">
+                    <UserIndicator user={expense.user} />
+                    <div className="w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
+                        {getExpenseVisual(expense.description, expense.category)}
                     </div>
-                    <div className="pl-4 flex-shrink-0">
-                        <p className="font-bold text-slate-700 text-right min-w-[80px]">
-                            {expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                        </p>
-                    </div>
+                    <p className="font-semibold truncate" title={expense.description}>{expense.description}</p>
                 </div>
-                <div className="flex items-center justify-between mt-1">
-                     <div className="flex flex-col items-start text-xs text-slate-500 pl-10 min-w-0">
-                        <span className="truncate" title={expense.category}>{expense.category}</span>
-                        <span>{formattedDate}</span>
-                    </div>
-                    <div className="flex items-center">
-                        <button
-                            onClick={handleDeleteClick}
-                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors z-10"
-                            aria-label="Supprimer la dépense"
-                        >
-                            <TrashIcon />
-                        </button>
-                        <button
-                            onClick={() => onEditExpense(expense)}
-                            className="p-2 text-slate-400 hover:text-cyan-600 hover:bg-cyan-100 rounded-full transition-colors z-10"
-                            aria-label="Modifier la dépense"
-                        >
-                            <EditIcon />
-                        </button>
-                    </div>
+                <div className="pl-4 flex-shrink-0">
+                    <p className="font-bold text-slate-700 text-right min-w-[80px]">
+                        {expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                    </p>
                 </div>
             </div>
-            <ConfirmationModal
-                isOpen={isConfirmModalOpen}
-                onClose={() => setIsConfirmModalOpen(false)}
-                onConfirm={executeDelete}
-                title="Confirmer la suppression"
-                message={`Êtes-vous sûr de vouloir supprimer la dépense "${expense.description}" ? Cette action est irréversible.`}
-            />
-        </>
+            <div className="flex items-center justify-between mt-1">
+                 <div className="flex flex-col items-start text-xs text-slate-500 pl-10 min-w-0">
+                    <span className="truncate" title={expense.category}>{expense.category}</span>
+                    <span>{formattedDate}</span>
+                </div>
+            </div>
+        </div>
     );
 };
 
