@@ -11,7 +11,7 @@ interface BalanceReportProps {
 
 const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear, currentMonth, sophieTotalMonth, vincentTotalMonth }) => {
   const { historicDifference, cumulativeDifference, message } = useMemo(() => {
-    const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+    const firstDayOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1));
     
     const historicExpenses = allExpenses.filter(exp => new Date(exp.date) < firstDayOfMonth);
     

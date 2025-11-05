@@ -16,7 +16,7 @@ const ReminderAlerts: React.FC<ReminderAlertsProps> = ({ reminders, monthlyExpen
     if (!reminder.is_active) return false;
 
     // Ne pas afficher le rappel si le jour n'est pas encore arrivé dans le mois en cours
-    if (today.getFullYear() === currentYear && today.getMonth() === currentMonth && today.getDate() < reminder.day_of_month) {
+    if (today.getUTCFullYear() === currentYear && today.getUTCMonth() === currentMonth && today.getUTCDate() < reminder.day_of_month) {
         return false;
     }
 

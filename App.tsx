@@ -18,8 +18,8 @@ const App: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(new Date().getUTCMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getUTCFullYear());
   const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly' | 'search'>('dashboard');
   const [isPending, startTransition] = useTransition();
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
@@ -227,7 +227,7 @@ const App: React.FC = () => {
   const filteredExpenses = useMemo(() => {
     return expenses.filter(expense => {
       const expenseDate = new Date(expense.date);
-      const matchesMonth = expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+      const matchesMonth = expenseDate.getUTCMonth() === currentMonth && expenseDate.getUTCFullYear() === currentYear;
       if (!matchesMonth) return false;
       
       if (!searchTerm) return true;
@@ -266,14 +266,14 @@ const App: React.FC = () => {
   }, [filteredExpenses]);
 
   const handleMonthChange = (direction: 'prev' | 'next') => {
-      const date = new Date(currentYear, currentMonth);
+      const date = new Date(Date.UTC(currentYear, currentMonth, 1));
       if (direction === 'next') {
-          date.setMonth(date.getMonth() + 1);
+          date.setUTCMonth(date.getUTCMonth() + 1);
       } else {
-          date.setMonth(date.getMonth() - 1);
+          date.setUTCMonth(date.getUTCMonth() - 1);
       }
-      setCurrentMonth(date.getMonth());
-      setCurrentYear(date.getFullYear());
+      setCurrentMonth(date.getUTCMonth());
+      setCurrentYear(date.getUTCFullYear());
   };
 
   const handleYearChange = (direction: 'prev' | 'next') => {
@@ -285,7 +285,7 @@ const App: React.FC = () => {
     setToastInfo({ message: 'Données actualisées !', type: 'info' });
   }, [fetchExpenses, fetchReminders]);
 
-  const monthName = new Date(currentYear, currentMonth).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
+  const monthName = new Date(Date.UTC(currentYear, currentMonth)).toLocaleString('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
