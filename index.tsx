@@ -19,11 +19,12 @@ root.render(
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // FIX: Replaced complex canonical URL parsing with a simple, robust path.
-    // Registering 'sw.js' directly allows the browser to resolve the path
-    // correctly relative to the current location, which works seamlessly for
-    // subdirectory deployments on GitHub Pages.
-    navigator.serviceWorker.register('sw.js').then(registration => {
+    // FIX: Replaced the simple relative path with a robust, absolute path
+    // including the deployment subdirectory. This ensures the service worker
+    // is always found, and explicitly setting the scope guarantees it controls
+    // the correct pages. This is the standard best practice for SPAs on GitHub Pages.
+    const swUrl = '/depenses-mensuel/sw.js';
+    navigator.serviceWorker.register(swUrl, { scope: '/depenses-mensuel/' }).then(registration => {
       console.log('Service Worker registered with scope: ', registration.scope);
     }).catch(registrationError => {
       console.log('Service Worker registration failed: ', registrationError);
