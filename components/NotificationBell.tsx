@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase/client';
-import { VAPID_PUBLIC_KEY } from '../config';
+import { VAPID_PUBLIC_KEY, IS_VAPID_KEY_SAMPLE } from '../config';
 
 // Vérifie si la clé VAPID a été configurée par l'utilisateur.
 // C'est une mesure de sécurité pour s'assurer que l'application ne tente pas
@@ -63,6 +63,15 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
             });
             return;
         }
+
+        if (IS_VAPID_KEY_SAMPLE) {
+            onSetToast({
+                message: "Action requise: Veuillez configurer vos propres clés de notification dans le fichier config.ts.",
+                type: 'error'
+            });
+            return;
+        }
+        
         setIsLoading(true);
         if (permission === 'denied') {
             onSetToast({

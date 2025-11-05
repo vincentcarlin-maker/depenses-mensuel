@@ -8,6 +8,26 @@ import webpush from 'https://deno.land/x/webpush/mod.ts';
 // FIX: Declare the Deno global to resolve TypeScript errors about an undefined variable in a Deno environment.
 declare const Deno: any;
 
+// =============================================================================
+// ACTION REQUISE : Configuration des Secrets Supabase
+// =============================================================================
+// Pour que cette fonction s'exécute correctement, vous devez configurer les
+// "secrets" (variables d'environnement) suivants dans votre projet Supabase.
+//
+// 1. Allez sur votre projet Supabase > Settings > Edge Functions.
+// 2. Pour chacun des noms ci-dessous, cliquez sur "Add new secret" et ajoutez
+//    la valeur correspondante.
+//
+// SECRETS REQUIS :
+//   - SUPABASE_URL: L'URL de votre projet Supabase.
+//   - SUPABASE_SERVICE_ROLE_KEY: La clé de service de votre projet (à manipuler avec précaution).
+//   - VAPID_PUBLIC_KEY: La clé VAPID publique que vous avez générée.
+//   - VAPID_PRIVATE_KEY: La clé VAPID privée que vous avez générée.
+//   - FUNCTION_SECRET: Un mot de passe sécurisé que vous inventez. Il sera utilisé
+//     pour authentifier les appels à cette fonction (via le webhook).
+//
+// =============================================================================
+
 // Récupère les secrets depuis les variables d'environnement du projet Supabase
 const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY');
 const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY');
