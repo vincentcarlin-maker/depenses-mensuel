@@ -10,13 +10,23 @@ interface ReminderAlertsProps {
 }
 
 const ReminderAlerts: React.FC<ReminderAlertsProps> = ({ reminders, monthlyExpenses, onAddExpense, currentYear, currentMonth }) => {
-  const today = new Date();
-  
-  const pendingReminders = reminders.filter(reminder => {
-    if (!reminder.is_active) return false;
+  const now = new Date();
+  const realCurrentYear = now.getUTCFullYear();
+  const realCurrentMonth = now.getUTCMonth();
+  const realCurrentDay = now.getUTCDate();
 
-    if (today.getUTCFullYear() === currentYear && today.getUTCMonth() === currentMonth && today.getUTCDate() < reminder.day_of_month) {
-        return false;
+  const isPastMonth = currentYear < realCurrentYear || (currentYear === realCurrentYear && currentMonth < realCurrentMonth);
+  const isFutureMonth = currentYear > realCurrentYear || (currentYear === realCurrentYear && currentMonth > realCurrentMonth);
+  const isCurrentMonth = currentYear === realCurrentYear && currentMonth === realCurrentMonth;
+
+  const pendingReminders = reminders.filter(reminder => {
+    if (!reminder.is_active) {
+      return false;
+    }
+
+    // Never show reminders for a future month
+    if (isFutureMonth) {
+      return false;
     }
 
     const isPaid = monthlyExpenses.some(expense => 
@@ -24,8 +34,23 @@ const ReminderAlerts: React.FC<ReminderAlertsProps> = ({ reminders, monthlyExpen
         expense.amount === reminder.amount
     );
 
-    return !isPaid;
+    if (isPaid) {
+      return false;
+    }
+
+    // For past months, if it's not paid, it's pending.
+    if (isPastMonth) {
+      return true;
+    }
+    
+    // For the current month, only show if the day has passed and it's unpaid.
+    if (isCurrentMonth) {
+      return reminder.day_of_month <= realCurrentDay;
+    }
+
+    return false; // Should not be reached, but as a fallback
   });
+
 
   if (pendingReminders.length === 0) {
     return null;

@@ -69,9 +69,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg">
-      <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Ajouter une Dépense</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden">
+      <div className="p-6 bg-slate-50 dark:bg-slate-800/50">
+        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Ajouter une Dépense</h2>
+      </div>
+      <form onSubmit={handleSubmit} className="p-6 space-y-5">
         <div>
           <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Qui a payé ?</label>
           <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1">
@@ -90,14 +92,14 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
           </div>
         </div>
         <div>
-          <label htmlFor="category" className="block text-sm font-medium text-slate-600 dark:text-slate-300">
+          <label htmlFor="category" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
             Catégorie
           </label>
           <select
             id="category"
             value={category}
             onChange={(e) => setCategory(e.target.value as Category)}
-            className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm rounded-md"
+            className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent sm:text-sm rounded-lg"
           >
             {Object.values(Category).map((cat) => (
               <option key={cat} value={cat}>
@@ -107,7 +109,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
           </select>
         </div>
         <div>
-          <label htmlFor="description" className="block text-sm font-medium text-slate-600 dark:text-slate-300">
+          <label htmlFor="description" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
             Description
           </label>
           <div className="relative">
@@ -118,7 +120,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
               onChange={handleDescriptionChange}
               onFocus={(e) => handleDescriptionChange(e)}
               onBlur={() => setTimeout(() => setSuggestions([]), 150)}
-              className="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
+              className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
               placeholder="Ex: McDo, Courses Leclerc..."
               autoComplete="off"
             />
@@ -138,7 +140,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
           </div>
         </div>
         <div>
-          <label htmlFor="amount" className="block text-sm font-medium text-slate-600 dark:text-slate-300">
+          <label htmlFor="amount" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
             Montant (€)
           </label>
           <input
@@ -147,16 +149,19 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
             id="amount"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
+            className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
             placeholder="0.00"
           />
         </div>
         {error && <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>}
         <button
           type="submit"
-          className="w-full bg-cyan-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800 transition-colors"
+          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-sky-500 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800 transition-all duration-200 ease-in-out transform hover:shadow-lg hover:-translate-y-0.5"
         >
-          Ajouter
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+          </svg>
+          <span>Ajouter</span>
         </button>
       </form>
     </div>
