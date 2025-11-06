@@ -38,6 +38,46 @@ export type Database = {
 };
 
 // -----------------------------------------------------------------------------
+// ACTION REQUISE : Configuration des Politiques de Sécurité (RLS)
+// -----------------------------------------------------------------------------
+// Le problème que vous rencontrez (impossible d'ajouter/modifier/supprimer)
+// est très probablement dû à l'activation de la "Row Level Security" (RLS)
+// sur vos tables `expenses` et `reminders` sans politiques correspondantes.
+//
+// Quand la RLS est activée, Supabase bloque par défaut TOUTES les modifications.
+// Vous devez explicitement autoriser chaque action (INSERT, UPDATE, DELETE).
+//
+// 1. Allez sur votre projet Supabase > Authentication > Policies.
+// 2. Assurez-vous que la RLS est activée pour les tables `expenses` et `reminders`.
+// 3. Allez dans l'Éditeur SQL (SQL Editor).
+// 4. Copiez-collez et exécutez les commandes SQL ci-dessous pour créer les
+//    politiques qui autorisent votre application à gérer les données.
+
+/*
+-- POLITIQUE POUR LA TABLE "expenses" --
+-- Supprime l'ancienne politique si elle existe pour éviter les conflits.
+DROP POLICY IF EXISTS "Allow all access for anonymous users on expenses" ON public.expenses;
+-- Crée une politique qui autorise les utilisateurs anonymes (tous les utilisateurs de l'app)
+-- à lire, ajouter, modifier et supprimer des dépenses.
+CREATE POLICY "Allow all access for anonymous users on expenses"
+ON public.expenses
+FOR ALL TO anon
+USING (true)
+WITH CHECK (true);
+
+-- POLITIQUE POUR LA TABLE "reminders" --
+-- Supprime l'ancienne politique si elle existe pour éviter les conflits.
+DROP POLICY IF EXISTS "Allow all access for anonymous users on reminders" ON public.reminders;
+-- Crée une politique qui autorise les utilisateurs anonymes (tous les utilisateurs de l'app)
+-- à lire, ajouter, modifier et supprimer des rappels.
+CREATE POLICY "Allow all access for anonymous users on reminders"
+ON public.reminders
+FOR ALL TO anon
+USING (true)
+WITH CHECK (true);
+*/
+
+// -----------------------------------------------------------------------------
 // ACTION REQUISE : Configuration des Notifications Push
 // -----------------------------------------------------------------------------
 // Pour que les notifications push fonctionnent, vous DEVEZ exécuter la commande
