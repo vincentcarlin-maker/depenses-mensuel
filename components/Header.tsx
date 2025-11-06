@@ -1,7 +1,7 @@
 import React from 'react';
 import NotificationBell from './NotificationBell';
 import SettingsIcon from './icons/SettingsIcon';
-import OfflineIndicator from './OfflineIndicator';
+import RefreshIcon from './icons/RefreshIcon';
 
 const Logo = () => (
     <svg width="36" height="36" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3">
@@ -22,10 +22,10 @@ const Logo = () => (
 interface HeaderProps {
   onSetToast: (info: { message: string; type: 'info' | 'error' }) => void;
   onOpenSettings: () => void;
-  isOnline: boolean;
+  onRefresh: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onSetToast, onOpenSettings, isOnline }) => {
+const Header: React.FC<HeaderProps> = ({ onSetToast, onOpenSettings, onRefresh }) => {
   return (
     <header className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg">
       <div className="container mx-auto px-4 py-5 md:px-8 flex items-center justify-between">
@@ -36,7 +36,14 @@ const Header: React.FC<HeaderProps> = ({ onSetToast, onOpenSettings, isOnline })
           </h1>
         </div>
         <div className="flex items-center space-x-2">
-            <OfflineIndicator isOnline={isOnline} />
+            <button
+                onClick={onRefresh}
+                className="p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+                aria-label="Rafraîchir les données"
+                title="Rafraîchir"
+            >
+                <RefreshIcon />
+            </button>
             <NotificationBell onSetToast={onSetToast} />
             <button
                 onClick={onOpenSettings}

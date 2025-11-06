@@ -92,13 +92,6 @@ const ReminderForm: React.FC<{ onAddReminder: (reminder: Omit<Reminder, 'id' | '
     );
 };
 
-const OfflineIcon: React.FC = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M8.66 16.99a8.902 8.902 0 01-1.16-1.32A4 4 0 003 15a4 4 0 004 4h9a5 5 0 001.38-9.77M19 10a5 5 0 00-9.77-1.38" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18" />
-  </svg>
-);
-
 const ReminderItem: React.FC<{
     reminder: Reminder;
     onUpdateReminder: (reminder: Reminder) => void;
@@ -131,11 +124,6 @@ const ReminderItem: React.FC<{
                         </p>
                     </div>
                     <div className="flex items-center space-x-2">
-                        {reminder.isOffline && (
-                            <div title="En attente de synchronisation">
-                                <OfflineIcon />
-                            </div>
-                        )}
                         <label htmlFor={`toggle-${reminder.id}`} className="flex items-center cursor-pointer" title={reminder.is_active ? 'Désactiver' : 'Activer'}>
                             <div className="relative">
                                 <input type="checkbox" id={`toggle-${reminder.id}`} className="sr-only peer" checked={reminder.is_active} onChange={handleToggleActive} />
