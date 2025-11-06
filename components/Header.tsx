@@ -1,6 +1,7 @@
 import React from 'react';
 import NotificationBell from './NotificationBell';
 import SettingsIcon from './icons/SettingsIcon';
+import OfflineIndicator from './OfflineIndicator';
 
 const Logo = () => (
     <svg width="36" height="36" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3">
@@ -21,9 +22,10 @@ const Logo = () => (
 interface HeaderProps {
   onSetToast: (info: { message: string; type: 'info' | 'error' }) => void;
   onOpenSettings: () => void;
+  isOnline: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ onSetToast, onOpenSettings }) => {
+const Header: React.FC<HeaderProps> = ({ onSetToast, onOpenSettings, isOnline }) => {
   return (
     <header className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg">
       <div className="container mx-auto px-4 py-5 md:px-8 flex items-center justify-between">
@@ -34,6 +36,7 @@ const Header: React.FC<HeaderProps> = ({ onSetToast, onOpenSettings }) => {
           </h1>
         </div>
         <div className="flex items-center space-x-2">
+            <OfflineIndicator isOnline={isOnline} />
             <NotificationBell onSetToast={onSetToast} />
             <button
                 onClick={onOpenSettings}

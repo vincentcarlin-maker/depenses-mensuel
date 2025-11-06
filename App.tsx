@@ -100,6 +100,9 @@ const App: React.FC = () => {
     const handleOnline = () => {
         setIsOnline(true);
         setToastInfo({ message: 'Vous êtes de retour en ligne !', type: 'info' });
+        // Tente de déclencher une synchronisation dès que la connexion revient,
+        // en complément de la gestion automatique par le navigateur.
+        registerSync();
     };
     const handleOffline = () => {
         setIsOnline(false);
@@ -158,62 +161,18 @@ const App: React.FC = () => {
   }, [fetchExpenses, fetchReminders]);
 
   useEffect(() => {
+    // CORRIGÉ : La gestion de la synchronisation est simplifiée. Au lieu de
+    // recharger manuellement les données et risquer une "race condition", on se
+    // contente d'afficher une notification. L'interface est déjà mise à jour
+    // de manière fiable par les abonnements temps réel de Supabase, qui savent
+    // comment remplacer un item "hors ligne" par sa version synchronisée.
     const handleSyncMessage = (event: MessageEvent) => {
-        if (event.data && event.data.type === 'SYNC_COMPLETE_DATA') {
-            const { payload } = event.data;
-            setToastInfo({ message: 'Données synchronisées avec succès !', type: 'info' });
-
-            if (payload.added.expenses.length > 0) {
-                setExpenses(prev => {
-                    let newExpensesState = [...prev];
-                    for (const syncedExpense of payload.added.expenses) {
-                        if (newExpensesState.some(e => e.id === syncedExpense.id)) {
-                            continue;
-                        }
-                        const offlineIndex = newExpensesState.findIndex(e =>
-                            e.isOffline &&
-                            e.description === syncedExpense.description &&
-                            e.amount === syncedExpense.amount &&
-                            e.user === syncedExpense.user
-                        );
-                        if (offlineIndex !== -1) {
-                            newExpensesState[offlineIndex] = syncedExpense;
-                        } else {
-                            newExpensesState.unshift(syncedExpense);
-                        }
-                    }
-                    return newExpensesState;
-                });
-            }
-            
-            if (payload.updatedOrDeleted.expenses) {
-                fetchExpenses();
-            }
-
-            if (payload.added.reminders.length > 0) {
-                setReminders(prev => {
-                    let newRemindersState = [...prev];
-                    for (const syncedReminder of payload.added.reminders) {
-                        if (newRemindersState.some(r => r.id === syncedReminder.id)) {
-                            continue;
-                        }
-                        const offlineIndex = newRemindersState.findIndex(r =>
-                            r.isOffline && r.description === syncedReminder.description && r.amount === syncedReminder.amount
-                        );
-                        if (offlineIndex !== -1) {
-                            newRemindersState[offlineIndex] = syncedReminder;
-                        } else {
-                            newRemindersState.unshift(syncedReminder);
-                        }
-                    }
-                    return newRemindersState.sort((a,b) => a.day_of_month - b.day_of_month);
-                });
-            }
-
-            if (payload.updatedOrDeleted.reminders) {
-                fetchReminders();
-            }
-        }
+      if (event.data && event.data.type === 'SYNC_COMPLETE') {
+        setToastInfo({ message: '✅ Dépenses synchronisées avec succès', type: 'info' });
+        // Il n'est plus nécessaire d'appeler fetchExpenses() ou fetchReminders() ici.
+        // Les listeners temps réel ci-dessous s'occupent déjà de la mise à jour
+        // de l'état de manière plus efficace et sans risque de "race condition".
+      }
     };
     navigator.serviceWorker.addEventListener('message', handleSyncMessage);
 
@@ -228,6 +187,8 @@ const App: React.FC = () => {
             if (prevExpenses.some(e => e.id === newExpense.id)) {
               return prevExpenses;
             }
+            // La logique de remplacement d'un item hors ligne est conservée pour les mises à jour en temps réel
+            // qui pourraient arriver avant le message de synchronisation.
             const offlineIndex = prevExpenses.findIndex(e =>
               e.isOffline &&
               e.description === newExpense.description &&
@@ -496,7 +457,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
-      <Header onSetToast={setToastInfo} onOpenSettings={() => setIsSettingsOpen(true)} />
+      <Header onSetToast={setToastInfo} onOpenSettings={() => setIsSettingsOpen(true)} isOnline={isOnline} />
       <PullToRefresh onRefresh={handleRefresh}>
         <main className="container mx-auto p-4 md:p-8">
           <div className="mb-8 border-b border-slate-200">

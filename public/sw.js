@@ -61,54 +61,50 @@ async function syncData() {
   console.log('Syncing pending mutations...', pendingMutations);
   
   const results = {
-    added: { expenses: [], reminders: [] },
-    updatedOrDeleted: { expenses: false, reminders: false },
+    expensesModified: false,
+    remindersModified: false,
   };
-
 
   for (const mutation of pendingMutations) {
     try {
-      let error;
-      const payload = mutation.payload;
-      const table = mutation.table;
+      let { error } = {}; 
+      const { payload, table, type } = mutation;
 
       if (!table) {
           console.error('Mutation is missing table property:', mutation);
-          continue; // Skip this mutation
+          continue;
       }
 
-      if (mutation.type === 'add') {
-        const { data } = await supabase.from(table).insert(payload).select().single();
-        if (data) {
-            if (table === 'expenses') results.added.expenses.push(data);
-            if (table === 'reminders') results.added.reminders.push(data);
-        }
-      } else if (mutation.type === 'update') {
+      if (type === 'add') {
+        ({ error } = await supabase.from(table).insert(payload));
+      } else if (type === 'update') {
         const { id, ...updateData } = payload;
         ({ error } = await supabase.from(table).update(updateData).eq('id', id));
-        if (table === 'expenses') results.updatedOrDeleted.expenses = true;
-        if (table === 'reminders') results.updatedOrDeleted.reminders = true;
-      } else if (mutation.type === 'delete') {
+      } else if (type === 'delete') {
         ({ error } = await supabase.from(table).delete().eq('id', payload.id));
-        if (table === 'expenses') results.updatedOrDeleted.expenses = true;
-        if (table === 'reminders') results.updatedOrDeleted.reminders = true;
       }
 
       if (error) throw error;
       
-      // Si l'opération réussit, on la supprime de la file d'attente
+      if (table === 'expenses') results.expensesModified = true;
+      if (table === 'reminders') results.remindersModified = true;
+
       await deletePendingMutation(mutation.id);
     } catch (err) {
-      console.error('Failed to sync mutation:', mutation, err);
-      // On arrête à la première erreur pour préserver l'ordre et réessayer plus tard
-      return; 
+      console.error('Failed to sync mutation, stopping for now:', mutation, err);
+      // On arrête la boucle à la première erreur pour préserver l'ordre.
+      // La mutation échouée et les suivantes seront réessayées plus tard.
+      // Le message de synchronisation sera tout de même envoyé pour les opérations
+      // qui ont réussi avant l'échec.
+      break; 
     }
   }
   
-  console.log('Sync complete, notifying clients.');
-  // Notifie les clients que la synchronisation est terminée
-  const clients = await self.clients.matchAll({ includeUncontrolled: true });
-  clients.forEach(client => client.postMessage({ type: 'SYNC_COMPLETE_DATA', payload: results }));
+  if (results.expensesModified || results.remindersModified) {
+    console.log('Partial or full sync complete, notifying clients.');
+    const clients = await self.clients.matchAll({ includeUncontrolled: true });
+    clients.forEach(client => client.postMessage({ type: 'SYNC_COMPLETE', payload: results }));
+  }
 }
 
 
