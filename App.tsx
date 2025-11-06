@@ -180,29 +180,29 @@ const App: React.FC = () => {
         (payload) => {
           const newExpense = payload.new;
           setExpenses(prevExpenses => {
-            // CORRIGÉ: La recherche de l'item hors ligne se fait maintenant par ID,
-            // ce qui est 100% fiable car l'ID est généré côté client.
-            const offlineIndex = prevExpenses.findIndex(e => e.id === newExpense.id);
+            const existingIndex = prevExpenses.findIndex(e => e.id === newExpense.id);
 
-            // Si on trouve un item avec le même ID et qu'il est marqué "offline", on le remplace.
-            if (offlineIndex !== -1 && prevExpenses[offlineIndex].isOffline) {
+            // Cas 1 : La dépense existe déjà (ajout optimiste ou synchro hors ligne).
+            // On la remplace par la version finale de la BDD pour garantir la cohérence.
+            if (existingIndex !== -1) {
               const updatedExpenses = [...prevExpenses];
-              updatedExpenses[offlineIndex] = newExpense; // Remplace l'item temporaire par celui de la BDD
-              setToastInfo({ message: `Dépense synchronisée : ${newExpense.description}`, type: 'info' });
+              const wasOffline = updatedExpenses[existingIndex].isOffline;
+              updatedExpenses[existingIndex] = newExpense; 
+              
+              if (wasOffline) {
+                setToastInfo({ message: `Dépense synchronisée : ${newExpense.description}`, type: 'info' });
+              }
+              
               return updatedExpenses;
             } 
             
-            // Si on ne trouve pas d'item avec cet ID, c'est une nouvelle dépense (ex: autre utilisateur)
-            if (offlineIndex === -1) {
-               setToastInfo({
-                message: `${newExpense.user} a ajouté : ${newExpense.description} (${newExpense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`,
-                type: 'info'
-              });
-              return [newExpense, ...prevExpenses];
-            }
-
-            // Si on trouve l'item mais qu'il n'est PAS offline, c'est un doublon de message temps-réel, on ne fait rien.
-            return prevExpenses;
+            // Cas 2 : La dépense est nouvelle (ajoutée depuis un autre appareil).
+            // On l'ajoute à la liste.
+            setToastInfo({
+              message: `${newExpense.user} a ajouté : ${newExpense.description} (${newExpense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`,
+              type: 'info'
+            });
+            return [newExpense, ...prevExpenses];
           });
         }
       )
@@ -273,7 +273,7 @@ const App: React.FC = () => {
   }, [fetchReminders, fetchExpenses]);
 
   const addExpense = async (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => {
-    // CORRIGÉ: On génère l'ID côté client pour garantir sa stabilité
+    // On génère l'ID côté client pour garantir sa stabilité
     // entre l'affichage hors ligne et la synchronisation.
     const newId = crypto.randomUUID();
     const expenseData = {
@@ -295,6 +295,13 @@ const App: React.FC = () => {
       return;
     }
 
+    // Mise à jour optimiste de l'UI pour une réactivité instantanée
+    const optimisticExpense: Expense = {
+        ...expenseData,
+        created_at: new Date().toISOString(),
+    };
+    setExpenses(prev => [optimisticExpense, ...prev]);
+
     const { error } = await supabase
       .from('expenses')
       .insert(expenseData) // On envoie l'objet avec notre ID pré-généré
@@ -304,6 +311,8 @@ const App: React.FC = () => {
     if (error) {
       console.error('Error adding expense:', error.message || error);
       setToastInfo({ message: "Erreur lors de l'ajout de la dépense.", type: 'error' });
+      // En cas d'erreur, on annule la mise à jour optimiste (rollback)
+      setExpenses(prev => prev.filter(e => e.id !== newId));
     }
   };
 
@@ -346,7 +355,10 @@ const App: React.FC = () => {
 
   const addReminder = async (reminder: Omit<Reminder, 'id' | 'created_at'>) => {
     const newId = crypto.randomUUID();
-    const reminderData = { ...reminder, id: newId };
+    const reminderData = {
+        ...reminder,
+        id: newId,
+    };
 
     if (!isOnline) {
         const tempReminderForUI: Reminder = {
@@ -361,328 +373,266 @@ const App: React.FC = () => {
         return;
     }
 
-    const { error } = await supabase.from('reminders').insert(reminderData);
+    const optimisticReminder: Reminder = {
+        ...reminderData,
+        created_at: new Date().toISOString(),
+    };
+    setReminders(prev => [...prev, optimisticReminder].sort((a,b) => a.day_of_month - b.day_of_month));
+
+    const { error } = await supabase
+        .from('reminders')
+        .insert(reminderData)
+        .select()
+        .single();
+    
     if (error) {
         console.error('Error adding reminder:', error.message || error);
         setToastInfo({ message: "Erreur lors de l'ajout du rappel.", type: 'error' });
-    } else {
-        setToastInfo({ message: "Rappel ajouté avec succès.", type: 'info' });
+        setReminders(prev => prev.filter(r => r.id !== newId));
     }
   };
 
   const updateReminder = async (updatedReminder: Reminder) => {
-      const { isOffline, ...reminderToUpdate } = updatedReminder;
-      if (!isOnline) {
-        setReminders(prev => prev.map(r => r.id === reminderToUpdate.id ? { ...reminderToUpdate, isOffline: true } : r));
+    const { isOffline, ...reminderToUpdate } = updatedReminder;
+
+    if (!isOnline) {
+        setReminders(prev => prev.map(r => r.id === reminderToUpdate.id ? { ...reminderToUpdate, isOffline: true } : r).sort((a,b) => a.day_of_month - b.day_of_month));
         await queueMutation({ type: 'update', table: 'reminders', payload: reminderToUpdate });
         await registerSync();
-        setToastInfo({ message: "Mode hors ligne: Modification du rappel mise en attente.", type: 'info' });
+        setToastInfo({ message: "Mode hors ligne: Modification de rappel mise en attente.", type: 'info' });
         return;
-      }
+    }
 
-      const { id, created_at, ...updatePayload } = reminderToUpdate;
-      const { error } = await supabase.from('reminders').update(updatePayload).eq('id', id);
-      if (error) {
-          console.error('Error updating reminder:', error.message || error);
-          setToastInfo({ message: "Erreur lors de la mise à jour du rappel.", type: 'error' });
-      }
+    const { id, created_at, ...updatePayload } = reminderToUpdate;
+    const { error } = await supabase.from('reminders').update(updatePayload).eq('id', id);
+
+    if (error) {
+        console.error('Error updating reminder:', error.message || error);
+        setToastInfo({ message: "Erreur lors de la mise à jour du rappel.", type: 'error' });
+    }
   };
 
   const deleteReminder = async (id: string) => {
-      if (!isOnline) {
+    if (!isOnline) {
         setReminders(prev => prev.filter(r => r.id !== id));
         await queueMutation({ type: 'delete', table: 'reminders', payload: { id } });
         await registerSync();
-        setToastInfo({ message: "Mode hors ligne: Suppression du rappel mise en attente.", type: 'info' });
+        setToastInfo({ message: "Mode hors ligne: Suppression de rappel mise en attente.", type: 'info' });
         return;
-      }
-
-      const { error } = await supabase.from('reminders').delete().eq('id', id);
-      if (error) {
-          console.error('Error deleting reminder:', error.message || error);
-          setToastInfo({ message: "Erreur lors de la suppression du rappel.", type: 'error' });
-      }
-  };
-
-  const handleTabChange = (tab: 'dashboard' | 'analysis' | 'yearly' | 'search') => {
-    startTransition(() => {
-      setActiveTab(tab);
-    });
-  };
-
-  const filteredExpenses = useMemo(() => {
-    return expenses.filter(expense => {
-      const expenseDate = new Date(expense.date);
-      const matchesMonth = expenseDate.getUTCMonth() === currentMonth && expenseDate.getUTCFullYear() === currentYear;
-      if (!matchesMonth) return false;
-      
-      if (!searchTerm) return true;
-
-      return expense.description.toLowerCase().includes(searchTerm.toLowerCase());
-    });
-  }, [expenses, currentMonth, currentYear, searchTerm]);
-
-  const globalFilteredExpenses = useMemo(() => {
-    if (globalSearchTerm.trim().length < 2) {
-        return [];
     }
-    return expenses.filter(expense =>
-        expense.description.toLowerCase().includes(globalSearchTerm.toLowerCase())
-    );
-  }, [expenses, globalSearchTerm]);
-
-  const yearlyExpenses = useMemo(() => {
-    return expenses.filter(expense => new Date(expense.date).getFullYear() === currentYear);
-  }, [expenses, currentYear]);
-
-  const previousYearlyExpenses = useMemo(() => {
-    return expenses.filter(expense => new Date(expense.date).getFullYear() === currentYear - 1);
-  }, [expenses, currentYear]);
-
-  const sophieTotal = useMemo(() => {
-    return filteredExpenses
-      .filter(e => e.user === User.Sophie)
-      .reduce((total, expense) => total + expense.amount, 0);
-  }, [filteredExpenses]);
-
-  const vincentTotal = useMemo(() => {
-    return filteredExpenses
-      .filter(e => e.user === User.Vincent)
-      .reduce((total, expense) => total + expense.amount, 0);
-  }, [filteredExpenses]);
-
-  const handleMonthChange = (direction: 'prev' | 'next') => {
-      const date = new Date(Date.UTC(currentYear, currentMonth, 1));
-      if (direction === 'next') {
-          date.setUTCMonth(date.getUTCMonth() + 1);
-      } else {
-          date.setUTCMonth(date.getUTCMonth() - 1);
-      }
-      setCurrentMonth(date.getUTCMonth());
-      setCurrentYear(date.getUTCFullYear());
-  };
-
-  const handleYearChange = (direction: 'prev' | 'next') => {
-    setCurrentYear(prevYear => direction === 'next' ? prevYear + 1 : prevYear - 1);
+    const { error } = await supabase.from('reminders').delete().eq('id', id);
+    if (error) {
+        console.error('Error deleting reminder:', error.message || error);
+        setToastInfo({ message: "Erreur lors de la suppression du rappel.", type: 'error' });
+    }
   };
   
-  const handleRefresh = useCallback(async () => {
-    await Promise.all([fetchExpenses(), fetchReminders()]);
-    setToastInfo({ message: 'Données actualisées !', type: 'info' });
-  }, [fetchExpenses, fetchReminders]);
+  const { filteredExpenses, sophieTotalMonth, vincentTotalMonth } = useMemo(() => {
+    const filtered = expenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate.getUTCFullYear() === currentYear && expenseDate.getUTCMonth() === currentMonth;
+    });
 
-  const monthName = new Date(Date.UTC(currentYear, currentMonth)).toLocaleString('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    const sophieTotal = filtered
+      .filter(e => e.user === User.Sophie)
+      .reduce((sum, e) => sum + e.amount, 0);
+      
+    const vincentTotal = filtered
+      .filter(e => e.user === User.Vincent)
+      .reduce((sum, e) => sum + e.amount, 0);
+
+    return {
+      filteredExpenses: filtered,
+      sophieTotalMonth: sophieTotal,
+      vincentTotalMonth: vincentTotal
+    };
+  }, [expenses, currentMonth, currentYear]);
+
+  const yearlyFilteredExpenses = useMemo(() => {
+    return expenses.filter(expense => new Date(expense.date).getUTCFullYear() === currentYear);
+  }, [expenses, currentYear]);
+
+  const previousYearFilteredExpenses = useMemo(() => {
+    return expenses.filter(expense => new Date(expense.date).getUTCFullYear() === currentYear - 1);
+  }, [expenses, currentYear]);
+  
+  const searchedExpenses = useMemo(() => {
+    if (!searchTerm) return filteredExpenses;
+    return filteredExpenses.filter(e =>
+      e.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [filteredExpenses, searchTerm]);
+
+  const globalSearchedExpenses = useMemo(() => {
+    if (!globalSearchTerm) return [];
+    return expenses.filter(e =>
+      e.description.toLowerCase().includes(globalSearchTerm.toLowerCase()) ||
+      e.amount.toString().includes(globalSearchTerm) ||
+      e.category.toLowerCase().includes(globalSearchTerm.toLowerCase()) ||
+      e.user.toLowerCase().includes(globalSearchTerm.toLowerCase())
+    ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [expenses, globalSearchTerm]);
+
+  const handleMonthChange = (direction: 'next' | 'prev') => {
+    startTransition(() => {
+      if (direction === 'next') {
+        if (currentMonth === 11) {
+          setCurrentMonth(0);
+          setCurrentYear(prev => prev + 1);
+        } else {
+          setCurrentMonth(prev => prev + 1);
+        }
+      } else {
+        if (currentMonth === 0) {
+          setCurrentMonth(11);
+          setCurrentYear(prev => prev - 1);
+        } else {
+          setCurrentMonth(prev => prev - 1);
+        }
+      }
+    });
+  };
+
+  const currentMonthName = useMemo(() => {
+    return new Date(Date.UTC(currentYear, currentMonth)).toLocaleString('fr-FR', {
+      month: 'long',
+      year: 'numeric'
+    });
+  }, [currentMonth, currentYear]);
+
+  const handleRefresh = async () => {
+    setToastInfo({ message: 'Synchronisation en cours...', type: 'info' });
+    await Promise.all([fetchExpenses(), fetchReminders()]);
+    setToastInfo({ message: 'Données mises à jour !', type: 'info' });
+  };
+  
+  if (isLoading) {
+    return (
+        <div className="flex justify-center items-center min-h-screen bg-slate-100">
+            <div className="text-center">
+                <p className="text-xl font-semibold text-slate-600">Chargement des données...</p>
+            </div>
+        </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
-      <Header onSetToast={setToastInfo} onOpenSettings={() => setIsSettingsOpen(true)} isOnline={isOnline} />
-      <PullToRefresh onRefresh={handleRefresh}>
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="bg-slate-100 min-h-screen font-sans">
+        <Header 
+          onSetToast={setToastInfo} 
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          isOnline={isOnline}
+        />
+
         <main className="container mx-auto p-4 md:p-8">
-          <div className="mb-8 border-b border-slate-200">
-            <nav className="-mb-px flex space-x-4 sm:space-x-6 overflow-x-auto no-scrollbar" aria-label="Tabs">
-              <button
-                onClick={() => handleTabChange('dashboard')}
-                className={`${
-                  activeTab === 'dashboard'
-                    ? 'border-cyan-500 text-cyan-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                } whitespace-nowrap py-4 px-3 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
-                aria-current={activeTab === 'dashboard' ? 'page' : undefined}
-              >
-                Tableau de bord
-              </button>
-              <button
-                onClick={() => handleTabChange('analysis')}
-                className={`${
-                  activeTab === 'analysis'
-                    ? 'border-cyan-500 text-cyan-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                } whitespace-nowrap py-4 px-3 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
-                aria-current={activeTab === 'analysis' ? 'page' : undefined}
-              >
-                Analyse
-              </button>
-              <button
-                onClick={() => handleTabChange('yearly')}
-                className={`${
-                  activeTab === 'yearly'
-                    ? 'border-cyan-500 text-cyan-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                } whitespace-nowrap py-4 px-3 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
-                aria-current={activeTab === 'yearly' ? 'page' : undefined}
-              >
-                Annuel
-              </button>
-              <button
-                onClick={() => handleTabChange('search')}
-                className={`${
-                  activeTab === 'search'
-                    ? 'border-cyan-500 text-cyan-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                } whitespace-nowrap py-4 px-3 border-b-2 font-medium text-lg transition-colors focus:outline-none`}
-                aria-current={activeTab === 'search' ? 'page' : undefined}
-              >
-                Recherche
-              </button>
-            </nav>
-          </div>
-
-          {activeTab === 'dashboard' && (
-            <div key="dashboard" className="animate-fade-in-up">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-1 space-y-8">
-                  <ReminderAlerts
-                    reminders={reminders}
-                    monthlyExpenses={filteredExpenses}
-                    onAddExpense={addExpense}
-                    currentYear={currentYear}
-                    currentMonth={currentMonth}
-                  />
-                  <ExpenseForm onAddExpense={addExpense} expenses={expenses} />
-                  <ExpenseSummary 
-                    allExpenses={expenses} 
-                    currentMonth={currentMonth} 
-                    currentYear={currentYear}
-                    sophieTotalMonth={sophieTotal}
-                    vincentTotalMonth={vincentTotal}
-                  />
-                </div>
-
-                <div className="lg:col-span-2 space-y-8">
-                  <div className="bg-white p-6 rounded-2xl shadow-lg">
-                      <div className="flex justify-between items-center mb-4">
-                          <button onClick={() => handleMonthChange('prev')} className="p-2 rounded-full hover:bg-slate-200 transition-colors" aria-label="Mois précédent">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                          </button>
-                          <h2 className="text-xl font-bold text-center capitalize">{monthName}</h2>
-                          <button onClick={() => handleMonthChange('next')} className="p-2 rounded-full hover:bg-slate-200 transition-colors" aria-label="Mois suivant">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                          </button>
-                      </div>
-                      <div className="relative mb-4">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                            <svg className="w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                            </svg>
-                        </span>
-                        <input
-                            type="search"
-                            placeholder="Rechercher une dépense..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors"
-                        />
-                      </div>
-                      {isLoading ? (
-                        <div className="text-center py-10">
-                          <p className="text-slate-500">Chargement des dépenses...</p>
-                        </div>
-                      ) : (
-                        <ExpenseList expenses={filteredExpenses} onEditExpense={setExpenseToEdit} />
-                      )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'analysis' && (
-            <div key="analysis" className="animate-fade-in-up">
-              <div className="max-w-4xl mx-auto">
-                <CategoryTotals expenses={filteredExpenses} />
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'yearly' && (
-            <div key="yearly" className="animate-fade-in-up">
-              <div className="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
-                 <div className="flex justify-between items-center mb-4">
-                    <button onClick={() => handleYearChange('prev')} className="p-2 rounded-full hover:bg-slate-200 transition-colors" aria-label="Année précédente">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                    </button>
-                    <h2 className="text-xl font-bold text-center">{currentYear}</h2>
-                    <button onClick={() => handleYearChange('next')} className="p-2 rounded-full hover:bg-slate-200 transition-colors" aria-label="Année suivante">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                    </button>
-                </div>
-                <YearlySummary expenses={yearlyExpenses} previousYearExpenses={previousYearlyExpenses} year={currentYear} />
-              </div>
+          {activeTab !== 'search' && (
+            <div className="flex justify-between items-center mb-6">
+              <button onClick={() => handleMonthChange('prev')} className="px-4 py-2 bg-white rounded-lg shadow hover:bg-slate-50 transition-colors">&lt; Préc.</button>
+              <h2 className="text-xl md:text-2xl font-bold text-slate-700 text-center capitalize">{currentMonthName}</h2>
+              <button onClick={() => handleMonthChange('next')} className="px-4 py-2 bg-white rounded-lg shadow hover:bg-slate-50 transition-colors">Suiv. &gt;</button>
             </div>
           )}
           
-          {activeTab === 'search' && (
-            <div key="search" className="animate-fade-in-up">
-              <div className="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
-                <h2 className="text-xl font-bold mb-4">Rechercher dans toutes les dépenses</h2>
-                <div className="relative mb-6">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                    <svg className="w-5 h-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                  </span>
+          <ReminderAlerts 
+            reminders={reminders}
+            monthlyExpenses={filteredExpenses}
+            onAddExpense={addExpense}
+            currentMonth={currentMonth}
+            currentYear={currentYear}
+          />
+
+          <div className="flex justify-center mb-6 bg-slate-200 p-1 rounded-lg">
+            {(['dashboard', 'analysis', 'yearly', 'search'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`w-full md:w-auto md:px-6 py-2 text-sm font-semibold rounded-md transition-colors ${activeTab === tab ? 'bg-white text-cyan-600 shadow' : 'text-slate-600 hover:bg-slate-300'}`}
+              >
+                {tab === 'dashboard' ? 'Tableau de bord' : tab === 'analysis' ? 'Analyse' : tab === 'yearly' ? 'Annuel' : 'Recherche'}
+              </button>
+            ))}
+          </div>
+          
+          {isPending && <div className="text-center p-4">Chargement...</div>}
+
+          {!isPending && (
+            <div className="animate-fade-in">
+              {activeTab === 'dashboard' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="space-y-8">
+                    <ExpenseForm onAddExpense={addExpense} expenses={expenses} />
+                    <ExpenseSummary 
+                        allExpenses={expenses}
+                        currentYear={currentYear}
+                        currentMonth={currentMonth}
+                        sophieTotalMonth={sophieTotalMonth}
+                        vincentTotalMonth={vincentTotalMonth}
+                    />
+                  </div>
+                  <div className="space-y-8">
+                      <div className="bg-white p-6 rounded-2xl shadow-lg">
+                        <h2 className="text-xl font-bold mb-4">Dépenses du mois</h2>
+                         <input
+                            type="text"
+                            placeholder="Filtrer les dépenses du mois..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full px-3 py-2 mb-4 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
+                          />
+                        <ExpenseList expenses={searchedExpenses} onEditExpense={setExpenseToEdit} />
+                      </div>
+                  </div>
+                </div>
+              )}
+              {activeTab === 'analysis' && <CategoryTotals expenses={filteredExpenses} />}
+              {activeTab === 'yearly' && <YearlySummary expenses={yearlyFilteredExpenses} previousYearExpenses={previousYearFilteredExpenses} year={currentYear} />}
+              {activeTab === 'search' && (
+                 <div className="bg-white p-6 rounded-2xl shadow-lg">
+                  <h2 className="text-xl font-bold mb-4">Recherche globale</h2>
                   <input
-                    type="search"
-                    placeholder="Rechercher par description (ex: McDo, Loyer...)"
+                    type="text"
+                    placeholder="Rechercher dans toutes les dépenses..."
                     value={globalSearchTerm}
                     onChange={(e) => setGlobalSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors"
-                    autoFocus
+                    className="w-full px-3 py-2 mb-4 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
                   />
-                </div>
-                
-                {globalSearchTerm.trim().length < 2 && (
-                    <div className="text-center py-10">
-                        <p className="text-slate-500">Commencez à taper pour rechercher dans toutes vos dépenses.</p>
-                    </div>
-                )}
-                
-                {globalSearchTerm.trim().length >= 2 && globalFilteredExpenses.length === 0 && (
-                    <div className="text-center py-10">
-                        <p className="text-slate-500">Aucune dépense trouvée pour "{globalSearchTerm}".</p>
-                    </div>
-                )}
-                
-                {globalFilteredExpenses.length > 0 && (
-                    <div className="max-h-[60vh] overflow-y-auto pr-2">
-                        <GroupedExpenseList 
-                            expenses={globalFilteredExpenses}
-                            onEditExpense={setExpenseToEdit}
-                        />
-                    </div>
-                )}
-              </div>
+                  {globalSearchTerm && (
+                    <GroupedExpenseList expenses={globalSearchedExpenses} onEditExpense={setExpenseToEdit} />
+                  )}
+                 </div>
+              )}
             </div>
           )}
         </main>
-      </PullToRefresh>
-
-      {expenseToEdit && (
-        <EditExpenseModal 
-          expense={expenseToEdit}
-          onUpdateExpense={updateExpense}
-          onDeleteExpense={deleteExpense}
-          onClose={() => setExpenseToEdit(null)}
+        
+        {expenseToEdit && (
+          <EditExpenseModal
+            expense={expenseToEdit}
+            onUpdateExpense={updateExpense}
+            onDeleteExpense={deleteExpense}
+            onClose={() => setExpenseToEdit(null)}
+          />
+        )}
+        
+        {toastInfo && (
+          <Toast
+            message={toastInfo.message}
+            type={toastInfo.type}
+            onClose={() => setToastInfo(null)}
+          />
+        )}
+        
+        <SettingsModal 
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            reminders={reminders}
+            onAddReminder={addReminder}
+            onUpdateReminder={updateReminder}
+            onDeleteReminder={deleteReminder}
         />
-      )}
-      {toastInfo && (
-        <Toast
-          message={toastInfo.message}
-          type={toastInfo.type}
-          onClose={() => setToastInfo(null)}
-        />
-      )}
-       <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        reminders={reminders}
-        onAddReminder={addReminder}
-        onUpdateReminder={updateReminder}
-        onDeleteReminder={deleteReminder}
-      />
-    </div>
+      </div>
+    </PullToRefresh>
   );
 };
 
