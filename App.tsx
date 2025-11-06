@@ -14,6 +14,73 @@ import GroupedExpenseList from './components/GroupedExpenseList';
 import ReminderAlerts from './components/ReminderAlerts';
 import SettingsModal from './components/SettingsModal';
 
+// FIX: Define types for the Background Sync API (`SyncManager`) to resolve
+// the TypeScript error on `sw.sync.register`. This provides type safety for
+// this browser feature.
+interface SyncManager {
+    register(tag: string): Promise<void>;
+    getTags(): Promise<string[]>;
+}
+
+interface ServiceWorkerRegistrationWithSync extends ServiceWorkerRegistration {
+    sync: SyncManager;
+}
+
+// --- Helpers pour le mode hors ligne (IndexedDB) ---
+const DB_NAME = 'suivi-depenses-db';
+const STORE_NAME = 'sync-queue';
+const DB_VERSION = 1;
+
+interface QueuedMutation {
+    id?: number;
+    type: 'add' | 'update' | 'delete';
+    table: 'expenses' | 'reminders';
+    payload: any;
+    timestamp: number;
+}
+
+function openDB(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = event => {
+            const db = (event.target as IDBOpenDBRequest).result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+            }
+        };
+    });
+}
+
+async function queueMutation(mutation: Omit<QueuedMutation, 'id' | 'timestamp'>): Promise<void> {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    return new Promise((resolve, reject) => {
+        const req = store.add({ ...mutation, timestamp: Date.now() });
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function registerSync(): Promise<void> {
+    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+        try {
+            const sw = await navigator.serviceWorker.ready;
+            // FIX: Cast the ServiceWorkerRegistration to our augmented type
+            // to access the 'sync' property for Background Sync, resolving the
+            // TypeScript error.
+            await (sw as ServiceWorkerRegistrationWithSync).sync.register('sync-expenses');
+            console.log('Sync registered');
+        } catch (error) {
+            console.error('Failed to register sync:', error);
+        }
+    }
+}
+// --- Fin des helpers ---
+
+
 const App: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -27,6 +94,26 @@ const App: React.FC = () => {
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => {
+        setIsOnline(true);
+        setToastInfo({ message: 'Vous êtes de retour en ligne !', type: 'info' });
+    };
+    const handleOffline = () => {
+        setIsOnline(false);
+        setToastInfo({ message: 'Vous êtes maintenant hors ligne. Les modifications seront synchronisées plus tard.', type: 'info' });
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const fetchExpenses = useCallback(async () => {
     const { data, error } = await supabase
@@ -36,11 +123,13 @@ const App: React.FC = () => {
 
     if (error) {
       console.error('Error fetching expenses:', error.message || error);
-      setToastInfo({ message: "Erreur lors de la récupération des dépenses.", type: 'error' });
+      if (isOnline) {
+        setToastInfo({ message: "Erreur lors de la récupération des dépenses.", type: 'error' });
+      }
     } else if (data) {
       setExpenses(data);
     }
-  }, []);
+  }, [isOnline]);
 
   const fetchReminders = useCallback(async () => {
     const { data, error } = await supabase
@@ -50,11 +139,13 @@ const App: React.FC = () => {
 
     if (error) {
         console.error('Error fetching reminders:', error.message || error);
-        setToastInfo({ message: "Erreur lors de la récupération des rappels.", type: 'error' });
+         if (isOnline) {
+            setToastInfo({ message: "Erreur lors de la récupération des rappels.", type: 'error' });
+         }
     } else if (data) {
         setReminders(data);
     }
-  }, []);
+  }, [isOnline]);
 
 
   useEffect(() => {
@@ -67,6 +158,17 @@ const App: React.FC = () => {
   }, [fetchExpenses, fetchReminders]);
 
   useEffect(() => {
+    // --- Écouteur pour la synchronisation ---
+    const handleSyncMessage = (event: MessageEvent) => {
+        if (event.data && event.data.type === 'SYNC_COMPLETE') {
+            console.log('Sync complete message received from SW');
+            setToastInfo({ message: 'Données synchronisées avec succès !', type: 'info' });
+            fetchExpenses();
+            fetchReminders();
+        }
+    };
+    navigator.serviceWorker.addEventListener('message', handleSyncMessage);
+
     const expensesChannel = supabase
       .channel('expenses-realtime')
       .on<Expense>(
@@ -124,7 +226,7 @@ const App: React.FC = () => {
       .on<Reminder>(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'reminders' },
-        (payload) => {
+        () => {
           fetchReminders();
         }
       )
@@ -133,61 +235,86 @@ const App: React.FC = () => {
     return () => {
       supabase.removeChannel(expensesChannel);
       supabase.removeChannel(remindersChannel);
+      navigator.serviceWorker.removeEventListener('message', handleSyncMessage);
     };
-  }, [fetchReminders]);
+  }, [fetchReminders, fetchExpenses]);
 
   const addExpense = async (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => {
-    const newExpense: Omit<Expense, 'id' | 'created_at'> = {
-      ...expense,
-      date: new Date().toISOString(),
-    };
+    if (!isOnline) {
+      const expenseToQueue = { ...expense, date: new Date().toISOString() };
+      const tempExpenseForUI: Expense = {
+        ...expenseToQueue,
+        id: crypto.randomUUID(),
+        created_at: new Date().toISOString(),
+        isOffline: true,
+      };
+      setExpenses(prev => [tempExpenseForUI, ...prev]);
+      await queueMutation({ type: 'add', table: 'expenses', payload: expenseToQueue });
+      await registerSync();
+      setToastInfo({ message: "Mode hors ligne: Dépense mise en attente.", type: 'info' });
+      return;
+    }
 
-    const { data, error } = await supabase
-      .from('expenses')
-      .insert(newExpense)
-      .select()
-      .single();
-
+    const { error } = await supabase.from('expenses').insert({ ...expense, date: new Date().toISOString() });
     if (error) {
       console.error('Error adding expense:', error.message || error);
-    } else if (data) {
-      setExpenses(prevExpenses => [data, ...prevExpenses]);
+      setToastInfo({ message: "Erreur lors de l'ajout de la dépense.", type: 'error' });
     }
   };
 
   const deleteExpense = async (id: string) => {
+    if (!isOnline) {
+        setExpenses(prev => prev.filter(e => e.id !== id));
+        await queueMutation({ type: 'delete', table: 'expenses', payload: { id } });
+        await registerSync();
+        setToastInfo({ message: "Mode hors ligne: Suppression mise en attente.", type: 'info' });
+        return;
+    }
     const { error } = await supabase.from('expenses').delete().eq('id', id);
-
     if (error) {
       console.error('Error deleting expense:', error.message || error);
-    } else {
-      setExpenses(prevExpenses => prevExpenses.filter(expense => expense.id !== id));
+      setToastInfo({ message: "Erreur lors de la suppression.", type: 'error' });
     }
   };
   
   const updateExpense = async (updatedExpense: Expense) => {
-    const { id, created_at, ...updatePayload } = updatedExpense;
+    const { isOffline, ...expenseToUpdate } = updatedExpense;
+
+    if (!isOnline) {
+        setExpenses(prev => prev.map(e => e.id === expenseToUpdate.id ? { ...expenseToUpdate, isOffline: true } : e));
+        await queueMutation({ type: 'update', table: 'expenses', payload: expenseToUpdate });
+        await registerSync();
+        setToastInfo({ message: "Mode hors ligne: Modification mise en attente.", type: 'info' });
+        setExpenseToEdit(null);
+        return;
+    }
     
-    const { data, error } = await supabase
-      .from('expenses')
-      .update(updatePayload)
-      .eq('id', id)
-      .select()
-      .single();
+    const { id, created_at, ...updatePayload } = expenseToUpdate;
+    const { error } = await supabase.from('expenses').update(updatePayload).eq('id', id);
       
     if (error) {
       console.error('Error updating expense:', error.message || error);
-    } else if (data) {
-      setExpenses(prevExpenses =>
-        prevExpenses.map(expense =>
-          expense.id === data.id ? data : expense
-        )
-      );
+      setToastInfo({ message: "Erreur lors de la mise à jour.", type: 'error' });
     }
     setExpenseToEdit(null);
   };
 
   const addReminder = async (reminder: Omit<Reminder, 'id' | 'created_at'>) => {
+    if (!isOnline) {
+        const reminderToQueue = { ...reminder };
+        const tempReminderForUI: Reminder = {
+            ...reminderToQueue,
+            id: crypto.randomUUID(),
+            created_at: new Date().toISOString(),
+            isOffline: true,
+        };
+        setReminders(prev => [...prev, tempReminderForUI].sort((a,b) => a.day_of_month - b.day_of_month));
+        await queueMutation({ type: 'add', table: 'reminders', payload: reminderToQueue });
+        await registerSync();
+        setToastInfo({ message: "Mode hors ligne: Rappel mis en attente.", type: 'info' });
+        return;
+    }
+
     const { error } = await supabase.from('reminders').insert(reminder);
     if (error) {
         console.error('Error adding reminder:', error.message || error);
@@ -199,7 +326,16 @@ const App: React.FC = () => {
   };
 
   const updateReminder = async (updatedReminder: Reminder) => {
-      const { id, created_at, ...updatePayload } = updatedReminder;
+      const { isOffline, ...reminderToUpdate } = updatedReminder;
+      if (!isOnline) {
+        setReminders(prev => prev.map(r => r.id === reminderToUpdate.id ? { ...reminderToUpdate, isOffline: true } : r));
+        await queueMutation({ type: 'update', table: 'reminders', payload: reminderToUpdate });
+        await registerSync();
+        setToastInfo({ message: "Mode hors ligne: Modification du rappel mise en attente.", type: 'info' });
+        return;
+      }
+
+      const { id, created_at, ...updatePayload } = reminderToUpdate;
       const { error } = await supabase.from('reminders').update(updatePayload).eq('id', id);
       if (error) {
           console.error('Error updating reminder:', error.message || error);
@@ -208,6 +344,14 @@ const App: React.FC = () => {
   };
 
   const deleteReminder = async (id: string) => {
+      if (!isOnline) {
+        setReminders(prev => prev.filter(r => r.id !== id));
+        await queueMutation({ type: 'delete', table: 'reminders', payload: { id } });
+        await registerSync();
+        setToastInfo({ message: "Mode hors ligne: Suppression du rappel mise en attente.", type: 'info' });
+        return;
+      }
+
       const { error } = await supabase.from('reminders').delete().eq('id', id);
       if (error) {
           console.error('Error deleting reminder:', error.message || error);

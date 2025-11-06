@@ -1,14 +1,109 @@
-const CACHE_NAME = 'suivi-depenses-v18'; // Version incrémentée
+// Importe la librairie Supabase pour pouvoir l'utiliser dans le service worker
+importScripts('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
 
-// 1. Installation: Le SW est installé.
-// skipWaiting() force le nouveau service worker à s'activer dès qu'il a terminé l'installation.
+const CACHE_NAME = 'suivi-depenses-v20'; // Version incrémentée pour forcer la mise à jour
+const supabaseUrl = 'https://xcdyshzyxpngbpceilym.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjZHlzaHp5eHBuZ2JwY2VpbHltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3NDI4NDYsImV4cCI6MjA3NzMxODg0Nn0.woxCgIKTPvEy7s2ePIJIAIflwal8dG5ApTfpyWy9feQ';
+
+const { createClient } = self.supabase;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+const DB_NAME = 'suivi-depenses-db';
+const STORE_NAME = 'sync-queue';
+const DB_VERSION = 1;
+
+// --- Helpers pour IndexedDB ---
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = self.indexedDB.open(DB_NAME, DB_VERSION);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = event => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+      }
+    };
+  });
+}
+
+function getPendingMutations() {
+  return new Promise(async (resolve, reject) => {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function deletePendingMutation(id) {
+  return new Promise(async (resolve, reject) => {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.delete(id);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// --- Logique de synchronisation ---
+
+async function syncData() {
+  const pendingMutations = await getPendingMutations();
+  if (!pendingMutations || pendingMutations.length === 0) {
+    return;
+  }
+
+  console.log('Syncing pending mutations...', pendingMutations);
+
+  for (const mutation of pendingMutations) {
+    try {
+      let error;
+      const payload = mutation.payload;
+      const table = mutation.table;
+
+      if (!table) {
+          console.error('Mutation is missing table property:', mutation);
+          continue; // Skip this mutation
+      }
+
+      if (mutation.type === 'add') {
+        ({ error } = await supabase.from(table).insert(payload));
+      } else if (mutation.type === 'update') {
+        const { id, ...updateData } = payload;
+        ({ error } = await supabase.from(table).update(updateData).eq('id', id));
+      } else if (mutation.type === 'delete') {
+        ({ error } = await supabase.from(table).delete().eq('id', payload.id));
+      }
+
+      if (error) throw error;
+      
+      // Si l'opération réussit, on la supprime de la file d'attente
+      await deletePendingMutation(mutation.id);
+    } catch (err) {
+      console.error('Failed to sync mutation:', mutation, err);
+      // On arrête à la première erreur pour préserver l'ordre et réessayer plus tard
+      return; 
+    }
+  }
+  
+  console.log('Sync complete, notifying clients.');
+  // Notifie les clients que la synchronisation est terminée
+  const clients = await self.clients.matchAll({ includeUncontrolled: true });
+  clients.forEach(client => client.postMessage({ type: 'SYNC_COMPLETE' }));
+}
+
+
+// --- Événements du Service Worker ---
+
 self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-// 2. Activation: Le nouveau SW est activé.
-// On nettoie tous les anciens caches et on s'assure que le SW prend le contrôle
-// de la page immédiatement.
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
@@ -21,66 +116,73 @@ self.addEventListener('activate', event => {
   );
 });
 
-// 3. Fetch: Interception des requêtes réseau avec une stratégie double.
+// Écouteur pour la synchronisation en arrière-plan
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-expenses') {
+    event.waitUntil(syncData());
+  }
+});
+
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // On ignore les requêtes non-HTTP/HTTPS et les requêtes vers l'API Supabase.
-  if (!request.url.startsWith('http') || url.origin.includes('supabase.co')) {
+  // Ignore les requêtes non-HTTP/HTTPS
+  if (!request.url.startsWith('http')) {
     return;
   }
-
-  // Stratégie 1: "Network Falling Back to Cache" pour les pages HTML.
-  // Cela garantit que l'utilisateur reçoit toujours la version la plus récente de l'app,
-  // tout en permettant un accès hors ligne.
-  if (request.mode === 'navigate') {
+  
+  // Pour les requêtes GET vers l'API Supabase, on utilise la stratégie "Stale-While-Revalidate"
+  if (url.origin === new URL(supabaseUrl).origin && request.method === 'GET') {
     event.respondWith(
-      fetch(request)
-        .then(response => {
-          // Si la réponse est valide, on la met en cache pour une utilisation future.
-          if (response && response.status === 200) {
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(request, responseToCache);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          // Si le réseau échoue, on cherche une correspondance dans le cache.
-          return caches.match(request);
-        })
+      caches.open(CACHE_NAME).then(cache => {
+        return cache.match(request).then(cachedResponse => {
+          const fetchPromise = fetch(request).then(networkResponse => {
+            if (networkResponse.ok) {
+              cache.put(request, networkResponse.clone());
+            }
+            return networkResponse;
+          }).catch(err => {
+            console.warn('Network request failed, serving stale data if available.', err);
+          });
+          // On retourne la réponse du cache immédiatement si elle existe, sinon on attend le réseau
+          return cachedResponse || fetchPromise;
+        });
+      })
     );
     return;
   }
 
-  // Stratégie 2: "Cache First, Falling Back to Network" pour toutes les autres ressources.
-  // (JS, CSS, images, polices, etc.). C'est idéal pour la performance.
-  event.respondWith(
-    caches.match(request)
-      .then(cachedResponse => {
-        // Si la ressource est dans le cache, on la sert directement.
-        if (cachedResponse) {
-          return cachedResponse;
+  // Stratégie "Network Falling Back to Cache" pour les pages HTML.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request).then(response => {
+        if (response && response.status === 200) {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, responseToCache));
         }
-        // Sinon, on la récupère sur le réseau.
-        return fetch(request).then(networkResponse => {
-          // On met en cache la nouvelle ressource pour la prochaine fois.
-          if (networkResponse && networkResponse.status === 200) {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(request, responseToCache);
-            });
-          }
-          return networkResponse;
-        });
-      })
+        return response;
+      }).catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // Stratégie "Cache First" pour les autres ressources (JS, CSS, images).
+  event.respondWith(
+    caches.match(request).then(cachedResponse => {
+      return cachedResponse || fetch(request).then(networkResponse => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, responseToCache));
+        }
+        return networkResponse;
+      });
+    })
   );
 });
 
 
-// --- Gestion des Notifications Push (Mise à jour pour être dynamique) ---
+// --- Gestion des Notifications Push ---
 
 self.addEventListener('push', (event) => {
   let data = { title: 'Nouvelle dépense !', body: 'Une nouvelle dépense a été ajoutée.' };
@@ -92,7 +194,6 @@ self.addEventListener('push', (event) => {
     }
   }
 
-  // Dérive dynamiquement le chemin de base à partir du scope du service worker
   const basePath = new URL(self.registration.scope).pathname;
 
   const options = {
@@ -101,7 +202,7 @@ self.addEventListener('push', (event) => {
     badge: `${basePath}logo.svg?v=13`,
     vibrate: [100, 50, 100],
     data: {
-      url: self.registration.scope, // Le scope est l'URL complète à ouvrir au clic
+      url: self.registration.scope,
     },
   };
 

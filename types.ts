@@ -19,6 +19,7 @@ export interface Expense {
   date: string; // ISO 8601 format (TIMESTAMPTZ)
   user: User;
   created_at: string;
+  isOffline?: boolean; // Ajouté pour le mode hors ligne
 }
 
 export interface Reminder {
@@ -30,4 +31,5 @@ export interface Reminder {
   day_of_month: number;
   is_active: boolean;
   created_at: string;
+  isOffline?: boolean; // Ajouté pour le mode hors ligne
 }

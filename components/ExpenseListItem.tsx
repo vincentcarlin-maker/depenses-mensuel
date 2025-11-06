@@ -156,6 +156,14 @@ const Logo: React.FC<{ domain: string, alt: string, fallback: React.ReactNode }>
     );
 };
 
+const OfflineIcon: React.FC = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8.66 16.99a8.902 8.902 0 01-1.16-1.32A4 4 0 003 15a4 4 0 004 4h9a5 5 0 001.38-9.77M19 10a5 5 0 00-9.77-1.38" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18" />
+  </svg>
+);
+
+
 // Trie les mots-clés par longueur (décroissant) pour trouver les correspondances les plus spécifiques en premier.
 const sortedDomainKeywords = Object.keys(KeywordDomainMap).sort((a, b) => b.length - a.length);
 const sortedIconKeywords = Object.keys(KeywordIconMap).sort((a, b) => b.length - a.length);
@@ -212,6 +220,11 @@ const ExpenseListItem: React.FC<{
                 transition-all duration-300 ease-out cursor-pointer hover:bg-slate-100 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500
             `}
         >
+            {expense.isOffline && (
+              <div className="absolute top-2 right-2" title="En attente de synchronisation">
+                <OfflineIcon />
+              </div>
+            )}
             <div className="flex items-start justify-between">
                 <div className="flex items-center min-w-0 flex-1">
                     <UserIndicator user={expense.user} />
