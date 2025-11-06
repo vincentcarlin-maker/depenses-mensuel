@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback, useTransition } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { supabase } from './supabase/client';
 import { type Expense, User, type Reminder } from './types';
 import Header from './components/Header';
@@ -88,7 +88,6 @@ const App: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date().getUTCMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getUTCFullYear());
   const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly' | 'search'>('dashboard');
-  const [isPending, startTransition] = useTransition();
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
@@ -317,29 +316,47 @@ const App: React.FC = () => {
   };
 
   const deleteExpense = async (id: string) => {
+    // Garder une copie de la dépense pour pouvoir l'annuler en cas d'erreur
+    const expenseToDelete = expenses.find(e => e.id === id);
+    if (!expenseToDelete) return;
+
+    // Mise à jour optimiste de l'UI pour une réactivité instantanée
+    setExpenses(prev => prev.filter(e => e.id !== id));
+
     if (!isOnline) {
-        setExpenses(prev => prev.filter(e => e.id !== id));
         await queueMutation({ type: 'delete', table: 'expenses', payload: { id } });
         await registerSync();
         setToastInfo({ message: "Mode hors ligne: Suppression mise en attente.", type: 'info' });
         return;
     }
+    
     const { error } = await supabase.from('expenses').delete().eq('id', id);
+    
     if (error) {
       console.error('Error deleting expense:', error.message || error);
       setToastInfo({ message: "Erreur lors de la suppression.", type: 'error' });
+      // En cas d'erreur, on annule la mise à jour optimiste (rollback)
+      setExpenses(prev => [...prev, expenseToDelete]);
     }
   };
   
   const updateExpense = async (updatedExpense: Expense) => {
-    const { isOffline, ...expenseToUpdate } = updatedExpense;
+    // Garder une copie de l'état original pour pouvoir l'annuler en cas d'erreur
+    const originalExpense = expenses.find(e => e.id === updatedExpense.id);
+    if (!originalExpense) return;
 
+    // Mise à jour optimiste de l'UI pour une réactivité instantanée
+    setExpenses(prev => prev.map(e => e.id === updatedExpense.id ? updatedExpense : e));
+    setExpenseToEdit(null); // Ferme la modale immédiatement
+
+    const { isOffline, ...expenseToUpdate } = updatedExpense;
+    
     if (!isOnline) {
-        setExpenses(prev => prev.map(e => e.id === expenseToUpdate.id ? { ...expenseToUpdate, isOffline: true } : e));
+        // Applique à nouveau avec le flag `isOffline` pour être sûr
+        setExpenses(prev => prev.map(e => e.id === expenseToUpdate.id ? { ...updatedExpense, isOffline: true } : e));
         await queueMutation({ type: 'update', table: 'expenses', payload: expenseToUpdate });
         await registerSync();
         setToastInfo({ message: "Mode hors ligne: Modification mise en attente.", type: 'info' });
-        setExpenseToEdit(null);
         return;
     }
     
@@ -349,8 +366,10 @@ const App: React.FC = () => {
     if (error) {
       console.error('Error updating expense:', error.message || error);
       setToastInfo({ message: "Erreur lors de la mise à jour.", type: 'error' });
+      // En cas d'erreur, on annule la mise à jour optimiste (rollback)
+      setExpenses(prev => prev.map(e => e.id === originalExpense.id ? originalExpense : e));
     }
-    setExpenseToEdit(null);
+    // La modale est déjà fermée, pas besoin de le refaire ici.
   };
 
   const addReminder = async (reminder: Omit<Reminder, 'id' | 'created_at'>) => {
@@ -474,7 +493,6 @@ const App: React.FC = () => {
   }, [expenses, globalSearchTerm]);
 
   const handleMonthChange = (direction: 'next' | 'prev') => {
-    startTransition(() => {
       if (direction === 'next') {
         if (currentMonth === 11) {
           setCurrentMonth(0);
@@ -490,7 +508,6 @@ const App: React.FC = () => {
           setCurrentMonth(prev => prev - 1);
         }
       }
-    });
   };
 
   const currentMonthName = useMemo(() => {
@@ -554,56 +571,52 @@ const App: React.FC = () => {
             ))}
           </div>
           
-          {isPending && <div className="text-center p-4">Chargement...</div>}
-
-          {!isPending && (
-            <div className="animate-fade-in">
-              {activeTab === 'dashboard' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="space-y-8">
-                    <ExpenseForm onAddExpense={addExpense} expenses={expenses} />
-                    <ExpenseSummary 
-                        allExpenses={expenses}
-                        currentYear={currentYear}
-                        currentMonth={currentMonth}
-                        sophieTotalMonth={sophieTotalMonth}
-                        vincentTotalMonth={vincentTotalMonth}
-                    />
-                  </div>
-                  <div className="space-y-8">
-                      <div className="bg-white p-6 rounded-2xl shadow-lg">
-                        <h2 className="text-xl font-bold mb-4">Dépenses du mois</h2>
-                         <input
-                            type="text"
-                            placeholder="Filtrer les dépenses du mois..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full px-3 py-2 mb-4 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
-                          />
-                        <ExpenseList expenses={searchedExpenses} onEditExpense={setExpenseToEdit} />
-                      </div>
-                  </div>
-                </div>
-              )}
-              {activeTab === 'analysis' && <CategoryTotals expenses={filteredExpenses} />}
-              {activeTab === 'yearly' && <YearlySummary expenses={yearlyFilteredExpenses} previousYearExpenses={previousYearFilteredExpenses} year={currentYear} />}
-              {activeTab === 'search' && (
-                 <div className="bg-white p-6 rounded-2xl shadow-lg">
-                  <h2 className="text-xl font-bold mb-4">Recherche globale</h2>
-                  <input
-                    type="text"
-                    placeholder="Rechercher dans toutes les dépenses..."
-                    value={globalSearchTerm}
-                    onChange={(e) => setGlobalSearchTerm(e.target.value)}
-                    className="w-full px-3 py-2 mb-4 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
+          <div className="animate-fade-in">
+            {activeTab === 'dashboard' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="space-y-8">
+                  <ExpenseForm onAddExpense={addExpense} expenses={expenses} />
+                  <ExpenseSummary 
+                      allExpenses={expenses}
+                      currentYear={currentYear}
+                      currentMonth={currentMonth}
+                      sophieTotalMonth={sophieTotalMonth}
+                      vincentTotalMonth={vincentTotalMonth}
                   />
-                  {globalSearchTerm && (
-                    <GroupedExpenseList expenses={globalSearchedExpenses} onEditExpense={setExpenseToEdit} />
-                  )}
-                 </div>
-              )}
-            </div>
-          )}
+                </div>
+                <div className="space-y-8">
+                    <div className="bg-white p-6 rounded-2xl shadow-lg">
+                      <h2 className="text-xl font-bold mb-4">Dépenses du mois</h2>
+                       <input
+                          type="text"
+                          placeholder="Filtrer les dépenses du mois..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="w-full px-3 py-2 mb-4 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
+                        />
+                      <ExpenseList expenses={searchedExpenses} onEditExpense={setExpenseToEdit} />
+                    </div>
+                </div>
+              </div>
+            )}
+            {activeTab === 'analysis' && <CategoryTotals expenses={filteredExpenses} />}
+            {activeTab === 'yearly' && <YearlySummary expenses={yearlyFilteredExpenses} previousYearExpenses={previousYearFilteredExpenses} year={currentYear} />}
+            {activeTab === 'search' && (
+               <div className="bg-white p-6 rounded-2xl shadow-lg">
+                <h2 className="text-xl font-bold mb-4">Recherche globale</h2>
+                <input
+                  type="text"
+                  placeholder="Rechercher dans toutes les dépenses..."
+                  value={globalSearchTerm}
+                  onChange={(e) => setGlobalSearchTerm(e.target.value)}
+                  className="w-full px-3 py-2 mb-4 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
+                />
+                {globalSearchTerm && (
+                  <GroupedExpenseList expenses={globalSearchedExpenses} onEditExpense={setExpenseToEdit} />
+                )}
+               </div>
+            )}
+          </div>
         </main>
         
         {expenseToEdit && (
