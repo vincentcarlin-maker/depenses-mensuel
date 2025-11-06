@@ -158,13 +158,61 @@ const App: React.FC = () => {
   }, [fetchExpenses, fetchReminders]);
 
   useEffect(() => {
-    // --- Écouteur pour la synchronisation ---
     const handleSyncMessage = (event: MessageEvent) => {
-        if (event.data && event.data.type === 'SYNC_COMPLETE') {
-            console.log('Sync complete message received from SW');
+        if (event.data && event.data.type === 'SYNC_COMPLETE_DATA') {
+            const { payload } = event.data;
             setToastInfo({ message: 'Données synchronisées avec succès !', type: 'info' });
-            fetchExpenses();
-            fetchReminders();
+
+            if (payload.added.expenses.length > 0) {
+                setExpenses(prev => {
+                    let newExpensesState = [...prev];
+                    for (const syncedExpense of payload.added.expenses) {
+                        if (newExpensesState.some(e => e.id === syncedExpense.id)) {
+                            continue;
+                        }
+                        const offlineIndex = newExpensesState.findIndex(e =>
+                            e.isOffline &&
+                            e.description === syncedExpense.description &&
+                            e.amount === syncedExpense.amount &&
+                            e.user === syncedExpense.user
+                        );
+                        if (offlineIndex !== -1) {
+                            newExpensesState[offlineIndex] = syncedExpense;
+                        } else {
+                            newExpensesState.unshift(syncedExpense);
+                        }
+                    }
+                    return newExpensesState;
+                });
+            }
+            
+            if (payload.updatedOrDeleted.expenses) {
+                fetchExpenses();
+            }
+
+            if (payload.added.reminders.length > 0) {
+                setReminders(prev => {
+                    let newRemindersState = [...prev];
+                    for (const syncedReminder of payload.added.reminders) {
+                        if (newRemindersState.some(r => r.id === syncedReminder.id)) {
+                            continue;
+                        }
+                        const offlineIndex = newRemindersState.findIndex(r =>
+                            r.isOffline && r.description === syncedReminder.description && r.amount === syncedReminder.amount
+                        );
+                        if (offlineIndex !== -1) {
+                            newRemindersState[offlineIndex] = syncedReminder;
+                        } else {
+                            newRemindersState.unshift(syncedReminder);
+                        }
+                    }
+                    return newRemindersState.sort((a,b) => a.day_of_month - b.day_of_month);
+                });
+            }
+
+            if (payload.updatedOrDeleted.reminders) {
+                fetchReminders();
+            }
         }
     };
     navigator.serviceWorker.addEventListener('message', handleSyncMessage);
@@ -180,11 +228,25 @@ const App: React.FC = () => {
             if (prevExpenses.some(e => e.id === newExpense.id)) {
               return prevExpenses;
             }
-            setToastInfo({
-              message: `${newExpense.user} a ajouté : ${newExpense.description} (${newExpense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`,
-              type: 'info'
-            });
-            return [newExpense, ...prevExpenses];
+            const offlineIndex = prevExpenses.findIndex(e =>
+              e.isOffline &&
+              e.description === newExpense.description &&
+              e.amount === newExpense.amount &&
+              e.user === newExpense.user &&
+              e.category === newExpense.category
+            );
+            if (offlineIndex !== -1) {
+              const updatedExpenses = [...prevExpenses];
+              updatedExpenses[offlineIndex] = newExpense;
+              setToastInfo({ message: `Dépense synchronisée : ${newExpense.description}`, type: 'info' });
+              return updatedExpenses;
+            } else {
+              setToastInfo({
+                message: `${newExpense.user} a ajouté : ${newExpense.description} (${newExpense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`,
+                type: 'info'
+              });
+              return [newExpense, ...prevExpenses];
+            }
           });
         }
       )
@@ -264,8 +326,6 @@ const App: React.FC = () => {
     if (error) {
       console.error('Error adding expense:', error.message || error);
       setToastInfo({ message: "Erreur lors de l'ajout de la dépense.", type: 'error' });
-    } else if (newExpense) {
-        setExpenses(prevExpenses => [newExpense, ...prevExpenses]);
     }
   };
 
@@ -281,8 +341,6 @@ const App: React.FC = () => {
     if (error) {
       console.error('Error deleting expense:', error.message || error);
       setToastInfo({ message: "Erreur lors de la suppression.", type: 'error' });
-    } else {
-      setExpenses(prevExpenses => prevExpenses.filter(expense => expense.id !== id));
     }
   };
   
@@ -304,8 +362,6 @@ const App: React.FC = () => {
     if (error) {
       console.error('Error updating expense:', error.message || error);
       setToastInfo({ message: "Erreur lors de la mise à jour.", type: 'error' });
-    } else {
-      setExpenses(prevExpenses => prevExpenses.map(expense => expense.id === updatedExpense.id ? updatedExpense : expense));
     }
     setExpenseToEdit(null);
   };
@@ -332,7 +388,6 @@ const App: React.FC = () => {
         setToastInfo({ message: "Erreur lors de l'ajout du rappel.", type: 'error' });
     } else {
         setToastInfo({ message: "Rappel ajouté avec succès.", type: 'info' });
-        await fetchReminders();
     }
   };
 
@@ -367,9 +422,6 @@ const App: React.FC = () => {
       if (error) {
           console.error('Error deleting reminder:', error.message || error);
           setToastInfo({ message: "Erreur lors de la suppression du rappel.", type: 'error' });
-      } else {
-          setToastInfo({ message: "Rappel supprimé.", type: 'info' });
-          await fetchReminders();
       }
   };
 

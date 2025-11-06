@@ -59,6 +59,12 @@ async function syncData() {
   }
 
   console.log('Syncing pending mutations...', pendingMutations);
+  
+  const results = {
+    added: { expenses: [], reminders: [] },
+    updatedOrDeleted: { expenses: false, reminders: false },
+  };
+
 
   for (const mutation of pendingMutations) {
     try {
@@ -72,12 +78,20 @@ async function syncData() {
       }
 
       if (mutation.type === 'add') {
-        ({ error } = await supabase.from(table).insert(payload));
+        const { data } = await supabase.from(table).insert(payload).select().single();
+        if (data) {
+            if (table === 'expenses') results.added.expenses.push(data);
+            if (table === 'reminders') results.added.reminders.push(data);
+        }
       } else if (mutation.type === 'update') {
         const { id, ...updateData } = payload;
         ({ error } = await supabase.from(table).update(updateData).eq('id', id));
+        if (table === 'expenses') results.updatedOrDeleted.expenses = true;
+        if (table === 'reminders') results.updatedOrDeleted.reminders = true;
       } else if (mutation.type === 'delete') {
         ({ error } = await supabase.from(table).delete().eq('id', payload.id));
+        if (table === 'expenses') results.updatedOrDeleted.expenses = true;
+        if (table === 'reminders') results.updatedOrDeleted.reminders = true;
       }
 
       if (error) throw error;
@@ -94,7 +108,7 @@ async function syncData() {
   console.log('Sync complete, notifying clients.');
   // Notifie les clients que la synchronisation est terminée
   const clients = await self.clients.matchAll({ includeUncontrolled: true });
-  clients.forEach(client => client.postMessage({ type: 'SYNC_COMPLETE' }));
+  clients.forEach(client => client.postMessage({ type: 'SYNC_COMPLETE_DATA', payload: results }));
 }
 
 
