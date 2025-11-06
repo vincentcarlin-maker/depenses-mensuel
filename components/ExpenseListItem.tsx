@@ -1,6 +1,5 @@
 import React from 'react';
 import { type Expense, User, Category } from '../types';
-import ConfirmationModal from './ConfirmationModal';
 
 const CategoryEmojiMap: { [key: string]: string } = {
   "Dépenses obligatoires": '📄',
@@ -150,13 +149,12 @@ const Logo: React.FC<{ domain: string, alt: string, fallback: React.ReactNode }>
         <img
             src={src}
             alt={alt}
-            className="w-6 h-6 object-contain"
+            className="w-full h-full object-contain"
             onError={() => setHasError(true)}
         />
     );
 };
 
-// Trie les mots-clés par longueur (décroissant) pour trouver les correspondances les plus spécifiques en premier.
 const sortedDomainKeywords = Object.keys(KeywordDomainMap).sort((a, b) => b.length - a.length);
 const sortedIconKeywords = Object.keys(KeywordIconMap).sort((a, b) => b.length - a.length);
 
@@ -167,27 +165,19 @@ const getExpenseVisual = (description: string, category: Category): React.ReactN
         if (lowerDesc.includes(keyword)) {
             const domain = KeywordDomainMap[keyword];
             const fallbackEmoji = KeywordIconMap[keyword] || CategoryEmojiMap[category] || '❓';
-            return <Logo domain={domain} alt={description} fallback={<span className="text-2xl">{fallbackEmoji}</span>} />;
+            return <Logo domain={domain} alt={description} fallback={<span className="text-xl">{fallbackEmoji}</span>} />;
         }
     }
 
     for (const keyword of sortedIconKeywords) {
         if (lowerDesc.includes(keyword)) {
-            return <span className="text-2xl">{KeywordIconMap[keyword]}</span>;
+            return <span className="text-xl">{KeywordIconMap[keyword]}</span>;
         }
     }
 
-    return <span className="text-2xl">{CategoryEmojiMap[category] || '❓'}</span>;
+    return <span className="text-xl">{CategoryEmojiMap[category] || '❓'}</span>;
 };
 
-const UserIndicator: React.FC<{ user: User }> = ({ user }) => {
-    const isSophie = user === User.Sophie;
-    const initial = user.charAt(0);
-    const className = `w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold mr-3 flex-shrink-0
-        ${isSophie ? 'bg-pink-500 text-white' : 'bg-blue-500 text-white'}`;
-    
-    return <div className={className}>{initial}</div>;
-};
 
 const ExpenseListItem: React.FC<{
     expense: Expense;
@@ -195,11 +185,14 @@ const ExpenseListItem: React.FC<{
 }> = ({ expense, onEditExpense }) => {
 
     const formattedDate = new Date(expense.date).toLocaleString('fr-FR', {
-        day: 'numeric',
-        month: 'short',
+        day: '2-digit',
+        month: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
-    });
+    }).replace(' ', ' - ');
+
+    const isSophie = expense.user === User.Sophie;
+    const userColorClass = isSophie ? 'bg-rose-500' : 'bg-sky-500';
 
     return (
         <div
@@ -208,29 +201,25 @@ const ExpenseListItem: React.FC<{
             role="button"
             tabIndex={0}
             className={`
-                bg-slate-50 p-3 rounded-lg border border-slate-200
-                transition-all duration-300 ease-out cursor-pointer hover:bg-slate-100 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500
+                flex items-center p-3 rounded-xl border border-transparent
+                transition-all duration-200 ease-out cursor-pointer 
+                hover:bg-slate-100 hover:dark:bg-slate-700/50 hover:border-slate-200 hover:dark:border-slate-700
+                focus:outline-none focus:ring-2 focus:ring-cyan-500
             `}
         >
-            <div className="flex items-start justify-between">
-                <div className="flex items-center min-w-0 flex-1">
-                    <UserIndicator user={expense.user} />
-                    <div className="w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
-                        {getExpenseVisual(expense.description, expense.category)}
-                    </div>
-                    <p className="font-semibold truncate" title={expense.description}>{expense.description}</p>
-                </div>
-                <div className="pl-4 flex-shrink-0">
-                    <p className="font-bold text-slate-700 text-right min-w-[80px]">
-                        {expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                    </p>
-                </div>
+            <div className={`w-1.5 h-10 rounded-full mr-3 ${userColorClass}`}></div>
+            <div className="w-10 h-10 flex items-center justify-center mr-3 flex-shrink-0 bg-slate-100 dark:bg-slate-700 rounded-lg">
+                {getExpenseVisual(expense.description, expense.category)}
             </div>
-            <div className="flex items-center justify-between mt-1">
-                 <div className="flex flex-col items-start text-xs text-slate-500 pl-10 min-w-0">
-                    <span className="truncate" title={expense.category}>{expense.category}</span>
-                    <span>{formattedDate}</span>
-                </div>
+            <div className="flex-1 min-w-0">
+                 <p className="font-semibold truncate text-slate-700 dark:text-slate-200" title={expense.description}>{expense.description}</p>
+                 <p className="text-sm text-slate-500 dark:text-slate-400 truncate" title={expense.category}>{expense.category}</p>
+            </div>
+            <div className="pl-4 flex-shrink-0 text-right">
+                <p className="font-bold text-slate-800 dark:text-slate-100">
+                    {expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                </p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">{formattedDate}</p>
             </div>
         </div>
     );

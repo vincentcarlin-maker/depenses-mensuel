@@ -12,28 +12,23 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Dépenses">
     <link rel="apple-touch-icon" href="logo.svg?v=13" />
+    <script>
+      // On page load or when changing themes, best to add inline in `head` to avoid FOUC
+      if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+    </script>
     <style>
       /* Prevents horizontal scrolling for a more native app feel */
       html, body {
         width: 100%;
         overflow-x: hidden;
       }
-      @keyframes slide-in-right {
+      @keyframes slide-in-up {
         from {
-          transform: translateX(100%);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(0);
-          opacity: 1;
-        }
-      }
-      .animate-slide-in-right {
-        animation: slide-in-right 0.5s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
-      }
-      @keyframes slide-in-down {
-        from {
-          transform: translateY(-100%);
+          transform: translateY(100%);
           opacity: 0;
         }
         to {
@@ -41,8 +36,19 @@
           opacity: 1;
         }
       }
-      .animate-slide-in-down {
-        animation: slide-in-down 0.5s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
+      .animate-slide-in-up {
+        animation: slide-in-up 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) both;
+      }
+       @keyframes fade-in {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      .animate-fade-in {
+        animation: fade-in 0.5s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
       }
       @keyframes fade-in-up {
         from {
@@ -80,7 +86,7 @@
 }
 </script>
 </head>
-  <body class="bg-slate-50">
+  <body class="bg-gray-50 dark:bg-slate-900 transition-colors duration-300">
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
   </body>

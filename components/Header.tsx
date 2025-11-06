@@ -4,18 +4,12 @@ import SettingsIcon from './icons/SettingsIcon';
 import RefreshIcon from './icons/RefreshIcon';
 
 const Logo = () => (
-    <svg width="36" height="36" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3">
-        <rect width="40" height="40" rx="8" fill="url(#paint0_linear_logo)"/>
-        <path d="M10 28V20" stroke="#99f6e4" strokeWidth="3" strokeLinecap="round"/>
-        <path d="M16 28V15" stroke="#99f6e4" strokeWidth="3" strokeLinecap="round"/>
-        <path d="M22 28V22" stroke="#99f6e4" strokeWidth="3" strokeLinecap="round"/>
-        <path d="M28 28V12" stroke="#99f6e4" strokeWidth="3" strokeLinecap="round"/>
-        <defs>
-            <linearGradient id="paint0_linear_logo" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#2d3748"/>
-                <stop offset="1" stopColor="#1a202c"/>
-            </linearGradient>
-        </defs>
+    <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3">
+        <rect width="40" height="40" rx="8" className="fill-cyan-500"/>
+        <path d="M10 28V20" stroke="white" strokeWidth="3.5" strokeLinecap="round"/>
+        <path d="M16 28V15" stroke="white" strokeWidth="3.5" strokeLinecap="round"/>
+        <path d="M22 28V22" stroke="white" strokeWidth="3.5" strokeLinecap="round"/>
+        <path d="M28 28V12" stroke="white" strokeWidth="3.5" strokeLinecap="round"/>
     </svg>
 );
 
@@ -27,18 +21,18 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onSetToast, onOpenSettings, onRefresh }) => {
   return (
-    <header className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg">
-      <div className="container mx-auto px-4 py-5 md:px-8 flex items-center justify-between">
+    <header className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-sm shadow-sm sticky top-0 z-20">
+      <div className="container mx-auto px-4 py-4 md:px-8 flex items-center justify-between">
         <div className="flex items-center">
           <Logo />
-          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-            Suivi des Dépenses
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
+            Dépenses
           </h1>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2">
             <button
                 onClick={onRefresh}
-                className="p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+                className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 aria-label="Rafraîchir les données"
                 title="Rafraîchir"
             >
@@ -47,7 +41,7 @@ const Header: React.FC<HeaderProps> = ({ onSetToast, onOpenSettings, onRefresh }
             <NotificationBell onSetToast={onSetToast} />
             <button
                 onClick={onOpenSettings}
-                className="p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+                className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 aria-label="Ouvrir les réglages"
                 title="Réglages"
             >

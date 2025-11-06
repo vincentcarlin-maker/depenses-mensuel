@@ -12,6 +12,8 @@ import YearlySummary from './components/YearlySummary';
 import GroupedExpenseList from './components/GroupedExpenseList';
 import ReminderAlerts from './components/ReminderAlerts';
 import SettingsModal from './components/SettingsModal';
+import { useTheme } from './hooks/useTheme';
+import OfflineIndicator from './components/OfflineIndicator';
 
 const App: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -25,6 +27,9 @@ const App: React.FC = () => {
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Initialize theme
+  useTheme();
 
   const fetchExpenses = useCallback(async () => {
     const { data, error } = await supabase
@@ -73,13 +78,10 @@ const App: React.FC = () => {
         (payload) => {
           const newExpense = payload.new;
           setExpenses(prevExpenses => {
-            // Empêche les doublons si l'événement arrive pour un ajout déjà optimiste
             if (prevExpenses.some(e => e.id === newExpense.id)) {
-                // Remplace l'élément optimiste par la version de la BDD
                 return prevExpenses.map(e => e.id === newExpense.id ? newExpense : e);
             }
             
-            // Ajout depuis un autre client
             setToastInfo({
               message: `${newExpense.user} a ajouté : ${newExpense.description} (${newExpense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`,
               type: 'info'
@@ -127,10 +129,8 @@ const App: React.FC = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'reminders' },
         (payload) => {
-            // Pour les rappels, un simple re-fetch est suffisant et fiable.
             const newReminder = payload.new as Reminder;
             if (newReminder) {
-                // Remplacement optimiste pour une meilleure UX
                 setReminders(prev => {
                     const existingIndex = prev.findIndex(r => r.id === newReminder.id);
                     if (existingIndex !== -1) {
@@ -161,7 +161,6 @@ const App: React.FC = () => {
         date: new Date().toISOString(),
     };
 
-    // Mise à jour optimiste de l'UI
     const optimisticExpense: Expense = {
         ...expenseData,
         created_at: new Date().toISOString(),
@@ -177,7 +176,6 @@ const App: React.FC = () => {
     if (error) {
       console.error('Error adding expense:', error.message || error);
       setToastInfo({ message: "Erreur lors de l'ajout de la dépense.", type: 'error' });
-      // Rollback en cas d'erreur
       setExpenses(prev => prev.filter(e => e.id !== newId));
     }
   };
@@ -186,7 +184,6 @@ const App: React.FC = () => {
     const expenseToDelete = expenses.find(e => e.id === id);
     if (!expenseToDelete) return;
 
-    // Mise à jour optimiste de l'UI
     setExpenses(prev => prev.filter(e => e.id !== id));
 
     const { error } = await supabase.from('expenses').delete().eq('id', id);
@@ -194,7 +191,6 @@ const App: React.FC = () => {
     if (error) {
       console.error('Error deleting expense:', error.message || error);
       setToastInfo({ message: "Erreur lors de la suppression.", type: 'error' });
-      // Rollback en cas d'erreur
       setExpenses(prev => [...prev, expenseToDelete]);
     }
   };
@@ -203,7 +199,6 @@ const App: React.FC = () => {
     const originalExpense = expenses.find(e => e.id === updatedExpense.id);
     if (!originalExpense) return;
 
-    // Mise à jour optimiste de l'UI
     setExpenses(prev => prev.map(e => e.id === updatedExpense.id ? updatedExpense : e));
     setExpenseToEdit(null);
 
@@ -213,7 +208,6 @@ const App: React.FC = () => {
     if (error) {
       console.error('Error updating expense:', error.message || error);
       setToastInfo({ message: "Erreur lors de la mise à jour.", type: 'error' });
-      // Rollback en cas d'erreur
       setExpenses(prev => prev.map(e => e.id === originalExpense.id ? originalExpense : e));
     }
   };
@@ -248,7 +242,6 @@ const App: React.FC = () => {
     const originalReminder = reminders.find(r => r.id === updatedReminder.id);
     if (!originalReminder) return;
 
-    // Mise à jour optimiste
     setReminders(prev => prev.map(r => r.id === updatedReminder.id ? updatedReminder : r).sort((a,b) => a.day_of_month - b.day_of_month));
 
     const { id, created_at, ...updatePayload } = updatedReminder;
@@ -257,7 +250,6 @@ const App: React.FC = () => {
     if (error) {
         console.error('Error updating reminder:', error.message || error);
         setToastInfo({ message: "Erreur lors de la mise à jour du rappel.", type: 'error' });
-        // Rollback
         setReminders(prev => prev.map(r => r.id === originalReminder.id ? originalReminder : r).sort((a,b) => a.day_of_month - b.day_of_month));
     }
   };
@@ -266,14 +258,12 @@ const App: React.FC = () => {
     const reminderToDelete = reminders.find(r => r.id === id);
     if (!reminderToDelete) return;
     
-    // Mise à jour optimiste
     setReminders(prev => prev.filter(r => r.id !== id));
 
     const { error } = await supabase.from('reminders').delete().eq('id', id);
     if (error) {
         console.error('Error deleting reminder:', error.message || error);
         setToastInfo({ message: "Erreur lors de la suppression du rappel.", type: 'error' });
-        // Rollback
         setReminders(prev => [...prev, reminderToDelete].sort((a,b) => a.day_of_month - b.day_of_month));
     }
   };
@@ -357,16 +347,23 @@ const App: React.FC = () => {
   
   if (isLoading) {
     return (
-        <div className="flex justify-center items-center min-h-screen bg-slate-100">
+        <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-slate-900">
             <div className="text-center">
-                <p className="text-xl font-semibold text-slate-600">Chargement des données...</p>
+                <p className="text-xl font-semibold text-slate-600 dark:text-slate-300">Chargement des données...</p>
             </div>
         </div>
     );
   }
 
+  const tabs = [
+    { id: 'dashboard', label: 'Tableau de bord' },
+    { id: 'analysis', label: 'Analyse' },
+    { id: 'yearly', label: 'Annuel' },
+    { id: 'search', label: 'Recherche' }
+  ] as const;
+
   return (
-    <div className="bg-slate-100 min-h-screen font-sans">
+    <div className="bg-gray-50 dark:bg-slate-900 min-h-screen font-sans">
       <Header 
         onSetToast={setToastInfo} 
         onOpenSettings={() => setIsSettingsOpen(true)}
@@ -375,10 +372,14 @@ const App: React.FC = () => {
 
       <main className="container mx-auto p-4 md:p-8">
         {activeTab !== 'search' && (
-          <div className="flex justify-between items-center mb-6">
-            <button onClick={() => handleMonthChange('prev')} className="px-4 py-2 bg-white rounded-lg shadow hover:bg-slate-50 transition-colors">&lt; Préc.</button>
-            <h2 className="text-xl md:text-2xl font-bold text-slate-700 text-center capitalize">{currentMonthName}</h2>
-            <button onClick={() => handleMonthChange('next')} className="px-4 py-2 bg-white rounded-lg shadow hover:bg-slate-50 transition-colors">Suiv. &gt;</button>
+          <div className="flex justify-between items-center mb-6 animate-fade-in-up">
+            <button onClick={() => handleMonthChange('prev')} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 text-center capitalize">{currentMonthName}</h2>
+            <button onClick={() => handleMonthChange('next')} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            </button>
           </div>
         )}
         
@@ -390,16 +391,22 @@ const App: React.FC = () => {
           currentYear={currentYear}
         />
 
-        <div className="flex justify-center mb-6 bg-slate-200 p-1 rounded-lg">
-          {(['dashboard', 'analysis', 'yearly', 'search'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`w-full md:w-auto md:px-6 py-2 text-sm font-semibold rounded-md transition-colors ${activeTab === tab ? 'bg-white text-cyan-600 shadow' : 'text-slate-600 hover:bg-slate-300'}`}
-            >
-              {tab === 'dashboard' ? 'Tableau de bord' : tab === 'analysis' ? 'Analyse' : tab === 'yearly' ? 'Annuel' : 'Recherche'}
-            </button>
-          ))}
+        <div className="border-b border-slate-200 dark:border-slate-700 mb-6">
+            <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+                 {tabs.map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors
+                        ${activeTab === tab.id
+                          ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400'
+                          : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'
+                        }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+            </nav>
         </div>
         
         <div className="animate-fade-in">
@@ -416,14 +423,14 @@ const App: React.FC = () => {
                 />
               </div>
               <div className="space-y-8">
-                  <div className="bg-white p-6 rounded-2xl shadow-lg">
-                    <h2 className="text-xl font-bold mb-4">Dépenses du mois</h2>
+                  <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg">
+                    <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Dépenses du mois</h2>
                      <input
                         type="text"
                         placeholder="Filtrer les dépenses du mois..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-3 py-2 mb-4 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
+                        className="w-full px-3 py-2 mb-4 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
                       />
                     <ExpenseList expenses={searchedExpenses} onEditExpense={setExpenseToEdit} />
                   </div>
@@ -433,14 +440,14 @@ const App: React.FC = () => {
           {activeTab === 'analysis' && <CategoryTotals expenses={filteredExpenses} />}
           {activeTab === 'yearly' && <YearlySummary expenses={yearlyFilteredExpenses} previousYearExpenses={previousYearFilteredExpenses} year={currentYear} />}
           {activeTab === 'search' && (
-             <div className="bg-white p-6 rounded-2xl shadow-lg">
-              <h2 className="text-xl font-bold mb-4">Recherche globale</h2>
+             <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg">
+              <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Recherche globale</h2>
               <input
                 type="text"
                 placeholder="Rechercher dans toutes les dépenses..."
                 value={globalSearchTerm}
                 onChange={(e) => setGlobalSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 mb-4 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
+                className="w-full px-3 py-2 mb-4 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
               />
               {globalSearchTerm && (
                 <GroupedExpenseList expenses={globalSearchedExpenses} onEditExpense={setExpenseToEdit} />
@@ -475,6 +482,7 @@ const App: React.FC = () => {
           onUpdateReminder={updateReminder}
           onDeleteReminder={deleteReminder}
       />
+      <OfflineIndicator />
     </div>
   );
 };

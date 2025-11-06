@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { type Expense, Category } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LineChart, Line } from 'recharts';
+import { useTheme } from '../hooks/useTheme';
 
 const COLORS = ['#06b6d4', '#ec4899', '#f97316', '#8b5cf6', '#10b981', '#f59e0b'];
 
@@ -11,6 +12,9 @@ interface YearlySummaryProps {
 }
 
 const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExpenses, year }) => {
+  const { theme } = useTheme();
+  const tickColor = theme === 'dark' ? '#94a3b8' : '#64748b';
+
   const { categoryData, totalYearlyExpense, monthlyAverage, numberOfMonthsWithData } = useMemo(() => {
     if (expenses.length === 0) {
       return { categoryData: [], totalYearlyExpense: 0, monthlyAverage: 0, numberOfMonthsWithData: 0 };
@@ -83,53 +87,54 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
 
   if (expenses.length === 0) {
     return (
-      <div className="text-center py-16 h-[400px] flex flex-col justify-center items-center">
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg text-center py-16 h-full flex flex-col justify-center items-center">
         <p className="text-4xl mb-2">🗓️</p>
-        <p className="text-slate-500">Aucune dépense enregistrée pour l'année {year}.</p>
+        <p className="text-slate-500 dark:text-slate-400">Aucune dépense enregistrée pour l'année {year}.</p>
       </div>
     );
   }
 
   return (
-    <div>
-        <h2 className="text-xl font-bold mb-6 text-center">Résumé de l'Année {year}</h2>
+    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg">
+        <h2 className="text-xl font-bold mb-6 text-center text-slate-800 dark:text-slate-100">Résumé de l'Année {year}</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <div className="bg-slate-100 p-4 rounded-lg text-center">
-                <p className="text-sm text-slate-500">Total Annuel</p>
-                <p className="text-2xl font-bold text-slate-800">
+            <div className="bg-slate-100 dark:bg-slate-700/50 p-4 rounded-xl text-center">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Total Annuel</p>
+                <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
                     {totalYearlyExpense.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                 </p>
             </div>
-            <div className="bg-slate-100 p-4 rounded-lg text-center">
-                <p className="text-sm text-slate-500">Moyenne Mensuelle</p>
-                <p className="text-2xl font-bold text-cyan-600">
+            <div className="bg-slate-100 dark:bg-slate-700/50 p-4 rounded-xl text-center">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Moyenne Mensuelle</p>
+                <p className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">
                     {monthlyAverage.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                 </p>
-                 <p className="text-xs text-slate-400">calculée sur {numberOfMonthsWithData} mois</p>
+                 <p className="text-xs text-slate-400 dark:text-slate-500">calculée sur {numberOfMonthsWithData} mois</p>
             </div>
         </div>
 
-        <h3 className="text-lg font-semibold mb-4">Moyenne mensuelle par catégorie</h3>
+        <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-200">Moyenne mensuelle par catégorie</h3>
         <div style={{ width: '100%', height: 400 }}>
             <ResponsiveContainer>
                 <BarChart data={categoryData} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                    <XAxis type="number" stroke="#94a3b8" tickFormatter={(value) => `${value}€`} />
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
+                    <XAxis type="number" stroke={tickColor} tickFormatter={(value) => `${value}€`} />
                     <YAxis 
                         type="category" 
                         dataKey="name" 
                         width={150} 
-                        stroke="#94a3b8"
-                        tick={{ fontSize: 12 }}
+                        stroke={tickColor}
+                        tick={{ fontSize: 12, fill: tickColor }}
                     />
                     <Tooltip 
-                        cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
+                        cursor={{ fill: theme === 'dark' ? 'rgba(51, 65, 85, 0.5)' : 'rgba(241, 245, 249, 0.5)' }}
                         formatter={(value: number) => `${value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`}
                         contentStyle={{
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            backgroundColor: theme === 'dark' ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+                            color: theme === 'dark' ? '#f1f5f9' : '#1e293b',
                             backdropFilter: 'blur(4px)',
-                            border: '1px solid #e2e8f0',
+                            border: `1px solid ${theme === 'dark' ? '#475569' : '#e2e8f0'}`,
                             borderRadius: '0.75rem',
                         }}
                     />
@@ -143,23 +148,24 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
         </div>
         
         <div className="mt-12">
-            <h3 className="text-lg font-semibold mb-4">Évolution des dépenses mensuelles</h3>
+            <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-200">Évolution des dépenses mensuelles</h3>
              <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
                     <LineChart data={monthlyTrendData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="month" stroke="#94a3b8" />
-                        <YAxis stroke="#94a3b8" tickFormatter={(value) => `${value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
+                        <XAxis dataKey="month" stroke={tickColor} tick={{ fill: tickColor }} />
+                        <YAxis stroke={tickColor} tickFormatter={(value) => `${value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`} tick={{ fill: tickColor }} />
                         <Tooltip
                             formatter={(value: number, name: string) => [`${value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`, `Année ${name}`]}
                             contentStyle={{
-                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                backgroundColor: theme === 'dark' ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+                                color: theme === 'dark' ? '#f1f5f9' : '#1e293b',
                                 backdropFilter: 'blur(4px)',
-                                border: '1px solid #e2e8f0',
+                                border: `1px solid ${theme === 'dark' ? '#475569' : '#e2e8f0'}`,
                                 borderRadius: '0.75rem',
                             }}
                         />
-                        <Legend />
+                        <Legend wrapperStyle={{ color: tickColor }} />
                         <Line type="monotone" dataKey={year.toString()} stroke="#06b6d4" strokeWidth={2} name={`${year}`} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                         {previousYearExpenses.length > 0 && (
                             <Line type="monotone" dataKey={(year - 1).toString()} stroke="#f97316" strokeWidth={2} name={`${year - 1}`} strokeDasharray="5 5" />

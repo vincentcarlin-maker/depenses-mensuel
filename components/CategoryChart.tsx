@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { type Expense, Category } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { useTheme } from '../hooks/useTheme';
 
 const COLORS = ['#06b6d4', '#ec4899', '#f97316', '#8b5cf6', '#10b981', '#f59e0b'];
 
@@ -14,7 +15,7 @@ const CategoryEmojiMap: { [key: string]: string } = {
 
 const RADIAN = Math.PI / 180;
 const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
-  if (percent * 100 < 5) return null; // Ne pas afficher le label pour les petites parts
+  if (percent * 100 < 5) return null;
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
@@ -31,7 +32,7 @@ const CustomLegend = (props: any) => {
     return (
       <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-4 list-none p-0">
         {payload.map((entry: any, index: number) => (
-          <li key={`item-${index}`} className="flex items-center text-sm text-slate-600">
+          <li key={`item-${index}`} className="flex items-center text-sm text-slate-600 dark:text-slate-300">
             <span className="mr-2 text-lg">{CategoryEmojiMap[entry.value] || '❓'}</span>
             <span>{entry.value}</span>
           </li>
@@ -42,6 +43,8 @@ const CustomLegend = (props: any) => {
 
 
 const CategoryTotals: React.FC<{ expenses: Expense[] }> = ({ expenses }) => {
+  const { theme } = useTheme();
+
   const { chartData, totalExpenses } = useMemo(() => {
     const totals: { [key in Category]?: number } = {};
     let currentTotal = 0;
@@ -65,23 +68,23 @@ const CategoryTotals: React.FC<{ expenses: Expense[] }> = ({ expenses }) => {
 
   if (chartData.length === 0) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-lg">
-        <h2 className="text-xl font-bold mb-4">Répartition des Dépenses</h2>
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg">
+        <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Répartition des Dépenses</h2>
         <div className="text-center py-16 h-[400px] flex flex-col justify-center items-center">
           <p className="text-4xl mb-2">📊</p>
-          <p className="text-slate-500">Aucune dépense à analyser pour ce mois.</p>
+          <p className="text-slate-500 dark:text-slate-400">Aucune dépense à analyser pour ce mois.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-lg">
-      <h2 className="text-xl font-bold mb-4">Répartition des Dépenses</h2>
+    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg">
+      <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Répartition des Dépenses</h2>
       <div style={{ width: '100%', height: 350 }} className="relative">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[calc(50%)] text-center pointer-events-none">
-            <p className="text-slate-500 text-sm">Total du mois</p>
-            <p className="text-3xl font-bold text-slate-800">
+            <p className="text-slate-500 dark:text-slate-400 text-sm">Total du mois</p>
+            <p className="text-3xl font-bold text-slate-800 dark:text-slate-100">
                 {totalExpenses.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
             </p>
         </div>
@@ -107,11 +110,11 @@ const CategoryTotals: React.FC<{ expenses: Expense[] }> = ({ expenses }) => {
             <Tooltip 
               formatter={(value: number) => `${value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`}
               contentStyle={{
-                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                backgroundColor: theme === 'dark' ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+                color: theme === 'dark' ? '#f1f5f9' : '#1e293b',
                 backdropFilter: 'blur(4px)',
                 border: '1px solid #e2e8f0',
                 borderRadius: '0.75rem',
-                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
               }}
             />
             <Legend content={<CustomLegend />} verticalAlign="bottom" wrapperStyle={{ bottom: -10 }} />

@@ -11,7 +11,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEditExpense }) =>
   if (expenses.length === 0) {
     return (
       <div className="text-center py-10">
-        <p className="text-slate-500">Aucune dépense ne correspond à votre recherche. 🧐</p>
+        <p className="text-slate-500 dark:text-slate-400">Aucune dépense pour ce mois. 🥳</p>
       </div>
     );
   }
