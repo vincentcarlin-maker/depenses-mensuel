@@ -255,10 +255,17 @@ const App: React.FC = () => {
       return;
     }
 
-    const { error } = await supabase.from('expenses').insert({ ...expense, date: new Date().toISOString() });
+    const { data: newExpense, error } = await supabase
+      .from('expenses')
+      .insert({ ...expense, date: new Date().toISOString() })
+      .select()
+      .single();
+      
     if (error) {
       console.error('Error adding expense:', error.message || error);
       setToastInfo({ message: "Erreur lors de l'ajout de la dépense.", type: 'error' });
+    } else if (newExpense) {
+        setExpenses(prevExpenses => [newExpense, ...prevExpenses]);
     }
   };
 
