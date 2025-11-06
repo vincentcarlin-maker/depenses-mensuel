@@ -14,12 +14,12 @@ export type Database = {
     Tables: {
       expenses: {
         Row: Expense;
-        Insert: Omit<Expense, 'id' | 'created_at'>;
+        Insert: Omit<Expense, 'created_at'>;
         Update: Partial<Expense>;
       };
       reminders: {
         Row: Reminder;
-        Insert: Omit<Reminder, 'id' | 'created_at'>;
+        Insert: Omit<Reminder, 'created_at'>;
         Update: Partial<Reminder>;
       };
       subscriptions: {
