@@ -216,15 +216,10 @@ const ExpenseListItem: React.FC<{
             role="button"
             tabIndex={0}
             className={`
-                relative bg-slate-50 p-3 rounded-lg border border-slate-200
+                bg-slate-50 p-3 rounded-lg border border-slate-200
                 transition-all duration-300 ease-out cursor-pointer hover:bg-slate-100 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500
             `}
         >
-            {expense.isOffline && (
-              <div className="absolute top-2 right-2" title="En attente de synchronisation">
-                <OfflineIcon />
-              </div>
-            )}
             <div className="flex items-start justify-between">
                 <div className="flex items-center min-w-0 flex-1">
                     <UserIndicator user={expense.user} />
@@ -244,6 +239,11 @@ const ExpenseListItem: React.FC<{
                     <span className="truncate" title={expense.category}>{expense.category}</span>
                     <span>{formattedDate}</span>
                 </div>
+                {expense.isOffline && (
+                  <div className="flex-shrink-0" title="En attente de synchronisation">
+                    <OfflineIcon />
+                  </div>
+                )}
             </div>
         </div>
     );

@@ -122,12 +122,7 @@ const ReminderItem: React.FC<{
 
     return (
         <>
-            <div className={`relative p-3 rounded-lg border ${reminder.is_active ? 'bg-slate-50 border-slate-200' : 'bg-slate-200 border-slate-300 opacity-60'}`}>
-                {reminder.isOffline && (
-                    <div className="absolute top-2 right-2" title="En attente de synchronisation">
-                        <OfflineIcon />
-                    </div>
-                )}
+            <div className={`p-3 rounded-lg border ${reminder.is_active ? 'bg-slate-50 border-slate-200' : 'bg-slate-200 border-slate-300 opacity-60'}`}>
                 <div className="flex justify-between items-center">
                     <div>
                         <p className="font-semibold">{reminder.description}</p>
@@ -135,7 +130,12 @@ const ReminderItem: React.FC<{
                             {reminder.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} - Le {reminder.day_of_month} de chaque mois
                         </p>
                     </div>
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center space-x-2">
+                        {reminder.isOffline && (
+                            <div title="En attente de synchronisation">
+                                <OfflineIcon />
+                            </div>
+                        )}
                         <label htmlFor={`toggle-${reminder.id}`} className="flex items-center cursor-pointer" title={reminder.is_active ? 'Désactiver' : 'Activer'}>
                             <div className="relative">
                                 <input type="checkbox" id={`toggle-${reminder.id}`} className="sr-only peer" checked={reminder.is_active} onChange={handleToggleActive} />

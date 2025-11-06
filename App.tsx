@@ -123,13 +123,13 @@ const App: React.FC = () => {
 
     if (error) {
       console.error('Error fetching expenses:', error.message || error);
-      if (isOnline) {
+      if (navigator.onLine) {
         setToastInfo({ message: "Erreur lors de la récupération des dépenses.", type: 'error' });
       }
     } else if (data) {
       setExpenses(data);
     }
-  }, [isOnline]);
+  }, []);
 
   const fetchReminders = useCallback(async () => {
     const { data, error } = await supabase
@@ -139,13 +139,13 @@ const App: React.FC = () => {
 
     if (error) {
         console.error('Error fetching reminders:', error.message || error);
-         if (isOnline) {
+         if (navigator.onLine) {
             setToastInfo({ message: "Erreur lors de la récupération des rappels.", type: 'error' });
          }
     } else if (data) {
         setReminders(data);
     }
-  }, [isOnline]);
+  }, []);
 
 
   useEffect(() => {
