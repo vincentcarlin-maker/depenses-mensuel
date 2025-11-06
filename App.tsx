@@ -281,6 +281,8 @@ const App: React.FC = () => {
     if (error) {
       console.error('Error deleting expense:', error.message || error);
       setToastInfo({ message: "Erreur lors de la suppression.", type: 'error' });
+    } else {
+      setExpenses(prevExpenses => prevExpenses.filter(expense => expense.id !== id));
     }
   };
   
@@ -302,6 +304,8 @@ const App: React.FC = () => {
     if (error) {
       console.error('Error updating expense:', error.message || error);
       setToastInfo({ message: "Erreur lors de la mise à jour.", type: 'error' });
+    } else {
+      setExpenses(prevExpenses => prevExpenses.map(expense => expense.id === updatedExpense.id ? updatedExpense : expense));
     }
     setExpenseToEdit(null);
   };
