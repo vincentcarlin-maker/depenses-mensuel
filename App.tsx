@@ -161,17 +161,13 @@ const App: React.FC = () => {
   }, [fetchExpenses, fetchReminders]);
 
   useEffect(() => {
-    // CORRIGÉ : La gestion de la synchronisation est simplifiée. Au lieu de
-    // recharger manuellement les données et risquer une "race condition", on se
-    // contente d'afficher une notification. L'interface est déjà mise à jour
-    // de manière fiable par les abonnements temps réel de Supabase, qui savent
-    // comment remplacer un item "hors ligne" par sa version synchronisée.
+    // La gestion de la synchronisation est simple : on affiche une notification de succès.
+    // L'interface est mise à jour de manière fiable par les abonnements temps réel
+    // ci-dessous, qui savent comment remplacer un item "hors ligne" par sa version synchronisée.
     const handleSyncMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === 'SYNC_COMPLETE') {
         setToastInfo({ message: '✅ Dépenses synchronisées avec succès', type: 'info' });
         // Il n'est plus nécessaire d'appeler fetchExpenses() ou fetchReminders() ici.
-        // Les listeners temps réel ci-dessous s'occupent déjà de la mise à jour
-        // de l'état de manière plus efficace et sans risque de "race condition".
       }
     };
     navigator.serviceWorker.addEventListener('message', handleSyncMessage);
@@ -184,30 +180,29 @@ const App: React.FC = () => {
         (payload) => {
           const newExpense = payload.new;
           setExpenses(prevExpenses => {
-            if (prevExpenses.some(e => e.id === newExpense.id)) {
-              return prevExpenses;
-            }
-            // La logique de remplacement d'un item hors ligne est conservée pour les mises à jour en temps réel
-            // qui pourraient arriver avant le message de synchronisation.
-            const offlineIndex = prevExpenses.findIndex(e =>
-              e.isOffline &&
-              e.description === newExpense.description &&
-              e.amount === newExpense.amount &&
-              e.user === newExpense.user &&
-              e.category === newExpense.category
-            );
-            if (offlineIndex !== -1) {
+            // CORRIGÉ: La recherche de l'item hors ligne se fait maintenant par ID,
+            // ce qui est 100% fiable car l'ID est généré côté client.
+            const offlineIndex = prevExpenses.findIndex(e => e.id === newExpense.id);
+
+            // Si on trouve un item avec le même ID et qu'il est marqué "offline", on le remplace.
+            if (offlineIndex !== -1 && prevExpenses[offlineIndex].isOffline) {
               const updatedExpenses = [...prevExpenses];
-              updatedExpenses[offlineIndex] = newExpense;
+              updatedExpenses[offlineIndex] = newExpense; // Remplace l'item temporaire par celui de la BDD
               setToastInfo({ message: `Dépense synchronisée : ${newExpense.description}`, type: 'info' });
               return updatedExpenses;
-            } else {
-              setToastInfo({
+            } 
+            
+            // Si on ne trouve pas d'item avec cet ID, c'est une nouvelle dépense (ex: autre utilisateur)
+            if (offlineIndex === -1) {
+               setToastInfo({
                 message: `${newExpense.user} a ajouté : ${newExpense.description} (${newExpense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`,
                 type: 'info'
               });
               return [newExpense, ...prevExpenses];
             }
+
+            // Si on trouve l'item mais qu'il n'est PAS offline, c'est un doublon de message temps-réel, on ne fait rien.
+            return prevExpenses;
           });
         }
       )
@@ -249,8 +244,23 @@ const App: React.FC = () => {
       .on<Reminder>(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'reminders' },
-        () => {
-          fetchReminders();
+        (payload) => {
+            // Pour les rappels, un simple re-fetch est suffisant et fiable.
+            const newReminder = payload.new as Reminder;
+            if (newReminder) {
+                // Remplacement optimiste pour une meilleure UX
+                setReminders(prev => {
+                    const existingIndex = prev.findIndex(r => r.id === newReminder.id);
+                    if (existingIndex !== -1) {
+                        const updated = [...prev];
+                        updated[existingIndex] = newReminder;
+                        return updated;
+                    }
+                    return [...prev, newReminder].sort((a,b) => a.day_of_month - b.day_of_month);
+                });
+            } else {
+                fetchReminders();
+            }
         }
       )
       .subscribe();
@@ -263,24 +273,31 @@ const App: React.FC = () => {
   }, [fetchReminders, fetchExpenses]);
 
   const addExpense = async (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => {
+    // CORRIGÉ: On génère l'ID côté client pour garantir sa stabilité
+    // entre l'affichage hors ligne et la synchronisation.
+    const newId = crypto.randomUUID();
+    const expenseData = {
+        ...expense,
+        id: newId,
+        date: new Date().toISOString(),
+    };
+
     if (!isOnline) {
-      const expenseToQueue = { ...expense, date: new Date().toISOString() };
       const tempExpenseForUI: Expense = {
-        ...expenseToQueue,
-        id: crypto.randomUUID(),
+        ...expenseData,
         created_at: new Date().toISOString(),
         isOffline: true,
       };
       setExpenses(prev => [tempExpenseForUI, ...prev]);
-      await queueMutation({ type: 'add', table: 'expenses', payload: expenseToQueue });
+      await queueMutation({ type: 'add', table: 'expenses', payload: expenseData });
       await registerSync();
       setToastInfo({ message: "Mode hors ligne: Dépense mise en attente.", type: 'info' });
       return;
     }
 
-    const { data: newExpense, error } = await supabase
+    const { error } = await supabase
       .from('expenses')
-      .insert({ ...expense, date: new Date().toISOString() })
+      .insert(expenseData) // On envoie l'objet avec notre ID pré-généré
       .select()
       .single();
       
@@ -328,22 +345,23 @@ const App: React.FC = () => {
   };
 
   const addReminder = async (reminder: Omit<Reminder, 'id' | 'created_at'>) => {
+    const newId = crypto.randomUUID();
+    const reminderData = { ...reminder, id: newId };
+
     if (!isOnline) {
-        const reminderToQueue = { ...reminder };
         const tempReminderForUI: Reminder = {
-            ...reminderToQueue,
-            id: crypto.randomUUID(),
+            ...reminderData,
             created_at: new Date().toISOString(),
             isOffline: true,
         };
         setReminders(prev => [...prev, tempReminderForUI].sort((a,b) => a.day_of_month - b.day_of_month));
-        await queueMutation({ type: 'add', table: 'reminders', payload: reminderToQueue });
+        await queueMutation({ type: 'add', table: 'reminders', payload: reminderData });
         await registerSync();
         setToastInfo({ message: "Mode hors ligne: Rappel mis en attente.", type: 'info' });
         return;
     }
 
-    const { error } = await supabase.from('reminders').insert(reminder);
+    const { error } = await supabase.from('reminders').insert(reminderData);
     if (error) {
         console.error('Error adding reminder:', error.message || error);
         setToastInfo({ message: "Erreur lors de l'ajout du rappel.", type: 'error' });

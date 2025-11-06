@@ -64,6 +64,7 @@ async function syncData() {
     expensesModified: false,
     remindersModified: false,
   };
+  let allSucceeded = true; // Flag pour vérifier si toutes les opérations ont réussi
 
   for (const mutation of pendingMutations) {
     try {
@@ -91,19 +92,20 @@ async function syncData() {
 
       await deletePendingMutation(mutation.id);
     } catch (err) {
-      console.error('Failed to sync mutation, stopping for now:', mutation, err);
-      // On arrête la boucle à la première erreur pour préserver l'ordre.
-      // La mutation échouée et les suivantes seront réessayées plus tard.
-      // Le message de synchronisation sera tout de même envoyé pour les opérations
-      // qui ont réussi avant l'échec.
-      break; 
+      console.error('Failed to sync mutation, will retry later:', mutation, err);
+      allSucceeded = false; // Une opération a échoué
+      break; // On arrête la boucle pour préserver l'ordre et réessayer plus tard
     }
   }
   
-  if (results.expensesModified || results.remindersModified) {
-    console.log('Partial or full sync complete, notifying clients.');
+  // CORRIGÉ: On n'envoie la notification que si TOUTES les opérations ont réussi.
+  // Cela garantit que l'application n'est notifiée que d'un état 100% synchronisé.
+  if (allSucceeded && (results.expensesModified || results.remindersModified)) {
+    console.log('Full sync complete, notifying clients.');
     const clients = await self.clients.matchAll({ includeUncontrolled: true });
     clients.forEach(client => client.postMessage({ type: 'SYNC_COMPLETE', payload: results }));
+  } else if (!allSucceeded) {
+      console.log('Sync failed for one or more items. Postponing notification until next sync attempt.');
   }
 }
 
