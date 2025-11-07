@@ -44,10 +44,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+      
+      - name: Installation des dépendances
+        run: npm install
 
       - name: Déployer la fonction Edge sur Supabase
         # Utilisation de 'npx' pour exécuter la CLI Supabase.
-        # C'est une méthode plus fiable qui évite les problèmes de "commande introuvable".
+        # Après `npm install`, la commande sera trouvée dans node_modules.
         run: npx supabase functions deploy send-notification --project-ref ${{ secrets.SUPABASE_PROJECT_ID }} --no-verify-jwt
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
