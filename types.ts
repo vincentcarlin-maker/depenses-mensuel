@@ -32,9 +32,9 @@ export interface Reminder {
   created_at: string;
 }
 
-export interface HistoryLog {
+export interface AuditLog {
   id: string;
   created_at: string;
-  event_type: 'INSERT' | 'UPDATE' | 'DELETE';
+  action: 'INSERT' | 'UPDATE' | 'DELETE';
   details: string;
 }

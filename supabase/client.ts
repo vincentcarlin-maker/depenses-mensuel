@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { type Expense, type Reminder, type HistoryLog } from '../types';
+import { type Expense, type Reminder, type AuditLog } from '../types';
 
 // -----------------------------------------------------------------------------
 // La configuration de votre projet Supabase est maintenant terminée !
@@ -33,9 +33,9 @@ export type Database = {
         };
         Update: {};
       };
-      history_logs: {
-        Row: HistoryLog;
-        Insert: Omit<HistoryLog, 'id' | 'created_at'>;
+      audit_log: {
+        Row: AuditLog;
+        Insert: Omit<AuditLog, 'id' | 'created_at'>;
         Update: never; // Les logs sont immuables
       };
     };
@@ -55,21 +55,28 @@ export type Database = {
 // 2. Copiez-collez TOUT le bloc de code ci-dessous et exécutez-le.
 
 /*
+-- **SCRIPT DE CORRECTION ET D'INSTALLATION DE L'AUDIT**
+-- Ce script va nettoyer les anciennes tables/fonctions et installer la nouvelle version.
+
+-- 0. Nettoyage des anciennes versions (si elles existent)
+DROP TABLE IF EXISTS public.history_logs CASCADE;
+DROP TABLE IF EXISTS public.audit_log CASCADE;
+
 -- 1. Création de la table pour stocker l'historique
-CREATE TABLE public.history_logs (
+CREATE TABLE public.audit_log (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-  event_type TEXT NOT NULL,
+  action TEXT NOT NULL, -- Renommé de event_type à action pour corriger l'erreur
   details TEXT NOT NULL
 );
 
 -- 2. Activation de la Row Level Security (RLS) pour la sécurité
-ALTER TABLE public.history_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
 
 -- 3. Création d'une politique pour autoriser la lecture des logs par l'application
-DROP POLICY IF EXISTS "Allow anon read access on history_logs" ON public.history_logs;
-CREATE POLICY "Allow anon read access on history_logs"
-ON public.history_logs
+DROP POLICY IF EXISTS "Allow anon read access on audit_log" ON public.audit_log;
+CREATE POLICY "Allow anon read access on audit_log"
+ON public.audit_log
 FOR SELECT TO anon
 USING (true);
 
@@ -78,41 +85,41 @@ CREATE OR REPLACE FUNCTION public.log_expense_change()
 RETURNS TRIGGER AS $$
 BEGIN
   IF (TG_OP = 'INSERT') THEN
-    INSERT INTO public.history_logs (event_type, details)
+    INSERT INTO public.audit_log (action, details)
     VALUES (
       'INSERT',
       CONCAT(
-        NEW.user, 
-        ' a ajouté : ', 
-        NEW.description, 
-        ' (', 
-        to_char(NEW.amount, 'FM999999990.00'), 
+        NEW.user,
+        ' a ajouté : ',
+        NEW.description,
+        ' (',
+        to_char(NEW.amount, 'FM999999990.00'),
         ' €)'
       )
     );
     RETURN NEW;
   ELSIF (TG_OP = 'UPDATE') THEN
-    INSERT INTO public.history_logs (event_type, details)
+    INSERT INTO public.audit_log (action, details)
     VALUES (
       'UPDATE',
       CONCAT(
-        NEW.user, 
-        ' a modifié la dépense "', 
-        OLD.description, 
+        NEW.user,
+        ' a modifié la dépense "',
+        OLD.description,
         '"'
       )
     );
     RETURN NEW;
   ELSIF (TG_OP = 'DELETE') THEN
-    INSERT INTO public.history_logs (event_type, details)
+    INSERT INTO public.audit_log (action, details)
     VALUES (
       'DELETE',
       CONCAT(
-        OLD.user, 
-        ' a supprimé : ', 
-        OLD.description, 
-        ' (', 
-        to_char(OLD.amount, 'FM999999990.00'), 
+        OLD.user,
+        ' a supprimé : ',
+        OLD.description,
+        ' (',
+        to_char(OLD.amount, 'FM999999990.00'),
         ' €)'
       )
     );

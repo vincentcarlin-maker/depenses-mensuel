@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { type HistoryLog } from '../types';
+import { type AuditLog } from '../types';
 import PlusIcon from './icons/PlusIcon';
 import EditIcon from './icons/EditIcon';
 import TrashIcon from './icons/TrashIcon';
@@ -26,10 +26,10 @@ const getRelativeDateLabel = (dateString: string): string => {
     }).format(date);
 };
 
-const EventIcon: React.FC<{ eventType: HistoryLog['event_type'] }> = ({ eventType }) => {
+const EventIcon: React.FC<{ action: AuditLog['action'] }> = ({ action }) => {
     const baseClasses = "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-slate-800";
     
-    switch (eventType) {
+    switch (action) {
         case 'INSERT':
             return (
                 <div className={`${baseClasses} bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400`}>
@@ -53,7 +53,7 @@ const EventIcon: React.FC<{ eventType: HistoryLog['event_type'] }> = ({ eventTyp
     }
 };
 
-const HistoryTab: React.FC<{ logs: HistoryLog[] }> = ({ logs }) => {
+const HistoryTab: React.FC<{ logs: AuditLog[] }> = ({ logs }) => {
     const groupedLogs = useMemo(() => {
         return logs.reduce((acc, log) => {
             const dateLabel = getRelativeDateLabel(log.created_at);
@@ -62,7 +62,7 @@ const HistoryTab: React.FC<{ logs: HistoryLog[] }> = ({ logs }) => {
             }
             acc[dateLabel].push(log);
             return acc;
-        }, {} as Record<string, HistoryLog[]>);
+        }, {} as Record<string, AuditLog[]>);
     }, [logs]);
 
     if (logs.length === 0) {
@@ -79,14 +79,14 @@ const HistoryTab: React.FC<{ logs: HistoryLog[] }> = ({ logs }) => {
             <h2 className="text-xl font-bold mb-6 text-slate-800 dark:text-slate-100">Historique des modifications</h2>
             <div className="space-y-8">
                 {/* FIX: Cast the result of Object.entries to the correct type to prevent TypeScript from inferring 'unknown' for the array of logs. */}
-                {(Object.entries(groupedLogs) as [string, HistoryLog[]][]).map(([dateLabel, logsForDate]) => (
+                {(Object.entries(groupedLogs) as [string, AuditLog[]][]).map(([dateLabel, logsForDate]) => (
                     <div key={dateLabel}>
                         <h3 className="text-lg font-semibold text-slate-600 dark:text-slate-300 mb-4 capitalize">{dateLabel}</h3>
                         <ol className="relative border-l border-slate-200 dark:border-slate-700 ml-5">
                             {logsForDate.map(log => (
                                 <li key={log.id} className="mb-6 ml-10">
                                     <span className="absolute -left-5">
-                                        <EventIcon eventType={log.event_type} />
+                                        <EventIcon action={log.action} />
                                     </span>
                                     <div className="items-center justify-between p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm sm:flex">
                                         <time className="mb-1 text-xs font-normal text-slate-400 sm:order-last sm:mb-0">

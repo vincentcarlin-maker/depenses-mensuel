@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { type Reminder, type HistoryLog } from '../types';
+import { type Reminder, type AuditLog } from '../types';
 import RemindersTab from './RemindersTab';
 import CloseIcon from './icons/CloseIcon';
 import ThemeToggle from './ThemeToggle';
@@ -15,7 +15,7 @@ interface SettingsModalProps {
   onAddReminder: (reminder: Omit<Reminder, 'id' | 'created_at'>) => Promise<void>;
   onUpdateReminder: (reminder: Reminder) => Promise<void>;
   onDeleteReminder: (id: string) => Promise<void>;
-  historyLogs: HistoryLog[];
+  auditLogs: AuditLog[];
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ 
@@ -25,7 +25,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     onAddReminder, 
     onUpdateReminder, 
     onDeleteReminder,
-    historyLogs
+    auditLogs
 }) => {
   const [activeTab, setActiveTab] = useState('reminders');
 
@@ -105,7 +105,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         onDeleteReminder={onDeleteReminder}
                     />
                 )}
-                {activeTab === 'history' && <HistoryTab logs={historyLogs} />}
+                {activeTab === 'history' && <HistoryTab logs={auditLogs} />}
                 {activeTab === 'appearance' && (
                     <div className="space-y-8">
                         <div>
