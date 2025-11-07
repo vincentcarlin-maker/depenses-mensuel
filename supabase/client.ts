@@ -66,7 +66,8 @@ DROP TABLE IF EXISTS public.audit_log CASCADE;
 CREATE TABLE public.audit_log (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-  action TEXT NOT NULL, -- Renommé de event_type à action pour corriger l'erreur
+  entity TEXT NOT NULL, -- Ajouté pour identifier la table source (ex: 'expenses')
+  action TEXT NOT NULL,
   details TEXT NOT NULL
 );
 
@@ -85,8 +86,9 @@ CREATE OR REPLACE FUNCTION public.log_expense_change()
 RETURNS TRIGGER AS $$
 BEGIN
   IF (TG_OP = 'INSERT') THEN
-    INSERT INTO public.audit_log (action, details)
+    INSERT INTO public.audit_log (entity, action, details)
     VALUES (
+      'expenses', -- Nom de l'entité
       'INSERT',
       CONCAT(
         NEW.user,
@@ -99,8 +101,9 @@ BEGIN
     );
     RETURN NEW;
   ELSIF (TG_OP = 'UPDATE') THEN
-    INSERT INTO public.audit_log (action, details)
+    INSERT INTO public.audit_log (entity, action, details)
     VALUES (
+      'expenses', -- Nom de l'entité
       'UPDATE',
       CONCAT(
         NEW.user,
@@ -111,8 +114,9 @@ BEGIN
     );
     RETURN NEW;
   ELSIF (TG_OP = 'DELETE') THEN
-    INSERT INTO public.audit_log (action, details)
+    INSERT INTO public.audit_log (entity, action, details)
     VALUES (
+      'expenses', -- Nom de l'entité
       'DELETE',
       CONCAT(
         OLD.user,
