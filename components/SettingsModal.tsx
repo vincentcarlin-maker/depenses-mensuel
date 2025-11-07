@@ -80,14 +80,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </button>
           </div>
         </header>
-        <div className="flex h-[calc(100%-64px)] container mx-auto">
-            <aside className="w-full md:w-64 border-r border-slate-200 dark:border-slate-800 p-4">
+        <div className="flex flex-col md:flex-row h-[calc(100%-64px)] container mx-auto">
+            <aside className="w-full md:w-64 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 p-4">
                 <nav className="flex md:flex-col gap-2">
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center gap-3 w-full text-left px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+                            className={`flex items-center justify-center md:justify-start gap-3 w-full text-left px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
                                 activeTab === tab.id
                                     ? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300'
                                     : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
