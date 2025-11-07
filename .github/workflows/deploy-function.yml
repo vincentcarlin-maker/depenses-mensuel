@@ -9,6 +9,30 @@ on:
       - 'supabase/functions/**'
   workflow_dispatch:
 
+# =============================================================================
+# ACTION REQUISE : Configuration des Secrets sur GitHub
+# =============================================================================
+# Pour que ce déploiement fonctionne, vous DEVEZ configurer les "secrets"
+# suivants dans les paramètres de votre dépôt GitHub.
+#
+# 1. Allez sur votre dépôt GitHub > Settings > Secrets and variables > Actions.
+# 2. Cliquez sur "New repository secret" pour chaque secret ci-dessous.
+#
+# SECRETS REQUIS :
+#
+#   - NOM : SUPABASE_PROJECT_ID
+#   - VALEUR : L'identifiant de votre projet Supabase. Vous le trouverez dans
+#     votre tableau de bord Supabase > Settings > General > Project ID.
+#
+#   - NOM : SUPABASE_ACCESS_TOKEN
+#   - VALEUR : Un jeton d'accès personnel. Pour en créer un :
+#       a. Allez sur https://supabase.com/dashboard/account/tokens
+#       b. Cliquez sur "Generate New Token".
+#       c. Donnez-lui un nom (ex: "GitHub Actions Deploy") et cliquez sur "Generate token".
+#       d. Copiez la valeur générée et collez-la ici.
+#
+# =============================================================================
+
 jobs:
   deploy_function:
     runs-on: ubuntu-latest
@@ -25,7 +49,8 @@ jobs:
         run: npm install -g supabase
 
       - name: Déployer la fonction Edge sur Supabase
+        # Cette commande utilise les secrets que vous avez configurés pour s'authentifier
+        # et déployer la fonction "send-notification" sur le bon projet Supabase.
         run: supabase functions deploy send-notification --project-ref ${{ secrets.SUPABASE_PROJECT_ID }} --no-verify-jwt
         env:
-          # Le jeton d'accès est utilisé pour s'authentifier auprès de l'API de gestion Supabase.
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
