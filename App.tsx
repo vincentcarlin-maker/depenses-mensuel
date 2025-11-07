@@ -15,50 +15,6 @@ import SettingsModal from './components/SettingsModal';
 import { useTheme } from './hooks/useTheme';
 import OfflineIndicator from './components/OfflineIndicator';
 
-const parseUserAgent = (): string => {
-    const ua = navigator.userAgent;
-    let browser = 'Navigateur inconnu';
-    let os = 'OS inconnu';
-    let deviceType = 'Desktop';
-
-    // Détection du type d'appareil
-    if (/Mobi|Android|iPhone/.test(ua)) {
-        deviceType = 'Mobile';
-    } else if (/Tablet|iPad/.test(ua)) {
-        deviceType = 'Tablet';
-    }
-
-    // Détection de l'OS
-    if (/Windows NT/.test(ua)) os = 'Windows';
-    else if (/Macintosh/.test(ua)) os = 'macOS';
-    else if (/iPhone/.test(ua)) os = 'iPhone';
-    else if (/iPad/.test(ua)) os = 'iPad';
-    else if (/Android/.test(ua)) os = 'Android';
-    else if (/Linux/.test(ua)) os = 'Linux';
-    
-    // Pour les appareils Apple, différencier Mac de iPhone/iPad
-    if (os === 'macOS' && 'ontouchend' in document) {
-        // Cela pourrait être un Mac avec écran tactile, mais il est plus probable que ce soit une erreur
-        // si l'UA est générique. On garde macOS.
-    } else if (/Macintosh/.test(ua) && deviceType !== 'Desktop') {
-       // Si l'UA contient Macintosh mais est détecté comme mobile/tablette, c'est probablement un iPad.
-       os = 'iPadOS';
-       deviceType = 'Tablet';
-    }
-
-
-    // Détection du navigateur
-    if (/Firefox/.test(ua)) browser = 'Firefox';
-    else if (/SamsungBrowser/.test(ua)) browser = 'Samsung Internet';
-    else if (/Opera|OPR/.test(ua)) browser = 'Opera';
-    else if (/Trident/.test(ua)) browser = 'Internet Explorer';
-    else if (/Edg/.test(ua)) browser = 'Edge'; // "Edg" est plus fiable pour Edge Chromium
-    else if (/Chrome/.test(ua) && !/Chromium/.test(ua)) browser = 'Chrome';
-    else if (/Safari/.test(ua) && !/Chrome/.test(ua)) browser = 'Safari';
-    
-    return `${browser} sur ${os} (${deviceType})`;
-};
-
 const App: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -203,7 +159,6 @@ const App: React.FC = () => {
         ...expense,
         id: newId,
         date: new Date().toISOString(),
-        user_agent: parseUserAgent(),
     };
 
     const optimisticExpense: Expense = {
@@ -244,15 +199,10 @@ const App: React.FC = () => {
     const originalExpense = expenses.find(e => e.id === updatedExpense.id);
     if (!originalExpense) return;
 
-    const expenseWithUserAgent = {
-        ...updatedExpense,
-        user_agent: parseUserAgent(),
-    };
-
-    setExpenses(prev => prev.map(e => e.id === updatedExpense.id ? expenseWithUserAgent : e));
+    setExpenses(prev => prev.map(e => e.id === updatedExpense.id ? updatedExpense : e));
     setExpenseToEdit(null);
 
-    const { id, created_at, ...updatePayload } = expenseWithUserAgent;
+    const { id, created_at, ...updatePayload } = updatedExpense;
     const { error } = await supabase.from('expenses').update(updatePayload).eq('id', id);
       
     if (error) {
@@ -267,7 +217,6 @@ const App: React.FC = () => {
     const reminderData = {
         ...reminder,
         id: newId,
-        user_agent: parseUserAgent(),
     };
 
     const optimisticReminder: Reminder = {
@@ -292,15 +241,10 @@ const App: React.FC = () => {
   const updateReminder = async (updatedReminder: Reminder) => {
     const originalReminder = reminders.find(r => r.id === updatedReminder.id);
     if (!originalReminder) return;
-    
-    const reminderWithUserAgent = {
-        ...updatedReminder,
-        user_agent: parseUserAgent(),
-    };
 
-    setReminders(prev => prev.map(r => r.id === updatedReminder.id ? reminderWithUserAgent : r).sort((a,b) => a.day_of_month - b.day_of_month));
+    setReminders(prev => prev.map(r => r.id === updatedReminder.id ? updatedReminder : r).sort((a,b) => a.day_of_month - b.day_of_month));
 
-    const { id, created_at, ...updatePayload } = reminderWithUserAgent;
+    const { id, created_at, ...updatePayload } = updatedReminder;
     const { error } = await supabase.from('reminders').update(updatePayload).eq('id', id);
 
     if (error) {
