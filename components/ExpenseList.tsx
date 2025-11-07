@@ -7,7 +7,7 @@ interface ExpenseListProps {
   onEditExpense: (expense: Expense) => void;
 }
 
-const ExpenseList = ({ expenses, onEditExpense }: ExpenseListProps) => {
+const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEditExpense }) => {
   if (expenses.length === 0) {
     return (
       <div className="text-center py-10">

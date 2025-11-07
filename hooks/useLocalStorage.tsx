@@ -1,7 +1,7 @@
 // FIX: The 'React' namespace was missing for the types used in the function signature.
-import { useState, useEffect, type Dispatch, type SetStateAction } from 'react';
+import React, { useState, useEffect } from 'react';
 
-export function useLocalStorage<T,>(key: string, initialValue: T): [T, Dispatch<SetStateAction<T>>] {
+export function useLocalStorage<T,>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [storedValue, setStoredValue] = useState<T>(() => {
     if (typeof window === "undefined") {
       return initialValue;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { type Expense, User } from '../types';
 
 interface BalanceReportProps {
@@ -9,8 +9,8 @@ interface BalanceReportProps {
   vincentTotalMonth: number;
 }
 
-const ExpenseSummary = ({ allExpenses, currentYear, currentMonth, sophieTotalMonth, vincentTotalMonth }: BalanceReportProps) => {
-  const { historicDifference, cumulativeDifference, message } = React.useMemo(() => {
+const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear, currentMonth, sophieTotalMonth, vincentTotalMonth }) => {
+  const { historicDifference, cumulativeDifference, message } = useMemo(() => {
     const firstDayOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1));
     
     const historicExpenses = allExpenses.filter(exp => new Date(exp.date) < firstDayOfMonth);

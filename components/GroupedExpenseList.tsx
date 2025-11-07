@@ -7,7 +7,7 @@ interface GroupedExpenseListProps {
   onEditExpense: (expense: Expense) => void;
 }
 
-const GroupedExpenseList = ({ expenses, onEditExpense }: GroupedExpenseListProps) => {
+const GroupedExpenseList: React.FC<GroupedExpenseListProps> = ({ expenses, onEditExpense }) => {
   const groupedExpenses = expenses.reduce((acc, expense) => {
     const date = new Date(expense.date);
     const monthYear = date.toLocaleString('fr-FR', { month: 'long', year: 'numeric' });

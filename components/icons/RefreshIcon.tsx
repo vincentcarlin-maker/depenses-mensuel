@@ -1,6 +1,6 @@
 import React from 'react';
 
-const RefreshIcon = () => (
+const RefreshIcon: React.FC = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className="h-6 w-6"

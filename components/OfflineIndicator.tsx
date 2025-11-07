@@ -2,7 +2,7 @@ import React from 'react';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import CloudSlashIcon from './icons/CloudSlashIcon';
 
-const OfflineIndicator = () => {
+const OfflineIndicator: React.FC = () => {
   const isOnline = useOnlineStatus();
 
   if (isOnline) {

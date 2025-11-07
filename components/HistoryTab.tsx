@@ -5,7 +5,7 @@ import PlusCircleIcon from './icons/PlusCircleIcon';
 import PencilIcon from './icons/PencilIcon';
 import TrashIcon from './icons/TrashIcon';
 
-const ActionIcon = ({ action }: { action: AuditLog['action'] }) => {
+const ActionIcon: React.FC<{ action: AuditLog['action'] }> = ({ action }) => {
     switch (action) {
         case 'CREATE':
             return <div className="text-green-500"><PlusCircleIcon /></div>;
@@ -18,7 +18,7 @@ const ActionIcon = ({ action }: { action: AuditLog['action'] }) => {
     }
 };
 
-const HistoryTab = () => {
+const HistoryTab: React.FC = () => {
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -26,7 +26,7 @@ const HistoryTab = () => {
     useEffect(() => {
         const fetchLogs = async () => {
             setIsLoading(true);
-            const { data, error } = await supabase!
+            const { data, error } = await supabase
                 .from('audit_log')
                 .select('*')
                 .order('created_at', { ascending: false })

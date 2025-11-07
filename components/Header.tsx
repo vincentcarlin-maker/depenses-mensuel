@@ -19,7 +19,7 @@ interface HeaderProps {
   onRefresh: () => void;
 }
 
-const Header = ({ onSetToast, onOpenSettings, onRefresh }: HeaderProps) => {
+const Header: React.FC<HeaderProps> = ({ onSetToast, onOpenSettings, onRefresh }) => {
   return (
     <header className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-sm shadow-sm sticky top-0 z-20">
       <div className="container mx-auto px-4 py-4 md:px-8 flex items-center justify-between">
@@ -29,10 +29,10 @@ const Header = ({ onSetToast, onOpenSettings, onRefresh }: HeaderProps) => {
             Dépenses
           </h1>
         </div>
-        <div className="flex items-center space-x-1 sm:space-x-2 text-slate-500 dark:text-slate-400">
+        <div className="flex items-center space-x-1 sm:space-x-2">
             <button
                 onClick={onRefresh}
-                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 aria-label="Rafraîchir les données"
                 title="Rafraîchir"
             >
@@ -41,7 +41,7 @@ const Header = ({ onSetToast, onOpenSettings, onRefresh }: HeaderProps) => {
             <NotificationBell onSetToast={onSetToast} />
             <button
                 onClick={onOpenSettings}
-                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 aria-label="Ouvrir les réglages"
                 title="Réglages"
             >

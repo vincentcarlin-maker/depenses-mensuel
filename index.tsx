@@ -16,19 +16,3 @@ root.render(
     <App />
   </React.StrictMode>
 );
-
-// Register the service worker for PWA functionality.
-// This is done after the app is loaded to not delay the initial render.
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    // Register the service worker using a relative path.
-    // This works both in development and when deployed in a sub-directory.
-    navigator.serviceWorker.register('sw.js')
-      .then(registration => {
-        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-      })
-      .catch(error => {
-        console.log('ServiceWorker registration failed: ', error);
-      });
-  });
-}

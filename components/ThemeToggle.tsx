@@ -13,7 +13,7 @@ const MoonIcon = () => (
   </svg>
 );
 
-const ThemeToggle = () => {
+const ThemeToggle: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
 
   return (

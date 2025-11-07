@@ -1,6 +1,13 @@
-import { useState, useEffect, memo, type ReactNode } from 'react';
+import React from 'react';
 import { type Expense, User, Category } from '../types';
-import CategoryIcon from './CategoryIcon';
+
+const CategoryEmojiMap: { [key: string]: string } = {
+  "Dépenses obligatoires": '📄',
+  "Gasoil": '⛽',
+  "Courses": '🛒',
+  "Chauffage": '🔥',
+  "Divers": '🎉',
+};
 
 const KeywordIconMap: { [key: string]: string } = {
   // Restauration rapide
@@ -22,7 +29,6 @@ const KeywordIconMap: { [key: string]: string } = {
   'amazon': '📦',
   'netflix': '🎬',
   'spotify': '🎵',
-  'deezer': '🎵',
   'disney+': '🎬',
   // Logement
   'loyer': '🏠',
@@ -107,7 +113,6 @@ const KeywordDomainMap: { [key: string]: string } = {
   // Services
   'netflix': 'netflix.com',
   'spotify': 'spotify.com',
-  'deezer': 'deezer.com',
   'disney+': 'disneyplus.com',
   'sncf': 'sncf-connect.com',
   'air france': 'airfrance.com',
@@ -128,73 +133,56 @@ const KeywordDomainMap: { [key: string]: string } = {
   'engie': 'engie.fr',
 };
 
-const Logo = memo(({ domain, alt, fallback }: { domain: string; alt: string; fallback: ReactNode }) => {
-    const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
+const Logo: React.FC<{ domain: string, alt: string, fallback: React.ReactNode }> = ({ domain, alt, fallback }) => {
+    const [hasError, setHasError] = React.useState(false);
     const src = `https://logo.clearbit.com/${domain}`;
 
-    useEffect(() => {
-        // Reset status when the image source changes
-        setStatus('loading');
+    React.useEffect(() => {
+        setHasError(false);
     }, [src]);
 
-    if (status === 'error') {
+    if (hasError) {
         return <>{fallback}</>;
     }
 
     return (
-        <div className="relative w-full h-full">
-            {status === 'loading' && (
-                <div className="w-full h-full bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse"></div>
-            )}
-            <img
-                src={src}
-                alt={alt}
-                loading="lazy"
-                className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${
-                    status === 'loading' ? 'opacity-0' : 'opacity-100'
-                }`}
-                onLoad={() => setStatus('loaded')}
-                onError={() => setStatus('error')}
-            />
-        </div>
+        <img
+            src={src}
+            alt={alt}
+            className="w-full h-full object-contain"
+            onError={() => setHasError(true)}
+        />
     );
-});
-
+};
 
 const sortedDomainKeywords = Object.keys(KeywordDomainMap).sort((a, b) => b.length - a.length);
 const sortedIconKeywords = Object.keys(KeywordIconMap).sort((a, b) => b.length - a.length);
 
-const getExpenseVisual = (description: string, category: Category): ReactNode => {
+const getExpenseVisual = (description: string, category: Category): React.ReactNode => {
     const lowerDesc = description.toLowerCase();
 
     for (const keyword of sortedDomainKeywords) {
         if (lowerDesc.includes(keyword)) {
             const domain = KeywordDomainMap[keyword];
-            return <Logo domain={domain} alt={description} fallback={<CategoryIcon category={category} />} />;
+            const fallbackEmoji = KeywordIconMap[keyword] || CategoryEmojiMap[category] || '❓';
+            return <Logo domain={domain} alt={description} fallback={<span className="text-xl">{fallbackEmoji}</span>} />;
         }
     }
 
     for (const keyword of sortedIconKeywords) {
         if (lowerDesc.includes(keyword)) {
-             return (
-                <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-700">
-                    <span className="text-2xl">{KeywordIconMap[keyword]}</span>
-                </div>
-            );
+            return <span className="text-xl">{KeywordIconMap[keyword]}</span>;
         }
     }
 
-    return <CategoryIcon category={category} />;
+    return <span className="text-xl">{CategoryEmojiMap[category] || '❓'}</span>;
 };
 
 
-const ExpenseListItem = memo(({
-    expense,
-    onEditExpense,
-}: {
+const ExpenseListItem: React.FC<{
     expense: Expense;
     onEditExpense: (expense: Expense) => void;
-}) => {
+}> = ({ expense, onEditExpense }) => {
 
     const formattedDate = new Date(expense.date).toLocaleString('fr-FR', {
         day: '2-digit',
@@ -220,7 +208,7 @@ const ExpenseListItem = memo(({
             `}
         >
             <div className={`w-1.5 h-10 rounded-full mr-3 ${userColorClass}`}></div>
-            <div className="w-10 h-10 flex items-center justify-center mr-3 flex-shrink-0">
+            <div className="w-10 h-10 flex items-center justify-center mr-3 flex-shrink-0 bg-slate-100 dark:bg-slate-700 rounded-lg">
                 {getExpenseVisual(expense.description, expense.category)}
             </div>
             <div className="flex-1 min-w-0">
@@ -235,6 +223,6 @@ const ExpenseListItem = memo(({
             </div>
         </div>
     );
-});
+};
 
 export default ExpenseListItem;

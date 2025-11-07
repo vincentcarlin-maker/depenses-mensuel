@@ -10,7 +10,7 @@ interface ToastProps {
   type?: 'info' | 'error';
 }
 
-const Toast = ({ message, onClose, duration = 5000, type = 'info' }: ToastProps) => {
+const Toast: React.FC<ToastProps> = ({ message, onClose, duration = 5000, type = 'info' }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose();

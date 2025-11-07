@@ -1,6 +1,5 @@
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { supabase, isSupabaseConfigured } from './supabase/client';
+import { supabase } from './supabase/client';
 import { type Expense, User, type Reminder } from './types';
 import Header from './components/Header';
 import ExpenseForm from './components/ExpenseForm';
@@ -15,7 +14,6 @@ import ReminderAlerts from './components/ReminderAlerts';
 import SettingsModal from './components/SettingsModal';
 import { useTheme } from './hooks/useTheme';
 import OfflineIndicator from './components/OfflineIndicator';
-import ConfigurationError from './components/ConfigurationError';
 
 const parseUserAgent = (): string => {
     const ua = navigator.userAgent;
@@ -61,11 +59,7 @@ const parseUserAgent = (): string => {
     return `${browser} sur ${os} (${deviceType})`;
 };
 
-const App = () => {
-  if (!isSupabaseConfigured) {
-    return <ConfigurationError />;
-  }
-  
+const App: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,7 +76,7 @@ const App = () => {
   useTheme();
 
   const fetchExpenses = useCallback(async () => {
-    const { data, error } = await supabase!
+    const { data, error } = await supabase
       .from('expenses')
       .select('*')
       .order('date', { ascending: false });
@@ -96,7 +90,7 @@ const App = () => {
   }, []);
 
   const fetchReminders = useCallback(async () => {
-    const { data, error } = await supabase!
+    const { data, error } = await supabase
         .from('reminders')
         .select('*')
         .order('day_of_month', { ascending: true });
@@ -120,16 +114,13 @@ const App = () => {
   }, [fetchExpenses, fetchReminders]);
 
   useEffect(() => {
-    const expensesChannel = supabase!
+    const expensesChannel = supabase
       .channel('expenses-realtime')
-      // FIX: Removed generic type argument `<Expense>` to resolve TypeScript error
-      // "Untyped function calls may not accept type arguments".
-      .on(
+      .on<Expense>(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'expenses' },
         (payload) => {
-          // FIX: Added `as Expense` type assertion since the payload is now implicitly `any`.
-          const newExpense = payload.new as Expense;
+          const newExpense = payload.new;
           setExpenses(prevExpenses => {
             if (prevExpenses.some(e => e.id === newExpense.id)) {
                 return prevExpenses.map(e => e.id === newExpense.id ? newExpense : e);
@@ -143,14 +134,11 @@ const App = () => {
           });
         }
       )
-      // FIX: Removed generic type argument `<Expense>` to resolve TypeScript error
-      // "Untyped function calls may not accept type arguments".
-      .on(
+      .on<Expense>(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'expenses' },
         (payload) => {
-          // FIX: Added `as Expense` type assertion since the payload is now implicitly `any`.
-          const updatedExpense = payload.new as Expense;
+          const updatedExpense = payload.new;
           setExpenses(prevExpenses =>
             prevExpenses.map(expense =>
               expense.id === updatedExpense.id ? updatedExpense : expense
@@ -162,9 +150,7 @@ const App = () => {
             });
         }
       )
-      // FIX: Removed generic type argument `<Expense>` to resolve TypeScript error
-      // "Untyped function calls may not accept type arguments".
-      .on(
+      .on<Expense>(
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'expenses' },
         (payload) => {
@@ -181,11 +167,9 @@ const App = () => {
       )
       .subscribe();
 
-    const remindersChannel = supabase!
+    const remindersChannel = supabase
       .channel('reminders-realtime')
-      // FIX: Removed generic type argument `<Reminder>` to resolve TypeScript error
-      // "Untyped function calls may not accept type arguments".
-      .on(
+      .on<Reminder>(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'reminders' },
         (payload) => {
@@ -208,8 +192,8 @@ const App = () => {
       .subscribe();
 
     return () => {
-      supabase!.removeChannel(expensesChannel);
-      supabase!.removeChannel(remindersChannel);
+      supabase.removeChannel(expensesChannel);
+      supabase.removeChannel(remindersChannel);
     };
   }, [fetchReminders, fetchExpenses]);
 
@@ -228,7 +212,7 @@ const App = () => {
     };
     setExpenses(prev => [optimisticExpense, ...prev]);
 
-    const { error } = await supabase!
+    const { error } = await supabase
       .from('expenses')
       .insert(expenseData)
       .select()
@@ -247,7 +231,7 @@ const App = () => {
 
     setExpenses(prev => prev.filter(e => e.id !== id));
 
-    const { error } = await supabase!.from('expenses').delete().eq('id', id);
+    const { error } = await supabase.from('expenses').delete().eq('id', id);
     
     if (error) {
       console.error('Error deleting expense:', error.message || error);
@@ -269,7 +253,7 @@ const App = () => {
     setExpenseToEdit(null);
 
     const { id, created_at, ...updatePayload } = expenseWithUserAgent;
-    const { error } = await supabase!.from('expenses').update(updatePayload).eq('id', id);
+    const { error } = await supabase.from('expenses').update(updatePayload).eq('id', id);
       
     if (error) {
       console.error('Error updating expense:', error.message || error);
@@ -292,7 +276,7 @@ const App = () => {
     };
     setReminders(prev => [...prev, optimisticReminder].sort((a,b) => a.day_of_month - b.day_of_month));
 
-    const { error } = await supabase!
+    const { error } = await supabase
         .from('reminders')
         .insert(reminderData)
         .select()
@@ -317,7 +301,7 @@ const App = () => {
     setReminders(prev => prev.map(r => r.id === updatedReminder.id ? reminderWithUserAgent : r).sort((a,b) => a.day_of_month - b.day_of_month));
 
     const { id, created_at, ...updatePayload } = reminderWithUserAgent;
-    const { error } = await supabase!.from('reminders').update(updatePayload).eq('id', id);
+    const { error } = await supabase.from('reminders').update(updatePayload).eq('id', id);
 
     if (error) {
         console.error('Error updating reminder:', error.message || error);
@@ -332,7 +316,7 @@ const App = () => {
     
     setReminders(prev => prev.filter(r => r.id !== id));
 
-    const { error } = await supabase!.from('reminders').delete().eq('id', id);
+    const { error } = await supabase.from('reminders').delete().eq('id', id);
     if (error) {
         console.error('Error deleting reminder:', error.message || error);
         setToastInfo({ message: "Erreur lors de la suppression du rappel.", type: 'error' });

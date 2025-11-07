@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { type Expense, Category } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LineChart, Line } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
-import { categoryConfig } from './CategoryIcon';
+
+const COLORS = ['#06b6d4', '#ec4899', '#f97316', '#8b5cf6', '#10b981', '#f59e0b'];
 
 interface YearlySummaryProps {
     expenses: Expense[];
@@ -10,11 +11,11 @@ interface YearlySummaryProps {
     year: number;
 }
 
-const YearlySummary = ({ expenses, previousYearExpenses, year }: YearlySummaryProps) => {
+const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExpenses, year }) => {
   const { theme } = useTheme();
   const tickColor = theme === 'dark' ? '#94a3b8' : '#64748b';
 
-  const { categoryData, totalYearlyExpense, monthlyAverage, numberOfMonthsWithData } = React.useMemo(() => {
+  const { categoryData, totalYearlyExpense, monthlyAverage, numberOfMonthsWithData } = useMemo(() => {
     if (expenses.length === 0) {
       return { categoryData: [], totalYearlyExpense: 0, monthlyAverage: 0, numberOfMonthsWithData: 0 };
     }
@@ -28,9 +29,7 @@ const YearlySummary = ({ expenses, previousYearExpenses, year }: YearlySummaryPr
     const monthsWithData = new Set<number>();
 
     for (const expense of expenses) {
-      if(categoryTotals[expense.category] !== undefined) {
-        categoryTotals[expense.category]! += expense.amount;
-      }
+      categoryTotals[expense.category]! += expense.amount;
       total += expense.amount;
       monthsWithData.add(new Date(expense.date).getMonth());
     }
@@ -54,7 +53,7 @@ const YearlySummary = ({ expenses, previousYearExpenses, year }: YearlySummaryPr
     };
   }, [expenses]);
   
-  const monthlyTrendData = React.useMemo(() => {
+  const monthlyTrendData = useMemo(() => {
     const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
     const data = monthNames.map(name => ({
       month: name,
@@ -140,10 +139,9 @@ const YearlySummary = ({ expenses, previousYearExpenses, year }: YearlySummaryPr
                         }}
                     />
                     <Bar dataKey="average" name="Moyenne mensuelle" fill="#8884d8" radius={[0, 8, 8, 0]}>
-                         {categoryData.map((entry, index) => {
-                            const color = categoryConfig[entry.name]?.colorHex || '#94a3b8';
-                            return <Cell key={`cell-${index}`} fill={color} />
-                        })}
+                         {categoryData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
                     </Bar>
                 </BarChart>
             </ResponsiveContainer>

@@ -7,7 +7,7 @@ interface EditReminderModalProps {
     onClose: () => void;
 }
 
-const EditReminderModal = ({ reminder, onUpdateReminder, onClose }: EditReminderModalProps) => {
+const EditReminderModal: React.FC<EditReminderModalProps> = ({ reminder, onUpdateReminder, onClose }) => {
     const [description, setDescription] = useState(reminder.description);
     const [amount, setAmount] = useState(reminder.amount.toString());
     const [category, setCategory] = useState<Category>(reminder.category);

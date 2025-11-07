@@ -1,8 +1,17 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { type Expense, Category } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
-import CategoryIcon, { categoryConfig } from './CategoryIcon';
+
+const COLORS = ['#06b6d4', '#ec4899', '#f97316', '#8b5cf6', '#10b981', '#f59e0b'];
+
+const CategoryEmojiMap: { [key: string]: string } = {
+  "Dépenses obligatoires": '📄',
+  "Gasoil": '⛽',
+  "Courses": '🛒',
+  "Chauffage": '🔥',
+  "Divers": '🎉',
+};
 
 const RADIAN = Math.PI / 180;
 const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
@@ -24,8 +33,8 @@ const CustomLegend = (props: any) => {
       <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-4 list-none p-0">
         {payload.map((entry: any, index: number) => (
           <li key={`item-${index}`} className="flex items-center text-sm text-slate-600 dark:text-slate-300">
-            <CategoryIcon category={entry.value as Category} size="xs" />
-            <span className="ml-2">{entry.value}</span>
+            <span className="mr-2 text-lg">{CategoryEmojiMap[entry.value] || '❓'}</span>
+            <span>{entry.value}</span>
           </li>
         ))}
       </ul>
@@ -33,10 +42,10 @@ const CustomLegend = (props: any) => {
 };
 
 
-const CategoryTotals = ({ expenses }: { expenses: Expense[] }) => {
+const CategoryTotals: React.FC<{ expenses: Expense[] }> = ({ expenses }) => {
   const { theme } = useTheme();
 
-  const { chartData, totalExpenses } = React.useMemo(() => {
+  const { chartData, totalExpenses } = useMemo(() => {
     const totals: { [key in Category]?: number } = {};
     let currentTotal = 0;
     
@@ -94,10 +103,9 @@ const CategoryTotals = ({ expenses }: { expenses: Expense[] }) => {
               dataKey="value"
               nameKey="name"
             >
-              {chartData.map((entry, index) => {
-                const color = categoryConfig[entry.name]?.colorHex || '#94a3b8';
-                return <Cell key={`cell-${index}`} fill={color} strokeWidth={0} />;
-              })}
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} strokeWidth={0} />
+              ))}
             </Pie>
             <Tooltip 
               formatter={(value: number) => `${value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`}
@@ -119,18 +127,17 @@ const CategoryTotals = ({ expenses }: { expenses: Expense[] }) => {
         <div className="space-y-3">
           {chartData.map((entry, index) => {
             const percentage = totalExpenses > 0 ? (entry.value / totalExpenses) * 100 : 0;
-            const color = categoryConfig[entry.name]?.colorHex || '#94a3b8';
             return (
               <div key={`detail-${index}`} className="flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-                <div className="mr-4 flex-shrink-0">
-                  <CategoryIcon category={entry.name as Category} size="sm" />
+                <div className="flex items-center w-8 h-8 justify-center mr-4 text-xl">
+                  {CategoryEmojiMap[entry.name] || '❓'}
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-slate-700 dark:text-slate-200">{entry.name}</p>
                   <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2 mt-1">
                      <div 
                         className="h-2 rounded-full transition-all duration-500 ease-out" 
-                        style={{ width: `${percentage}%`, backgroundColor: color }}
+                        style={{ width: `${percentage}%`, backgroundColor: COLORS[index % COLORS.length] }}
                      ></div>
                   </div>
                 </div>

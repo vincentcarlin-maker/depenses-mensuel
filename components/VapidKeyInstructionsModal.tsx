@@ -1,4 +1,4 @@
-import React, { useEffect, type ReactNode } from 'react';
+import React, { useEffect } from 'react';
 import CloseIcon from './icons/CloseIcon';
 
 interface VapidKeyInstructionsModalProps {
@@ -6,13 +6,13 @@ interface VapidKeyInstructionsModalProps {
   onClose: () => void;
 }
 
-const CodeBlock = ({ children }: { children: ReactNode }) => (
+const CodeBlock: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <pre className="bg-slate-800 text-slate-100 rounded-lg p-3 text-sm overflow-x-auto">
     <code>{children}</code>
   </pre>
 );
 
-const VapidKeyInstructionsModal = ({ isOpen, onClose }: VapidKeyInstructionsModalProps) => {
+const VapidKeyInstructionsModal: React.FC<VapidKeyInstructionsModalProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (!isOpen) return;
     const handleEsc = (event: KeyboardEvent) => {
@@ -78,14 +78,12 @@ export const VAPID_PUBLIC_KEY = "COPIEZ_VOTRE_CLÉ_PUBLIQUE_ICI";`}</CodeBlock>
                 </p>
                 <ul className="list-disc list-inside space-y-2 bg-slate-100 p-4 rounded-lg">
                     <li>
-                        {/* FIX: Replaced <br/> with <div> wrappers to prevent a strange JSX parsing error. This improves semantic structure and resolves the build failure. */}
-                        <div><strong>Nom du secret :</strong> <code className="bg-slate-200 text-sm p-1 rounded">VAPID_PUBLIC_KEY</code></div>
-                        <div><strong>Valeur :</strong> Votre <strong className="text-slate-800">Clé Publique</strong> (la même que dans <code className="bg-slate-200 text-sm p-1 rounded">config.ts</code>).</div>
+                        <strong>Nom du secret :</strong> <code className="bg-slate-200 text-sm p-1 rounded">VAPID_PUBLIC_KEY</code><br/>
+                        <strong>Valeur :</strong> Votre <strong className="text-slate-800">Clé Publique</strong> (la même que dans <code className="bg-slate-200 text-sm p-1 rounded">config.ts</code>).
                     </li>
                     <li>
-                        {/* FIX: Replaced <br/> with <div> wrappers to prevent a strange JSX parsing error. This improves semantic structure and resolves the build failure. */}
-                        <div><strong>Nom du secret :</strong> <code className="bg-slate-200 text-sm p-1 rounded">VAPID_PRIVATE_KEY</code></div>
-                        <div><strong>Valeur :</strong> Votre <strong className="text-slate-800">Clé Privée</strong> générée à l'étape 1.</div>
+                        <strong>Nom du secret :</strong> <code className="bg-slate-200 text-sm p-1 rounded">VAPID_PRIVATE_KEY</code><br/>
+                        <strong>Valeur :</strong> Votre <strong className="text-slate-800">Clé Privée</strong> générée à l'étape 1.
                     </li>
                 </ul>
                  <p className="mt-2 text-sm">
