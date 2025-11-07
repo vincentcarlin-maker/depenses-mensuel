@@ -1,181 +1,21 @@
 import React from 'react';
 import { type Expense, User, Category } from '../types';
+import DocumentIcon from './icons/DocumentIcon';
+import FuelIcon from './icons/FuelIcon';
+import ShoppingCartIcon from './icons/ShoppingCartIcon';
+import FireIcon from './icons/FireIcon';
+import WrenchIcon from './icons/WrenchIcon';
+import RestaurantIcon from './icons/RestaurantIcon';
+import GiftIcon from './icons/GiftIcon';
 
-const CategoryEmojiMap: { [key: string]: string } = {
-  "Dépenses obligatoires": '📄',
-  "Gasoil": '⛽',
-  "Courses": '🛒',
-  "Chauffage": '🔥',
-  "Divers": '🎉',
-};
-
-const KeywordIconMap: { [key: string]: string } = {
-  // Restauration rapide
-  'mcdo': '🍔',
-  'mcdonald': '🍔',
-  'mcdonalds': '🍔',
-  'burger king': '🍔',
-  'kfc': '🍗',
-  // Supermarchés
-  'leclerc': '🛒',
-  'carrefour': '🛒',
-  'auchan': '🛒',
-  'lidl': '🛒',
-  'intermarché': '🛒',
-  'super u': '🛒',
-  'cora': '🛒',
-  'géant': '🛒',
-  // E-commerce & Services
-  'amazon': '📦',
-  'netflix': '🎬',
-  'spotify': '🎵',
-  'disney+': '🎬',
-  // Logement
-  'loyer': '🏠',
-  'crédit': '🏠',
-  // Divers
-  'boulangerie': '🥖',
-  'pharmacie': '⚕️',
-  'doctolib': '🧑‍⚕️',
-  'médecin': '🧑‍⚕️',
-  // Transport
-  'sncf': '🚆',
-  'ratp': '🚇',
-  'train': '🚆',
-  'avion': '✈️',
-  'air france': '✈️',
-  'uber': '🚗',
-  'taxi': '🚕',
-  'blablacar': '🚗',
-  'essence': '⛽',
-  'gasoil': '⛽',
-  'total': '⛽',
-  'shell': '⛽',
-  'esso': '⛽',
-  'péage': '🛣️',
-  'autoroute': '🛣️',
-  // Tech & Fournisseurs
-  'boulanger': '🔌',
-  'darty': '🔌',
-  'orange': '📱',
-  'sfr': '📱',
-  'bouygues': '📱',
-  'free': '📱',
-  'edf': '💡',
-  'engie': '💡',
-  // Vêtements & Bricolage
-  'vêtements': '👕',
-  'kiabi': '👕',
-  'zara': '👕',
-  'h&m': '👕',
-  'brico dépôt': '🛠️',
-  'mr.bricolage': '🛠️',
-};
-
-const KeywordDomainMap: { [key: string]: string } = {
-  // Supermarchés
-  'leclerc': 'e.leclerc',
-  'carrefour': 'carrefour.fr',
-  'auchan': 'auchan.fr',
-  'lidl': 'lidl.fr',
-  'intermarché': 'intermarche.com',
-  'super u': 'magasins-u.com',
-  'monoprix': 'monoprix.fr',
-  'franprix': 'franprix.fr',
-  'casino': 'supercasino.fr',
-  'géant': 'geantcasino.fr',
-  'cora': 'cora.fr',
-  'picard': 'picard.fr',
-  // Restauration rapide
-  'mcdo': 'mcdonalds.com',
-  'mcdonald\'s': 'mcdonalds.com',
-  'mcdonalds': 'mcdonalds.com',
-  'burger king': 'burgerking.com',
-  'kfc': 'kfc.com',
-  'quick': 'quick.fr',
-  'domino\'s': 'dominos.com',
-  'pizza hut': 'pizzahut.com',
-  // E-commerce & Magasins
-  'amazon': 'amazon.com',
-  'fnac': 'fnac.com',
-  'décathlon': 'decathlon.fr',
-  'ikea': 'ikea.com',
-  'leroy merlin': 'leroymerlin.fr',
-  'castorama': 'castorama.fr',
-  'brico dépôt': 'bricodepot.fr',
-  'mr.bricolage': 'mr-bricolage.fr',
-  'sephora': 'sephora.com',
-  'kiabi': 'kiabi.com',
-  'zara': 'zara.com',
-  'h&m': 'hm.com',
-  'boulanger': 'boulanger.com',
-  'darty': 'darty.com',
-  // Services
-  'netflix': 'netflix.com',
-  'spotify': 'spotify.com',
-  'disney+': 'disneyplus.com',
-  'sncf': 'sncf-connect.com',
-  'air france': 'airfrance.com',
-  'ratp': 'ratp.fr',
-  'uber': 'uber.com',
-  'blablacar': 'blablacar.fr',
-  'doctolib': 'doctolib.fr',
-  // Énergie & Fournisseurs
-  'total': 'totalenergies.fr',
-  'shell': 'shell.fr',
-  'esso': 'esso.fr',
-  'orange': 'orange.fr',
-  'sfr': 'sfr.fr',
-  'bouygues telecom': 'bouyguestelecom.fr',
-  'bouygues': 'bouyguestelecom.fr',
-  'free': 'free.fr',
-  'edf': 'edf.fr',
-  'engie': 'engie.fr',
-};
-
-const Logo: React.FC<{ domain: string, alt: string, fallback: React.ReactNode }> = ({ domain, alt, fallback }) => {
-    const [hasError, setHasError] = React.useState(false);
-    const src = `https://logo.clearbit.com/${domain}`;
-
-    React.useEffect(() => {
-        setHasError(false);
-    }, [src]);
-
-    if (hasError) {
-        return <>{fallback}</>;
-    }
-
-    return (
-        <img
-            src={src}
-            alt={alt}
-            className="w-full h-full object-contain"
-            onError={() => setHasError(true)}
-        />
-    );
-};
-
-const sortedDomainKeywords = Object.keys(KeywordDomainMap).sort((a, b) => b.length - a.length);
-const sortedIconKeywords = Object.keys(KeywordIconMap).sort((a, b) => b.length - a.length);
-
-const getExpenseVisual = (description: string, category: Category): React.ReactNode => {
-    const lowerDesc = description.toLowerCase();
-
-    for (const keyword of sortedDomainKeywords) {
-        if (lowerDesc.includes(keyword)) {
-            const domain = KeywordDomainMap[keyword];
-            const fallbackEmoji = KeywordIconMap[keyword] || CategoryEmojiMap[category] || '❓';
-            return <Logo domain={domain} alt={description} fallback={<span className="text-xl">{fallbackEmoji}</span>} />;
-        }
-    }
-
-    for (const keyword of sortedIconKeywords) {
-        if (lowerDesc.includes(keyword)) {
-            return <span className="text-xl">{KeywordIconMap[keyword]}</span>;
-        }
-    }
-
-    return <span className="text-xl">{CategoryEmojiMap[category] || '❓'}</span>;
+const CategoryConfig: Record<Category, { icon: React.FC; bgColor: string; iconColor: string; }> = {
+    [Category.Mandatory]: { icon: DocumentIcon, bgColor: 'bg-slate-100 dark:bg-slate-700', iconColor: 'text-slate-500 dark:text-slate-300' },
+    [Category.Fuel]: { icon: FuelIcon, bgColor: 'bg-orange-100 dark:bg-orange-900', iconColor: 'text-orange-500 dark:text-orange-400' },
+    [Category.Groceries]: { icon: ShoppingCartIcon, bgColor: 'bg-green-100 dark:bg-green-900', iconColor: 'text-green-500 dark:text-green-400' },
+    [Category.Heating]: { icon: FireIcon, bgColor: 'bg-red-100 dark:bg-red-900', iconColor: 'text-red-500 dark:text-red-400' },
+    [Category.CarRepair]: { icon: WrenchIcon, bgColor: 'bg-indigo-100 dark:bg-indigo-900', iconColor: 'text-indigo-500 dark:text-indigo-400' },
+    [Category.Restaurant]: { icon: RestaurantIcon, bgColor: 'bg-pink-100 dark:bg-pink-900', iconColor: 'text-pink-500 dark:text-pink-400' },
+    [Category.Misc]: { icon: GiftIcon, bgColor: 'bg-purple-100 dark:bg-purple-900', iconColor: 'text-purple-500 dark:text-purple-400' },
 };
 
 
@@ -194,6 +34,9 @@ const ExpenseListItem: React.FC<{
     const isSophie = expense.user === User.Sophie;
     const userColorClass = isSophie ? 'bg-rose-500' : 'bg-sky-500';
 
+    const config = CategoryConfig[expense.category] || CategoryConfig[Category.Misc];
+    const Icon = config.icon;
+
     return (
         <div
             onClick={() => onEditExpense(expense)}
@@ -208,8 +51,10 @@ const ExpenseListItem: React.FC<{
             `}
         >
             <div className={`w-1.5 h-10 rounded-full mr-3 ${userColorClass}`}></div>
-            <div className="w-10 h-10 flex items-center justify-center mr-3 flex-shrink-0 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                {getExpenseVisual(expense.description, expense.category)}
+            <div className={`w-10 h-10 flex items-center justify-center mr-3 flex-shrink-0 rounded-full ${config.bgColor}`}>
+                <div className={config.iconColor}>
+                    <Icon />
+                </div>
             </div>
             <div className="flex-1 min-w-0">
                  <p className="font-semibold truncate text-slate-700 dark:text-slate-200" title={expense.description}>{expense.description}</p>

@@ -2,15 +2,24 @@ import React, { useMemo } from 'react';
 import { type Expense, Category } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
+import DocumentIcon from './icons/DocumentIcon';
+import FuelIcon from './icons/FuelIcon';
+import ShoppingCartIcon from './icons/ShoppingCartIcon';
+import FireIcon from './icons/FireIcon';
+import WrenchIcon from './icons/WrenchIcon';
+import RestaurantIcon from './icons/RestaurantIcon';
+import GiftIcon from './icons/GiftIcon';
 
-const COLORS = ['#06b6d4', '#ec4899', '#f97316', '#8b5cf6', '#10b981', '#f59e0b'];
+const COLORS = ['#06b6d4', '#f97316', '#10b981', '#ef4444', '#6366f1', '#ec4899', '#8b5cf6'];
 
-const CategoryEmojiMap: { [key: string]: string } = {
-  "Dépenses obligatoires": '📄',
-  "Gasoil": '⛽',
-  "Courses": '🛒',
-  "Chauffage": '🔥',
-  "Divers": '🎉',
+const CategoryConfig: Record<Category, { icon: React.FC; bgColor: string; iconColor: string; }> = {
+    [Category.Mandatory]: { icon: DocumentIcon, bgColor: 'bg-slate-100 dark:bg-slate-700', iconColor: 'text-slate-500 dark:text-slate-300' },
+    [Category.Fuel]: { icon: FuelIcon, bgColor: 'bg-orange-100 dark:bg-orange-900', iconColor: 'text-orange-500 dark:text-orange-400' },
+    [Category.Groceries]: { icon: ShoppingCartIcon, bgColor: 'bg-green-100 dark:bg-green-900', iconColor: 'text-green-500 dark:text-green-400' },
+    [Category.Heating]: { icon: FireIcon, bgColor: 'bg-red-100 dark:bg-red-900', iconColor: 'text-red-500 dark:text-red-400' },
+    [Category.CarRepair]: { icon: WrenchIcon, bgColor: 'bg-indigo-100 dark:bg-indigo-900', iconColor: 'text-indigo-500 dark:text-indigo-400' },
+    [Category.Restaurant]: { icon: RestaurantIcon, bgColor: 'bg-pink-100 dark:bg-pink-900', iconColor: 'text-pink-500 dark:text-pink-400' },
+    [Category.Misc]: { icon: GiftIcon, bgColor: 'bg-purple-100 dark:bg-purple-900', iconColor: 'text-purple-500 dark:text-purple-400' },
 };
 
 const RADIAN = Math.PI / 180;
@@ -31,12 +40,20 @@ const CustomLegend = (props: any) => {
     const { payload } = props;
     return (
       <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-4 list-none p-0">
-        {payload.map((entry: any, index: number) => (
-          <li key={`item-${index}`} className="flex items-center text-sm text-slate-600 dark:text-slate-300">
-            <span className="mr-2 text-lg">{CategoryEmojiMap[entry.value] || '❓'}</span>
-            <span>{entry.value}</span>
-          </li>
-        ))}
+        {payload.map((entry: any, index: number) => {
+            const categoryName = entry.value as Category;
+            const config = CategoryConfig[categoryName];
+            if (!config) return null;
+            const Icon = config.icon;
+            return (
+              <li key={`item-${index}`} className="flex items-center text-sm text-slate-600 dark:text-slate-300">
+                <span className={`mr-2 flex items-center justify-center w-5 h-5 rounded-full ${config.bgColor} ${config.iconColor}`}>
+                   <Icon />
+                </span>
+                <span>{entry.value}</span>
+              </li>
+            );
+        })}
       </ul>
     );
 };
@@ -127,10 +144,14 @@ const CategoryTotals: React.FC<{ expenses: Expense[] }> = ({ expenses }) => {
         <div className="space-y-3">
           {chartData.map((entry, index) => {
             const percentage = totalExpenses > 0 ? (entry.value / totalExpenses) * 100 : 0;
+            const categoryName = entry.name as Category;
+            const config = CategoryConfig[categoryName];
+            if (!config) return null;
+            const Icon = config.icon;
             return (
               <div key={`detail-${index}`} className="flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-                <div className="flex items-center w-8 h-8 justify-center mr-4 text-xl">
-                  {CategoryEmojiMap[entry.name] || '❓'}
+                <div className={`flex items-center justify-center mr-4 text-xl w-8 h-8 rounded-full ${config.bgColor} ${config.iconColor}`}>
+                  <Icon />
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-slate-700 dark:text-slate-200">{entry.name}</p>
