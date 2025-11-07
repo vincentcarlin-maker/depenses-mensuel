@@ -62,13 +62,16 @@ export type Database = {
 DROP TABLE IF EXISTS public.history_logs CASCADE;
 DROP TABLE IF EXISTS public.audit_log CASCADE;
 
--- 1. Création de la table pour stocker l'historique
+-- 1. Création de la table pour stocker l'historique (avec plus de structure)
 CREATE TABLE public.audit_log (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-  entity TEXT NOT NULL, -- Ajouté pour identifier la table source (ex: 'expenses')
+  entity TEXT NOT NULL,
   action TEXT NOT NULL,
-  details TEXT NOT NULL
+  user_name TEXT, -- Utilisateur qui a effectué l'action
+  description TEXT, -- Description de l'élément affecté
+  amount NUMERIC, -- Montant de l'élément affecté
+  details TEXT NOT NULL -- Résumé de l'action
 );
 
 -- 2. Activation de la Row Level Security (RLS) pour la sécurité
@@ -86,10 +89,13 @@ CREATE OR REPLACE FUNCTION public.log_expense_change()
 RETURNS TRIGGER AS $$
 BEGIN
   IF (TG_OP = 'INSERT') THEN
-    INSERT INTO public.audit_log (entity, action, details)
+    INSERT INTO public.audit_log (entity, action, user_name, description, amount, details)
     VALUES (
-      'expenses', -- Nom de l'entité
+      'expenses',
       'INSERT',
+      NEW.user,
+      NEW.description,
+      NEW.amount,
       CONCAT(
         NEW.user,
         ' a ajouté : ',
@@ -101,10 +107,13 @@ BEGIN
     );
     RETURN NEW;
   ELSIF (TG_OP = 'UPDATE') THEN
-    INSERT INTO public.audit_log (entity, action, details)
+    INSERT INTO public.audit_log (entity, action, user_name, description, amount, details)
     VALUES (
-      'expenses', -- Nom de l'entité
+      'expenses',
       'UPDATE',
+      NEW.user,
+      NEW.description,
+      NEW.amount,
       CONCAT(
         NEW.user,
         ' a modifié la dépense "',
@@ -114,10 +123,13 @@ BEGIN
     );
     RETURN NEW;
   ELSIF (TG_OP = 'DELETE') THEN
-    INSERT INTO public.audit_log (entity, action, details)
+    INSERT INTO public.audit_log (entity, action, user_name, description, amount, details)
     VALUES (
-      'expenses', -- Nom de l'entité
+      'expenses',
       'DELETE',
+      OLD.user,
+      OLD.description,
+      OLD.amount,
       CONCAT(
         OLD.user,
         ' a supprimé : ',

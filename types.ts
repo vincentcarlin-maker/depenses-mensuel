@@ -35,7 +35,10 @@ export interface Reminder {
 export interface AuditLog {
   id: string;
   created_at: string;
-  entity: string; // La table sur laquelle l'action a été effectuée (ex: 'expenses')
+  entity: string;
   action: 'INSERT' | 'UPDATE' | 'DELETE';
   details: string;
+  user_name: string | null;
+  description: string | null;
+  amount: number | null;
 }
