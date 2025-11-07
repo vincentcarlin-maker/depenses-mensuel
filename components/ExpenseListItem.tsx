@@ -29,6 +29,7 @@ const KeywordIconMap: { [key: string]: string } = {
   'amazon': '📦',
   'netflix': '🎬',
   'spotify': '🎵',
+  'deezer': '🎵',
   'disney+': '🎬',
   // Logement
   'loyer': '🏠',
@@ -113,6 +114,7 @@ const KeywordDomainMap: { [key: string]: string } = {
   // Services
   'netflix': 'netflix.com',
   'spotify': 'spotify.com',
+  'deezer': 'deezer.com',
   'disney+': 'disneyplus.com',
   'sncf': 'sncf-connect.com',
   'air france': 'airfrance.com',
