@@ -16,3 +16,19 @@ root.render(
     <App />
   </React.StrictMode>
 );
+
+// Register the service worker for PWA functionality.
+// This is done after the app is loaded to not delay the initial render.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    // The path needs to be absolute from the domain root to work correctly
+    // on GitHub Pages, considering the 'base' path from vite.config.ts.
+    navigator.serviceWorker.register('/depenses-mensuel/sw.js')
+      .then(registration => {
+        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+      })
+      .catch(error => {
+        console.log('ServiceWorker registration failed: ', error);
+      });
+  });
+}
