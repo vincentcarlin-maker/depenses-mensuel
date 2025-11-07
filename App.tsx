@@ -115,6 +115,7 @@ const App: React.FC = () => {
             });
             return [newExpense, ...prevExpenses];
           });
+          fetchHistoryLogs();
         }
       )
       .on<Expense>(
@@ -131,6 +132,7 @@ const App: React.FC = () => {
               message: `Dépense "${updatedExpense.description}" mise à jour.`,
               type: 'info'
             });
+          fetchHistoryLogs();
         }
       )
       .on<Expense>(
@@ -145,6 +147,7 @@ const App: React.FC = () => {
                   message: `Dépense "${desc}" supprimée.`,
                   type: 'info'
               });
+              fetchHistoryLogs();
           }
         }
       )
@@ -174,24 +177,11 @@ const App: React.FC = () => {
       )
       .subscribe();
 
-    const historyLogsChannel = supabase
-      .channel('history-logs-realtime')
-      .on<HistoryLog>(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'history_logs' },
-        (payload) => {
-          const newLog = payload.new;
-          setHistoryLogs(prevLogs => [newLog, ...prevLogs]);
-        }
-      )
-      .subscribe();
-
     return () => {
       supabase.removeChannel(expensesChannel);
       supabase.removeChannel(remindersChannel);
-      supabase.removeChannel(historyLogsChannel);
     };
-  }, [fetchReminders, fetchExpenses]);
+  }, [fetchReminders, fetchExpenses, fetchHistoryLogs]);
 
   const addExpense = async (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => {
     const newId = crypto.randomUUID();
