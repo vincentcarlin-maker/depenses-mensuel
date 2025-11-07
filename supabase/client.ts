@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { type Expense, type Reminder } from '../types';
+import { type Expense, type Reminder, type AuditLog } from '../types';
 
 // -----------------------------------------------------------------------------
 // La configuration de votre projet Supabase est maintenant terminée !
@@ -33,9 +33,115 @@ export type Database = {
         };
         Update: {};
       };
+      audit_log: {
+        Row: AuditLog;
+        Insert: Omit<AuditLog, 'id' | 'created_at'>;
+        Update: never;
+      };
     };
   };
 };
+
+// =============================================================================
+// ACTION REQUISE : MISE EN PLACE DE L'HISTORIQUE DES MODIFICATIONS
+// =============================================================================
+// Pour activer la nouvelle fonctionnalité d'historique, vous devez exécuter
+// le bloc de code SQL ci-dessous UNE SEULE FOIS dans l'éditeur SQL de votre
+// projet Supabase.
+//
+// 1. Allez sur votre projet Supabase > SQL Editor.
+// 2. Cliquez sur "+ New query".
+// 3. Copiez-collez l'intégralité du bloc ci-dessous et cliquez sur "RUN".
+//
+// Ce script va :
+//   1. Ajouter une colonne `user_agent` aux tables `expenses` et `reminders`
+//      pour stocker l'information sur l'appareil.
+//   2. Créer une nouvelle table `audit_log` pour stocker l'historique.
+//   3. Créer une fonction `log_changes()` qui sera déclenchée à chaque modification.
+//   4. Attacher cette fonction comme "trigger" aux tables `expenses` et `reminders`.
+//
+/*
+-- 1. Ajouter la colonne user_agent aux tables existantes
+ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS user_agent TEXT;
+ALTER TABLE public.reminders ADD COLUMN IF NOT EXISTS user_agent TEXT;
+
+-- 2. Créer la table pour l'historique
+CREATE TABLE IF NOT EXISTS public.audit_log (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT now(),
+    action TEXT NOT NULL,
+    entity TEXT NOT NULL,
+    description TEXT,
+    user_agent TEXT
+);
+
+-- Active la RLS sur la nouvelle table et autorise la lecture par tous
+ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow anon read access on audit_log" ON public.audit_log;
+CREATE POLICY "Allow anon read access on audit_log"
+ON public.audit_log
+FOR SELECT TO anon
+USING (true);
+
+
+-- 3. Créer la fonction qui sera appelée par les triggers
+CREATE OR REPLACE FUNCTION log_changes()
+RETURNS TRIGGER AS $$
+DECLARE
+    log_action TEXT;
+    log_entity TEXT;
+    log_description TEXT;
+    log_user_agent TEXT;
+BEGIN
+    log_entity := TG_TABLE_NAME;
+
+    IF (TG_OP = 'INSERT') THEN
+        log_action := 'CREATE';
+        log_description := format('%s a ajouté ''%s'' (%s)', NEW.user, NEW.description, to_char(NEW.amount, 'FM999999990.00L'));
+        log_user_agent := NEW.user_agent;
+    ELSIF (TG_OP = 'UPDATE') THEN
+        log_action := 'UPDATE';
+        log_description := format('La dépense ''%s'' a été modifiée', OLD.description);
+        log_user_agent := NEW.user_agent;
+    ELSIF (TG_OP = 'DELETE') THEN
+        log_action := 'DELETE';
+        log_description := format('La dépense ''%s'' (%s) a été supprimée', OLD.description, to_char(OLD.amount, 'FM999999990.00L'));
+        log_user_agent := OLD.user_agent; -- user_agent of the creator
+    END IF;
+
+    -- Pour la table reminders, on adapte la description
+    IF (log_entity = 'reminders') THEN
+      IF (TG_OP = 'INSERT') THEN
+          log_description := format('Rappel ''%s'' ajouté', NEW.description);
+      ELSIF (TG_OP = 'UPDATE') THEN
+          log_description := format('Rappel ''%s'' modifié', OLD.description);
+      ELSIF (TG_OP = 'DELETE') THEN
+          log_description := format('Rappel ''%s'' supprimé', OLD.description);
+      END IF;
+    END IF;
+
+    INSERT INTO public.audit_log (action, entity, description, user_agent)
+    VALUES (log_action, log_entity, log_description, log_user_agent);
+
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+-- 4. Créer les triggers pour les tables expenses et reminders
+DROP TRIGGER IF EXISTS expenses_audit_trigger ON public.expenses;
+CREATE TRIGGER expenses_audit_trigger
+AFTER INSERT OR UPDATE OR DELETE ON public.expenses
+FOR EACH ROW EXECUTE FUNCTION log_changes();
+
+DROP TRIGGER IF EXISTS reminders_audit_trigger ON public.reminders;
+CREATE TRIGGER reminders_audit_trigger
+AFTER INSERT OR UPDATE OR DELETE ON public.reminders
+FOR EACH ROW EXECUTE FUNCTION log_changes();
+
+*/
+// -----------------------------------------------------------------------------
+
 
 // -----------------------------------------------------------------------------
 // ACTION REQUISE : Configuration des Politiques de Sécurité (RLS)

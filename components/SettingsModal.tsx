@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { type Reminder } from '../types';
 import RemindersTab from './RemindersTab';
 import CloseIcon from './icons/CloseIcon';
 import ThemeToggle from './ThemeToggle';
+import HistoryTab from './HistoryTab';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -13,6 +14,8 @@ interface SettingsModalProps {
   onDeleteReminder: (id: string) => Promise<void>;
 }
 
+type SettingsTab = 'reminders' | 'appearance' | 'history';
+
 const SettingsModal: React.FC<SettingsModalProps> = ({ 
     isOpen, 
     onClose, 
@@ -21,6 +24,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     onUpdateReminder, 
     onDeleteReminder 
 }) => {
+  const [activeTab, setActiveTab] = useState<SettingsTab>('reminders');
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -44,6 +49,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   if (!isOpen) {
     return null;
   }
+  
+  const tabs: {id: SettingsTab, label: string}[] = [
+      { id: 'reminders', label: 'Rappels' },
+      { id: 'appearance', label: 'Apparence' },
+      { id: 'history', label: 'Historique' },
+  ];
 
   return (
     <div 
@@ -63,24 +74,47 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </button>
           </div>
         </header>
-        <main className="p-4 md:p-8 overflow-y-auto h-[calc(100%-64px)] container mx-auto">
-            <div className="space-y-8">
-                <div>
-                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-4">Apparence</h3>
-                    <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-lg flex justify-between items-center">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Thème sombre</span>
-                        <ThemeToggle />
-                    </div>
-                </div>
-                <div>
-                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-4">Gestion des rappels</h3>
+        <main className="h-[calc(100%-64px)] container mx-auto flex flex-col">
+           <div className="px-4 md:px-8 border-b border-slate-200 dark:border-slate-700">
+             <nav className="-mb-px flex space-x-6 overflow-x-auto no-scrollbar" aria-label="Tabs">
+                 {tabs.map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors
+                        ${activeTab === tab.id
+                          ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400'
+                          : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'
+                        }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+            </nav>
+           </div>
+            <div className="p-4 md:p-8 overflow-y-auto flex-1">
+                {activeTab === 'reminders' && (
                     <RemindersTab
                         reminders={reminders}
                         onAddReminder={onAddReminder}
                         onUpdateReminder={onUpdateReminder}
                         onDeleteReminder={onDeleteReminder}
                     />
-                </div>
+                )}
+                {activeTab === 'appearance' && (
+                     <div className="space-y-8 max-w-2xl mx-auto">
+                        <div>
+                            <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-4">Thème</h3>
+                            <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-lg flex justify-between items-center">
+                                <span className="font-medium text-slate-600 dark:text-slate-300">Activer le thème sombre</span>
+                                <ThemeToggle />
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {activeTab === 'history' && (
+                    <HistoryTab />
+                )}
             </div>
         </main>
     </div>
