@@ -2,8 +2,7 @@ import React, { useMemo } from 'react';
 import { type Expense, Category } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LineChart, Line } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
-
-const COLORS = ['#06b6d4', '#ec4899', '#f97316', '#8b5cf6', '#10b981', '#f59e0b'];
+import { categoryConfig } from './CategoryIcon';
 
 interface YearlySummaryProps {
     expenses: Expense[];
@@ -29,7 +28,9 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
     const monthsWithData = new Set<number>();
 
     for (const expense of expenses) {
-      categoryTotals[expense.category]! += expense.amount;
+      if(categoryTotals[expense.category] !== undefined) {
+        categoryTotals[expense.category]! += expense.amount;
+      }
       total += expense.amount;
       monthsWithData.add(new Date(expense.date).getMonth());
     }
@@ -139,9 +140,10 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                         }}
                     />
                     <Bar dataKey="average" name="Moyenne mensuelle" fill="#8884d8" radius={[0, 8, 8, 0]}>
-                         {categoryData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
+                         {categoryData.map((entry, index) => {
+                            const color = categoryConfig[entry.name]?.colorHex || '#94a3b8';
+                            return <Cell key={`cell-${index}`} fill={color} />
+                        })}
                     </Bar>
                 </BarChart>
             </ResponsiveContainer>

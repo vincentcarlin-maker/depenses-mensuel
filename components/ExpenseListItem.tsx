@@ -1,13 +1,6 @@
 import React from 'react';
 import { type Expense, User, Category } from '../types';
-
-const CategoryEmojiMap: { [key: string]: string } = {
-  "Dépenses obligatoires": '📄',
-  "Gasoil": '⛽',
-  "Courses": '🛒',
-  "Chauffage": '🔥',
-  "Divers": '🎉',
-};
+import CategoryIcon from './CategoryIcon';
 
 const KeywordIconMap: { [key: string]: string } = {
   // Restauration rapide
@@ -166,18 +159,21 @@ const getExpenseVisual = (description: string, category: Category): React.ReactN
     for (const keyword of sortedDomainKeywords) {
         if (lowerDesc.includes(keyword)) {
             const domain = KeywordDomainMap[keyword];
-            const fallbackEmoji = KeywordIconMap[keyword] || CategoryEmojiMap[category] || '❓';
-            return <Logo domain={domain} alt={description} fallback={<span className="text-xl">{fallbackEmoji}</span>} />;
+            return <Logo domain={domain} alt={description} fallback={<CategoryIcon category={category} />} />;
         }
     }
 
     for (const keyword of sortedIconKeywords) {
         if (lowerDesc.includes(keyword)) {
-            return <span className="text-xl">{KeywordIconMap[keyword]}</span>;
+             return (
+                <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-700">
+                    <span className="text-2xl">{KeywordIconMap[keyword]}</span>
+                </div>
+            );
         }
     }
 
-    return <span className="text-xl">{CategoryEmojiMap[category] || '❓'}</span>;
+    return <CategoryIcon category={category} />;
 };
 
 
@@ -210,7 +206,7 @@ const ExpenseListItem: React.FC<{
             `}
         >
             <div className={`w-1.5 h-10 rounded-full mr-3 ${userColorClass}`}></div>
-            <div className="w-10 h-10 flex items-center justify-center mr-3 flex-shrink-0 bg-slate-100 dark:bg-slate-700 rounded-lg">
+            <div className="w-10 h-10 flex items-center justify-center mr-3 flex-shrink-0">
                 {getExpenseVisual(expense.description, expense.category)}
             </div>
             <div className="flex-1 min-w-0">

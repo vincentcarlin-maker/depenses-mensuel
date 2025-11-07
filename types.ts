@@ -5,9 +5,11 @@ export enum User {
 
 export enum Category {
   Mandatory = "Dépenses obligatoires",
-  Fuel = "Gasoil",
-  Groceries = "Courses",
+  Courses = "Courses",
+  Carburant = "Carburant",
   Heating = "Chauffage",
+  ReparationVoiture = "Réparation Voiture",
+  Restaurant = "Restaurant",
   Misc = "Divers",
 }
 

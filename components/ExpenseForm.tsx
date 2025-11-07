@@ -9,7 +9,7 @@ interface ExpenseFormProps {
 const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState<Category>(Category.Groceries);
+  const [category, setCategory] = useState<Category>(Category.Courses);
   const [user, setUser] = useState<User>(User.Sophie);
   const [error, setError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -63,7 +63,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
 
     setDescription('');
     setAmount('');
-    setCategory(Category.Groceries);
+    setCategory(Category.Courses);
     setError('');
     setSuggestions([]);
   };
