@@ -128,27 +128,38 @@ const KeywordDomainMap: { [key: string]: string } = {
   'engie': 'engie.fr',
 };
 
-const Logo: React.FC<{ domain: string, alt: string, fallback: React.ReactNode }> = ({ domain, alt, fallback }) => {
-    const [hasError, setHasError] = React.useState(false);
+const Logo: React.FC<{ domain: string; alt: string; fallback: React.ReactNode }> = React.memo(({ domain, alt, fallback }) => {
+    const [status, setStatus] = React.useState<'loading' | 'loaded' | 'error'>('loading');
     const src = `https://logo.clearbit.com/${domain}`;
 
     React.useEffect(() => {
-        setHasError(false);
+        // Reset status when the image source changes
+        setStatus('loading');
     }, [src]);
 
-    if (hasError) {
+    if (status === 'error') {
         return <>{fallback}</>;
     }
 
     return (
-        <img
-            src={src}
-            alt={alt}
-            className="w-full h-full object-contain"
-            onError={() => setHasError(true)}
-        />
+        <div className="relative w-full h-full">
+            {status === 'loading' && (
+                <div className="w-full h-full bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse"></div>
+            )}
+            <img
+                src={src}
+                alt={alt}
+                loading="lazy"
+                className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${
+                    status === 'loading' ? 'opacity-0' : 'opacity-100'
+                }`}
+                onLoad={() => setStatus('loaded')}
+                onError={() => setStatus('error')}
+            />
+        </div>
     );
-};
+});
+
 
 const sortedDomainKeywords = Object.keys(KeywordDomainMap).sort((a, b) => b.length - a.length);
 const sortedIconKeywords = Object.keys(KeywordIconMap).sort((a, b) => b.length - a.length);
@@ -180,7 +191,7 @@ const getExpenseVisual = (description: string, category: Category): React.ReactN
 const ExpenseListItem: React.FC<{
     expense: Expense;
     onEditExpense: (expense: Expense) => void;
-}> = ({ expense, onEditExpense }) => {
+}> = React.memo(({ expense, onEditExpense }) => {
 
     const formattedDate = new Date(expense.date).toLocaleString('fr-FR', {
         day: '2-digit',
@@ -221,6 +232,6 @@ const ExpenseListItem: React.FC<{
             </div>
         </div>
     );
-};
+});
 
 export default ExpenseListItem;
