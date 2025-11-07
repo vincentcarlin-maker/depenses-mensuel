@@ -30,9 +30,8 @@ jobs:
           node-version: 20
           cache: 'npm'
       - name: Installation des dépendances
-        # Utilise `npm ci` pour des installations plus rapides et fiables en CI.
-        # Nécessite qu'un fichier `package-lock.json` soit commit dans le dépôt.
-        run: npm ci
+        # Utilise `npm install` car aucun fichier de verrouillage (package-lock.json) n'est présent.
+        run: npm install
       - name: Compilation de l'application
         run: npm run build
       - name: Créer un fichier .nojekyll pour désactiver Jekyll
