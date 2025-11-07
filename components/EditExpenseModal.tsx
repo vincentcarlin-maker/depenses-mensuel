@@ -65,7 +65,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
 
     const handleDelete = () => {
         onDeleteExpense(expense.id);
-        // The modal is now closed by the onDeleteExpense function itself for consistency.
+        onClose();
     };
 
 

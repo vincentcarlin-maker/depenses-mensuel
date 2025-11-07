@@ -2,9 +2,16 @@ import React, { useMemo } from 'react';
 import { type Expense, Category } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
-import { CategoryConfig } from '../config/categoryConfig';
 
-const COLORS = ['#06b6d4', '#f97316', '#10b981', '#ef4444', '#6366f1', '#ec4899', '#8b5cf6'];
+const COLORS = ['#06b6d4', '#ec4899', '#f97316', '#8b5cf6', '#10b981', '#f59e0b'];
+
+const CategoryEmojiMap: { [key: string]: string } = {
+  "Dépenses obligatoires": '📄',
+  "Gasoil": '⛽',
+  "Courses": '🛒',
+  "Chauffage": '🔥',
+  "Divers": '🎉',
+};
 
 const RADIAN = Math.PI / 180;
 const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
@@ -24,20 +31,12 @@ const CustomLegend = (props: any) => {
     const { payload } = props;
     return (
       <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-4 list-none p-0">
-        {payload.map((entry: any, index: number) => {
-            const categoryName = entry.value as Category;
-            const config = CategoryConfig[categoryName];
-            if (!config) return null;
-            const Icon = config.icon;
-            return (
-              <li key={`item-${index}`} className="flex items-center text-sm text-slate-600 dark:text-slate-300">
-                <span className={`mr-2 flex items-center justify-center w-5 h-5 rounded-full ${config.bgColor} ${config.iconColor}`}>
-                   <Icon />
-                </span>
-                <span>{entry.value}</span>
-              </li>
-            );
-        })}
+        {payload.map((entry: any, index: number) => (
+          <li key={`item-${index}`} className="flex items-center text-sm text-slate-600 dark:text-slate-300">
+            <span className="mr-2 text-lg">{CategoryEmojiMap[entry.value] || '❓'}</span>
+            <span>{entry.value}</span>
+          </li>
+        ))}
       </ul>
     );
 };
@@ -128,14 +127,10 @@ const CategoryTotals: React.FC<{ expenses: Expense[] }> = ({ expenses }) => {
         <div className="space-y-3">
           {chartData.map((entry, index) => {
             const percentage = totalExpenses > 0 ? (entry.value / totalExpenses) * 100 : 0;
-            const categoryName = entry.name as Category;
-            const config = CategoryConfig[categoryName];
-            if (!config) return null;
-            const Icon = config.icon;
             return (
               <div key={`detail-${index}`} className="flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-                <div className={`flex items-center justify-center mr-4 text-xl w-8 h-8 rounded-full ${config.bgColor} ${config.iconColor}`}>
-                  <Icon />
+                <div className="flex items-center w-8 h-8 justify-center mr-4 text-xl">
+                  {CategoryEmojiMap[entry.name] || '❓'}
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-slate-700 dark:text-slate-200">{entry.name}</p>

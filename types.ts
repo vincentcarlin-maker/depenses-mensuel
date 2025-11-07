@@ -5,11 +5,9 @@ export enum User {
 
 export enum Category {
   Mandatory = "Dépenses obligatoires",
-  Fuel = "Carburant",
+  Fuel = "Gasoil",
   Groceries = "Courses",
   Heating = "Chauffage",
-  CarRepair = "Réparation voitures",
-  Restaurant = "Restaurant",
   Misc = "Divers",
 }
 
@@ -34,7 +32,7 @@ export interface Reminder {
   created_at: string;
 }
 
-export interface AuditLog {
+export interface HistoryLog {
   id: string;
   created_at: string;
   event_type: 'INSERT' | 'UPDATE' | 'DELETE';

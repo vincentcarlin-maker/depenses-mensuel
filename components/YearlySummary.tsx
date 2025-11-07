@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { type Expense, Category } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LineChart, Line } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
-import { CategoryConfig } from '../config/categoryConfig';
 
 const COLORS = ['#06b6d4', '#ec4899', '#f97316', '#8b5cf6', '#10b981', '#f59e0b'];
 
@@ -148,37 +147,6 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
             </ResponsiveContainer>
         </div>
         
-        <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
-            <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-200">Détails de la moyenne mensuelle</h3>
-            <div className="space-y-3">
-                {categoryData.map((entry) => {
-                    const categoryName = entry.name as Category;
-                    const config = CategoryConfig[categoryName];
-                    if (!config) return null;
-                    const Icon = config.icon;
-                    return (
-                        <div key={`detail-${entry.name}`} className="flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-                            <div className={`flex items-center justify-center mr-4 text-xl w-10 h-10 rounded-full ${config.bgColor} ${config.iconColor} flex-shrink-0`}>
-                                <Icon />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-slate-700 dark:text-slate-200 truncate">{entry.name}</p>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
-                                    Total annuel : {entry.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                                </p>
-                            </div>
-                            <div className="text-right ml-4 flex-shrink-0 w-32">
-                                <p className="font-bold text-slate-800 dark:text-slate-100">
-                                    {entry.average.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                                </p>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">/ mois</p>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-
         <div className="mt-12">
             <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-200">Évolution des dépenses mensuelles</h3>
              <div style={{ width: '100%', height: 300 }}>
