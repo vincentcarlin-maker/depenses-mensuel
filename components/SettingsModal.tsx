@@ -1,8 +1,13 @@
-import React, { useEffect } from 'react';
-import { type Reminder } from '../types';
+import React, { useEffect, useState } from 'react';
+import { type Reminder, type HistoryLog } from '../types';
 import RemindersTab from './RemindersTab';
 import CloseIcon from './icons/CloseIcon';
 import ThemeToggle from './ThemeToggle';
+import HistoryTab from './HistoryTab';
+import BellIcon from './icons/BellIcon';
+import HistoryIcon from './icons/HistoryIcon';
+import PaletteIcon from './icons/PaletteIcon';
+import HistorySetupNotice from './HistorySetupNotice';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -11,6 +16,8 @@ interface SettingsModalProps {
   onAddReminder: (reminder: Omit<Reminder, 'id' | 'created_at'>) => Promise<void>;
   onUpdateReminder: (reminder: Reminder) => Promise<void>;
   onDeleteReminder: (id: string) => Promise<void>;
+  historyLogs: HistoryLog[];
+  showHistorySetupNotice: boolean;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ 
@@ -19,8 +26,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     reminders, 
     onAddReminder, 
     onUpdateReminder, 
-    onDeleteReminder 
+    onDeleteReminder,
+    historyLogs,
+    showHistorySetupNotice
 }) => {
+  const [activeTab, setActiveTab] = useState('reminders');
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -44,6 +55,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   if (!isOpen) {
     return null;
   }
+  
+  const tabs = [
+    { id: 'reminders', label: 'Rappels', icon: <BellIcon /> },
+    { id: 'history', label: 'Historique', icon: <HistoryIcon /> },
+    { id: 'appearance', label: 'Apparence', icon: <PaletteIcon /> },
+  ];
 
   return (
     <div 
@@ -63,26 +80,52 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </button>
           </div>
         </header>
-        <main className="p-4 md:p-8 overflow-y-auto h-[calc(100%-64px)] container mx-auto">
-            <div className="space-y-8">
-                <div>
-                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-4">Apparence</h3>
-                    <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-lg flex justify-between items-center">
-                        <span className="font-medium text-slate-600 dark:text-slate-300">Thème sombre</span>
-                        <ThemeToggle />
-                    </div>
-                </div>
-                <div>
-                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-4">Gestion des rappels</h3>
-                    <RemindersTab
+        <div className="flex h-[calc(100%-64px)] container mx-auto">
+            <aside className="w-full md:w-64 border-r border-slate-200 dark:border-slate-800 p-4">
+                <nav className="flex md:flex-col gap-2">
+                    {tabs.map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`flex items-center gap-3 w-full text-left px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+                                activeTab === tab.id
+                                    ? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300'
+                                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                            }`}
+                        >
+                            {tab.icon}
+                            <span className="hidden md:inline">{tab.label}</span>
+                        </button>
+                    ))}
+                </nav>
+            </aside>
+            <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+                {activeTab === 'reminders' && (
+                     <RemindersTab
                         reminders={reminders}
                         onAddReminder={onAddReminder}
                         onUpdateReminder={onUpdateReminder}
                         onDeleteReminder={onDeleteReminder}
                     />
-                </div>
-            </div>
-        </main>
+                )}
+                {activeTab === 'history' && (
+                    showHistorySetupNotice 
+                        ? <HistorySetupNotice /> 
+                        : <HistoryTab logs={historyLogs} />
+                )}
+                {activeTab === 'appearance' && (
+                    <div className="space-y-8">
+                        <div>
+                            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Apparence</h3>
+                            <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-lg flex justify-between items-center">
+                                <span className="font-medium text-slate-600 dark:text-slate-300">Thème sombre</span>
+                                <ThemeToggle />
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </main>
+        </div>
     </div>
   );
 };

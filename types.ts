@@ -31,3 +31,10 @@ export interface Reminder {
   is_active: boolean;
   created_at: string;
 }
+
+export interface HistoryLog {
+  id: string;
+  created_at: string;
+  event_type: 'INSERT' | 'UPDATE' | 'DELETE';
+  details: string;
+}

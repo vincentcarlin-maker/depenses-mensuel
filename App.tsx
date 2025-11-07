@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { supabase } from './supabase/client';
-import { type Expense, User, type Reminder } from './types';
+import { type Expense, User, type Reminder, type HistoryLog } from './types';
 import Header from './components/Header';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseSummary from './components/ExpenseSummary';
@@ -18,6 +18,7 @@ import OfflineIndicator from './components/OfflineIndicator';
 const App: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [historyLogs, setHistoryLogs] = useState<HistoryLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date().getUTCMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getUTCFullYear());
@@ -27,6 +28,7 @@ const App: React.FC = () => {
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [showHistorySetupNotice, setShowHistorySetupNotice] = useState(false);
 
   // Initialize theme
   useTheme();
@@ -58,16 +60,41 @@ const App: React.FC = () => {
         setReminders(data);
     }
   }, []);
+  
+  const fetchHistoryLogs = useCallback(async () => {
+    const { data, error } = await supabase
+        .from('history_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+    if (error) {
+        // This specific error means the user hasn't run the history setup script yet.
+        // It's an expected state, not a bug, so we don't log it as an error.
+        const isSetupError = error.message.includes('relation "public.history_logs" does not exist') || 
+                             error.message.includes("Could not find the table 'public.history_logs'");
+        
+        if (isSetupError) {
+            setShowHistorySetupNotice(true);
+        } else {
+            // For any other unexpected error, we log it.
+            console.error('Error fetching history logs:', error.message || error);
+        }
+    } else if (data) {
+        setHistoryLogs(data);
+        setShowHistorySetupNotice(false);
+    }
+  }, []);
 
 
   useEffect(() => {
     const fetchData = async () => {
         setIsLoading(true);
-        await Promise.all([fetchExpenses(), fetchReminders()]);
+        await Promise.all([fetchExpenses(), fetchReminders(), fetchHistoryLogs()]);
         setIsLoading(false);
     };
     fetchData();
-  }, [fetchExpenses, fetchReminders]);
+  }, [fetchExpenses, fetchReminders, fetchHistoryLogs]);
 
   useEffect(() => {
     const expensesChannel = supabase
@@ -147,9 +174,21 @@ const App: React.FC = () => {
       )
       .subscribe();
 
+    const historyChannel = supabase
+      .channel('history-logs-realtime')
+      .on<HistoryLog>(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'history_logs' },
+        (payload) => {
+          setHistoryLogs(prevLogs => [payload.new, ...prevLogs]);
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(expensesChannel);
       supabase.removeChannel(remindersChannel);
+      supabase.removeChannel(historyChannel);
     };
   }, [fetchReminders, fetchExpenses]);
 
@@ -341,7 +380,7 @@ const App: React.FC = () => {
 
   const handleRefresh = async () => {
     setToastInfo({ message: 'Synchronisation en cours...', type: 'info' });
-    await Promise.all([fetchExpenses(), fetchReminders()]);
+    await Promise.all([fetchExpenses(), fetchReminders(), fetchHistoryLogs()]);
     setToastInfo({ message: 'Données mises à jour !', type: 'info' });
   };
   
@@ -481,6 +520,8 @@ const App: React.FC = () => {
           onAddReminder={addReminder}
           onUpdateReminder={updateReminder}
           onDeleteReminder={deleteReminder}
+          historyLogs={historyLogs}
+          showHistorySetupNotice={showHistorySetupNotice}
       />
       <OfflineIndicator />
     </div>
