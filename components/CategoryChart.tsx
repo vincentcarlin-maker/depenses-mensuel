@@ -121,6 +121,37 @@ const CategoryTotals: React.FC<{ expenses: Expense[] }> = ({ expenses }) => {
           </PieChart>
         </ResponsiveContainer>
       </div>
+
+      <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+        <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-200">Détails par catégorie</h3>
+        <div className="space-y-3">
+          {chartData.map((entry, index) => {
+            const percentage = totalExpenses > 0 ? (entry.value / totalExpenses) * 100 : 0;
+            return (
+              <div key={`detail-${index}`} className="flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+                <div className="flex items-center w-8 h-8 justify-center mr-4 text-xl">
+                  {CategoryEmojiMap[entry.name] || '❓'}
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-slate-700 dark:text-slate-200">{entry.name}</p>
+                  <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2 mt-1">
+                     <div 
+                        className="h-2 rounded-full transition-all duration-500 ease-out" 
+                        style={{ width: `${percentage}%`, backgroundColor: COLORS[index % COLORS.length] }}
+                     ></div>
+                  </div>
+                </div>
+                <div className="text-right ml-4 flex-shrink-0 w-24">
+                  <p className="font-bold text-slate-800 dark:text-slate-100">
+                    {entry.value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                  </p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{percentage.toFixed(1)}%</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };
