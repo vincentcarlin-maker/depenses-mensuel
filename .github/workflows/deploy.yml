@@ -28,10 +28,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
       - name: Installation des dépendances
-        run: npm install
+        # Utilise `npm ci` pour des installations plus rapides et fiables en CI.
+        # Nécessite qu'un fichier `package-lock.json` soit commit dans le dépôt.
+        run: npm ci
       - name: Compilation de l'application
         run: npm run build
+      - name: Créer un fichier .nojekyll pour désactiver Jekyll
+        run: touch ./dist/.nojekyll
       - name: Configuration de Pages
         uses: actions/configure-pages@v4
       - name: Téléverser l'artefact
