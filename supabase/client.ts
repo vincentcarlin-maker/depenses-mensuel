@@ -107,14 +107,14 @@ BEGIN
       NEW.user,
       NEW.description,
       NEW.amount,
-      CONCAT(
+      COALESCE(CONCAT(
         COALESCE(NEW.user::text, 'Un utilisateur'),
         ' a ajouté : ',
         COALESCE(NEW.description, 'une dépense'),
         ' (',
         to_char(COALESCE(NEW.amount, 0), 'FM999999990.00'),
         ' €)'
-      ),
+      ), 'Détail de l''ajout non disponible.'),
       v_user_agent
     );
     RETURN NEW;
@@ -126,12 +126,12 @@ BEGIN
       NEW.user,
       NEW.description,
       NEW.amount,
-      CONCAT(
+      COALESCE(CONCAT(
         COALESCE(NEW.user::text, 'Un utilisateur'),
         ' a modifié la dépense "',
         COALESCE(OLD.description, '(ancienne dépense)'),
         '"'
-      ),
+      ), 'Détail de la modification non disponible.'),
       v_user_agent
     );
     RETURN NEW;
@@ -143,14 +143,14 @@ BEGIN
       OLD.user,
       OLD.description,
       OLD.amount,
-      CONCAT(
+      COALESCE(CONCAT(
         COALESCE(OLD.user::text, 'Un utilisateur'),
         ' a supprimé : ',
         COALESCE(OLD.description, 'une dépense'),
         ' (',
         to_char(COALESCE(OLD.amount, 0), 'FM999999990.00'),
         ' €)'
-      ),
+      ), 'Détail de la suppression non disponible.'),
       v_user_agent
     );
     RETURN OLD;
