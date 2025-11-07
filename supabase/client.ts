@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { type Expense, type Reminder, type HistoryLog } from '../types';
+import { type Expense, type Reminder, type AuditLog } from '../types';
 
 // -----------------------------------------------------------------------------
 // La configuration de votre projet Supabase est maintenant terminée !
@@ -33,9 +33,9 @@ export type Database = {
         };
         Update: {};
       };
-      history_logs: {
-        Row: HistoryLog;
-        Insert: Omit<HistoryLog, 'id' | 'created_at'>;
+      audit_log: {
+        Row: AuditLog;
+        Insert: Omit<AuditLog, 'id' | 'created_at'>;
         Update: never; // Les logs sont immuables
       };
     };
@@ -55,7 +55,7 @@ export type Database = {
 
 /*
 -- 1. Création de la table pour stocker l'historique
-CREATE TABLE public.history_logs (
+CREATE TABLE public.audit_log (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
   event_type TEXT NOT NULL,
@@ -63,12 +63,12 @@ CREATE TABLE public.history_logs (
 );
 
 -- 2. Activation de la Row Level Security (RLS) pour la sécurité
-ALTER TABLE public.history_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
 
 -- 3. Création d'une politique pour autoriser la lecture des logs par l'application
-DROP POLICY IF EXISTS "Allow anon read access on history_logs" ON public.history_logs;
-CREATE POLICY "Allow anon read access on history_logs"
-ON public.history_logs
+DROP POLICY IF EXISTS "Allow anon read access on audit_log" ON public.audit_log;
+CREATE POLICY "Allow anon read access on audit_log"
+ON public.audit_log
 FOR SELECT TO anon
 USING (true);
 
@@ -77,7 +77,7 @@ CREATE OR REPLACE FUNCTION public.log_expense_change()
 RETURNS TRIGGER AS $$
 BEGIN
   IF (TG_OP = 'INSERT') THEN
-    INSERT INTO public.history_logs (event_type, details)
+    INSERT INTO public.audit_log (event_type, details)
     VALUES (
       'INSERT',
       CONCAT(
@@ -91,7 +91,7 @@ BEGIN
     );
     RETURN NEW;
   ELSIF (TG_OP = 'UPDATE') THEN
-    INSERT INTO public.history_logs (event_type, details)
+    INSERT INTO public.audit_log (event_type, details)
     VALUES (
       'UPDATE',
       CONCAT(
@@ -103,7 +103,7 @@ BEGIN
     );
     RETURN NEW;
   ELSIF (TG_OP = 'DELETE') THEN
-    INSERT INTO public.history_logs (event_type, details)
+    INSERT INTO public.audit_log (event_type, details)
     VALUES (
       'DELETE',
       CONCAT(
@@ -142,6 +142,44 @@ FOR EACH ROW EXECUTE FUNCTION public.log_expense_change();
 // -----------------------------------------------------------------------------
 // ACTION REQUISE : Configuration des Politiques de Sécurité (RLS)
 // -----------------------------------------------------------------------------
-// ... (instructions existantes) ...
+// La Sécurité au Niveau des Lignes (RLS) est activée par défaut pour protéger
+// vos données. Pour que l'application puisse lire et écrire des données, vous
+// devez créer des "politiques" qui définissent qui a accès à quoi.
+//
+// Exécutez le script SQL ci-dessous dans l'éditeur SQL de Supabase pour
+// autoriser l'application à gérer les dépenses, rappels et abonnements.
+//
+// 1. Allez sur votre projet Supabase > SQL Editor > "+ New query".
+// 2. Copiez-collez TOUT le bloc de code ci-dessous et exécutez-le.
+
+/*
+-- Activer RLS et créer les politiques pour la table 'expenses'
+ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow anon full access on expenses" ON public.expenses;
+CREATE POLICY "Allow anon full access on expenses"
+  ON public.expenses
+  FOR ALL
+  TO anon
+  USING (true);
+
+-- Activer RLS et créer les politiques pour la table 'reminders'
+ALTER TABLE public.reminders ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow anon full access on reminders" ON public.reminders;
+CREATE POLICY "Allow anon full access on reminders"
+  ON public.reminders
+  FOR ALL
+  TO anon
+  USING (true);
+
+-- Activer RLS et créer les politiques pour la table 'subscriptions'
+ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow anon full access on subscriptions" ON public.subscriptions;
+CREATE POLICY "Allow anon full access on subscriptions"
+  ON public.subscriptions
+  FOR ALL
+  TO anon
+  USING (true);
+
+*/
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);

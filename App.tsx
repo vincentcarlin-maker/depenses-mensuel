@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { supabase } from './supabase/client';
-import { type Expense, User, type Reminder, type HistoryLog } from './types';
+import { type Expense, User, type Reminder, type AuditLog } from './types';
 import Header from './components/Header';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseSummary from './components/ExpenseSummary';
@@ -18,7 +18,7 @@ import OfflineIndicator from './components/OfflineIndicator';
 const App: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [historyLogs, setHistoryLogs] = useState<HistoryLog[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date().getUTCMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getUTCFullYear());
@@ -61,9 +61,9 @@ const App: React.FC = () => {
     }
   }, []);
   
-  const fetchHistoryLogs = useCallback(async () => {
+  const fetchAuditLogs = useCallback(async () => {
     const { data, error } = await supabase
-        .from('history_logs')
+        .from('audit_log')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(200);
@@ -71,17 +71,17 @@ const App: React.FC = () => {
     if (error) {
         // This specific error means the user hasn't run the history setup script yet.
         // It's an expected state, not a bug, so we don't log it as an error.
-        const isSetupError = error.message.includes('relation "public.history_logs" does not exist') || 
-                             error.message.includes("Could not find the table 'public.history_logs'");
+        const isSetupError = error.message.includes('relation "public.audit_log" does not exist') || 
+                             error.message.includes("Could not find the table 'public.audit_log'");
         
         if (isSetupError) {
             setShowHistorySetupNotice(true);
         } else {
             // For any other unexpected error, we log it.
-            console.error('Error fetching history logs:', error.message || error);
+            console.error('Error fetching audit logs:', error.message || error);
         }
     } else if (data) {
-        setHistoryLogs(data);
+        setAuditLogs(data);
         setShowHistorySetupNotice(false);
     }
   }, []);
@@ -90,11 +90,11 @@ const App: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
         setIsLoading(true);
-        await Promise.all([fetchExpenses(), fetchReminders(), fetchHistoryLogs()]);
+        await Promise.all([fetchExpenses(), fetchReminders(), fetchAuditLogs()]);
         setIsLoading(false);
     };
     fetchData();
-  }, [fetchExpenses, fetchReminders, fetchHistoryLogs]);
+  }, [fetchExpenses, fetchReminders, fetchAuditLogs]);
 
   useEffect(() => {
     const expensesChannel = supabase
@@ -115,7 +115,7 @@ const App: React.FC = () => {
             });
             return [newExpense, ...prevExpenses];
           });
-          fetchHistoryLogs();
+          fetchAuditLogs();
         }
       )
       .on<Expense>(
@@ -132,7 +132,7 @@ const App: React.FC = () => {
               message: `Dépense "${updatedExpense.description}" mise à jour.`,
               type: 'info'
             });
-          fetchHistoryLogs();
+          fetchAuditLogs();
         }
       )
       .on<Expense>(
@@ -147,7 +147,7 @@ const App: React.FC = () => {
                   message: `Dépense "${desc}" supprimée.`,
                   type: 'info'
               });
-              fetchHistoryLogs();
+              fetchAuditLogs();
           }
         }
       )
@@ -181,7 +181,7 @@ const App: React.FC = () => {
       supabase.removeChannel(expensesChannel);
       supabase.removeChannel(remindersChannel);
     };
-  }, [fetchReminders, fetchExpenses, fetchHistoryLogs]);
+  }, [fetchReminders, fetchExpenses, fetchAuditLogs]);
 
   const addExpense = async (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => {
     const newId = crypto.randomUUID();
@@ -214,13 +214,16 @@ const App: React.FC = () => {
     const expenseToDelete = expenses.find(e => e.id === id);
     if (!expenseToDelete) return;
 
+    // Optimistically remove the expense and close the modal
     setExpenses(prev => prev.filter(e => e.id !== id));
+    setExpenseToEdit(null);
 
     const { error } = await supabase.from('expenses').delete().eq('id', id);
     
     if (error) {
       console.error('Error deleting expense:', error.message || error);
       setToastInfo({ message: "Erreur lors de la suppression.", type: 'error' });
+      // Rollback on error
       setExpenses(prev => [...prev, expenseToDelete]);
     }
   };
@@ -371,7 +374,7 @@ const App: React.FC = () => {
 
   const handleRefresh = async () => {
     setToastInfo({ message: 'Synchronisation en cours...', type: 'info' });
-    await Promise.all([fetchExpenses(), fetchReminders(), fetchHistoryLogs()]);
+    await Promise.all([fetchExpenses(), fetchReminders(), fetchAuditLogs()]);
     setToastInfo({ message: 'Données mises à jour !', type: 'info' });
   };
   
@@ -511,7 +514,7 @@ const App: React.FC = () => {
           onAddReminder={addReminder}
           onUpdateReminder={updateReminder}
           onDeleteReminder={deleteReminder}
-          historyLogs={historyLogs}
+          auditLogs={auditLogs}
           showHistorySetupNotice={showHistorySetupNotice}
       />
       <OfflineIndicator />

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 const SQL_SCRIPT = `
 -- 1. Création de la table pour stocker l'historique
-CREATE TABLE public.history_logs (
+CREATE TABLE public.audit_log (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
   event_type TEXT NOT NULL,
@@ -10,12 +10,12 @@ CREATE TABLE public.history_logs (
 );
 
 -- 2. Activation de la Row Level Security (RLS) pour la sécurité
-ALTER TABLE public.history_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
 
 -- 3. Création d'une politique pour autoriser la lecture des logs par l'application
-DROP POLICY IF EXISTS "Allow anon read access on history_logs" ON public.history_logs;
-CREATE POLICY "Allow anon read access on history_logs"
-ON public.history_logs
+DROP POLICY IF EXISTS "Allow anon read access on audit_log" ON public.audit_log;
+CREATE POLICY "Allow anon read access on audit_log"
+ON public.audit_log
 FOR SELECT TO anon
 USING (true);
 
@@ -24,7 +24,7 @@ CREATE OR REPLACE FUNCTION public.log_expense_change()
 RETURNS TRIGGER AS $$
 BEGIN
   IF (TG_OP = 'INSERT') THEN
-    INSERT INTO public.history_logs (event_type, details)
+    INSERT INTO public.audit_log (event_type, details)
     VALUES (
       'INSERT',
       CONCAT(
@@ -38,7 +38,7 @@ BEGIN
     );
     RETURN NEW;
   ELSIF (TG_OP = 'UPDATE') THEN
-    INSERT INTO public.history_logs (event_type, details)
+    INSERT INTO public.audit_log (event_type, details)
     VALUES (
       'UPDATE',
       CONCAT(
@@ -50,7 +50,7 @@ BEGIN
     );
     RETURN NEW;
   ELSIF (TG_OP = 'DELETE') THEN
-    INSERT INTO public.history_logs (event_type, details)
+    INSERT INTO public.audit_log (event_type, details)
     VALUES (
       'DELETE',
       CONCAT(
