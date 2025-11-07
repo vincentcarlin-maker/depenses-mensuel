@@ -19,25 +19,44 @@ const parseUserAgent = (): string => {
     const ua = navigator.userAgent;
     let browser = 'Navigateur inconnu';
     let os = 'OS inconnu';
+    let deviceType = 'Desktop';
+
+    // Détection du type d'appareil
+    if (/Mobi|Android|iPhone/.test(ua)) {
+        deviceType = 'Mobile';
+    } else if (/Tablet|iPad/.test(ua)) {
+        deviceType = 'Tablet';
+    }
 
     // Détection de l'OS
-    if (/Windows/.test(ua)) os = 'Windows';
+    if (/Windows NT/.test(ua)) os = 'Windows';
     else if (/Macintosh/.test(ua)) os = 'macOS';
     else if (/iPhone/.test(ua)) os = 'iPhone';
     else if (/iPad/.test(ua)) os = 'iPad';
     else if (/Android/.test(ua)) os = 'Android';
     else if (/Linux/.test(ua)) os = 'Linux';
+    
+    // Pour les appareils Apple, différencier Mac de iPhone/iPad
+    if (os === 'macOS' && 'ontouchend' in document) {
+        // Cela pourrait être un Mac avec écran tactile, mais il est plus probable que ce soit une erreur
+        // si l'UA est générique. On garde macOS.
+    } else if (/Macintosh/.test(ua) && deviceType !== 'Desktop') {
+       // Si l'UA contient Macintosh mais est détecté comme mobile/tablette, c'est probablement un iPad.
+       os = 'iPadOS';
+       deviceType = 'Tablet';
+    }
+
 
     // Détection du navigateur
     if (/Firefox/.test(ua)) browser = 'Firefox';
     else if (/SamsungBrowser/.test(ua)) browser = 'Samsung Internet';
     else if (/Opera|OPR/.test(ua)) browser = 'Opera';
     else if (/Trident/.test(ua)) browser = 'Internet Explorer';
-    else if (/Edge/.test(ua)) browser = 'Edge';
-    else if (/Chrome/.test(ua)) browser = 'Chrome';
-    else if (/Safari/.test(ua)) browser = 'Safari';
+    else if (/Edg/.test(ua)) browser = 'Edge'; // "Edg" est plus fiable pour Edge Chromium
+    else if (/Chrome/.test(ua) && !/Chromium/.test(ua)) browser = 'Chrome';
+    else if (/Safari/.test(ua) && !/Chrome/.test(ua)) browser = 'Safari';
     
-    return `${browser} sur ${os}`;
+    return `${browser} sur ${os} (${deviceType})`;
 };
 
 const App: React.FC = () => {
