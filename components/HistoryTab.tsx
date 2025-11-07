@@ -26,7 +26,7 @@ const HistoryTab: React.FC = () => {
     useEffect(() => {
         const fetchLogs = async () => {
             setIsLoading(true);
-            const { data, error } = await supabase
+            const { data, error } = await supabase!
                 .from('audit_log')
                 .select('*')
                 .order('created_at', { ascending: false })

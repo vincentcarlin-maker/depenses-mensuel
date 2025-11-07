@@ -29,10 +29,10 @@ const Header: React.FC<HeaderProps> = ({ onSetToast, onOpenSettings, onRefresh }
             Dépenses
           </h1>
         </div>
-        <div className="flex items-center space-x-1 sm:space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2 text-slate-500 dark:text-slate-400">
             <button
                 onClick={onRefresh}
-                className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 aria-label="Rafraîchir les données"
                 title="Rafraîchir"
             >
@@ -41,7 +41,7 @@ const Header: React.FC<HeaderProps> = ({ onSetToast, onOpenSettings, onRefresh }
             <NotificationBell onSetToast={onSetToast} />
             <button
                 onClick={onOpenSettings}
-                className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 aria-label="Ouvrir les réglages"
                 title="Réglages"
             >

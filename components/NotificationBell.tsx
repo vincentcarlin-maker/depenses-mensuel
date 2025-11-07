@@ -88,7 +88,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
                 applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
             });
             
-            const { error } = await supabase.from('subscriptions').insert({
+            const { error } = await supabase!.from('subscriptions').insert({
                 subscription_data: sub.toJSON(),
             });
 
@@ -125,7 +125,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
             const sub = await reg.pushManager.getSubscription();
             if (sub) {
                 const subJSON = sub.toJSON();
-                const { error } = await supabase
+                const { error } = await supabase!
                     .from('subscriptions')
                     .delete()
                     .eq('subscription_data->>endpoint', subJSON.endpoint);
@@ -177,7 +177,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
             <button
                 onClick={handleToggleSubscription}
                 disabled={disabled}
-                className="p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 aria-label={label}
                 title={label}
             >
@@ -192,13 +192,13 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
 };
 
 const BellIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
   </svg>
 );
 
 const BellSlashIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341" />
   </svg>
 );
