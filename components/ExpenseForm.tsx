@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { GoogleGenAI } from '@google/genai';
 import { type Expense, Category, User } from '../types';
 
 interface ExpenseFormProps {
@@ -6,13 +7,17 @@ interface ExpenseFormProps {
   expenses: Expense[];
 }
 
-const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => {
+// Assuming API_KEY is set in the environment, as per project instructions.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+
+const ExpenseForm = ({ onAddExpense, expenses }: ExpenseFormProps) => {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<Category>(Category.Courses);
   const [user, setUser] = useState<User>(User.Sophie);
   const [error, setError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [isCategorizing, setIsCategorizing] = useState(false);
 
   const uniqueDescriptions = useMemo(() => {
     const allDescriptions = expenses.map(e => e.description.trim());
@@ -34,6 +39,35 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
       setSuggestions(filteredSuggestions);
     } else {
       setSuggestions([]);
+    }
+  };
+  
+  const handleDescriptionBlur = async () => {
+    if (description.trim().length > 2 && !isCategorizing) {
+      setIsCategorizing(true);
+      try {
+        const categories = Object.values(Category).join(', ');
+        const prompt = `Given the expense description "${description}", what is the most likely category? Choose one from the following list: [${categories}]. Respond with only the category name from the list.`;
+        
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+        });
+
+        const suggestedCategoryText = response.text.trim();
+        
+        // Find the category enum value that matches the text response
+        const suggestedCategory = Object.values(Category).find(c => c === suggestedCategoryText);
+
+        if (suggestedCategory) {
+          setCategory(suggestedCategory);
+        }
+      } catch (e) {
+        console.error("Error fetching category suggestion:", e);
+        // Silently fail to not disrupt user experience for this enhancement.
+      } finally {
+        setIsCategorizing(false);
+      }
     }
   };
 
@@ -92,8 +126,16 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
           </div>
         </div>
         <div>
-          <label htmlFor="category" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
+          <label htmlFor="category" className="flex items-center text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
             Catégorie
+            {isCategorizing && (
+              <span className="ml-2">
+                <svg className="animate-spin h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </span>
+            )}
           </label>
           <select
             id="category"
@@ -119,7 +161,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
               value={description}
               onChange={handleDescriptionChange}
               onFocus={(e) => handleDescriptionChange(e)}
-              onBlur={() => setTimeout(() => setSuggestions([]), 150)}
+              onBlur={() => {
+                handleDescriptionBlur();
+                setTimeout(() => setSuggestions([]), 150);
+              }}
               className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
               placeholder="Ex: McDo, Courses Leclerc..."
               autoComplete="off"

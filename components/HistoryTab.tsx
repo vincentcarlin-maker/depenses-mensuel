@@ -5,7 +5,7 @@ import PlusCircleIcon from './icons/PlusCircleIcon';
 import PencilIcon from './icons/PencilIcon';
 import TrashIcon from './icons/TrashIcon';
 
-const ActionIcon: React.FC<{ action: AuditLog['action'] }> = ({ action }) => {
+const ActionIcon = ({ action }: { action: AuditLog['action'] }) => {
     switch (action) {
         case 'CREATE':
             return <div className="text-green-500"><PlusCircleIcon /></div>;
@@ -18,7 +18,7 @@ const ActionIcon: React.FC<{ action: AuditLog['action'] }> = ({ action }) => {
     }
 };
 
-const HistoryTab: React.FC = () => {
+const HistoryTab = () => {
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);

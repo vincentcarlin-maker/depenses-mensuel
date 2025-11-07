@@ -30,7 +30,7 @@ interface NotificationBellProps {
   onSetToast: (info: { message: string; type: 'info' | 'error' }) => void;
 }
 
-const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
+const NotificationBell = ({ onSetToast }: NotificationBellProps) => {
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [permission, setPermission] = useState<NotificationPermission>('default');
     const [isLoading, setIsLoading] = useState(true);

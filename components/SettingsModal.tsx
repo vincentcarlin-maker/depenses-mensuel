@@ -16,14 +16,14 @@ interface SettingsModalProps {
 
 type SettingsTab = 'reminders' | 'appearance' | 'history';
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ 
+const SettingsModal = ({ 
     isOpen, 
     onClose, 
     reminders, 
     onAddReminder, 
     onUpdateReminder, 
     onDeleteReminder 
-}) => {
+}: SettingsModalProps) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('reminders');
 
   useEffect(() => {

@@ -12,7 +12,7 @@ interface RemindersTabProps {
   onDeleteReminder: (id: string) => Promise<void>;
 }
 
-const ReminderForm: React.FC<{ onAddReminder: (reminder: Omit<Reminder, 'id' | 'created_at'>) => Promise<void> }> = ({ onAddReminder }) => {
+const ReminderForm = ({ onAddReminder }: { onAddReminder: (reminder: Omit<Reminder, 'id' | 'created_at'>) => Promise<void> }) => {
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
     const [category, setCategory] = useState<Category>(Category.Mandatory);
@@ -98,12 +98,18 @@ const ReminderForm: React.FC<{ onAddReminder: (reminder: Omit<Reminder, 'id' | '
     );
 };
 
-const ReminderItem: React.FC<{
+const ReminderItem = ({
+    reminder,
+    onUpdateReminder,
+    onDeleteReminder,
+    onEditReminder,
+}: {
     reminder: Reminder;
-    onUpdateReminder: (reminder: Reminder) => void;
-    onDeleteReminder: (id: string) => void;
+    // FIX: Updated prop types to correctly reflect that the handler functions return Promises. This resolves the TypeScript error that occurred because the parent component was passing async functions to props that expected synchronous ones.
+    onUpdateReminder: (reminder: Reminder) => Promise<void>;
+    onDeleteReminder: (id: string) => Promise<void>;
     onEditReminder: (reminder: Reminder) => void;
-}> = ({ reminder, onUpdateReminder, onDeleteReminder, onEditReminder }) => {
+}) => {
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
     const handleToggleActive = () => {
@@ -154,12 +160,17 @@ const ReminderItem: React.FC<{
 };
 
 
-const ReminderList: React.FC<{ 
+const ReminderList = ({ 
+    reminders, 
+    onUpdateReminder, 
+    onDeleteReminder,
+    onEditReminder,
+}: { 
     reminders: Reminder[], 
     onUpdateReminder: RemindersTabProps['onUpdateReminder'], 
     onDeleteReminder: RemindersTabProps['onDeleteReminder'],
     onEditReminder: (reminder: Reminder) => void,
-}> = ({ reminders, onUpdateReminder, onDeleteReminder, onEditReminder }) => {
+}) => {
     return (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg">
             <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Liste des Rappels</h2>
@@ -183,7 +194,7 @@ const ReminderList: React.FC<{
 };
 
 
-const RemindersTab: React.FC<RemindersTabProps> = ({ reminders, onAddReminder, onUpdateReminder, onDeleteReminder }) => {
+const RemindersTab = ({ reminders, onAddReminder, onUpdateReminder, onDeleteReminder }: RemindersTabProps) => {
     const [reminderToEdit, setReminderToEdit] = useState<Reminder | null>(null);
 
     const handleUpdateReminder = async (updatedReminder: Reminder) => {

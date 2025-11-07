@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState, useEffect, memo, type ReactNode } from 'react';
 import { type Expense, User, Category } from '../types';
 import CategoryIcon from './CategoryIcon';
 
@@ -128,11 +128,11 @@ const KeywordDomainMap: { [key: string]: string } = {
   'engie': 'engie.fr',
 };
 
-const Logo: React.FC<{ domain: string; alt: string; fallback: React.ReactNode }> = React.memo(({ domain, alt, fallback }) => {
-    const [status, setStatus] = React.useState<'loading' | 'loaded' | 'error'>('loading');
+const Logo = memo(({ domain, alt, fallback }: { domain: string; alt: string; fallback: ReactNode }) => {
+    const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
     const src = `https://logo.clearbit.com/${domain}`;
 
-    React.useEffect(() => {
+    useEffect(() => {
         // Reset status when the image source changes
         setStatus('loading');
     }, [src]);
@@ -164,7 +164,7 @@ const Logo: React.FC<{ domain: string; alt: string; fallback: React.ReactNode }>
 const sortedDomainKeywords = Object.keys(KeywordDomainMap).sort((a, b) => b.length - a.length);
 const sortedIconKeywords = Object.keys(KeywordIconMap).sort((a, b) => b.length - a.length);
 
-const getExpenseVisual = (description: string, category: Category): React.ReactNode => {
+const getExpenseVisual = (description: string, category: Category): ReactNode => {
     const lowerDesc = description.toLowerCase();
 
     for (const keyword of sortedDomainKeywords) {
@@ -188,10 +188,13 @@ const getExpenseVisual = (description: string, category: Category): React.ReactN
 };
 
 
-const ExpenseListItem: React.FC<{
+const ExpenseListItem = memo(({
+    expense,
+    onEditExpense,
+}: {
     expense: Expense;
     onEditExpense: (expense: Expense) => void;
-}> = React.memo(({ expense, onEditExpense }) => {
+}) => {
 
     const formattedDate = new Date(expense.date).toLocaleString('fr-FR', {
         day: '2-digit',

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { type Expense, Category } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
@@ -33,10 +33,10 @@ const CustomLegend = (props: any) => {
 };
 
 
-const CategoryTotals: React.FC<{ expenses: Expense[] }> = ({ expenses }) => {
+const CategoryTotals = ({ expenses }: { expenses: Expense[] }) => {
   const { theme } = useTheme();
 
-  const { chartData, totalExpenses } = useMemo(() => {
+  const { chartData, totalExpenses } = React.useMemo(() => {
     const totals: { [key in Category]?: number } = {};
     let currentTotal = 0;
     

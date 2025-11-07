@@ -61,7 +61,7 @@ const parseUserAgent = (): string => {
     return `${browser} sur ${os} (${deviceType})`;
 };
 
-const App: React.FC = () => {
+const App = () => {
   if (!isSupabaseConfigured) {
     return <ConfigurationError />;
   }

@@ -20,7 +20,7 @@ const toDatetimeLocal = (isoString: string): string => {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
-const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateExpense, onDeleteExpense, onClose }) => {
+const EditExpenseModal = ({ expense, onUpdateExpense, onDeleteExpense, onClose }: EditExpenseModalProps) => {
     const [description, setDescription] = useState(expense.description);
     const [amount, setAmount] = useState(expense.amount.toString());
     const [category, setCategory] = useState<Category>(expense.category);

@@ -19,7 +19,7 @@ interface HeaderProps {
   onRefresh: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onSetToast, onOpenSettings, onRefresh }) => {
+const Header = ({ onSetToast, onOpenSettings, onRefresh }: HeaderProps) => {
   return (
     <header className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-sm shadow-sm sticky top-0 z-20">
       <div className="container mx-auto px-4 py-4 md:px-8 flex items-center justify-between">

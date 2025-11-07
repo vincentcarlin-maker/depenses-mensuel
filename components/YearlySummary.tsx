@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { type Expense, Category } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LineChart, Line } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
@@ -10,11 +10,11 @@ interface YearlySummaryProps {
     year: number;
 }
 
-const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExpenses, year }) => {
+const YearlySummary = ({ expenses, previousYearExpenses, year }: YearlySummaryProps) => {
   const { theme } = useTheme();
   const tickColor = theme === 'dark' ? '#94a3b8' : '#64748b';
 
-  const { categoryData, totalYearlyExpense, monthlyAverage, numberOfMonthsWithData } = useMemo(() => {
+  const { categoryData, totalYearlyExpense, monthlyAverage, numberOfMonthsWithData } = React.useMemo(() => {
     if (expenses.length === 0) {
       return { categoryData: [], totalYearlyExpense: 0, monthlyAverage: 0, numberOfMonthsWithData: 0 };
     }
@@ -54,7 +54,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
     };
   }, [expenses]);
   
-  const monthlyTrendData = useMemo(() => {
+  const monthlyTrendData = React.useMemo(() => {
     const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
     const data = monthNames.map(name => ({
       month: name,

@@ -9,7 +9,7 @@ interface ReminderAlertsProps {
   currentMonth: number;
 }
 
-const ReminderAlerts: React.FC<ReminderAlertsProps> = ({ reminders, monthlyExpenses, onAddExpense, currentYear, currentMonth }) => {
+const ReminderAlerts = ({ reminders, monthlyExpenses, onAddExpense, currentYear, currentMonth }: ReminderAlertsProps) => {
   const now = new Date();
   const realCurrentYear = now.getUTCFullYear();
   const realCurrentMonth = now.getUTCMonth();

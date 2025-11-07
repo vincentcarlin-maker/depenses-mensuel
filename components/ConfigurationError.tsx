@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ConfigurationError: React.FC = () => {
+const ConfigurationError = () => {
   return (
     <div className="flex items-center justify-center min-h-screen bg-red-50 dark:bg-slate-900 p-4">
       <div className="max-w-2xl w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 border border-red-200 dark:border-red-900 animate-fade-in">
