@@ -1,0 +1,32 @@
+name: Déployer la Fonction Supabase
+
+on:
+  push:
+    branches:
+      - main
+    # Déployer uniquement si des changements ont lieu dans le dossier des fonctions
+    paths:
+      - 'supabase/functions/**'
+  workflow_dispatch:
+
+jobs:
+  deploy_function:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Déployer la fonction Edge sur Supabase
+        uses: supabase/cli@v1
+        with:
+          # La fonction 'send-notification' est déployée.
+          # Le --no-verify-jwt est requis lors de l'utilisation d'un SUPABASE_ACCESS_TOKEN.
+          args: functions deploy send-notification --no-verify-jwt
+        env:
+          # Le jeton d'accès est utilisé pour s'authentifier auprès de l'API de gestion Supabase.
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          # La référence du projet est passée en tant que variable d'environnement,
+          # que la CLI Supabase lit automatiquement.
+          # Assurez-vous que le secret GITHUB `SUPABASE_PROJECT_ID` contient bien
+          # la référence de votre projet Supabase (ex: abcdefghijklmnopqrst).
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_ID }}
