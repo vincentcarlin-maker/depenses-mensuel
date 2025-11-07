@@ -71,7 +71,8 @@ CREATE TABLE public.audit_log (
   user_name TEXT, -- Utilisateur qui a effectué l'action
   description TEXT, -- Description de l'élément affecté
   amount NUMERIC, -- Montant de l'élément affecté
-  details TEXT NOT NULL -- Résumé de l'action
+  details TEXT NOT NULL, -- Résumé de l'action
+  user_agent TEXT -- Agent utilisateur du client
 );
 
 -- 2. Activation de la Row Level Security (RLS) pour la sécurité
@@ -87,9 +88,19 @@ USING (true);
 -- 4. Création de la fonction qui sera appelée par les triggers
 CREATE OR REPLACE FUNCTION public.log_expense_change()
 RETURNS TRIGGER AS $$
+DECLARE
+  v_user_agent TEXT;
 BEGIN
+  -- Tente de récupérer le user-agent depuis les en-têtes de la requête.
+  -- Ignore les erreurs si l'en-tête n'est pas disponible (ex: opérations internes).
+  BEGIN
+    v_user_agent := current_setting('request.headers', true)::json->>'user-agent';
+  EXCEPTION WHEN OTHERS THEN
+    v_user_agent := NULL;
+  END;
+
   IF (TG_OP = 'INSERT') THEN
-    INSERT INTO public.audit_log (entity, action, user_name, description, amount, details)
+    INSERT INTO public.audit_log (entity, action, user_name, description, amount, details, user_agent)
     VALUES (
       'expenses',
       'INSERT',
@@ -103,11 +114,12 @@ BEGIN
         ' (',
         to_char(NEW.amount, 'FM999999990.00'),
         ' €)'
-      )
+      ),
+      v_user_agent
     );
     RETURN NEW;
   ELSIF (TG_OP = 'UPDATE') THEN
-    INSERT INTO public.audit_log (entity, action, user_name, description, amount, details)
+    INSERT INTO public.audit_log (entity, action, user_name, description, amount, details, user_agent)
     VALUES (
       'expenses',
       'UPDATE',
@@ -119,11 +131,12 @@ BEGIN
         ' a modifié la dépense "',
         OLD.description,
         '"'
-      )
+      ),
+      v_user_agent
     );
     RETURN NEW;
   ELSIF (TG_OP = 'DELETE') THEN
-    INSERT INTO public.audit_log (entity, action, user_name, description, amount, details)
+    INSERT INTO public.audit_log (entity, action, user_name, description, amount, details, user_agent)
     VALUES (
       'expenses',
       'DELETE',
@@ -137,7 +150,8 @@ BEGIN
         ' (',
         to_char(OLD.amount, 'FM999999990.00'),
         ' €)'
-      )
+      ),
+      v_user_agent
     );
     RETURN OLD;
   END IF;

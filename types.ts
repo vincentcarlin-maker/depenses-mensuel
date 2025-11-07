@@ -41,4 +41,5 @@ export interface AuditLog {
   user_name: string | null;
   description: string | null;
   amount: number | null;
+  user_agent: string | null;
 }
