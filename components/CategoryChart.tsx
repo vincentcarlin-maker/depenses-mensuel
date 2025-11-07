@@ -3,15 +3,61 @@ import { type Expense, Category } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
 
-const COLORS = ['#06b6d4', '#ec4899', '#f97316', '#8b5cf6', '#10b981', '#f59e0b'];
+const PIE_COLORS = ['#06b6d4', '#ec4899', '#f97316', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'];
 
-const CategoryEmojiMap: { [key: string]: string } = {
-  "Dépenses obligatoires": '📄',
-  "Gasoil": '⛽',
-  "Courses": '🛒',
-  "Chauffage": '🔥',
-  "Divers": '🎉',
+// --- Modern SVG Icons ---
+const MandatoryIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+  </svg>
+);
+const FuelIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8 16V5a2 2 0 012-2h4a2 2 0 012 2v11m-6 0h4m-2 0v3m0-11h-4V5" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 16H8a2 2 0 00-2 2v1h12v-1a2 2 0 00-2-2h-4z" />
+    </svg>
+);
+const HeatingIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-3.5-6V2" />
+        <path d="M12 22a7 7 0 0 1-7-7c0-2 1-3.9 3-5.5s3.5-4 3.5-6V2" />
+    </svg>
+);
+const GroceriesIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+  </svg>
+);
+const RestaurantIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/>
+        <path d="M7 2v20"/>
+        <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Z"/>
+    </svg>
+);
+const CarRepairsIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+);
+const MiscIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+  </svg>
+);
+
+// Using a map for consistent visuals
+const CategoryVisuals: { [key in Category]: { icon: React.FC<{ className?: string }>; color: string; pieColor: string } } = {
+  [Category.Mandatory]: { icon: MandatoryIcon, color: 'bg-slate-500', pieColor: '#64748b' },
+  [Category.Fuel]: { icon: FuelIcon, color: 'bg-orange-500', pieColor: '#f97316' },
+  [Category.Heating]: { icon: HeatingIcon, color: 'bg-red-500', pieColor: '#ef4444' },
+  [Category.Groceries]: { icon: GroceriesIcon, color: 'bg-green-500', pieColor: '#22c55e' },
+  [Category.Restaurant]: { icon: RestaurantIcon, color: 'bg-purple-500', pieColor: '#a855f7' },
+  [Category.CarRepairs]: { icon: CarRepairsIcon, color: 'bg-yellow-500', pieColor: '#eab308' },
+  [Category.Misc]: { icon: MiscIcon, color: 'bg-cyan-500', pieColor: '#06b6d4' },
 };
+
 
 const RADIAN = Math.PI / 180;
 const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
@@ -31,12 +77,19 @@ const CustomLegend = (props: any) => {
     const { payload } = props;
     return (
       <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-4 list-none p-0">
-        {payload.map((entry: any, index: number) => (
-          <li key={`item-${index}`} className="flex items-center text-sm text-slate-600 dark:text-slate-300">
-            <span className="mr-2 text-lg">{CategoryEmojiMap[entry.value] || '❓'}</span>
-            <span>{entry.value}</span>
-          </li>
-        ))}
+        {payload.map((entry: any, index: number) => {
+          const visual = CategoryVisuals[entry.value as Category];
+          if (!visual) return null;
+          const IconComponent = visual.icon;
+          return (
+            <li key={`item-${index}`} className="flex items-center text-sm text-slate-600 dark:text-slate-300">
+              <span className={`w-5 h-5 flex items-center justify-center rounded-full mr-2 ${visual.color}`}>
+                <IconComponent className="h-3.5 w-3.5 text-white" />
+              </span>
+              <span>{entry.value}</span>
+            </li>
+          );
+        })}
       </ul>
     );
 };
@@ -54,7 +107,9 @@ const CategoryTotals: React.FC<{ expenses: Expense[] }> = ({ expenses }) => {
     }
 
     for (const expense of expenses) {
-      totals[expense.category]! += expense.amount;
+      if (totals[expense.category] !== undefined) {
+          totals[expense.category]! += expense.amount;
+      }
       currentTotal += expense.amount;
     }
 
@@ -104,7 +159,7 @@ const CategoryTotals: React.FC<{ expenses: Expense[] }> = ({ expenses }) => {
               nameKey="name"
             >
               {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} strokeWidth={0} />
+                <Cell key={`cell-${index}`} fill={CategoryVisuals[entry.name as Category]?.pieColor || PIE_COLORS[index % PIE_COLORS.length]} strokeWidth={0} />
               ))}
             </Pie>
             <Tooltip 
@@ -125,19 +180,21 @@ const CategoryTotals: React.FC<{ expenses: Expense[] }> = ({ expenses }) => {
       <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
         <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-200">Détails par catégorie</h3>
         <div className="space-y-3">
-          {chartData.map((entry, index) => {
+          {chartData.map((entry) => {
+            const visual = CategoryVisuals[entry.name as Category] || CategoryVisuals[Category.Misc];
+            const IconComponent = visual.icon;
             const percentage = totalExpenses > 0 ? (entry.value / totalExpenses) * 100 : 0;
             return (
-              <div key={`detail-${index}`} className="flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-                <div className="flex items-center w-8 h-8 justify-center mr-4 text-xl">
-                  {CategoryEmojiMap[entry.name] || '❓'}
+              <div key={`detail-${entry.name}`} className="flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+                <div className={`w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full mr-4 ${visual.color}`}>
+                  <IconComponent className="h-5 w-5 text-white" />
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-slate-700 dark:text-slate-200">{entry.name}</p>
                   <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2 mt-1">
                      <div 
                         className="h-2 rounded-full transition-all duration-500 ease-out" 
-                        style={{ width: `${percentage}%`, backgroundColor: COLORS[index % COLORS.length] }}
+                        style={{ width: `${percentage}%`, backgroundColor: visual.pieColor }}
                      ></div>
                   </div>
                 </div>

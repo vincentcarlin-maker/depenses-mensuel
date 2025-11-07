@@ -3,7 +3,17 @@ import { type Expense, Category } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LineChart, Line } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
 
-const COLORS = ['#06b6d4', '#ec4899', '#f97316', '#8b5cf6', '#10b981', '#f59e0b'];
+const CategoryVisuals: { [key: string]: { color: string } } = {
+  [Category.Mandatory]: { color: '#64748b' },
+  [Category.Fuel]: { color: '#f97316' },
+  [Category.Heating]: { color: '#ef4444' },
+  [Category.Groceries]: { color: '#22c55e' },
+  [Category.Restaurant]: { color: '#a855f7' },
+  [Category.CarRepairs]: { color: '#eab308' },
+  [Category.Misc]: { color: '#06b6d4' },
+};
+const FALLBACK_COLOR = '#8884d8';
+
 
 interface YearlySummaryProps {
     expenses: Expense[];
@@ -29,7 +39,9 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
     const monthsWithData = new Set<number>();
 
     for (const expense of expenses) {
-      categoryTotals[expense.category]! += expense.amount;
+      if(categoryTotals[expense.category] !== undefined) {
+        categoryTotals[expense.category]! += expense.amount;
+      }
       total += expense.amount;
       monthsWithData.add(new Date(expense.date).getMonth());
     }
@@ -139,8 +151,8 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                         }}
                     />
                     <Bar dataKey="average" name="Moyenne mensuelle" fill="#8884d8" radius={[0, 8, 8, 0]}>
-                         {categoryData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                         {categoryData.map((entry) => (
+                            <Cell key={`cell-${entry.name}`} fill={CategoryVisuals[entry.name as Category]?.color || FALLBACK_COLOR} />
                         ))}
                     </Bar>
                 </BarChart>
