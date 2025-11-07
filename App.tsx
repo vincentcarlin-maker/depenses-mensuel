@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { supabase } from './supabase/client';
-import { type Expense, User, type Reminder, type AuditLog } from './types';
+import { type Expense, User, type Reminder } from './types';
 import Header from './components/Header';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseSummary from './components/ExpenseSummary';
@@ -18,7 +18,6 @@ import OfflineIndicator from './components/OfflineIndicator';
 const App: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date().getUTCMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getUTCFullYear());
@@ -59,30 +58,16 @@ const App: React.FC = () => {
         setReminders(data);
     }
   }, []);
-  
-  const fetchAuditLogs = useCallback(async () => {
-    const { data, error } = await supabase
-        .from('audit_log')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(200);
-
-    if (error) {
-        console.error('Error fetching audit logs:', error.message || error);
-    } else if (data) {
-        setAuditLogs(data);
-    }
-  }, []);
 
 
   useEffect(() => {
     const fetchData = async () => {
         setIsLoading(true);
-        await Promise.all([fetchExpenses(), fetchReminders(), fetchAuditLogs()]);
+        await Promise.all([fetchExpenses(), fetchReminders()]);
         setIsLoading(false);
     };
     fetchData();
-  }, [fetchExpenses, fetchReminders, fetchAuditLogs]);
+  }, [fetchExpenses, fetchReminders]);
 
   useEffect(() => {
     const expensesChannel = supabase
@@ -162,21 +147,9 @@ const App: React.FC = () => {
       )
       .subscribe();
 
-    const historyChannel = supabase
-      .channel('audit-log-realtime')
-      .on<AuditLog>(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'audit_log' },
-        (payload) => {
-          setAuditLogs(prevLogs => [payload.new, ...prevLogs]);
-        }
-      )
-      .subscribe();
-
     return () => {
       supabase.removeChannel(expensesChannel);
       supabase.removeChannel(remindersChannel);
-      supabase.removeChannel(historyChannel);
     };
   }, [fetchReminders, fetchExpenses]);
 
@@ -368,7 +341,7 @@ const App: React.FC = () => {
 
   const handleRefresh = async () => {
     setToastInfo({ message: 'Synchronisation en cours...', type: 'info' });
-    await Promise.all([fetchExpenses(), fetchReminders(), fetchAuditLogs()]);
+    await Promise.all([fetchExpenses(), fetchReminders()]);
     setToastInfo({ message: 'Données mises à jour !', type: 'info' });
   };
   
@@ -508,7 +481,6 @@ const App: React.FC = () => {
           onAddReminder={addReminder}
           onUpdateReminder={updateReminder}
           onDeleteReminder={deleteReminder}
-          auditLogs={auditLogs}
       />
       <OfflineIndicator />
     </div>

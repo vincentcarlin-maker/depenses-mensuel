@@ -31,15 +31,3 @@ export interface Reminder {
   is_active: boolean;
   created_at: string;
 }
-
-export interface AuditLog {
-  id: string;
-  created_at: string;
-  entity: string;
-  action: 'INSERT' | 'UPDATE' | 'DELETE';
-  details: string;
-  user_name: string | null;
-  description: string | null;
-  amount: number | null;
-  user_agent: string | null;
-}
