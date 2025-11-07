@@ -45,6 +45,7 @@ const ShoppingCartIcon: React.FC<{ className?: string }> = ({ className }) => (
     </svg>
 );
 
+
 type CategoryConfig = {
     icon: React.ComponentType<{ className?: string }>;
     bgColor: string;
