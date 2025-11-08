@@ -80,6 +80,10 @@ const ExpenseListItem: React.FC<{
 
     const isSophie = expense.user === User.Sophie;
     const userColorClass = isSophie ? 'bg-rose-500' : 'bg-sky-500';
+    
+    const amountColorClass = expense.amount < 0 
+        ? 'text-green-600 dark:text-green-400' 
+        : 'text-slate-800 dark:text-slate-100';
 
     return (
         <div
@@ -103,7 +107,7 @@ const ExpenseListItem: React.FC<{
                  <p className="text-sm text-slate-500 dark:text-slate-400 truncate" title={expense.category}>{expense.category}</p>
             </div>
             <div className="pl-4 flex-shrink-0 text-right">
-                <p className="font-bold text-slate-800 dark:text-slate-100">
+                <p className={`font-bold ${amountColorClass}`}>
                     {expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                 </p>
                 <p className="text-xs text-slate-400 dark:text-slate-500">{formattedDate}</p>

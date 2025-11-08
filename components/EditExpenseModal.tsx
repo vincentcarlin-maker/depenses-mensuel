@@ -22,10 +22,11 @@ const toDatetimeLocal = (isoString: string): string => {
 
 const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateExpense, onDeleteExpense, onClose }) => {
     const [description, setDescription] = useState(expense.description);
-    const [amount, setAmount] = useState(expense.amount.toString());
+    const [amount, setAmount] = useState(Math.abs(expense.amount).toString());
     const [category, setCategory] = useState<Category>(expense.category);
     const [user, setUser] = useState<User>(expense.user);
     const [date, setDate] = useState(toDatetimeLocal(expense.date));
+    const [transactionType, setTransactionType] = useState<'expense' | 'refund'>(expense.amount >= 0 ? 'expense' : 'refund');
     const [error, setError] = useState('');
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
@@ -49,14 +50,16 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
         }
         const parsedAmount = parseFloat(amount.replace(',', '.'));
         if (isNaN(parsedAmount) || parsedAmount <= 0) {
-            setError('Veuillez entrer un montant valide.');
+            setError('Veuillez entrer un montant positif.');
             return;
         }
+
+        const finalAmount = transactionType === 'expense' ? parsedAmount : -parsedAmount;
 
         onUpdateExpense({
             ...expense,
             description,
-            amount: parsedAmount,
+            amount: finalAmount,
             category,
             user,
             date: new Date(date).toISOString(),
@@ -78,7 +81,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                     aria-hidden="true"
                 ></div>
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl z-50 w-full max-w-md m-4 animate-fade-in">
-                    <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Détails de la Dépense</h2>
+                    <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Détails de la Transaction</h2>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                           <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Qui a payé ?</label>
@@ -117,6 +120,23 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                           <label htmlFor="edit-description" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Description</label>
                           <input type="text" id="edit-description" value={description} onChange={(e) => setDescription(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm" />
                         </div>
+                         <div>
+                           <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type de transaction</label>
+                            <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1">
+                              <span
+                                className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out
+                                  ${transactionType === 'refund' ? 'translate-x-full' : 'translate-x-0'}
+                                `}
+                                aria-hidden="true"
+                              />
+                              <button type="button" onClick={() => setTransactionType('expense')} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${transactionType === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                                Dépense
+                              </button>
+                              <button type="button" onClick={() => setTransactionType('refund')} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${transactionType === 'refund' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                                Remboursement
+                              </button>
+                            </div>
+                        </div>
                         <div>
                           <label htmlFor="edit-amount" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Montant (€)</label>
                           <input type="text" inputMode="decimal" id="edit-amount" value={amount} onChange={(e) => setAmount(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm" />
@@ -148,7 +168,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                 onClose={() => setIsConfirmOpen(false)}
                 onConfirm={handleDelete}
                 title="Confirmer la suppression"
-                message={`Êtes-vous sûr de vouloir supprimer la dépense "${expense.description}" ? Cette action est irréversible.`}
+                message={`Êtes-vous sûr de vouloir supprimer la transaction "${expense.description}" ? Cette action est irréversible.`}
             />
         </>
     );

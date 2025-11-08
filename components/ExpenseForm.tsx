@@ -11,6 +11,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<Category>(Category.Groceries);
   const [user, setUser] = useState<User>(User.Sophie);
+  const [transactionType, setTransactionType] = useState<'expense' | 'refund'>('expense');
   const [error, setError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
@@ -50,13 +51,15 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
     }
     const parsedAmount = parseFloat(amount.replace(',', '.'));
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      setError('Veuillez entrer un montant valide.');
+      setError('Veuillez entrer un montant positif.');
       return;
     }
 
+    const finalAmount = transactionType === 'expense' ? parsedAmount : -parsedAmount;
+
     onAddExpense({
       description,
-      amount: parsedAmount,
+      amount: finalAmount,
       category,
       user,
     });
@@ -64,6 +67,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
     setDescription('');
     setAmount('');
     setCategory(Category.Groceries);
+    setTransactionType('expense');
     setError('');
     setSuggestions([]);
   };
@@ -71,7 +75,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden">
       <div className="p-6 bg-slate-50 dark:bg-slate-800/50">
-        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Ajouter une Dépense</h2>
+        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Ajouter une Transaction</h2>
       </div>
       <form onSubmit={handleSubmit} className="p-6 space-y-5">
         <div>
@@ -138,6 +142,23 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
               </ul>
             )}
           </div>
+        </div>
+        <div>
+           <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type de transaction</label>
+            <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1">
+              <span
+                className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out
+                  ${transactionType === 'refund' ? 'translate-x-full' : 'translate-x-0'}
+                `}
+                aria-hidden="true"
+              />
+              <button type="button" onClick={() => setTransactionType('expense')} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${transactionType === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                Dépense
+              </button>
+              <button type="button" onClick={() => setTransactionType('refund')} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${transactionType === 'refund' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                Remboursement
+              </button>
+            </div>
         </div>
         <div>
           <label htmlFor="amount" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
