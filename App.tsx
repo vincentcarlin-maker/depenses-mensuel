@@ -151,8 +151,8 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
       )
       .subscribe((status, err) => {
         if (status === 'SUBSCRIBED') {
-          setRealtimeStatus('SUBSCRIBED');
-          console.log('Real-time channel connected.');
+          setRealtimeStatus(prev => prev === 'CHANNEL_ERROR' ? 'CHANNEL_ERROR' : 'SUBSCRIBED');
+          console.log('Expenses real-time channel connected.');
         } else if (status === 'CHANNEL_ERROR') {
           setRealtimeStatus('CHANNEL_ERROR');
           console.error('Real-time channel error:', err);
@@ -187,10 +187,15 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
         }
       )
       .subscribe((status, err) => {
-        if (status === 'CHANNEL_ERROR') {
+        if (status === 'SUBSCRIBED') {
+          setRealtimeStatus(prev => prev === 'CHANNEL_ERROR' ? 'CHANNEL_ERROR' : 'SUBSCRIBED');
+          console.log('Reminders real-time channel connected.');
+        } else if (status === 'CHANNEL_ERROR') {
+          setRealtimeStatus('CHANNEL_ERROR');
           console.error('Real-time reminders channel error:', err);
           setToastInfo({ message: 'Erreur de connexion temps-réel pour les rappels.', type: 'error' });
         } else if (status === 'TIMED_OUT') {
+           setRealtimeStatus('TIMED_OUT');
            console.warn('Real-time reminders channel connection timed out.');
            setToastInfo({ message: 'La connexion temps-réel pour les rappels a expiré.', type: 'error' });
         }
@@ -273,7 +278,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     if (error) {
       console.error('Error updating expense:', error.message || error);
       setToastInfo({ message: "Erreur lors de la mise à jour.", type: 'error' });
-      setExpenses(prev => prev.map(e => e.id === originalExpense.id ? originalExpense : e));
+      setExpenses(prev => prev.map(e => e.id === originalExpense.id ? originalExpense.id : e));
     }
   };
 
