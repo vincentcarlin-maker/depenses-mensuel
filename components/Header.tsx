@@ -20,9 +20,10 @@ interface HeaderProps {
   loggedInUser: User;
   notifications: { expense: Expense; type: 'add' | 'update' }[];
   onClearNotifications: () => void;
+  realtimeStatus: 'SUBSCRIBED' | 'TIMED_OUT' | 'CHANNEL_ERROR' | 'CONNECTING';
 }
 
-const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser, notifications, onClearNotifications }) => {
+const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser, notifications, onClearNotifications, realtimeStatus }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -53,10 +54,27 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser,
       const shouldOpen = !isNotificationsOpen;
       setIsNotificationsOpen(shouldOpen);
       if (shouldOpen && notifications.length > 0) {
-          setLastShownNotifications(notifications);
+          setLastShownNotifications(prev => {
+            const newNotifications = notifications.filter(
+                n => !prev.some(p => p.expense.id === n.expense.id)
+            );
+            return [...newNotifications, ...prev];
+          });
           onClearNotifications();
       }
   };
+  
+  const realtimeStatusInfo = {
+    SUBSCRIBED: { color: 'bg-green-500', title: 'Connecté en temps-réel' },
+    CONNECTING: { color: 'bg-yellow-500', title: 'Connexion temps-réel en cours...' },
+    CHANNEL_ERROR: { color: 'bg-red-500', title: 'Erreur de connexion temps-réel' },
+    TIMED_OUT: { color: 'bg-red-500', title: 'Connexion temps-réel expirée' },
+  }[realtimeStatus];
+
+  const RealtimeStatusIndicator = () => (
+    <span title={realtimeStatusInfo.title} className={`absolute bottom-1.5 left-1.5 block h-2.5 w-2.5 rounded-full ${realtimeStatusInfo.color} ring-2 ring-white dark:ring-slate-800`} />
+  );
+
 
   return (
     <header className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-sm shadow-sm sticky top-0 z-20">
@@ -76,8 +94,9 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser,
                 >
                     <BellIcon />
                     {notifications.length > 0 && (
-                        <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-800" />
+                        <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-800" />
                     )}
+                    <RealtimeStatusIndicator />
                 </button>
 
                 {isNotificationsOpen && (

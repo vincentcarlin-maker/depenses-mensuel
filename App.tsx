@@ -34,6 +34,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [notifications, setNotifications] = useState<{expense: Expense, type: 'add' | 'update'}[]>([]);
   const [highlightedExpenseIds, setHighlightedExpenseIds] = useState<Set<string>>(new Set());
+  const [realtimeStatus, setRealtimeStatus] = useState<'SUBSCRIBED' | 'TIMED_OUT' | 'CHANNEL_ERROR' | 'CONNECTING'>('CONNECTING');
   const recentlyAddedIds = useRef(new Set<string>());
   const recentlyUpdatedIds = useRef(new Set<string>());
 
@@ -90,11 +91,11 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   useEffect(() => {
     const expensesChannel = supabase
       .channel('expenses-realtime')
-      .on<Expense>(
+      .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'expenses' },
         (payload) => {
-          const newExpense = payload.new;
+          const newExpense = payload.new as Expense;
           
           const wasAddedLocally = recentlyAddedIds.current.has(newExpense.id);
 
@@ -114,11 +115,11 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
           highlightExpense(newExpense.id);
         }
       )
-      .on<Expense>(
+      .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'expenses' },
         (payload) => {
-          const updatedExpense = payload.new;
+          const updatedExpense = payload.new as Expense;
           const wasUpdatedLocally = recentlyUpdatedIds.current.has(updatedExpense.id);
 
           setExpenses(prevExpenses =>
@@ -133,7 +134,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
           highlightExpense(updatedExpense.id);
         }
       )
-      .on<Expense>(
+      .on(
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'expenses' },
         (payload) => {
@@ -150,11 +151,14 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
       )
       .subscribe((status, err) => {
         if (status === 'SUBSCRIBED') {
+          setRealtimeStatus('SUBSCRIBED');
           console.log('Real-time channel connected.');
         } else if (status === 'CHANNEL_ERROR') {
+          setRealtimeStatus('CHANNEL_ERROR');
           console.error('Real-time channel error:', err);
           setToastInfo({ message: 'Erreur de connexion temps-réel.', type: 'error' });
         } else if (status === 'TIMED_OUT') {
+          setRealtimeStatus('TIMED_OUT');
           console.warn('Real-time channel connection timed out.');
           setToastInfo({ message: 'La connexion temps-réel a expiré.', type: 'error' });
         }
@@ -162,7 +166,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
 
     const remindersChannel = supabase
       .channel('reminders-realtime')
-      .on<Reminder>(
+      .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'reminders' },
         (payload) => {
@@ -470,6 +474,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
           loggedInUser={user}
           notifications={notifications}
           onClearNotifications={() => setNotifications([])}
+          realtimeStatus={realtimeStatus}
         />
 
         <main className="container mx-auto p-4 md:p-8">
