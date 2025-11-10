@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SettingsIcon from './icons/SettingsIcon';
-import RefreshIcon from './icons/RefreshIcon';
 import LogoutIcon from './icons/LogoutIcon';
 import { User } from '../types';
 
@@ -16,12 +15,11 @@ const Logo = () => (
 
 interface HeaderProps {
   onOpenSettings: () => void;
-  onRefresh: () => void;
   onLogout: () => void;
   loggedInUser: User;
 }
 
-const Header: React.FC<HeaderProps> = ({ onOpenSettings, onRefresh, onLogout, loggedInUser }) => {
+const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -51,15 +49,6 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onRefresh, onLogout, lo
           </h1>
         </div>
         <div className="flex items-center space-x-1 sm:space-x-2">
-            <button
-                onClick={onRefresh}
-                className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                aria-label="Rafraîchir les données"
-                title="Rafraîchir"
-            >
-                <RefreshIcon />
-            </button>
-
             <div className="relative" ref={dropdownRef}>
                 <button
                     onClick={() => setIsDropdownOpen(prev => !prev)}

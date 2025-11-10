@@ -16,6 +16,7 @@ import { useTheme } from './hooks/useTheme';
 import OfflineIndicator from './components/OfflineIndicator';
 import { useAuth } from './hooks/useAuth';
 import Login from './components/Login';
+import PullToRefresh from './components/PullToRefresh';
 
 const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogout }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -30,6 +31,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [formInitialData, setFormInitialData] = useState<(Omit<Expense, 'id' | 'date' | 'created_at'> & { formKey?: string }) | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchExpenses = useCallback(async () => {
     const { data, error } = await supabase
@@ -372,9 +374,12 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   }, [currentMonth, currentYear]);
 
   const handleRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
     setToastInfo({ message: 'Synchronisation en cours...', type: 'info' });
     await Promise.all([fetchExpenses(), fetchReminders()]);
     setToastInfo({ message: 'Données mises à jour !', type: 'info' });
+    setIsRefreshing(false);
   };
   
   const handlePayReminder = (reminder: Reminder) => {
@@ -410,110 +415,111 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
 
   return (
     <div className="bg-gray-50 dark:bg-slate-900 min-h-screen font-sans">
-      <Header 
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        onRefresh={handleRefresh}
-        onLogout={onLogout}
-        loggedInUser={user}
-      />
-
-      <main className="container mx-auto p-4 md:p-8">
-        {activeTab !== 'search' && (
-          <div className="flex justify-between items-center mb-6 animate-fade-in-up">
-            <button 
-              onClick={() => handleMonthChange('prev')} 
-              disabled={currentYear === 2025 && currentMonth === 9}
-              className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-            </button>
-            <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 text-center capitalize">{currentMonthName}</h2>
-            <button onClick={() => handleMonthChange('next')} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-            </button>
-          </div>
-        )}
-        
-        <ReminderAlerts 
-          reminders={reminders}
-          monthlyExpenses={filteredExpenses}
-          onPayReminder={handlePayReminder}
-          currentMonth={currentMonth}
-          currentYear={currentYear}
+      <PullToRefresh isRefreshing={isRefreshing} onRefresh={handleRefresh}>
+        <Header 
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onLogout={onLogout}
+          loggedInUser={user}
         />
 
-        <div className="border-b border-slate-200 dark:border-slate-700 mb-6">
-            <nav className="-mb-px flex space-x-6" aria-label="Tabs">
-                 {tabs.map(tab => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors
-                        ${activeTab === tab.id
-                          ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400'
-                          : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'
-                        }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-            </nav>
-        </div>
-        
-        <div className="animate-fade-in">
-          {activeTab === 'dashboard' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div id="expense-form-container" className="space-y-8">
-                <ExpenseForm
-                  key={formInitialData?.formKey || 'default-form'}
-                  onAddExpense={addExpense}
-                  expenses={expenses}
-                  initialData={formInitialData}
-                  loggedInUser={user}
-                />
-                <ExpenseSummary 
-                    allExpenses={expenses}
-                    currentYear={currentYear}
-                    currentMonth={currentMonth}
-                    sophieTotalMonth={sophieTotalMonth}
-                    vincentTotalMonth={vincentTotalMonth}
-                />
-              </div>
-              <div className="space-y-8">
-                  <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg">
-                    <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Dépenses du mois</h2>
-                     <input
-                        type="text"
-                        placeholder="Filtrer les dépenses du mois..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-3 py-2 mb-4 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
-                      />
-                    <ExpenseList expenses={searchedExpenses} onEditExpense={setExpenseToEdit} />
-                  </div>
-              </div>
+        <main className="container mx-auto p-4 md:p-8">
+          {activeTab !== 'search' && (
+            <div className="flex justify-between items-center mb-6 animate-fade-in-up">
+              <button 
+                onClick={() => handleMonthChange('prev')} 
+                disabled={currentYear === 2025 && currentMonth === 9}
+                className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 text-center capitalize">{currentMonthName}</h2>
+              <button onClick={() => handleMonthChange('next')} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </button>
             </div>
           )}
-          {activeTab === 'analysis' && <CategoryTotals expenses={filteredExpenses} previousMonthExpenses={previousMonthExpenses} last3MonthsExpenses={last3MonthsExpenses} />}
-          {activeTab === 'yearly' && <YearlySummary expenses={yearlyFilteredExpenses} previousYearExpenses={previousYearFilteredExpenses} year={currentYear} />}
-          {activeTab === 'search' && (
-             <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg">
-              <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Recherche globale</h2>
-              <input
-                type="text"
-                placeholder="Rechercher par description, montant, catégorie..."
-                value={globalSearchTerm}
-                onChange={(e) => setGlobalSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 mb-4 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
-              />
-              {globalSearchTerm && (
-                <GroupedExpenseList expenses={globalSearchedExpenses} onEditExpense={setExpenseToEdit} />
-              )}
-             </div>
-          )}
-        </div>
-      </main>
-      
+          
+          <ReminderAlerts 
+            reminders={reminders}
+            monthlyExpenses={filteredExpenses}
+            onPayReminder={handlePayReminder}
+            currentMonth={currentMonth}
+            currentYear={currentYear}
+          />
+
+          <div className="border-b border-slate-200 dark:border-slate-700 mb-6">
+              <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+                   {tabs.map(tab => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors
+                          ${activeTab === tab.id
+                            ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400'
+                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'
+                          }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+              </nav>
+          </div>
+          
+          <div className="animate-fade-in">
+            {activeTab === 'dashboard' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div id="expense-form-container" className="space-y-8">
+                  <ExpenseForm
+                    key={formInitialData?.formKey || 'default-form'}
+                    onAddExpense={addExpense}
+                    expenses={expenses}
+                    initialData={formInitialData}
+                    loggedInUser={user}
+                  />
+                  <ExpenseSummary 
+                      allExpenses={expenses}
+                      currentYear={currentYear}
+                      currentMonth={currentMonth}
+                      sophieTotalMonth={sophieTotalMonth}
+                      vincentTotalMonth={vincentTotalMonth}
+                  />
+                </div>
+                <div className="space-y-8">
+                    <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg">
+                      <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Dépenses du mois</h2>
+                       <input
+                          type="text"
+                          placeholder="Filtrer les dépenses du mois..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="w-full px-3 py-2 mb-4 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
+                        />
+                      <ExpenseList expenses={searchedExpenses} onEditExpense={setExpenseToEdit} />
+                    </div>
+                </div>
+              </div>
+            )}
+            {activeTab === 'analysis' && <CategoryTotals expenses={filteredExpenses} previousMonthExpenses={previousMonthExpenses} last3MonthsExpenses={last3MonthsExpenses} />}
+            {activeTab === 'yearly' && <YearlySummary expenses={yearlyFilteredExpenses} previousYearExpenses={previousYearFilteredExpenses} year={currentYear} />}
+            {activeTab === 'search' && (
+               <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg">
+                <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Recherche globale</h2>
+                <input
+                  type="text"
+                  placeholder="Rechercher par description, montant, catégorie..."
+                  value={globalSearchTerm}
+                  onChange={(e) => setGlobalSearchTerm(e.target.value)}
+                  className="w-full px-3 py-2 mb-4 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
+                />
+                {globalSearchTerm && (
+                  <GroupedExpenseList expenses={globalSearchedExpenses} onEditExpense={setExpenseToEdit} />
+                )}
+               </div>
+            )}
+          </div>
+        </main>
+      </PullToRefresh>
+
       {expenseToEdit && (
         <EditExpenseModal
           expense={expenseToEdit}
