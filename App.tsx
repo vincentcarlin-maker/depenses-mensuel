@@ -36,6 +36,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   const [lastRemoteExpense, setLastRemoteExpense] = useState<Expense | null>(null);
   const [highlightedExpenseIds, setHighlightedExpenseIds] = useState<Set<string>>(new Set());
   const recentlyAddedIds = useRef(new Set<string>());
+  const recentlyUpdatedIds = useRef(new Set<string>());
 
   const highlightExpense = (id: string) => {
     setHighlightedExpenseIds(prev => new Set(prev).add(id));
@@ -118,15 +119,19 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
         { event: 'UPDATE', schema: 'public', table: 'expenses' },
         (payload) => {
           const updatedExpense = payload.new;
+          const wasUpdatedLocally = recentlyUpdatedIds.current.has(updatedExpense.id);
+
           setExpenses(prevExpenses =>
             prevExpenses.map(expense =>
               expense.id === updatedExpense.id ? updatedExpense : expense
             )
           );
-           setToastInfo({
-              message: `Dépense "${updatedExpense.description}" mise à jour.`,
-              type: 'info'
+          if (!wasUpdatedLocally) {
+            setToastInfo({
+                message: `Dépense "${updatedExpense.description}" mise à jour.`,
+                type: 'info'
             });
+          }
           highlightExpense(updatedExpense.id);
         }
       )
@@ -232,6 +237,11 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   const updateExpense = async (updatedExpense: Expense) => {
     const originalExpense = expenses.find(e => e.id === updatedExpense.id);
     if (!originalExpense) return;
+
+    recentlyUpdatedIds.current.add(updatedExpense.id);
+    setTimeout(() => {
+        recentlyUpdatedIds.current.delete(updatedExpense.id);
+    }, 5000);
 
     setExpenses(prev => prev.map(e => e.id === updatedExpense.id ? updatedExpense : e));
     setExpenseToEdit(null);
