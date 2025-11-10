@@ -19,8 +19,8 @@ const App: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentMonth, setCurrentMonth] = useState(new Date().getUTCMonth());
-  const [currentYear, setCurrentYear] = useState(new Date().getUTCFullYear());
+  const [currentMonth, setCurrentMonth] = useState(9); // Default to October (0-indexed)
+  const [currentYear, setCurrentYear] = useState(2025); // Default to 2025
   const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly' | 'search'>('dashboard');
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,6 +35,7 @@ const App: React.FC = () => {
     const { data, error } = await supabase
       .from('expenses')
       .select('*')
+      .gte('date', '2025-10-01T00:00:00Z') // Only fetch expenses from Oct 2025 onwards
       .order('date', { ascending: false });
 
     if (error) {
@@ -323,6 +324,10 @@ const App: React.FC = () => {
           setCurrentMonth(prev => prev + 1);
         }
       } else {
+        // Prevent navigating before October 2025
+        if (currentYear === 2025 && currentMonth === 9) {
+          return;
+        }
         if (currentMonth === 0) {
           setCurrentMonth(11);
           setCurrentYear(prev => prev - 1);
@@ -373,7 +378,11 @@ const App: React.FC = () => {
       <main className="container mx-auto p-4 md:p-8">
         {activeTab !== 'search' && (
           <div className="flex justify-between items-center mb-6 animate-fade-in-up">
-            <button onClick={() => handleMonthChange('prev')} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+            <button 
+              onClick={() => handleMonthChange('prev')} 
+              disabled={currentYear === 2025 && currentMonth === 9}
+              className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
             <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 text-center capitalize">{currentMonthName}</h2>

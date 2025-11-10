@@ -10,6 +10,14 @@ interface ReminderAlertsProps {
 }
 
 const ReminderAlerts: React.FC<ReminderAlertsProps> = ({ reminders, monthlyExpenses, onAddExpense, currentYear, currentMonth }) => {
+  const viewedMonthDate = new Date(Date.UTC(currentYear, currentMonth));
+  const reminderStartDate = new Date('2025-11-01T00:00:00Z');
+
+  // Reminders feature starts from November 2025
+  if (viewedMonthDate < reminderStartDate) {
+    return null;
+  }
+
   const now = new Date();
   const realCurrentYear = now.getUTCFullYear();
   const realCurrentMonth = now.getUTCMonth();
