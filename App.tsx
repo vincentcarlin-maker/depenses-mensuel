@@ -27,6 +27,8 @@ const App: React.FC = () => {
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [formInitialData, setFormInitialData] = useState<(Omit<Expense, 'id' | 'date' | 'created_at'> & { formKey?: string }) | null>(null);
+
 
   // Initialize theme
   useTheme();
@@ -178,6 +180,8 @@ const App: React.FC = () => {
       console.error('Error adding expense:', error.message || error);
       setToastInfo({ message: "Erreur lors de l'ajout de la dépense.", type: 'error' });
       setExpenses(prev => prev.filter(e => e.id !== newId));
+    } else {
+      setFormInitialData(null);
     }
   };
 
@@ -375,6 +379,20 @@ const App: React.FC = () => {
     setToastInfo({ message: 'Données mises à jour !', type: 'info' });
   };
   
+  const handlePayReminder = (reminder: Reminder) => {
+    setFormInitialData({
+      formKey: crypto.randomUUID(),
+      description: reminder.description,
+      amount: reminder.amount,
+      category: reminder.category,
+      user: reminder.user,
+    });
+    const formElement = document.getElementById('expense-form-container');
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   if (isLoading) {
     return (
         <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-slate-900">
@@ -420,7 +438,7 @@ const App: React.FC = () => {
         <ReminderAlerts 
           reminders={reminders}
           monthlyExpenses={filteredExpenses}
-          onAddExpense={addExpense}
+          onPayReminder={handlePayReminder}
           currentMonth={currentMonth}
           currentYear={currentYear}
         />
@@ -446,8 +464,13 @@ const App: React.FC = () => {
         <div className="animate-fade-in">
           {activeTab === 'dashboard' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="space-y-8">
-                <ExpenseForm onAddExpense={addExpense} expenses={expenses} />
+              <div id="expense-form-container" className="space-y-8">
+                <ExpenseForm
+                  key={formInitialData?.formKey || 'default-form'}
+                  onAddExpense={addExpense}
+                  expenses={expenses}
+                  initialData={formInitialData}
+                />
                 <ExpenseSummary 
                     allExpenses={expenses}
                     currentYear={currentYear}

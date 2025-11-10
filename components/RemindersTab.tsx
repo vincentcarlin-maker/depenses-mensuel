@@ -167,15 +167,18 @@ const ReminderList: React.FC<{
                 <p className="text-slate-500 dark:text-slate-400 text-center py-8">Aucun rappel configuré.</p>
             ) : (
                 <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
-                    {reminders.map(reminder => (
-                        <ReminderItem
-                            key={reminder.id}
-                            reminder={reminder}
-                            onUpdateReminder={onUpdateReminder}
-                            onDeleteReminder={onDeleteReminder}
-                            onEditReminder={onEditReminder}
-                        />
-                    ))}
+                    {reminders
+                        // FIX: Filter out malformed reminders to prevent crashes when accessing properties like 'amount'.
+                        .filter(reminder => reminder && typeof reminder.amount === 'number')
+                        .map(reminder => (
+                            <ReminderItem
+                                key={reminder.id}
+                                reminder={reminder}
+                                onUpdateReminder={onUpdateReminder}
+                                onDeleteReminder={onDeleteReminder}
+                                onEditReminder={onEditReminder}
+                            />
+                        ))}
                 </div>
             )}
         </div>

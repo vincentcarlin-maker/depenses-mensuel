@@ -4,12 +4,12 @@ import { type Reminder, type Expense } from '../types';
 interface ReminderAlertsProps {
   reminders: Reminder[];
   monthlyExpenses: Expense[];
-  onAddExpense: (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => void;
+  onPayReminder: (reminder: Reminder) => void;
   currentYear: number;
   currentMonth: number;
 }
 
-const ReminderAlerts: React.FC<ReminderAlertsProps> = ({ reminders, monthlyExpenses, onAddExpense, currentYear, currentMonth }) => {
+const ReminderAlerts: React.FC<ReminderAlertsProps> = ({ reminders, monthlyExpenses, onPayReminder, currentYear, currentMonth }) => {
   const viewedMonthDate = new Date(Date.UTC(currentYear, currentMonth));
   const reminderStartDate = new Date('2025-11-01T00:00:00Z');
 
@@ -28,7 +28,8 @@ const ReminderAlerts: React.FC<ReminderAlertsProps> = ({ reminders, monthlyExpen
   const isCurrentMonth = currentYear === realCurrentYear && currentMonth === realCurrentMonth;
 
   const pendingReminders = reminders.filter(reminder => {
-    if (!reminder.is_active) {
+    // FIX: Added validation to prevent crashes from malformed reminder data, which could be missing an amount or description.
+    if (!reminder || typeof reminder.amount !== 'number' || typeof reminder.description !== 'string' || !reminder.is_active) {
       return false;
     }
 
@@ -38,7 +39,7 @@ const ReminderAlerts: React.FC<ReminderAlertsProps> = ({ reminders, monthlyExpen
     }
 
     const isPaid = monthlyExpenses.some(expense => 
-        expense.description.toLowerCase().includes(reminder.description.toLowerCase()) &&
+        expense.description?.toLowerCase().includes(reminder.description.toLowerCase()) &&
         expense.amount === reminder.amount
     );
 
@@ -64,13 +65,8 @@ const ReminderAlerts: React.FC<ReminderAlertsProps> = ({ reminders, monthlyExpen
     return null;
   }
   
-  const handleAddExpense = (reminder: Reminder) => {
-    onAddExpense({
-      description: reminder.description,
-      amount: reminder.amount,
-      category: reminder.category,
-      user: reminder.user,
-    });
+  const handlePayClick = (reminder: Reminder) => {
+    onPayReminder(reminder);
   };
 
   return (
@@ -92,7 +88,7 @@ const ReminderAlerts: React.FC<ReminderAlertsProps> = ({ reminders, monthlyExpen
                       <strong>{reminder.description}</strong> ({reminder.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}) est probablement dû.
                     </span>
                     <button 
-                      onClick={() => handleAddExpense(reminder)}
+                      onClick={() => handlePayClick(reminder)}
                       className="px-3 py-1 text-xs font-semibold text-white bg-cyan-600 rounded-md hover:bg-cyan-700 transition-colors whitespace-nowrap"
                     >
                       Payer

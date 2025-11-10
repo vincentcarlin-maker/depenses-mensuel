@@ -1,19 +1,21 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { type Expense, Category, User } from '../types';
 
 interface ExpenseFormProps {
   onAddExpense: (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => void;
   expenses: Expense[];
+  initialData?: Omit<Expense, 'id' | 'date' | 'created_at'> | null;
 }
 
-const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => {
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState<Category>(Category.Groceries);
-  const [user, setUser] = useState<User>(User.Sophie);
-  const [transactionType, setTransactionType] = useState<'expense' | 'refund'>('expense');
+const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initialData }) => {
+  const [description, setDescription] = useState(initialData?.description || '');
+  const [amount, setAmount] = useState(initialData ? String(Math.abs(initialData.amount)) : '');
+  const [category, setCategory] = useState<Category>(initialData?.category || Category.Groceries);
+  const [user, setUser] = useState<User>(initialData?.user || User.Sophie);
+  const [transactionType, setTransactionType] = useState<'expense' | 'refund'>(initialData && initialData.amount < 0 ? 'refund' : 'expense');
   const [error, setError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const amountInputRef = useRef<HTMLInputElement>(null);
 
   const uniqueDescriptions = useMemo(() => {
     const tagRegex = /(#\w+)/g;
@@ -23,6 +25,13 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
     // the Set, which caused a compile error.
     return [...new Set<string>(allDescriptions)].filter(d => d.length > 0);
   }, [expenses]);
+
+  useEffect(() => {
+    if (initialData) {
+      amountInputRef.current?.focus();
+      amountInputRef.current?.select();
+    }
+  }, []); // Run only on mount, since we are keying the component
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -69,13 +78,17 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
       category,
       user,
     });
-
-    setDescription('');
-    setAmount('');
-    setCategory(Category.Groceries);
-    setTransactionType('expense');
-    setError('');
-    setSuggestions([]);
+    
+    // Clear form only on normal submission, not on pre-filled submission
+    // because the parent remounts the component anyway via the key prop.
+    if (!initialData) {
+        setDescription('');
+        setAmount('');
+        setCategory(Category.Groceries);
+        setTransactionType('expense');
+        setError('');
+        setSuggestions([]);
+    }
   };
 
   return (
@@ -172,6 +185,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
               Montant (€)
             </label>
             <input
+              ref={amountInputRef}
               type="text"
               inputMode="decimal"
               id="amount"
