@@ -32,7 +32,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [formInitialData, setFormInitialData] = useState<(Omit<Expense, 'id' | 'date' | 'created_at'> & { formKey?: string }) | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [notifications, setNotifications] = useState<Expense[]>([]);
+  const [notifications, setNotifications] = useState<{expense: Expense, type: 'add' | 'update'}[]>([]);
   const [highlightedExpenseIds, setHighlightedExpenseIds] = useState<Set<string>>(new Set());
   const recentlyAddedIds = useRef(new Set<string>());
   const recentlyUpdatedIds = useRef(new Set<string>());
@@ -99,7 +99,8 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
           const wasAddedLocally = recentlyAddedIds.current.has(newExpense.id);
 
           if (!wasAddedLocally) {
-            setNotifications(prev => [newExpense, ...prev.filter(n => n.id !== newExpense.id)]);
+            setNotifications(prev => [{ expense: newExpense, type: 'add' }, ...prev.filter(n => n.expense.id !== newExpense.id)]);
+            setToastInfo({ message: `${newExpense.user} a ajouté "${newExpense.description}".`, type: 'info' });
           }
 
           setExpenses(prevExpenses => {
@@ -126,7 +127,8 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
             )
           );
           if (!wasUpdatedLocally) {
-            setNotifications(prev => [updatedExpense, ...prev.filter(n => n.id !== updatedExpense.id)]);
+            setNotifications(prev => [{ expense: updatedExpense, type: 'update' }, ...prev.filter(n => n.expense.id !== updatedExpense.id)]);
+            setToastInfo({ message: `${updatedExpense.user} a modifié "${updatedExpense.description}".`, type: 'info' });
           }
           highlightExpense(updatedExpense.id);
         }
@@ -146,7 +148,17 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
           }
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Real-time channel connected.');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Real-time channel error:', err);
+          setToastInfo({ message: 'Erreur de connexion temps-réel.', type: 'error' });
+        } else if (status === 'TIMED_OUT') {
+          console.warn('Real-time channel connection timed out.');
+          setToastInfo({ message: 'La connexion temps-réel a expiré.', type: 'error' });
+        }
+      });
 
     const remindersChannel = supabase
       .channel('reminders-realtime')

@@ -18,7 +18,7 @@ interface HeaderProps {
   onOpenSettings: () => void;
   onLogout: () => void;
   loggedInUser: User;
-  notifications: Expense[];
+  notifications: { expense: Expense; type: 'add' | 'update' }[];
   onClearNotifications: () => void;
 }
 
@@ -27,7 +27,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser,
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [lastShownNotifications, setLastShownNotifications] = useState<Expense[]>([]);
+  const [lastShownNotifications, setLastShownNotifications] = useState<{ expense: Expense; type: 'add' | 'update' }[]>([]);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
   const userColorClass = loggedInUser === User.Sophie ? 'bg-rose-500' : 'bg-sky-500';
@@ -88,11 +88,11 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser,
                         <div className="max-h-96 overflow-y-auto">
                             {lastShownNotifications.length > 0 ? (
                                 <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-                                    {lastShownNotifications.map(expense => (
+                                    {lastShownNotifications.map(({ expense, type }) => (
                                         <li key={expense.id} className="p-4">
                                             <p className="text-sm text-slate-700 dark:text-slate-200">
                                                 <span className={`font-bold ${expense.user === User.Sophie ? 'text-rose-500' : 'text-sky-500'}`}>{expense.user}</span>
-                                                {` a mis à jour `}
+                                                {type === 'add' ? ` a ajouté ` : ` a mis à jour `}
                                                 <span className="font-semibold text-slate-800 dark:text-slate-100">{expense.description}</span>
                                                 {` (${expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`}
                                             </p>
