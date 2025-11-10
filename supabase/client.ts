@@ -2,39 +2,40 @@ import { createClient } from '@supabase/supabase-js';
 import { type Expense, type Reminder } from '../types';
 
 // =============================================================================
-// GUIDE DE DÉPANNAGE INFALLIBLE POUR LE TEMPS-RÉEL
+// GUIDE DÉFINITIF ET VISUEL POUR ACTIVER LE TEMPS-RÉEL
 // =============================================================================
 //
-// L'erreur "Real-time channel error" est quasi-certainement un problème de
-// configuration dans votre tableau de bord Supabase.
-//
-// Suivez attentivement ces DEUX étapes et VÉRIFIEZ chaque point.
+// L'erreur "Real-time channel error" est frustrante mais 100% due à la
+// configuration de votre projet Supabase. Suivez ce guide VISUELLEMENT.
+// Chaque clic est important.
 //
 // -----------------------------------------------------------------------------
 // ÉTAPE 1 : CONFIGURER LES "PUBLICATIONS" (ACTION REQUISE)
 // -----------------------------------------------------------------------------
-// C'est la cause la plus fréquente. Vous devez dire à Supabase de "diffuser"
-// les changements de vos tables.
 //
-// 1. Allez sur votre projet Supabase.
-// 2. Menu de gauche : allez dans `Database` > `Publications`.
-// 3. Vous verrez une ligne `supabase_realtime`. CLIQUEZ DESSUS.
-// 4. Une section apparaît. Cliquez sur le lien bleu (ex: `0 tables`).
-// 5. Cochez les cases pour les tables `expenses` ET `reminders`.
-// 6. Cliquez sur le bouton `SAVE`.
+// 1. ➡️ Menu de gauche : Cliquez sur l'icône "Database" (un cylindre).
+// 2. ➡️ Dans le panneau qui apparaît : Cliquez sur "Publications".
+// 3. ➡️ La page montre une seule publication : "supabase_realtime".
+//       Cliquez sur le texte "supabase_realtime".
+// 4. ➡️ Une nouvelle section s'ouvre. Cliquez sur le lien bleu "0 tables" (ou "X tables").
+// 5. ➡️ Cochez les cases pour "expenses" ET "reminders".
+// 6. ➡️ Cliquez sur le gros bouton vert "Save".
 //
-// --- VÉRIFICATION ---
-// Après avoir sauvegardé, le lien doit maintenant indiquer `2 tables`. S'il
-// indique toujours `0 tables`, l'étape a échoué. Répétez-la.
+// --- VÉRIFICATION VISUELLE ---
+// Le lien bleu doit maintenant afficher `2 tables`. S'il indique toujours
+// `0 tables` ou `1 tables`, vous avez manqué une étape.
 //
 // -----------------------------------------------------------------------------
 // ÉTAPE 2 : CONFIGURER LES POLITIQUES DE SÉCURITÉ (RLS)
 // -----------------------------------------------------------------------------
-// Cette étape autorise votre application à LIRE les données diffusées.
 //
-// 1. Allez sur votre projet Supabase > `SQL Editor`.
-// 2. Cliquez sur `+ New query`.
-// 3. Copiez-collez le script SQL ci-dessous et cliquez sur `RUN`.
+// 1. ➡️ Menu de gauche : Cliquez sur l'icône "Authentication" (une clé).
+// 2. ➡️ Dans le panneau qui apparaît : Cliquez sur "Policies".
+// 3. ➡️ Si vous voyez un grand bouton bleu "Enable RLS" pour les tables
+//       "expenses" ou "reminders", CLIQUEZ DESSUS.
+// 4. ➡️ Menu de gauche : Cliquez sur l'icône "SQL Editor" (un éclair >_).
+// 5. ➡️ Cliquez sur "+ New query".
+// 6. ➡️ Copiez-collez l'intégralité du script ci-dessous et cliquez "RUN".
 /*
 -- Activez RLS pour les tables si ce n'est pas déjà fait
 alter table public.expenses enable row level security;
@@ -52,15 +53,21 @@ CREATE POLICY "Allow all access for anonymous users on reminders"
 ON public.reminders FOR ALL TO anon USING (true) WITH CHECK (true);
 */
 //
-// --- VÉRIFICATION ---
-// 1. Allez dans `Authentication` > `Policies`.
-// 2. Sélectionnez la table `expenses` dans la liste déroulante.
-// 3. Vous DEVEZ voir une politique nommée "Allow all access...".
-//    Si la liste est vide, le script n'a pas été exécuté correctement.
+// --- VÉRIFICATION VISUELLE ---
+// 1. Retournez dans "Authentication" > "Policies".
+// 2. Sélectionnez "expenses" dans la liste. Vous DEVEZ y voir une
+//    politique verte nommée "Allow all access...".
+// 3. Faites de même pour "reminders". Si la politique n'apparaît pas, le script a échoué.
 //
 // =============================================================================
-// Une fois ces deux étapes VÉRIFIÉES, le temps-réel fonctionnera.
-// Le reste des instructions concerne les notifications PUSH (app fermée).
+// SOLUTION DE DERNIER RECOURS
+// =============================================================================
+//
+// Si, après avoir VÉRIFIÉ VISUELLEMENT ces deux étapes, l'erreur persiste,
+// cela signifie qu'une configuration ancienne ou cachée de votre projet est
+// en conflit. La solution la plus sûre est de créer un NOUVEAU projet Supabase
+// et de refaire ces deux étapes.
+//
 // =============================================================================
 
 const supabaseUrl = 'https://xcdyshzyxpngbpceilym.supabase.co';

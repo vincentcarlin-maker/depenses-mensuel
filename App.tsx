@@ -38,7 +38,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   const recentlyAddedIds = useRef(new Set<string>());
   const recentlyUpdatedIds = useRef(new Set<string>());
 
-  const highlightExpense = (id: string) => {
+  const highlightExpense = useCallback((id: string) => {
     setHighlightedExpenseIds(prev => new Set(prev).add(id));
     setTimeout(() => {
         setHighlightedExpenseIds(prev => {
@@ -47,7 +47,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
             return newSet;
         });
     }, 3500); // Highlight duration
-  };
+  }, []);
 
   const fetchExpenses = useCallback(async () => {
     const { data, error } = await supabase
@@ -89,123 +89,109 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   }, [fetchExpenses, fetchReminders]);
 
   useEffect(() => {
-    const expensesChannel = supabase
-      .channel('expenses-realtime')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'expenses' },
-        (payload) => {
-          const newExpense = payload.new as Expense;
-          
-          const wasAddedLocally = recentlyAddedIds.current.has(newExpense.id);
+    // Handlers for real-time events
+    const handleExpenseInsert = (payload: any) => {
+      const newExpense = payload.new as Expense;
+      const wasAddedLocally = recentlyAddedIds.current.has(newExpense.id);
 
-          if (!wasAddedLocally) {
-            setNotifications(prev => [{ expense: newExpense, type: 'add' }, ...prev.filter(n => n.expense.id !== newExpense.id)]);
-            setToastInfo({ message: `${newExpense.user} a ajouté "${newExpense.description}".`, type: 'info' });
-          }
+      if (!wasAddedLocally) {
+        setNotifications(prev => [{ expense: newExpense, type: 'add' }, ...prev.filter(n => n.expense.id !== newExpense.id)]);
+        setToastInfo({ message: `${newExpense.user} a ajouté "${newExpense.description}".`, type: 'info' });
+      }
 
-          setExpenses(prevExpenses => {
-            const expenseExists = prevExpenses.some(e => e.id === newExpense.id);
-            if (expenseExists) {
-              return prevExpenses.map(e => (e.id === newExpense.id ? newExpense : e));
-            } else {
-              return [newExpense, ...prevExpenses];
-            }
-          });
-          highlightExpense(newExpense.id);
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'expenses' },
-        (payload) => {
-          const updatedExpense = payload.new as Expense;
-          const wasUpdatedLocally = recentlyUpdatedIds.current.has(updatedExpense.id);
-
-          setExpenses(prevExpenses =>
-            prevExpenses.map(expense =>
-              expense.id === updatedExpense.id ? updatedExpense : expense
-            )
-          );
-          if (!wasUpdatedLocally) {
-            setNotifications(prev => [{ expense: updatedExpense, type: 'update' }, ...prev.filter(n => n.expense.id !== updatedExpense.id)]);
-            setToastInfo({ message: `${updatedExpense.user} a modifié "${updatedExpense.description}".`, type: 'info' });
-          }
-          highlightExpense(updatedExpense.id);
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'expenses' },
-        (payload) => {
-          const deletedExpense = payload.old as Partial<Expense>;
-          if (deletedExpense && deletedExpense.id) {
-              setExpenses(prevExpenses => prevExpenses.filter(expense => expense.id !== deletedExpense.id));
-              const desc = deletedExpense.description || 'une dépense';
-              setToastInfo({
-                  message: `Dépense "${desc}" supprimée.`,
-                  type: 'info'
-              });
-          }
-        }
-      )
-      .subscribe((status, err) => {
-        if (status === 'SUBSCRIBED') {
-          setRealtimeStatus(prev => prev === 'CHANNEL_ERROR' ? 'CHANNEL_ERROR' : 'SUBSCRIBED');
-          console.log('Expenses real-time channel connected.');
-        } else if (status === 'CHANNEL_ERROR') {
-          setRealtimeStatus('CHANNEL_ERROR');
-          console.error('Real-time channel error:', err);
-          setToastInfo({ message: 'Erreur de connexion temps-réel.', type: 'error' });
-        } else if (status === 'TIMED_OUT') {
-          setRealtimeStatus('TIMED_OUT');
-          console.warn('Real-time channel connection timed out.');
-          setToastInfo({ message: 'La connexion temps-réel a expiré.', type: 'error' });
+      setExpenses(prevExpenses => {
+        const expenseExists = prevExpenses.some(e => e.id === newExpense.id);
+        if (expenseExists) {
+          return prevExpenses.map(e => (e.id === newExpense.id ? newExpense : e));
+        } else {
+          return [newExpense, ...prevExpenses];
         }
       });
-
-    const remindersChannel = supabase
-      .channel('reminders-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'reminders' },
-        (payload) => {
-            const newReminder = payload.new as Reminder;
-            if (newReminder) {
-                setReminders(prev => {
-                    const existingIndex = prev.findIndex(r => r.id === newReminder.id);
-                    if (existingIndex !== -1) {
-                        const updated = [...prev];
-                        updated[existingIndex] = newReminder;
-                        return updated;
-                    }
-                    return [...prev, newReminder].sort((a,b) => a.day_of_month - b.day_of_month);
-                });
-            } else {
-                fetchReminders();
-            }
-        }
-      )
-      .subscribe((status, err) => {
-        if (status === 'SUBSCRIBED') {
-          setRealtimeStatus(prev => prev === 'CHANNEL_ERROR' ? 'CHANNEL_ERROR' : 'SUBSCRIBED');
-          console.log('Reminders real-time channel connected.');
-        } else if (status === 'CHANNEL_ERROR') {
-          setRealtimeStatus('CHANNEL_ERROR');
-          console.error('Real-time reminders channel error:', err);
-          setToastInfo({ message: 'Erreur de connexion temps-réel pour les rappels.', type: 'error' });
-        } else if (status === 'TIMED_OUT') {
-           setRealtimeStatus('TIMED_OUT');
-           console.warn('Real-time reminders channel connection timed out.');
-           setToastInfo({ message: 'La connexion temps-réel pour les rappels a expiré.', type: 'error' });
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(expensesChannel);
-      supabase.removeChannel(remindersChannel);
+      highlightExpense(newExpense.id);
     };
-  }, [fetchReminders, fetchExpenses, user]);
+
+    const handleExpenseUpdate = (payload: any) => {
+      const updatedExpense = payload.new as Expense;
+      const wasUpdatedLocally = recentlyUpdatedIds.current.has(updatedExpense.id);
+
+      setExpenses(prevExpenses =>
+        prevExpenses.map(expense =>
+          expense.id === updatedExpense.id ? updatedExpense : expense
+        )
+      );
+      if (!wasUpdatedLocally) {
+        setNotifications(prev => [{ expense: updatedExpense, type: 'update' }, ...prev.filter(n => n.expense.id !== updatedExpense.id)]);
+        setToastInfo({ message: `${updatedExpense.user} a modifié "${updatedExpense.description}".`, type: 'info' });
+      }
+      highlightExpense(updatedExpense.id);
+    };
+
+    const handleExpenseDelete = (payload: any) => {
+      const deletedExpense = payload.old as Partial<Expense>;
+      if (deletedExpense && deletedExpense.id) {
+        setExpenses(prevExpenses => prevExpenses.filter(expense => expense.id !== deletedExpense.id));
+        const desc = deletedExpense.description || 'une dépense';
+        setToastInfo({
+          message: `Dépense "${desc}" supprimée.`,
+          type: 'info'
+        });
+      }
+    };
+
+    const handleReminderChange = (payload: any) => {
+      if (payload.eventType === 'DELETE') {
+        const deletedReminder = payload.old as Partial<Reminder>;
+        if (deletedReminder && deletedReminder.id) {
+          setReminders(prev => prev.filter(r => r.id !== deletedReminder.id));
+        }
+        return;
+      }
+
+      const changedReminder = payload.new as Reminder;
+      setReminders(prev => {
+        const existingIndex = prev.findIndex(r => r.id === changedReminder.id);
+        if (existingIndex !== -1) {
+          const updated = [...prev];
+          updated[existingIndex] = changedReminder;
+          return updated.sort((a, b) => a.day_of_month - b.day_of_month);
+        }
+        return [...prev, changedReminder].sort((a, b) => a.day_of_month - b.day_of_month);
+      });
+    };
+
+    // Single channel for all real-time updates
+    const allChangesChannel = supabase
+      .channel('all-changes-channel')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'expenses' }, handleExpenseInsert)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'expenses' }, handleExpenseUpdate)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'expenses' }, handleExpenseDelete)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reminders' }, handleReminderChange)
+      .subscribe((status, err) => {
+        switch (status) {
+          case 'SUBSCRIBED':
+            setRealtimeStatus('SUBSCRIBED');
+            console.log('Real-time channel connected.');
+            break;
+          case 'CHANNEL_ERROR':
+            setRealtimeStatus('CHANNEL_ERROR');
+            console.error('Real-time channel error:', err);
+            setToastInfo({ message: 'Erreur de connexion temps-réel. Veuillez vérifier la configuration Supabase.', type: 'error' });
+            break;
+          case 'TIMED_OUT':
+            setRealtimeStatus('TIMED_OUT');
+            console.warn('Real-time channel connection timed out.');
+            setToastInfo({ message: 'La connexion temps-réel a expiré.', type: 'error' });
+            break;
+          default:
+            setRealtimeStatus('CONNECTING');
+        }
+      });
+      
+    // Cleanup on unmount
+    return () => {
+      supabase.removeChannel(allChangesChannel);
+    };
+  }, [highlightExpense]);
 
   const addExpense = async (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => {
     const newId = crypto.randomUUID();
