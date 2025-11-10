@@ -20,8 +20,16 @@ const toDatetimeLocal = (isoString: string): string => {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
+const parseExpenseDescription = (fullDescription: string) => {
+    const tagRegex = /(#\w+)/g;
+    const description = fullDescription.replace(tagRegex, '').trim();
+    return { description };
+};
+
 const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateExpense, onDeleteExpense, onClose }) => {
-    const [description, setDescription] = useState(expense.description);
+    const { description: initialDesc } = parseExpenseDescription(expense.description);
+    
+    const [description, setDescription] = useState(initialDesc);
     const [amount, setAmount] = useState(Math.abs(expense.amount).toString());
     const [category, setCategory] = useState<Category>(expense.category);
     const [user, setUser] = useState<User>(expense.user);
@@ -55,10 +63,12 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
         }
 
         const finalAmount = transactionType === 'expense' ? parsedAmount : -parsedAmount;
+        
+        const finalDescription = description.trim();
 
         onUpdateExpense({
             ...expense,
-            description,
+            description: finalDescription,
             amount: finalAmount,
             category,
             user,

@@ -19,8 +19,8 @@ const App: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentMonth, setCurrentMonth] = useState(9); // Default to October (0-indexed)
-  const [currentYear, setCurrentYear] = useState(2025); // Default to 2025
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly' | 'search'>('dashboard');
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -290,6 +290,31 @@ const App: React.FC = () => {
     };
   }, [expenses, currentMonth, currentYear]);
 
+  const previousMonthExpenses = useMemo(() => {
+    const prevMonthDate = new Date(Date.UTC(currentYear, currentMonth, 1));
+    prevMonthDate.setUTCMonth(prevMonthDate.getUTCMonth() - 1);
+    const prevMonth = prevMonthDate.getUTCMonth();
+    const prevYear = prevMonthDate.getUTCFullYear();
+    
+    return expenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate.getUTCFullYear() === prevYear && expenseDate.getUTCMonth() === prevMonth;
+    });
+  }, [expenses, currentMonth, currentYear]);
+
+  const last3MonthsExpenses = useMemo(() => {
+    const threeMonthsAgo = new Date(Date.UTC(currentYear, currentMonth, 1));
+    threeMonthsAgo.setUTCMonth(threeMonthsAgo.getUTCMonth() - 3);
+    const oneMonthAgo = new Date(Date.UTC(currentYear, currentMonth, 1));
+    
+    return expenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      const expenseTime = expenseDate.getTime();
+      return expenseTime >= threeMonthsAgo.getTime() && expenseTime < oneMonthAgo.getTime();
+    });
+  }, [expenses, currentMonth, currentYear]);
+
+
   const yearlyFilteredExpenses = useMemo(() => {
     return expenses.filter(expense => new Date(expense.date).getUTCFullYear() === currentYear);
   }, [expenses, currentYear]);
@@ -446,14 +471,14 @@ const App: React.FC = () => {
               </div>
             </div>
           )}
-          {activeTab === 'analysis' && <CategoryTotals expenses={filteredExpenses} />}
+          {activeTab === 'analysis' && <CategoryTotals expenses={filteredExpenses} previousMonthExpenses={previousMonthExpenses} last3MonthsExpenses={last3MonthsExpenses} />}
           {activeTab === 'yearly' && <YearlySummary expenses={yearlyFilteredExpenses} previousYearExpenses={previousYearFilteredExpenses} year={currentYear} />}
           {activeTab === 'search' && (
              <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg">
               <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Recherche globale</h2>
               <input
                 type="text"
-                placeholder="Rechercher dans toutes les dépenses..."
+                placeholder="Rechercher par description, montant, catégorie..."
                 value={globalSearchTerm}
                 onChange={(e) => setGlobalSearchTerm(e.target.value)}
                 className="w-full px-3 py-2 mb-4 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"

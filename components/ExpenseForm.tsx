@@ -16,8 +16,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
   const uniqueDescriptions = useMemo(() => {
-    const allDescriptions = expenses.map(e => e.description.trim());
-    return [...new Set(allDescriptions)];
+    const tagRegex = /(#\w+)/g;
+    const allDescriptions = expenses.map(e => e.description.replace(tagRegex, '').trim());
+    // FIX: Explicitly typed the Set to `Set<string>` to resolve an issue where
+    // TypeScript could not infer the type of the array elements after spreading
+    // the Set, which caused a compile error.
+    return [...new Set<string>(allDescriptions)].filter(d => d.length > 0);
   }, [expenses]);
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,9 +60,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
     }
 
     const finalAmount = transactionType === 'expense' ? parsedAmount : -parsedAmount;
+    
+    const finalDescription = description.trim();
 
     onAddExpense({
-      description,
+      description: finalDescription,
       amount: finalAmount,
       category,
       user,
@@ -143,36 +149,38 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses }) => 
             )}
           </div>
         </div>
-        <div>
-           <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type de transaction</label>
-            <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1">
-              <span
-                className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out
-                  ${transactionType === 'refund' ? 'translate-x-full' : 'translate-x-0'}
-                `}
-                aria-hidden="true"
-              />
-              <button type="button" onClick={() => setTransactionType('expense')} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${transactionType === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-300'}`}>
-                Dépense
-              </button>
-              <button type="button" onClick={() => setTransactionType('refund')} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${transactionType === 'refund' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'}`}>
-                Remboursement
-              </button>
-            </div>
-        </div>
-        <div>
-          <label htmlFor="amount" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
-            Montant (€)
-          </label>
-          <input
-            type="text"
-            inputMode="decimal"
-            id="amount"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
-            placeholder="0.00"
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type</label>
+              <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1">
+                <span
+                  className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out
+                    ${transactionType === 'refund' ? 'translate-x-full' : 'translate-x-0'}
+                  `}
+                  aria-hidden="true"
+                />
+                <button type="button" onClick={() => setTransactionType('expense')} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${transactionType === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                  Dépense
+                </button>
+                <button type="button" onClick={() => setTransactionType('refund')} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${transactionType === 'refund' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                  Remb.
+                </button>
+              </div>
+          </div>
+          <div>
+            <label htmlFor="amount" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
+              Montant (€)
+            </label>
+            <input
+              type="text"
+              inputMode="decimal"
+              id="amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
+              placeholder="0.00"
+            />
+          </div>
         </div>
         {error && <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>}
         <button

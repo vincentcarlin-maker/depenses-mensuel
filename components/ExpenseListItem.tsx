@@ -65,11 +65,18 @@ const ExpenseIcon: React.FC<{ category: Category }> = ({ category }) => {
     );
 };
 
+const parseDescription = (fullDescription: string) => {
+    const tagRegex = /(#\w+)/g;
+    const description = fullDescription.replace(tagRegex, '').trim();
+    return { description };
+};
+
 
 const ExpenseListItem: React.FC<{
     expense: Expense;
     onEditExpense: (expense: Expense) => void;
 }> = ({ expense, onEditExpense }) => {
+    const { description } = parseDescription(expense.description);
 
     const formattedDate = new Date(expense.date).toLocaleString('fr-FR', {
         day: '2-digit',
@@ -103,7 +110,7 @@ const ExpenseListItem: React.FC<{
                 <ExpenseIcon category={expense.category} />
             </div>
             <div className="flex-1 min-w-0">
-                 <p className="font-semibold truncate text-slate-700 dark:text-slate-200" title={expense.description}>{expense.description}</p>
+                 <p className="font-semibold truncate text-slate-700 dark:text-slate-200" title={description}>{description}</p>
                  <p className="text-sm text-slate-500 dark:text-slate-400 truncate" title={expense.category}>{expense.category}</p>
             </div>
             <div className="pl-4 flex-shrink-0 text-right">
