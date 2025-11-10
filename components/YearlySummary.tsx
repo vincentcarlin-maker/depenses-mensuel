@@ -213,7 +213,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
             <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-200">Évolution des dépenses mensuelles</h3>
              <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
-                    <LineChart data={monthlyTrendData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                    <LineChart data={monthlyTrendData} margin={{ top: 5, right: 20, left: 40, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
                         <XAxis dataKey="month" stroke={tickColor} tick={{ fill: tickColor }} />
                         <YAxis stroke={tickColor} tickFormatter={(value) => `${value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`} tick={{ fill: tickColor }} />

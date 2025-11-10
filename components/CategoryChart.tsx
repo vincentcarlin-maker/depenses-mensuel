@@ -204,7 +204,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
       </div>
 
       <div style={{ width: '100%', height: 350 }} className="relative">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[calc(50%)] text-center pointer-events-none">
+        <div className="absolute top-[calc(50%-20px)] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
             <p className="text-slate-500 dark:text-slate-400 text-sm">Total du mois</p>
             <p className="text-3xl font-bold text-slate-800 dark:text-slate-100">
                 {totalExpenses.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
