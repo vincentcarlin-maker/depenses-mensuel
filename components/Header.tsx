@@ -58,7 +58,8 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser,
             const newNotifications = notifications.filter(
                 n => !prev.some(p => p.expense.id === n.expense.id)
             );
-            return [...newNotifications, ...prev];
+            const updatedNotifications = [...newNotifications, ...prev];
+            return updatedNotifications.slice(0, 5); // Limite à 5 notifications
           });
           onClearNotifications();
       }
