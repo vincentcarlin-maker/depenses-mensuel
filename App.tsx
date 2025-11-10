@@ -411,7 +411,6 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   return (
     <div className="bg-gray-50 dark:bg-slate-900 min-h-screen font-sans">
       <Header 
-        onSetToast={setToastInfo} 
         onOpenSettings={() => setIsSettingsOpen(true)}
         onRefresh={handleRefresh}
         onLogout={onLogout}

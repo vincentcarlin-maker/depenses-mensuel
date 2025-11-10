@@ -1,5 +1,4 @@
 import React from 'react';
-import NotificationBell from './NotificationBell';
 import SettingsIcon from './icons/SettingsIcon';
 import RefreshIcon from './icons/RefreshIcon';
 import LogoutIcon from './icons/LogoutIcon';
@@ -16,14 +15,13 @@ const Logo = () => (
 );
 
 interface HeaderProps {
-  onSetToast: (info: { message: string; type: 'info' | 'error' }) => void;
   onOpenSettings: () => void;
   onRefresh: () => void;
   onLogout: () => void;
   loggedInUser: User;
 }
 
-const Header: React.FC<HeaderProps> = ({ onSetToast, onOpenSettings, onRefresh, onLogout, loggedInUser }) => {
+const Header: React.FC<HeaderProps> = ({ onOpenSettings, onRefresh, onLogout, loggedInUser }) => {
   const userColorClass = loggedInUser === User.Sophie ? 'text-rose-500' : 'text-sky-500';
   
   return (
@@ -48,7 +46,6 @@ const Header: React.FC<HeaderProps> = ({ onSetToast, onOpenSettings, onRefresh, 
             >
                 <RefreshIcon />
             </button>
-            <NotificationBell onSetToast={onSetToast} />
             <button
                 onClick={onOpenSettings}
                 className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"
