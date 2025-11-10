@@ -14,8 +14,10 @@ import ReminderAlerts from './components/ReminderAlerts';
 import SettingsModal from './components/SettingsModal';
 import { useTheme } from './hooks/useTheme';
 import OfflineIndicator from './components/OfflineIndicator';
+import { useAuth } from './hooks/useAuth';
+import Login from './components/Login';
 
-const App: React.FC = () => {
+const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogout }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,10 +30,6 @@ const App: React.FC = () => {
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [formInitialData, setFormInitialData] = useState<(Omit<Expense, 'id' | 'date' | 'created_at'> & { formKey?: string }) | null>(null);
-
-
-  // Initialize theme
-  useTheme();
 
   const fetchExpenses = useCallback(async () => {
     const { data, error } = await supabase
@@ -416,6 +414,8 @@ const App: React.FC = () => {
         onSetToast={setToastInfo} 
         onOpenSettings={() => setIsSettingsOpen(true)}
         onRefresh={handleRefresh}
+        onLogout={onLogout}
+        loggedInUser={user}
       />
 
       <main className="container mx-auto p-4 md:p-8">
@@ -470,6 +470,7 @@ const App: React.FC = () => {
                   onAddExpense={addExpense}
                   expenses={expenses}
                   initialData={formInitialData}
+                  loggedInUser={user}
                 />
                 <ExpenseSummary 
                     allExpenses={expenses}
@@ -542,6 +543,29 @@ const App: React.FC = () => {
       <OfflineIndicator />
     </div>
   );
+};
+
+
+const App: React.FC = () => {
+  // Initialize theme
+  useTheme();
+  const { user, login, logout, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+        <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-slate-900">
+            <div className="text-center">
+                <p className="text-xl font-semibold text-slate-600 dark:text-slate-300">Chargement...</p>
+            </div>
+        </div>
+    );
+  }
+
+  if (!user) {
+    return <Login onLogin={login} />;
+  }
+
+  return <MainApp user={user} onLogout={logout} />;
 };
 
 export default App;

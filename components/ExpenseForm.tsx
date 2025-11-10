@@ -5,13 +5,14 @@ interface ExpenseFormProps {
   onAddExpense: (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => void;
   expenses: Expense[];
   initialData?: Omit<Expense, 'id' | 'date' | 'created_at'> | null;
+  loggedInUser: User;
 }
 
-const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initialData }) => {
+const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initialData, loggedInUser }) => {
   const [description, setDescription] = useState(initialData?.description || '');
   const [amount, setAmount] = useState(initialData ? String(Math.abs(initialData.amount)) : '');
   const [category, setCategory] = useState<Category>(initialData?.category || Category.Groceries);
-  const [user, setUser] = useState<User>(initialData?.user || User.Sophie);
+  const [user, setUser] = useState<User>(initialData?.user || loggedInUser);
   const [transactionType, setTransactionType] = useState<'expense' | 'refund'>(initialData && initialData.amount < 0 ? 'refund' : 'expense');
   const [error, setError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
