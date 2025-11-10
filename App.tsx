@@ -17,6 +17,7 @@ import OfflineIndicator from './components/OfflineIndicator';
 import { useAuth } from './hooks/useAuth';
 import Login from './components/Login';
 import PullToRefresh from './components/PullToRefresh';
+import NewExpenseAlert from './components/NewExpenseAlert';
 
 const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogout }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -32,6 +33,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [formInitialData, setFormInitialData] = useState<(Omit<Expense, 'id' | 'date' | 'created_at'> & { formKey?: string }) | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRemoteExpense, setLastRemoteExpense] = useState<Expense | null>(null);
 
   const fetchExpenses = useCallback(async () => {
     const { data, error } = await supabase
@@ -85,10 +87,10 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
                 return prevExpenses.map(e => e.id === newExpense.id ? newExpense : e);
             }
             
-            setToastInfo({
-              message: `${newExpense.user} a ajouté : ${newExpense.description} (${newExpense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`,
-              type: 'info'
-            });
+            // This only runs on the "other" client's device, because the person
+            // who added the expense already has it via optimistic update.
+            setLastRemoteExpense(newExpense);
+            
             return [newExpense, ...prevExpenses];
           });
         }
@@ -182,6 +184,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
       setExpenses(prev => prev.filter(e => e.id !== newId));
     } else {
       setFormInitialData(null);
+      setToastInfo({ message: 'Dépense ajoutée avec succès !', type: 'info' });
     }
   };
 
@@ -439,6 +442,11 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
             </div>
           )}
           
+          <NewExpenseAlert
+            expense={lastRemoteExpense}
+            onDismiss={() => setLastRemoteExpense(null)}
+          />
+
           <ReminderAlerts 
             reminders={reminders}
             monthlyExpenses={filteredExpenses}
