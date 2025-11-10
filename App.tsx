@@ -17,7 +17,6 @@ import OfflineIndicator from './components/OfflineIndicator';
 import { useAuth } from './hooks/useAuth';
 import Login from './components/Login';
 import PullToRefresh from './components/PullToRefresh';
-import NewExpenseAlert from './components/NewExpenseAlert';
 
 const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogout }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -33,7 +32,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [formInitialData, setFormInitialData] = useState<(Omit<Expense, 'id' | 'date' | 'created_at'> & { formKey?: string }) | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastRemoteExpense, setLastRemoteExpense] = useState<Expense | null>(null);
+  const [notifications, setNotifications] = useState<Expense[]>([]);
   const [highlightedExpenseIds, setHighlightedExpenseIds] = useState<Set<string>>(new Set());
   const recentlyAddedIds = useRef(new Set<string>());
   const recentlyUpdatedIds = useRef(new Set<string>());
@@ -100,7 +99,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
           const wasAddedLocally = recentlyAddedIds.current.has(newExpense.id);
 
           if (!wasAddedLocally) {
-            setLastRemoteExpense(newExpense);
+            setNotifications(prev => [newExpense, ...prev.filter(n => n.id !== newExpense.id)]);
           }
 
           setExpenses(prevExpenses => {
@@ -127,10 +126,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
             )
           );
           if (!wasUpdatedLocally) {
-            setToastInfo({
-                message: `Dépense "${updatedExpense.description}" mise à jour.`,
-                type: 'info'
-            });
+            setNotifications(prev => [updatedExpense, ...prev.filter(n => n.id !== updatedExpense.id)]);
           }
           highlightExpense(updatedExpense.id);
         }
@@ -460,6 +456,8 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
           onOpenSettings={() => setIsSettingsOpen(true)}
           onLogout={onLogout}
           loggedInUser={user}
+          notifications={notifications}
+          onClearNotifications={() => setNotifications([])}
         />
 
         <main className="container mx-auto p-4 md:p-8">
@@ -479,11 +477,6 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
             </div>
           )}
           
-          <NewExpenseAlert
-            expense={lastRemoteExpense}
-            onDismiss={() => setLastRemoteExpense(null)}
-          />
-
           <ReminderAlerts 
             reminders={reminders}
             monthlyExpenses={filteredExpenses}
