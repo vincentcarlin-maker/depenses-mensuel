@@ -50,20 +50,22 @@ export type Database = {
 };
 
 // -----------------------------------------------------------------------------
-// ACTION REQUISE : Configuration des Politiques de Sécurité (RLS)
+// ACTION REQUISE : Correction de l'Erreur de Connexion Temps-Réel
 // -----------------------------------------------------------------------------
-// Le problème que vous rencontrez (impossible d'ajouter/modifier/supprimer)
-// est très probablement dû à l'activation de la "Row Level Security" (RLS)
-// sur vos tables `expenses` et `reminders` sans politiques correspondantes.
+// L'erreur "Real-time channel error" que vous rencontrez, ainsi que les
+// problèmes pour ajouter/modifier/supprimer des données, sont très probablement
+// causés par les politiques de sécurité (RLS) de votre base de données Supabase.
 //
-// Quand la RLS est activée, Supabase bloque par défaut TOUTES les modifications.
-// Vous devez explicitement autoriser chaque action (INSERT, UPDATE, DELETE).
+// Quand la RLS est activée, Supabase bloque par défaut TOUTES les actions,
+// y compris la lecture des changements en temps réel qui est nécessaire
+// pour les notifications et la synchronisation.
 //
-// 1. Allez sur votre projet Supabase > Authentication > Policies.
-// 2. Assurez-vous que la RLS est activée pour les tables `expenses` et `reminders`.
-// 3. Allez dans l'Éditeur SQL (SQL Editor).
-// 4. Copiez-collez et exécutez les commandes SQL ci-dessous pour créer les
-//    politiques qui autorisent votre application à gérer les données.
+// Pour corriger ce problème de manière DÉFINITIVE, vous devez exécuter le script
+// SQL ci-dessous dans l'éditeur SQL de votre projet Supabase.
+//
+// 1. Allez sur votre projet Supabase > SQL Editor.
+// 2. Cliquez sur "+ New query".
+// 3. Copiez-collez l'intégralité du script SQL ci-dessous et exécutez-le.
 
 /*
 -- POLITIQUE POUR LA TABLE "expenses" --

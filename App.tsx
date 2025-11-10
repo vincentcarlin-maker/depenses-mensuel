@@ -186,7 +186,15 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
             }
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.error('Real-time reminders channel error:', err);
+          setToastInfo({ message: 'Erreur de connexion temps-réel pour les rappels.', type: 'error' });
+        } else if (status === 'TIMED_OUT') {
+           console.warn('Real-time reminders channel connection timed out.');
+           setToastInfo({ message: 'La connexion temps-réel pour les rappels a expiré.', type: 'error' });
+        }
+      });
 
     return () => {
       supabase.removeChannel(expensesChannel);
