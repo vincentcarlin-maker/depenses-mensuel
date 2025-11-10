@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase/client';
 import { type Expense, User, type Reminder } from './types';
 import Header from './components/Header';
@@ -34,6 +34,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   const [formInitialData, setFormInitialData] = useState<(Omit<Expense, 'id' | 'date' | 'created_at'> & { formKey?: string }) | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRemoteExpense, setLastRemoteExpense] = useState<Expense | null>(null);
+  const recentlyAddedIds = useRef(new Set<string>());
 
   const fetchExpenses = useCallback(async () => {
     const { data, error } = await supabase
@@ -83,20 +84,23 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
         (payload) => {
           const newExpense = payload.new;
           
-          // Show notification banner only if the expense was added by another user.
-          // This is more robust than relying on optimistic update timing.
-          if (newExpense.user !== user) {
+          // Détermine si cette dépense a été créée par le client actuel.
+          // C'est la manière la plus fiable d'éviter d'afficher une notification pour ses propres actions.
+          const wasAddedLocally = recentlyAddedIds.current.has(newExpense.id);
+
+          // Si la dépense ne vient pas de ce client, on déclenche la notification.
+          if (!wasAddedLocally) {
             setLastRemoteExpense(newExpense);
           }
 
-          // Always update the expense list to stay in sync, avoiding duplicates.
+          // Met toujours à jour la liste des dépenses pour rester synchronisé, en évitant les doublons.
           setExpenses(prevExpenses => {
             const expenseExists = prevExpenses.some(e => e.id === newExpense.id);
             if (expenseExists) {
-              // If we already have it (optimistic update), replace it with the server's version.
+              // Si la dépense existe déjà (mise à jour optimiste), on la remplace par la version du serveur.
               return prevExpenses.map(e => (e.id === newExpense.id ? newExpense : e));
             } else {
-              // If we don't have it, add it to the list.
+              // Sinon, on l'ajoute à la liste.
               return [newExpense, ...prevExpenses];
             }
           });
@@ -167,6 +171,14 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
 
   const addExpense = async (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => {
     const newId = crypto.randomUUID();
+    
+    recentlyAddedIds.current.add(newId);
+    // Nettoie l'ID après un court instant pour éviter que l'ensemble ne grandisse indéfiniment.
+    // 5 secondes devraient être suffisantes pour que l'événement temps réel arrive.
+    setTimeout(() => {
+        recentlyAddedIds.current.delete(newId);
+    }, 5000);
+
     const expenseData = {
         ...expense,
         id: newId,
