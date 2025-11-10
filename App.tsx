@@ -82,16 +82,23 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
         { event: 'INSERT', schema: 'public', table: 'expenses' },
         (payload) => {
           const newExpense = payload.new;
-          setExpenses(prevExpenses => {
-            if (prevExpenses.some(e => e.id === newExpense.id)) {
-                return prevExpenses.map(e => e.id === newExpense.id ? newExpense : e);
-            }
-            
-            // This only runs on the "other" client's device, because the person
-            // who added the expense already has it via optimistic update.
+          
+          // Show notification banner only if the expense was added by another user.
+          // This is more robust than relying on optimistic update timing.
+          if (newExpense.user !== user) {
             setLastRemoteExpense(newExpense);
-            
-            return [newExpense, ...prevExpenses];
+          }
+
+          // Always update the expense list to stay in sync, avoiding duplicates.
+          setExpenses(prevExpenses => {
+            const expenseExists = prevExpenses.some(e => e.id === newExpense.id);
+            if (expenseExists) {
+              // If we already have it (optimistic update), replace it with the server's version.
+              return prevExpenses.map(e => (e.id === newExpense.id ? newExpense : e));
+            } else {
+              // If we don't have it, add it to the list.
+              return [newExpense, ...prevExpenses];
+            }
           });
         }
       )
@@ -156,7 +163,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
       supabase.removeChannel(expensesChannel);
       supabase.removeChannel(remindersChannel);
     };
-  }, [fetchReminders, fetchExpenses]);
+  }, [fetchReminders, fetchExpenses, user]);
 
   const addExpense = async (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => {
     const newId = crypto.randomUUID();
