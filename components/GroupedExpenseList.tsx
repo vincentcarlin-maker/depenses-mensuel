@@ -5,9 +5,10 @@ import ExpenseListItem from './ExpenseListItem';
 interface GroupedExpenseListProps {
   expenses: Expense[];
   onEditExpense: (expense: Expense) => void;
+  highlightedIds: Set<string>;
 }
 
-const GroupedExpenseList: React.FC<GroupedExpenseListProps> = ({ expenses, onEditExpense }) => {
+const GroupedExpenseList: React.FC<GroupedExpenseListProps> = ({ expenses, onEditExpense, highlightedIds }) => {
   const groupedExpenses = expenses.reduce((acc, expense) => {
     const date = new Date(expense.date);
     const monthYear = date.toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
@@ -39,6 +40,7 @@ const GroupedExpenseList: React.FC<GroupedExpenseListProps> = ({ expenses, onEdi
                   key={expense.id}
                   expense={expense}
                   onEditExpense={onEditExpense}
+                  isHighlighted={highlightedIds.has(expense.id)}
                 />
               ))}
           </div>

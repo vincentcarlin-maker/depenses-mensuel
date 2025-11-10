@@ -34,7 +34,19 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   const [formInitialData, setFormInitialData] = useState<(Omit<Expense, 'id' | 'date' | 'created_at'> & { formKey?: string }) | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRemoteExpense, setLastRemoteExpense] = useState<Expense | null>(null);
+  const [highlightedExpenseIds, setHighlightedExpenseIds] = useState<Set<string>>(new Set());
   const recentlyAddedIds = useRef(new Set<string>());
+
+  const highlightExpense = (id: string) => {
+    setHighlightedExpenseIds(prev => new Set(prev).add(id));
+    setTimeout(() => {
+        setHighlightedExpenseIds(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(id);
+            return newSet;
+        });
+    }, 3500); // Highlight duration
+  };
 
   const fetchExpenses = useCallback(async () => {
     const { data, error } = await supabase
@@ -84,26 +96,21 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
         (payload) => {
           const newExpense = payload.new;
           
-          // Détermine si cette dépense a été créée par le client actuel.
-          // C'est la manière la plus fiable d'éviter d'afficher une notification pour ses propres actions.
           const wasAddedLocally = recentlyAddedIds.current.has(newExpense.id);
 
-          // Si la dépense ne vient pas de ce client, on déclenche la notification.
           if (!wasAddedLocally) {
             setLastRemoteExpense(newExpense);
           }
 
-          // Met toujours à jour la liste des dépenses pour rester synchronisé, en évitant les doublons.
           setExpenses(prevExpenses => {
             const expenseExists = prevExpenses.some(e => e.id === newExpense.id);
             if (expenseExists) {
-              // Si la dépense existe déjà (mise à jour optimiste), on la remplace par la version du serveur.
               return prevExpenses.map(e => (e.id === newExpense.id ? newExpense : e));
             } else {
-              // Sinon, on l'ajoute à la liste.
               return [newExpense, ...prevExpenses];
             }
           });
+          highlightExpense(newExpense.id);
         }
       )
       .on<Expense>(
@@ -120,6 +127,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
               message: `Dépense "${updatedExpense.description}" mise à jour.`,
               type: 'info'
             });
+          highlightExpense(updatedExpense.id);
         }
       )
       .on<Expense>(
@@ -173,8 +181,6 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     const newId = crypto.randomUUID();
     
     recentlyAddedIds.current.add(newId);
-    // Nettoie l'ID après un court instant pour éviter que l'ensemble ne grandisse indéfiniment.
-    // 5 secondes devraient être suffisantes pour que l'événement temps réel arrive.
     setTimeout(() => {
         recentlyAddedIds.current.delete(newId);
     }, 5000);
@@ -190,6 +196,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
         created_at: new Date().toISOString(),
     };
     setExpenses(prev => [optimisticExpense, ...prev]);
+    highlightExpense(newId);
 
     const { error } = await supabase
       .from('expenses')
@@ -228,6 +235,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
 
     setExpenses(prev => prev.map(e => e.id === updatedExpense.id ? updatedExpense : e));
     setExpenseToEdit(null);
+    highlightExpense(updatedExpense.id);
 
     const { id, created_at, ...updatePayload } = updatedExpense;
     const { error } = await supabase.from('expenses').update(updatePayload).eq('id', id);
@@ -521,7 +529,11 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
                           onChange={(e) => setSearchTerm(e.target.value)}
                           className="w-full px-3 py-2 mb-4 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
                         />
-                      <ExpenseList expenses={searchedExpenses} onEditExpense={setExpenseToEdit} />
+                      <ExpenseList 
+                        expenses={searchedExpenses} 
+                        onEditExpense={setExpenseToEdit} 
+                        highlightedIds={highlightedExpenseIds} 
+                      />
                     </div>
                 </div>
               </div>
@@ -539,7 +551,11 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
                   className="w-full px-3 py-2 mb-4 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
                 />
                 {globalSearchTerm && (
-                  <GroupedExpenseList expenses={globalSearchedExpenses} onEditExpense={setExpenseToEdit} />
+                  <GroupedExpenseList 
+                    expenses={globalSearchedExpenses} 
+                    onEditExpense={setExpenseToEdit} 
+                    highlightedIds={highlightedExpenseIds} 
+                  />
                 )}
                </div>
             )}

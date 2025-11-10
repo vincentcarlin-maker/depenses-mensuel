@@ -77,6 +77,18 @@
         -ms-overflow-style: none;
         scrollbar-width: none;
       }
+      /* Animation for highlighting new/updated expenses */
+      @keyframes highlight-fade {
+        0% {
+          background-color: rgba(252, 211, 77, 0.7); /* amber-300 with opacity */
+        }
+        100% {
+          background-color: transparent;
+        }
+      }
+      .animate-highlight {
+        animation: highlight-fade 3s ease-out both;
+      }
     </style>
 <script type="importmap">
 {

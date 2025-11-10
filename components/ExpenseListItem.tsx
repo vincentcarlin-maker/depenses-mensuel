@@ -75,7 +75,8 @@ const parseDescription = (fullDescription: string) => {
 const ExpenseListItem: React.FC<{
     expense: Expense;
     onEditExpense: (expense: Expense) => void;
-}> = ({ expense, onEditExpense }) => {
+    isHighlighted: boolean;
+}> = ({ expense, onEditExpense, isHighlighted }) => {
     const { description } = parseDescription(expense.description);
 
     const formattedDate = new Date(expense.date).toLocaleString('fr-FR', {
@@ -103,6 +104,7 @@ const ExpenseListItem: React.FC<{
                 transition-all duration-200 ease-out cursor-pointer 
                 hover:bg-slate-100 hover:dark:bg-slate-700/50 hover:border-slate-200 hover:dark:border-slate-700
                 focus:outline-none focus:ring-2 focus:ring-cyan-500
+                ${isHighlighted ? 'animate-highlight' : ''}
             `}
         >
             <div className={`w-1.5 h-10 rounded-full mr-3 ${userColorClass}`}></div>

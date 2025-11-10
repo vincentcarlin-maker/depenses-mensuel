@@ -5,9 +5,10 @@ import ExpenseListItem from './ExpenseListItem';
 interface ExpenseListProps {
   expenses: Expense[];
   onEditExpense: (expense: Expense) => void;
+  highlightedIds: Set<string>;
 }
 
-const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEditExpense }) => {
+const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEditExpense, highlightedIds }) => {
   if (expenses.length === 0) {
     return (
       <div className="text-center py-10">
@@ -25,6 +26,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEditExpense }) =>
                 key={expense.id}
                 expense={expense}
                 onEditExpense={onEditExpense}
+                isHighlighted={highlightedIds.has(expense.id)}
             />
         ))}
     </div>
