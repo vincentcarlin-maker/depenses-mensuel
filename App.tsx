@@ -44,10 +44,12 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   const [realtimeStatus, setRealtimeStatus] = useState<'SUBSCRIBED' | 'TIMED_OUT' | 'CHANNEL_ERROR' | 'CONNECTING'>('CONNECTING');
   const recentlyAddedIds = useRef(new Set<string>());
   const recentlyUpdatedIds = useRef(new Set<string>());
+  const recentlyDeletedIds = useRef(new Set<string>());
 
   // Persistent Activity Log states
   const [lastBellCheck, setLastBellCheck] = useLocalStorage('lastBellCheck', new Date().toISOString());
   const [activities, setActivities] = useLocalStorage<Activity[]>('activityLog', []);
+  const [lastSyncTimestamp, setLastSyncTimestamp] = useLocalStorage('lastSyncTimestamp', '1970-01-01T00:00:00.000Z');
 
   const { unreadCount, activityItemsForHeader } = useMemo(() => {
     if (!user) return { unreadCount: 0, activityItemsForHeader: [] };
@@ -82,49 +84,71 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     }, 3500); // Highlight duration
   }, []);
 
-  const fetchExpenses = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('expenses')
-      .select('*')
-      .gte('date', '2025-10-01T00:00:00Z') // Only fetch expenses from Oct 2025 onwards
-      .order('date', { ascending: false });
+  const syncData = useCallback(async (shouldCatchUp = false) => {
+    const expensesPromise = supabase.from('expenses').select('*').gte('date', '2025-10-01T00:00:00Z').order('date', { ascending: false });
+    const remindersPromise = supabase.from('reminders').select('*').order('day_of_month', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching expenses:', error.message || error);
-      setToastInfo({ message: "Erreur lors de la récupération des dépenses.", type: 'error' });
-    } else if (data) {
-      setExpenses(data);
+    const [expensesResponse, remindersResponse] = await Promise.all([expensesPromise, remindersPromise]);
+
+    // Process Expenses
+    if (expensesResponse.error) {
+        console.error('Error fetching expenses:', expensesResponse.error.message);
+        setToastInfo({ message: "Erreur lors de la récupération des dépenses.", type: 'error' });
+    } else if (expensesResponse.data) {
+        const fetchedExpenses = expensesResponse.data as Expense[];
+
+        // --- CATCH-UP LOGIC ---
+        // On initial load or refresh, check for missed additions from other users.
+        if (shouldCatchUp) {
+            const missedAdditions = fetchedExpenses.filter(expense =>
+                new Date(expense.created_at) > new Date(lastSyncTimestamp) &&
+                expense.user !== user
+            );
+            
+            if (missedAdditions.length > 0) {
+                 const newActivities: Activity[] = missedAdditions.map(expense => ({
+                    id: crypto.randomUUID(),
+                    type: 'add',
+                    expense: expense,
+                    timestamp: expense.created_at,
+                }));
+                
+                setActivities(prev => 
+                    [...newActivities, ...prev]
+                        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                        .slice(0, 20)
+                );
+            }
+        }
+        setExpenses(fetchedExpenses);
     }
-  }, []);
-
-  const fetchReminders = useCallback(async () => {
-    const { data, error } = await supabase
-        .from('reminders')
-        .select('*')
-        .order('day_of_month', { ascending: true });
-
-    if (error) {
-        console.error('Error fetching reminders:', error.message || error);
+    
+    // Process Reminders
+    if (remindersResponse.error) {
+        console.error('Error fetching reminders:', remindersResponse.error.message);
         setToastInfo({ message: "Erreur lors de la récupération des rappels.", type: 'error' });
-    } else if (data) {
-        setReminders(data);
+    } else if (remindersResponse.data) {
+        setReminders(remindersResponse.data as Reminder[]);
     }
-  }, []);
-
+    
+    setLastSyncTimestamp(new Date().toISOString());
+  }, [user, lastSyncTimestamp, setLastSyncTimestamp, setActivities]);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const performInitialSync = async () => {
         setIsLoading(true);
-        await Promise.all([fetchExpenses(), fetchReminders()]);
+        await syncData(true);
         setIsLoading(false);
     };
-    fetchData();
-  }, [fetchExpenses, fetchReminders]);
+    performInitialSync();
+  }, [syncData]);
+
 
   useEffect(() => {
     // Handlers for real-time events
     const handleExpenseInsert = (payload: any) => {
       const newExpense = payload.new as Expense;
+      if (!newExpense?.id) return;
 
       if (newExpense.user !== user) {
         setActivities(prev => [{
@@ -153,6 +177,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
 
     const handleExpenseUpdate = (payload: any) => {
       const updatedExpense = payload.new as Expense;
+      if (!updatedExpense?.id) return;
 
       if (updatedExpense.user !== user) {
         setActivities(prev => [{
@@ -176,25 +201,34 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     };
 
     const handleExpenseDelete = (payload: any) => {
-      const deletedExpense = payload.old as Partial<Expense> & { id: string; user?: User; date: string };
-      if (deletedExpense && deletedExpense.id && deletedExpense.user) {
-        // We assume the user deleting is the owner. So if the owner is not the current
-        // logged in user, it means the *other* user performed the action.
-        if (deletedExpense.user !== user) {
-             setActivities(prev => [{
-                id: crypto.randomUUID(),
-                type: 'delete',
-                expense: deletedExpense,
-                timestamp: new Date().toISOString()
-            }, ...prev].slice(0, 20));
-        }
-
-        setExpenses(prevExpenses => prevExpenses.filter(expense => expense.id !== deletedExpense.id));
-        const desc = deletedExpense.description || 'une dépense';
-        setToastInfo({
-          message: `Dépense "${desc}" supprimée.`,
-          type: 'info'
-        });
+      const deletedExpense = payload.old as Partial<Expense> & { id: string; user?: User; date?: string; description?: string; };
+      if (!deletedExpense?.id) {
+          console.warn('Real-time: Received DELETE event without an ID.');
+          return;
+      }
+    
+      // Prevent handler from running on the client that initiated the action.
+      if (recentlyDeletedIds.current.has(deletedExpense.id)) {
+          return;
+      }
+    
+      // Key fix: Update UI state immediately if ID is present.
+      setExpenses(prevExpenses => prevExpenses.filter(expense => expense.id !== deletedExpense.id));
+      
+      const desc = deletedExpense.description || 'une dépense';
+      setToastInfo({
+        message: `Dépense "${desc}" supprimée.`,
+        type: 'info'
+      });
+    
+      // Update activity log only if user info is available.
+      if (deletedExpense.user && deletedExpense.user !== user && deletedExpense.date) {
+         setActivities(prev => [{
+            id: crypto.randomUUID(),
+            type: 'delete',
+            expense: deletedExpense as Partial<Expense> & { id: string; user: User; date: string; },
+            timestamp: new Date().toISOString()
+        }, ...prev].slice(0, 20));
       }
     };
 
@@ -294,6 +328,11 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     const expenseToDelete = expenses.find(e => e.id === id);
     if (!expenseToDelete) return;
 
+    recentlyDeletedIds.current.add(id);
+    setTimeout(() => {
+        recentlyDeletedIds.current.delete(id);
+    }, 5000);
+
     setExpenses(prev => prev.filter(e => e.id !== id));
 
     const { error } = await supabase.from('expenses').delete().eq('id', id);
@@ -302,6 +341,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
       console.error('Error deleting expense:', error.message || error);
       setToastInfo({ message: "Erreur lors de la suppression.", type: 'error' });
       setExpenses(prev => [...prev, expenseToDelete]);
+      recentlyDeletedIds.current.delete(id);
     }
   };
   
@@ -489,7 +529,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     if (isRefreshing) return;
     setIsRefreshing(true);
     setToastInfo({ message: 'Synchronisation en cours...', type: 'info' });
-    await Promise.all([fetchExpenses(), fetchReminders()]);
+    await syncData(true);
     setToastInfo({ message: 'Données mises à jour !', type: 'info' });
     setIsRefreshing(false);
   };
