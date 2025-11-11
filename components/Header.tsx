@@ -66,10 +66,10 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser,
   };
   
   const realtimeStatusStyles = {
-    SUBSCRIBED: { ringClass: 'ring-2 ring-green-500', title: 'Connecté en temps-réel' },
-    CONNECTING: { ringClass: 'ring-2 ring-yellow-500 animate-pulse', title: 'Connexion en cours...' },
-    CHANNEL_ERROR: { ringClass: 'ring-2 ring-red-500', title: 'Erreur de connexion temps-réel' },
-    TIMED_OUT: { ringClass: 'ring-2 ring-red-500', title: 'Connexion temps-réel expirée' },
+    SUBSCRIBED: { textClass: 'text-green-500', title: 'Connecté en temps-réel' },
+    CONNECTING: { textClass: 'text-yellow-500 animate-pulse', title: 'Connexion en cours...' },
+    CHANNEL_ERROR: { textClass: 'text-red-500', title: 'Erreur de connexion temps-réel' },
+    TIMED_OUT: { textClass: 'text-red-500', title: 'Connexion temps-réel expirée' },
   };
   const currentStatusStyle = realtimeStatusStyles[realtimeStatus];
 
@@ -88,10 +88,10 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser,
                 <button
                     onClick={handleNotificationsToggle}
                     title={currentStatusStyle?.title}
-                    className={`relative p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800 ${currentStatusStyle?.ringClass || 'ring-2 ring-transparent'}`}
+                    className="relative p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800"
                     aria-label="Notifications"
                 >
-                    <BellIcon />
+                    <BellIcon className={`h-6 w-6 transition-colors ${currentStatusStyle?.textClass || 'text-slate-500 dark:text-slate-400'}`} />
                     {notifications.length > 0 && (
                         <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-800" />
                     )}
