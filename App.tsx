@@ -141,7 +141,8 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
         setIsLoading(false);
     };
     performInitialSync();
-  }, [syncData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
 
   useEffect(() => {
