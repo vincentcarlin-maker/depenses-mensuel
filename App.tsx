@@ -80,7 +80,6 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     return { unreadCount: unread, activityItemsForHeader: items };
   }, [activities, lastBellCheck, user]);
 
-
   const highlightExpense = useCallback((id: string) => {
     setHighlightedExpenseIds(prev => new Set(prev).add(id));
     setTimeout(() => {
@@ -90,6 +89,29 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
             return newSet;
         });
     }, 3500); // Highlight duration
+  }, []);
+  
+  // FIX: Centralized activity management to prevent race conditions and duplicates.
+  const mergeAndDedupeActivities = useCallback((existing: Activity[], toAdd: Activity[]): Activity[] => {
+      const combined = [...toAdd, ...existing];
+      const uniqueMap = new Map<string, Activity>();
+
+      for (const act of combined) {
+          // De-duplicate 'add' and 'delete' events based on their type and the expense ID.
+          if (act.type === 'add' || act.type === 'delete') {
+              const key = `${act.type}-${act.expense.id}`;
+              if (!uniqueMap.has(key)) {
+                  uniqueMap.set(key, act);
+              }
+          } else {
+              // Assume 'update' events are unique and key them by their own activity ID.
+              uniqueMap.set(act.id, act);
+          }
+      }
+
+      return Array.from(uniqueMap.values())
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          .slice(0, 20);
   }, []);
 
   const syncData = useCallback(async (shouldCatchUp = false) => {
@@ -122,26 +144,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
                     timestamp: expense.created_at,
                 }));
                 
-                // FIX: Implemented de-duplication logic to prevent the same activity
-                // from being added by both the real-time subscription and the sync/catch-up
-                // mechanism, which was causing duplicate entries in the activity feed.
-                setActivities(prev => {
-                    const existingAddExpenseIds = new Set(
-                        prev.filter(act => act.type === 'add').map(act => act.expense.id)
-                    );
-
-                    const uniqueNewActivities = newActivities.filter(
-                        act => !existingAddExpenseIds.has(act.expense.id)
-                    );
-
-                    if (uniqueNewActivities.length === 0) {
-                        return prev;
-                    }
-
-                    return [...uniqueNewActivities, ...prev]
-                        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                        .slice(0, 20);
-                });
+                setActivities(prev => mergeAndDedupeActivities(prev, newActivities));
             }
         }
         setExpenses(fetchedExpenses);
@@ -157,7 +160,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     
     setLastSyncTimestamp(new Date().toISOString());
       // FIX: Removed `lastSyncTimestamp` from dependencies to break the infinite loop.
-  }, [user, setLastSyncTimestamp, setActivities]);
+  }, [user, setLastSyncTimestamp, setActivities, mergeAndDedupeActivities]);
 
   useEffect(() => {
     const performInitialSync = async () => {
@@ -177,21 +180,13 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
       if (!newExpense?.id) return;
 
       if (newExpense.user !== user) {
-        // FIX: Implemented de-duplication logic to prevent the same activity
-        // from being added by both the real-time subscription and the sync/catch-up
-        // mechanism, which was causing duplicate entries in the activity feed.
-        setActivities(prev => {
-            const alreadyExists = prev.some(act => act.type === 'add' && act.expense.id === newExpense.id);
-            if (alreadyExists) {
-                return prev;
-            }
-            return [{
-                id: crypto.randomUUID(),
-                type: 'add',
-                expense: newExpense,
-                timestamp: new Date().toISOString()
-            }, ...prev].slice(0, 20);
-        });
+        const newActivity: Activity = {
+            id: crypto.randomUUID(),
+            type: 'add',
+            expense: newExpense,
+            timestamp: new Date().toISOString()
+        };
+        setActivities(prev => mergeAndDedupeActivities(prev, [newActivity]));
       }
 
       const wasAddedLocally = recentlyAddedIds.current.has(newExpense.id);
@@ -215,12 +210,13 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
       if (!updatedExpense?.id) return;
 
       if (updatedExpense.user !== user) {
-        setActivities(prev => [{
+        const newActivity: Activity = {
            id: crypto.randomUUID(),
            type: 'update',
            expense: updatedExpense,
            timestamp: new Date().toISOString()
-       }, ...prev].slice(0, 20));
+        };
+        setActivities(prev => mergeAndDedupeActivities(prev, [newActivity]));
       }
 
       const wasUpdatedLocally = recentlyUpdatedIds.current.has(updatedExpense.id);
@@ -258,12 +254,13 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     
       // Update activity log only if user info is available.
       if (deletedExpense.user && deletedExpense.user !== user && deletedExpense.date) {
-         setActivities(prev => [{
+         const newActivity: Activity = {
             id: crypto.randomUUID(),
             type: 'delete',
             expense: deletedExpense as Partial<Expense> & { id: string; user: User; date: string; },
             timestamp: new Date().toISOString()
-        }, ...prev].slice(0, 20));
+        };
+        setActivities(prev => mergeAndDedupeActivities(prev, [newActivity]));
       }
     };
 
@@ -324,7 +321,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     return () => {
       supabase.removeChannel(allChangesChannel);
     };
-  }, [highlightExpense, user, setActivities, syncData]);
+  }, [highlightExpense, user, setActivities, syncData, mergeAndDedupeActivities]);
 
   const addExpense = async (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => {
     const newId = crypto.randomUUID();
