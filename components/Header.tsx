@@ -18,17 +18,16 @@ interface HeaderProps {
   onOpenSettings: () => void;
   onLogout: () => void;
   loggedInUser: User;
-  notifications: { expense: Expense; type: 'add' | 'update' }[];
-  onClearNotifications: () => void;
+  activityItems: { expense: Expense; type: 'add' | 'update' }[];
+  unreadCount: number;
+  onMarkAsRead: () => void;
   realtimeStatus: 'SUBSCRIBED' | 'TIMED_OUT' | 'CHANNEL_ERROR' | 'CONNECTING';
 }
 
-const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser, notifications, onClearNotifications, realtimeStatus }) => {
+const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser, activityItems, unreadCount, onMarkAsRead, realtimeStatus }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [lastShownNotifications, setLastShownNotifications] = useState<{ expense: Expense; type: 'add' | 'update' }[]>([]);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
   const userColorClass = loggedInUser === User.Sophie ? 'bg-rose-500' : 'bg-sky-500';
@@ -53,15 +52,8 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser,
   const handleNotificationsToggle = () => {
       const shouldOpen = !isNotificationsOpen;
       setIsNotificationsOpen(shouldOpen);
-      if (shouldOpen && notifications.length > 0) {
-          setLastShownNotifications(prev => {
-            const newNotifications = notifications.filter(
-                n => !prev.some(p => p.expense.id === n.expense.id)
-            );
-            const updatedNotifications = [...newNotifications, ...prev];
-            return updatedNotifications.slice(0, 5); // Limite à 5 notifications
-          });
-          onClearNotifications();
+      if (shouldOpen) {
+        onMarkAsRead();
       }
   };
   
@@ -92,7 +84,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser,
                     aria-label="Notifications"
                 >
                     <BellIcon className={`h-6 w-6 transition-colors ${currentStatusStyle?.textClass || 'text-slate-500 dark:text-slate-400'}`} />
-                    {notifications.length > 0 && (
+                    {unreadCount > 0 && (
                         <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-800" />
                     )}
                 </button>
@@ -103,9 +95,9 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser,
                             <h3 className="font-semibold text-slate-800 dark:text-slate-100">Activité Récente</h3>
                         </div>
                         <div className="max-h-96 overflow-y-auto">
-                            {lastShownNotifications.length > 0 ? (
+                            {activityItems.length > 0 ? (
                                 <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-                                    {lastShownNotifications.map(({ expense, type }) => (
+                                    {activityItems.map(({ expense, type }) => (
                                         <li key={expense.id} className="p-4">
                                             <p className="text-sm text-slate-700 dark:text-slate-200">
                                                 <span className={`font-bold ${expense.user === User.Sophie ? 'text-rose-500' : 'text-sky-500'}`}>{expense.user}</span>
@@ -121,7 +113,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser,
                                 </ul>
                             ) : (
                                 <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-8">
-                                    Vous êtes à jour !
+                                    Aucune activité à afficher.
                                 </p>
                             )}
                         </div>

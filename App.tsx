@@ -17,6 +17,7 @@ import OfflineIndicator from './components/OfflineIndicator';
 import { useAuth } from './hooks/useAuth';
 import Login from './components/Login';
 import PullToRefresh from './components/PullToRefresh';
+import { useLocalStorage } from './hooks/useLocalStorage';
 
 const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogout }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -32,11 +33,15 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [formInitialData, setFormInitialData] = useState<(Omit<Expense, 'id' | 'date' | 'created_at'> & { formKey?: string }) | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [notifications, setNotifications] = useState<{expense: Expense, type: 'add' | 'update'}[]>([]);
   const [highlightedExpenseIds, setHighlightedExpenseIds] = useState<Set<string>>(new Set());
   const [realtimeStatus, setRealtimeStatus] = useState<'SUBSCRIBED' | 'TIMED_OUT' | 'CHANNEL_ERROR' | 'CONNECTING'>('CONNECTING');
   const recentlyAddedIds = useRef(new Set<string>());
   const recentlyUpdatedIds = useRef(new Set<string>());
+
+  // Persistent Activity Log states
+  const [lastBellCheck, setLastBellCheck] = useLocalStorage('lastBellCheck', new Date().toISOString());
+  const [activityItems, setActivityItems] = useState<{ expense: Expense; type: 'add' | 'update' }[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const highlightExpense = useCallback((id: string) => {
     setHighlightedExpenseIds(prev => new Set(prev).add(id));
@@ -89,13 +94,35 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   }, [fetchExpenses, fetchReminders]);
 
   useEffect(() => {
+    if (isLoading || !user) return;
+
+    // Determine unread items for the bell badge
+    const unreadExpenses = expenses.filter(e => 
+      new Date(e.created_at) > new Date(lastBellCheck) &&
+      e.user !== user
+    );
+    setUnreadCount(unreadExpenses.length);
+
+    // Create a persistent list of recent activities for the dropdown
+    const recentActivities = [...expenses]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 10) // Limit to the last 10 activities
+      .map(expense => ({
+        expense,
+        // Default to 'add' type for persistent items, as update timestamp isn't available
+        type: 'add' as const 
+      }));
+    
+    setActivityItems(recentActivities);
+  }, [expenses, lastBellCheck, user, isLoading]);
+
+  useEffect(() => {
     // Handlers for real-time events
     const handleExpenseInsert = (payload: any) => {
       const newExpense = payload.new as Expense;
       const wasAddedLocally = recentlyAddedIds.current.has(newExpense.id);
 
       if (!wasAddedLocally) {
-        setNotifications(prev => [{ expense: newExpense, type: 'add' }, ...prev.filter(n => n.expense.id !== newExpense.id)]);
         setToastInfo({ message: `${newExpense.user} a ajouté "${newExpense.description}".`, type: 'info' });
       }
 
@@ -120,7 +147,6 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
         )
       );
       if (!wasUpdatedLocally) {
-        setNotifications(prev => [{ expense: updatedExpense, type: 'update' }, ...prev.filter(n => n.expense.id !== updatedExpense.id)]);
         setToastInfo({ message: `${updatedExpense.user} a modifié "${updatedExpense.description}".`, type: 'info' });
       }
       highlightExpense(updatedExpense.id);
@@ -191,7 +217,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     return () => {
       supabase.removeChannel(allChangesChannel);
     };
-  }, [highlightExpense]);
+  }, [highlightExpense, user]);
 
   const addExpense = async (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => {
     const newId = crypto.randomUUID();
@@ -447,6 +473,10 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     }
   };
 
+  const markActivitiesAsRead = () => {
+    setLastBellCheck(new Date().toISOString());
+  };
+
   if (isLoading) {
     return (
         <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-slate-900">
@@ -471,8 +501,9 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
           onOpenSettings={() => setIsSettingsOpen(true)}
           onLogout={onLogout}
           loggedInUser={user}
-          notifications={notifications}
-          onClearNotifications={() => setNotifications([])}
+          activityItems={activityItems}
+          unreadCount={unreadCount}
+          onMarkAsRead={markActivitiesAsRead}
           realtimeStatus={realtimeStatus}
         />
 
