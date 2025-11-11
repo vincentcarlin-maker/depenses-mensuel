@@ -9,6 +9,8 @@ interface ExpenseFormProps {
   disabled?: boolean;
 }
 
+const CAR_OPTIONS = ["Peugeot 5008", "Peugeot 207"];
+
 const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initialData, loggedInUser, disabled = false }) => {
   const [description, setDescription] = useState(initialData?.description || '');
   const [amount, setAmount] = useState(initialData ? String(Math.abs(initialData.amount)) : '');
@@ -34,6 +36,21 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
       amountInputRef.current?.select();
     }
   }, []); // Run only on mount, since we are keying the component
+
+  useEffect(() => {
+    // When category changes to Fuel, set a default car if description isn't already a car.
+    if (category === Category.Fuel) {
+      if (!CAR_OPTIONS.includes(description)) {
+        setDescription(CAR_OPTIONS[0]);
+      }
+    } else {
+      // If switching away from Fuel, clear the car description
+      if (CAR_OPTIONS.includes(description)) {
+        setDescription('');
+      }
+    }
+  }, [category]);
+
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -84,7 +101,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
     // Clear form only on normal submission, not on pre-filled submission
     // because the parent remounts the component anyway via the key prop.
     if (!initialData) {
-        setDescription('');
+        setDescription(category === Category.Fuel ? CAR_OPTIONS[0] : '');
         setAmount('');
         setCategory(Category.Groceries);
         setTransactionType('expense');
@@ -135,34 +152,51 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         </div>
         <div>
           <label htmlFor="description" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
-            Description
+            {category === Category.Fuel ? 'Véhicule' : 'Description'}
           </label>
-          <div className="relative">
-            <input
-              type="text"
-              id="description"
-              value={description}
-              onChange={handleDescriptionChange}
-              onFocus={(e) => handleDescriptionChange(e)}
-              onBlur={() => setTimeout(() => setSuggestions([]), 150)}
-              className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
-              placeholder="Ex: McDo, Courses Leclerc..."
-              autoComplete="off"
-            />
-            {suggestions.length > 0 && (
-              <ul className="absolute z-10 w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md mt-1 shadow-lg max-h-48 overflow-y-auto">
-                {suggestions.map((suggestion, index) => (
-                  <li
-                    key={index}
-                    className="px-4 py-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm"
-                    onMouseDown={() => handleSuggestionClick(suggestion)}
-                  >
-                    {suggestion}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          {category === Category.Fuel ? (
+            <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1">
+                <span
+                  className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out
+                    ${description === CAR_OPTIONS[1] ? 'translate-x-full' : 'translate-x-0'}
+                  `}
+                  aria-hidden="true"
+                />
+                <button type="button" onClick={() => setDescription(CAR_OPTIONS[0])} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${description === CAR_OPTIONS[0] ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                  {CAR_OPTIONS[0]}
+                </button>
+                <button type="button" onClick={() => setDescription(CAR_OPTIONS[1])} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${description === CAR_OPTIONS[1] ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                  {CAR_OPTIONS[1]}
+                </button>
+            </div>
+          ) : (
+            <div className="relative">
+              <input
+                type="text"
+                id="description"
+                value={description}
+                onChange={handleDescriptionChange}
+                onFocus={(e) => handleDescriptionChange(e)}
+                onBlur={() => setTimeout(() => setSuggestions([]), 150)}
+                className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
+                placeholder="Ex: McDo, Courses Leclerc..."
+                autoComplete="off"
+              />
+              {suggestions.length > 0 && (
+                <ul className="absolute z-10 w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md mt-1 shadow-lg max-h-48 overflow-y-auto">
+                  {suggestions.map((suggestion, index) => (
+                    <li
+                      key={index}
+                      className="px-4 py-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm"
+                      onMouseDown={() => handleSuggestionClick(suggestion)}
+                    >
+                      {suggestion}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>

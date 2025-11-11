@@ -20,16 +20,10 @@ const toDatetimeLocal = (isoString: string): string => {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
-const parseExpenseDescription = (fullDescription: string) => {
-    const tagRegex = /(#\w+)/g;
-    const description = fullDescription.replace(tagRegex, '').trim();
-    return { description };
-};
+const CAR_OPTIONS = ["Peugeot 5008", "Peugeot 207"];
 
 const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateExpense, onDeleteExpense, onClose }) => {
-    const { description: initialDesc } = parseExpenseDescription(expense.description);
-    
-    const [description, setDescription] = useState(initialDesc);
+    const [description, setDescription] = useState(expense.description);
     const [amount, setAmount] = useState(Math.abs(expense.amount).toString());
     const [category, setCategory] = useState<Category>(expense.category);
     const [user, setUser] = useState<User>(expense.user);
@@ -49,6 +43,19 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
            window.removeEventListener('keydown', handleEsc);
         };
     }, [onClose]);
+
+    useEffect(() => {
+        if (category === Category.Fuel) {
+            if (!CAR_OPTIONS.includes(description)) {
+                setDescription(CAR_OPTIONS[0]);
+            }
+        } else {
+             if (CAR_OPTIONS.includes(description)) {
+                setDescription('');
+            }
+        }
+    }, [category]);
+
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -127,8 +134,27 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                             />
                         </div>
                         <div>
-                          <label htmlFor="edit-description" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Description</label>
-                          <input type="text" id="edit-description" value={description} onChange={(e) => setDescription(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm" />
+                          <label htmlFor="edit-description" className="block text-sm font-medium text-slate-600 dark:text-slate-300">
+                            {category === Category.Fuel ? 'Véhicule' : 'Description'}
+                          </label>
+                          {category === Category.Fuel ? (
+                            <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1 mt-1">
+                                <span
+                                  className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out
+                                    ${description === CAR_OPTIONS[1] ? 'translate-x-full' : 'translate-x-0'}
+                                  `}
+                                  aria-hidden="true"
+                                />
+                                <button type="button" onClick={() => setDescription(CAR_OPTIONS[0])} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${description === CAR_OPTIONS[0] ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                                  {CAR_OPTIONS[0]}
+                                </button>
+                                <button type="button" onClick={() => setDescription(CAR_OPTIONS[1])} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${description === CAR_OPTIONS[1] ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                                  {CAR_OPTIONS[1]}
+                                </button>
+                            </div>
+                          ) : (
+                            <input type="text" id="edit-description" value={description} onChange={(e) => setDescription(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm" />
+                          )}
                         </div>
                          <div>
                            <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type de transaction</label>
