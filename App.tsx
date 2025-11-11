@@ -19,6 +19,13 @@ import Login from './components/Login';
 import PullToRefresh from './components/PullToRefresh';
 import { useLocalStorage } from './hooks/useLocalStorage';
 
+type Activity = {
+    id: string; // unique id for the activity
+    type: 'add' | 'update' | 'delete';
+    expense: Partial<Expense> & { id: string, user: User, date: string };
+    timestamp: string;
+};
+
 const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogout }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -40,8 +47,29 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
 
   // Persistent Activity Log states
   const [lastBellCheck, setLastBellCheck] = useLocalStorage('lastBellCheck', new Date().toISOString());
-  const [activityItems, setActivityItems] = useState<{ expense: Expense; type: 'add' | 'update' }[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [activities, setActivities] = useLocalStorage<Activity[]>('activityLog', []);
+
+  const { unreadCount, activityItemsForHeader } = useMemo(() => {
+    if (!user) return { unreadCount: 0, activityItemsForHeader: [] };
+    
+    const otherUserActivities = activities.filter(act => act.expense.user !== user);
+    
+    const unread = otherUserActivities.filter(act => 
+        new Date(act.timestamp) > new Date(lastBellCheck)
+    ).length;
+    
+    const items = otherUserActivities
+        .slice(0, 10) // Show last 10 activities from other user
+        .map(act => ({
+            key: act.id,
+            expense: act.expense,
+            type: act.type,
+            timestamp: act.timestamp
+        }));
+        
+    return { unreadCount: unread, activityItemsForHeader: items };
+  }, [activities, lastBellCheck, user]);
+
 
   const highlightExpense = useCallback((id: string) => {
     setHighlightedExpenseIds(prev => new Set(prev).add(id));
@@ -94,34 +122,20 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   }, [fetchExpenses, fetchReminders]);
 
   useEffect(() => {
-    if (isLoading || !user) return;
-
-    // Determine unread items for the bell badge
-    const unreadExpenses = expenses.filter(e => 
-      new Date(e.created_at) > new Date(lastBellCheck) &&
-      e.user !== user
-    );
-    setUnreadCount(unreadExpenses.length);
-
-    // Create a persistent list of recent activities for the dropdown
-    const recentActivities = [...expenses]
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 10) // Limit to the last 10 activities
-      .map(expense => ({
-        expense,
-        // Default to 'add' type for persistent items, as update timestamp isn't available
-        type: 'add' as const 
-      }));
-    
-    setActivityItems(recentActivities);
-  }, [expenses, lastBellCheck, user, isLoading]);
-
-  useEffect(() => {
     // Handlers for real-time events
     const handleExpenseInsert = (payload: any) => {
       const newExpense = payload.new as Expense;
-      const wasAddedLocally = recentlyAddedIds.current.has(newExpense.id);
 
+      if (newExpense.user !== user) {
+        setActivities(prev => [{
+            id: crypto.randomUUID(),
+            type: 'add',
+            expense: newExpense,
+            timestamp: new Date().toISOString()
+        }, ...prev].slice(0, 20));
+      }
+
+      const wasAddedLocally = recentlyAddedIds.current.has(newExpense.id);
       if (!wasAddedLocally) {
         setToastInfo({ message: `${newExpense.user} a ajouté "${newExpense.description}".`, type: 'info' });
       }
@@ -139,8 +153,17 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
 
     const handleExpenseUpdate = (payload: any) => {
       const updatedExpense = payload.new as Expense;
-      const wasUpdatedLocally = recentlyUpdatedIds.current.has(updatedExpense.id);
 
+      if (updatedExpense.user !== user) {
+        setActivities(prev => [{
+           id: crypto.randomUUID(),
+           type: 'update',
+           expense: updatedExpense,
+           timestamp: new Date().toISOString()
+       }, ...prev].slice(0, 20));
+      }
+
+      const wasUpdatedLocally = recentlyUpdatedIds.current.has(updatedExpense.id);
       setExpenses(prevExpenses =>
         prevExpenses.map(expense =>
           expense.id === updatedExpense.id ? updatedExpense : expense
@@ -153,8 +176,19 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     };
 
     const handleExpenseDelete = (payload: any) => {
-      const deletedExpense = payload.old as Partial<Expense>;
-      if (deletedExpense && deletedExpense.id) {
+      const deletedExpense = payload.old as Partial<Expense> & { id: string; user?: User; date: string };
+      if (deletedExpense && deletedExpense.id && deletedExpense.user) {
+        // We assume the user deleting is the owner. So if the owner is not the current
+        // logged in user, it means the *other* user performed the action.
+        if (deletedExpense.user !== user) {
+             setActivities(prev => [{
+                id: crypto.randomUUID(),
+                type: 'delete',
+                expense: deletedExpense,
+                timestamp: new Date().toISOString()
+            }, ...prev].slice(0, 20));
+        }
+
         setExpenses(prevExpenses => prevExpenses.filter(expense => expense.id !== deletedExpense.id));
         const desc = deletedExpense.description || 'une dépense';
         setToastInfo({
@@ -217,7 +251,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     return () => {
       supabase.removeChannel(allChangesChannel);
     };
-  }, [highlightExpense, user]);
+  }, [highlightExpense, user, setActivities]);
 
   const addExpense = async (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => {
     const newId = crypto.randomUUID();
@@ -290,7 +324,8 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     if (error) {
       console.error('Error updating expense:', error.message || error);
       setToastInfo({ message: "Erreur lors de la mise à jour.", type: 'error' });
-      setExpenses(prev => prev.map(e => e.id === originalExpense.id ? originalExpense.id : e));
+      // FIX: Correctly revert to the original expense object, not just its ID.
+      setExpenses(prev => prev.map(e => e.id === originalExpense.id ? originalExpense : e));
     }
   };
 
@@ -501,7 +536,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
           onOpenSettings={() => setIsSettingsOpen(true)}
           onLogout={onLogout}
           loggedInUser={user}
-          activityItems={activityItems}
+          activityItems={activityItemsForHeader}
           unreadCount={unreadCount}
           onMarkAsRead={markActivitiesAsRead}
           realtimeStatus={realtimeStatus}

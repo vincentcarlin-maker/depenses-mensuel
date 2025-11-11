@@ -18,7 +18,12 @@ interface HeaderProps {
   onOpenSettings: () => void;
   onLogout: () => void;
   loggedInUser: User;
-  activityItems: { expense: Expense; type: 'add' | 'update' }[];
+  activityItems: {
+    key: string;
+    expense: Partial<Expense> & { user: User; id: string; date: string; description?: string, amount?: number };
+    type: 'add' | 'update' | 'delete';
+    timestamp: string;
+  }[];
   unreadCount: number;
   onMarkAsRead: () => void;
   realtimeStatus: 'SUBSCRIBED' | 'TIMED_OUT' | 'CHANNEL_ERROR' | 'CONNECTING';
@@ -97,23 +102,23 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser,
                         <div className="max-h-96 overflow-y-auto">
                             {activityItems.length > 0 ? (
                                 <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-                                    {activityItems.map(({ expense, type }) => (
-                                        <li key={expense.id} className="p-4">
+                                    {activityItems.map(({ key, expense, type, timestamp }) => (
+                                        <li key={key} className="p-4">
                                             <p className="text-sm text-slate-700 dark:text-slate-200">
                                                 <span className={`font-bold ${expense.user === User.Sophie ? 'text-rose-500' : 'text-sky-500'}`}>{expense.user}</span>
-                                                {type === 'add' ? ` a ajouté ` : ` a mis à jour `}
-                                                <span className="font-semibold text-slate-800 dark:text-slate-100">{expense.description}</span>
-                                                {` (${expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`}
+                                                { type === 'add' ? ` a ajouté ` : type === 'update' ? ` a mis à jour ` : ' a supprimé ' }
+                                                <span className="font-semibold text-slate-800 dark:text-slate-100">{expense.description || 'une dépense'}</span>
+                                                {typeof expense.amount === 'number' && ` (${expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`}
                                             </p>
                                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                                {new Date(expense.date).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                {new Date(timestamp).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                             </p>
                                         </li>
                                     ))}
                                 </ul>
                             ) : (
                                 <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-8">
-                                    Aucune activité à afficher.
+                                    Aucune activité récente de l'autre utilisateur.
                                 </p>
                             )}
                         </div>
