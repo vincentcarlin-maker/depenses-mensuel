@@ -232,36 +232,49 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     };
 
     const handleExpenseDelete = (payload: any) => {
-      const deletedExpense = payload.old as Partial<Expense> & { id: string; user?: User; date?: string; description?: string; };
-      if (!deletedExpense?.id) {
-          console.warn('Real-time: Received DELETE event without an ID.');
-          return;
-      }
-    
-      // Prevent handler from running on the client that initiated the action.
-      if (recentlyDeletedIds.current.has(deletedExpense.id)) {
-          return;
-      }
-    
-      // Key fix: Update UI state immediately if ID is present.
-      setExpenses(prevExpenses => prevExpenses.filter(expense => expense.id !== deletedExpense.id));
-      
-      const desc = deletedExpense.description || 'une dépense';
-      setToastInfo({
-        message: `Dépense "${desc}" supprimée.`,
-        type: 'info'
-      });
-    
-      // Update activity log only if user info is available.
-      if (deletedExpense.user && deletedExpense.user !== user && deletedExpense.date) {
-         const newActivity: Activity = {
-            id: crypto.randomUUID(),
-            type: 'delete',
-            expense: deletedExpense as Partial<Expense> & { id: string; user: User; date: string; },
-            timestamp: new Date().toISOString()
-        };
-        setActivities(prev => mergeAndDedupeActivities(prev, [newActivity]));
-      }
+        const deletedPayload = payload.old as Partial<Expense> & { id: string };
+        if (!deletedPayload?.id) {
+            console.warn('Real-time: Received DELETE event without an ID.');
+            return;
+        }
+
+        if (recentlyDeletedIds.current.has(deletedPayload.id)) {
+            return;
+        }
+
+        setExpenses(prevExpenses => {
+            const expenseToDelete = prevExpenses.find(e => e.id === deletedPayload.id);
+
+            if (!expenseToDelete) {
+                // If the expense is not found locally, just filter it out to stay in sync.
+                return prevExpenses.filter(expense => expense.id !== deletedPayload.id);
+            }
+
+            const desc = expenseToDelete.description || 'une dépense';
+            setToastInfo({
+                message: `Dépense "${desc}" supprimée.`,
+                type: 'info'
+            });
+
+            if (expenseToDelete.user !== user) {
+                const newActivity: Activity = {
+                    id: crypto.randomUUID(),
+                    type: 'delete',
+                    expense: {
+                        id: expenseToDelete.id,
+                        user: expenseToDelete.user,
+                        date: expenseToDelete.date,
+                        description: expenseToDelete.description,
+                        amount: expenseToDelete.amount,
+                        category: expenseToDelete.category,
+                    },
+                    timestamp: new Date().toISOString()
+                };
+                setActivities(prev => mergeAndDedupeActivities(prev, [newActivity]));
+            }
+
+            return prevExpenses.filter(expense => expense.id !== deletedPayload.id);
+        });
     };
 
     const handleReminderChange = (payload: any) => {
