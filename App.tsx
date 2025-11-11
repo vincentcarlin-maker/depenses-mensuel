@@ -18,7 +18,6 @@ import { useAuth } from './hooks/useAuth';
 import Login from './components/Login';
 import PullToRefresh from './components/PullToRefresh';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import SupabaseInstructionsModal from './components/SupabaseInstructionsModal';
 
 type Activity = {
     id: string; // unique id for the activity
@@ -38,7 +37,6 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   const [searchTerm, setSearchTerm] = useState('');
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
-  const [isSupabaseErrorModalOpen, setIsSupabaseErrorModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [formInitialData, setFormInitialData] = useState<(Omit<Expense, 'id' | 'date' | 'created_at'> & { formKey?: string }) | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -284,7 +282,9 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
           case 'CHANNEL_ERROR':
             setRealtimeStatus('CHANNEL_ERROR');
             console.error('Real-time channel error:', err);
-            setIsSupabaseErrorModalOpen(true);
+            // The user has confirmed their Supabase configuration.
+            // The toast notification for this error has been removed by request.
+            // The error is still logged to the console for debugging.
             break;
           case 'TIMED_OUT':
             // This happens when the tab is in the background. Treat it as a reconnecting state, not a hard error.
@@ -723,11 +723,6 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
         />
       )}
       
-       <SupabaseInstructionsModal 
-        isOpen={isSupabaseErrorModalOpen}
-        onClose={() => setIsSupabaseErrorModalOpen(false)}
-      />
-
       <SettingsModal 
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
