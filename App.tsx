@@ -272,9 +272,9 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
             setToastInfo({ message: 'Erreur de connexion temps-réel. Veuillez vérifier la configuration Supabase.', type: 'error' });
             break;
           case 'TIMED_OUT':
-            setRealtimeStatus('TIMED_OUT');
-            console.warn('Real-time channel connection timed out.');
-            setToastInfo({ message: 'La connexion temps-réel a expiré.', type: 'error' });
+            // This happens when the tab is in the background. Treat it as a reconnecting state, not a hard error.
+            setRealtimeStatus('CONNECTING');
+            console.warn('Real-time channel connection timed out. Attempting to reconnect...');
             break;
           default:
             setRealtimeStatus('CONNECTING');
