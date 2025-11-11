@@ -9,7 +9,7 @@
   "theme_color": "#06b6d4",
   "icons": [
     {
-      "src": "./logo.svg?v=13",
+      "src": "./logo.svg?v=14",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
