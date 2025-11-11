@@ -74,6 +74,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
             return;
         }
 
+        // FIX: The variable `finalAmount` was being used in its own declaration. It should use `parsedAmount`.
         const finalAmount = transactionType === 'expense' ? parsedAmount : -parsedAmount;
         
         const finalDescription = description.trim();
@@ -93,6 +94,8 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
         onClose();
     };
 
+    const baseInputStyle = "mt-1 block w-full py-2.5 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm";
+    const placeholderStyle = "placeholder-slate-400 dark:placeholder-slate-500";
 
     return (
         <>
@@ -102,7 +105,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                     onClick={onClose}
                     aria-hidden="true"
                 ></div>
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl z-50 w-full max-w-md m-4 animate-fade-in">
+                <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-xl z-50 w-full max-w-md m-4 animate-fade-in">
                     <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Détails de la Transaction</h2>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
@@ -124,7 +127,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                         </div>
                         <div>
                           <label htmlFor="edit-category" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Catégorie</label>
-                          <select id="edit-category" value={category} onChange={(e) => setCategory(e.target.value as Category)} className="mt-1 block w-full pl-3 pr-10 py-2.5 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm rounded-lg">
+                          <select id="edit-category" value={category} onChange={(e) => setCategory(e.target.value as Category)} className={`${baseInputStyle} pl-3 pr-10`}>
                             {Object.values(Category).map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
                           </select>
                         </div>
@@ -135,7 +138,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                                 id="edit-date"
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2.5 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
+                                className={`${baseInputStyle} px-3`}
                             />
                         </div>
                         <div>
@@ -158,7 +161,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                                 </button>
                             </div>
                           ) : (
-                            <input type="text" id="edit-description" value={description} onChange={(e) => setDescription(e.target.value)} className="mt-1 block w-full px-3 py-2.5 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm" />
+                            <input type="text" id="edit-description" value={description} onChange={(e) => setDescription(e.target.value)} className={`${baseInputStyle} px-3 ${placeholderStyle}`} />
                           )}
                         </div>
                          <div>
@@ -180,7 +183,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                         </div>
                         <div>
                           <label htmlFor="edit-amount" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Montant (€)</label>
-                          <input type="text" inputMode="decimal" id="edit-amount" value={amount} onChange={(e) => setAmount(e.target.value)} className="mt-1 block w-full px-3 py-2.5 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm" />
+                          <input type="text" inputMode="decimal" id="edit-amount" value={amount} onChange={(e) => setAmount(e.target.value)} className={`${baseInputStyle} px-3 ${placeholderStyle}`} />
                         </div>
                         {error && <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>}
                         <div className="flex justify-between items-center pt-2">

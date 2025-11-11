@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import EyeIcon from './icons/EyeIcon';
+import EyeSlashIcon from './icons/EyeSlashIcon';
 
 const Logo = () => (
     <svg width="48" height="48" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-4">
@@ -19,6 +21,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -68,16 +71,26 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                             >
                                 Mot de passe
                             </label>
-                            <input
-                                type="password"
-                                id="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
-                                placeholder="••••••••"
-                                autoComplete="current-password"
-                            />
+                            <div className="relative">
+                                <input
+                                    type={isPasswordVisible ? 'text' : 'password'}
+                                    id="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    className="block w-full px-3 py-2.5 pr-10 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
+                                    placeholder="••••••••"
+                                    autoComplete="current-password"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setIsPasswordVisible(prev => !prev)}
+                                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                                    aria-label={isPasswordVisible ? "Cacher le mot de passe" : "Montrer le mot de passe"}
+                                >
+                                    {isPasswordVisible ? <EyeSlashIcon /> : <EyeIcon />}
+                                </button>
+                            </div>
                         </div>
                         
                         {error && (
