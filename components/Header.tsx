@@ -65,16 +65,13 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser,
       }
   };
   
-  const realtimeStatusInfo = {
-    SUBSCRIBED: { color: 'bg-green-500', title: 'Connecté en temps-réel' },
-    CONNECTING: { color: 'bg-yellow-500', title: 'Connexion temps-réel en cours...' },
-    CHANNEL_ERROR: { color: 'bg-red-500', title: 'Erreur de connexion temps-réel' },
-    TIMED_OUT: { color: 'bg-red-500', title: 'Connexion temps-réel expirée' },
-  }[realtimeStatus];
-
-  const RealtimeStatusIndicator = () => (
-    <span title={realtimeStatusInfo.title} className={`absolute bottom-1.5 left-1.5 block h-2.5 w-2.5 rounded-full ${realtimeStatusInfo.color} ring-2 ring-white dark:ring-slate-800`} />
-  );
+  const realtimeStatusStyles = {
+    SUBSCRIBED: { ringClass: 'ring-2 ring-green-500', title: 'Connecté en temps-réel' },
+    CONNECTING: { ringClass: 'ring-2 ring-yellow-500 animate-pulse', title: 'Connexion en cours...' },
+    CHANNEL_ERROR: { ringClass: 'ring-2 ring-red-500', title: 'Erreur de connexion temps-réel' },
+    TIMED_OUT: { ringClass: 'ring-2 ring-red-500', title: 'Connexion temps-réel expirée' },
+  };
+  const currentStatusStyle = realtimeStatusStyles[realtimeStatus];
 
 
   return (
@@ -90,14 +87,14 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser,
             <div className="relative" ref={notificationsRef}>
                 <button
                     onClick={handleNotificationsToggle}
-                    className="relative p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800"
+                    title={currentStatusStyle?.title}
+                    className={`relative p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800 ${currentStatusStyle?.ringClass || 'ring-2 ring-transparent'}`}
                     aria-label="Notifications"
                 >
                     <BellIcon />
                     {notifications.length > 0 && (
                         <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-800" />
                     )}
-                    <RealtimeStatusIndicator />
                 </button>
 
                 {isNotificationsOpen && (

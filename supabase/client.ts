@@ -2,50 +2,56 @@ import { createClient } from '@supabase/supabase-js';
 import { type Expense, type Reminder } from '../types';
 
 // =============================================================================
-// GUIDE DÉFINITIF ET VISUEL POUR ACTIVER LE TEMPS-RÉEL
+// =============================================================================
+// ==   STOP: GUIDE DE DÉPANNAGE POUR L'ERREUR "Real-time channel error"   ==
+// =============================================================================
 // =============================================================================
 //
-// L'erreur "Real-time channel error" est frustrante mais 100% due à la
-// configuration de votre projet Supabase. Suivez ce guide VISUELLEMENT.
-// Chaque clic est important.
+// PROBLÈME : L'application affiche "Real-time channel error".
+//
+// SOLUTION : Ceci est 100% un problème de configuration dans votre projet Supabase.
+//            Suivez PRÉCISÉMENT les 2 étapes ci-dessous. Le moindre oubli
+//            empêchera la connexion de fonctionner.
 //
 // -----------------------------------------------------------------------------
-// ÉTAPE 1 : CONFIGURER LES "PUBLICATIONS" (ACTION REQUISE)
+// ÉTAPE 1 : AUTORISER LA DIFFUSION DES DONNÉES (PUBLICATIONS)
 // -----------------------------------------------------------------------------
 //
-// 1. ➡️ Menu de gauche : Cliquez sur l'icône "Database" (un cylindre).
-// 2. ➡️ Dans le panneau qui apparaît : Cliquez sur "Publications".
-// 3. ➡️ La page montre une seule publication : "supabase_realtime".
-//       Cliquez sur le texte "supabase_realtime".
-// 4. ➡️ Une nouvelle section s'ouvre. Cliquez sur le lien bleu "0 tables" (ou "X tables").
-// 5. ➡️ Cochez les cases pour "expenses" ET "reminders".
-// 6. ➡️ Cliquez sur le gros bouton vert "Save".
+// But : Dire à Supabase "diffuse les changements des tables expenses et reminders".
 //
-// --- VÉRIFICATION VISUELLE ---
-// Le lien bleu doit maintenant afficher `2 tables`. S'il indique toujours
-// `0 tables` ou `1 tables`, vous avez manqué une étape.
+// 1. ➡️ Dans Supabase, menu de gauche : Icône Base de données (cylindre) -> "Publications".
+// 2. ➡️ Cliquez sur la seule ligne disponible : "supabase_realtime".
+// 3. ➡️ Cliquez sur le lien bleu (ex: "0 tables").
+// 4. ➡️ Une fenêtre s'ouvre. Cochez les cases pour "expenses" ET "reminders".
+// 5. ➡️ Cliquez sur le bouton vert "Save".
+//
+// --- VÉRIFICATION VISUELLE OBLIGATOIRE ---
+// Le lien doit maintenant afficher `2 tables`. Si ce n'est pas le cas,
+// l'étape a échoué. Recommencez-la.
 //
 // -----------------------------------------------------------------------------
-// ÉTAPE 2 : CONFIGURER LES POLITIQUES DE SÉCURITÉ (RLS)
+// ÉTAPE 2 : AUTORISER L'APPLICATION À LIRE LES DONNÉES (POLITIQUES RLS)
 // -----------------------------------------------------------------------------
 //
-// 1. ➡️ Menu de gauche : Cliquez sur l'icône "Authentication" (une clé).
-// 2. ➡️ Dans le panneau qui apparaît : Cliquez sur "Policies".
-// 3. ➡️ Si vous voyez un grand bouton bleu "Enable RLS" pour les tables
-//       "expenses" ou "reminders", CLIQUEZ DESSUS.
-// 4. ➡️ Menu de gauche : Cliquez sur l'icône "SQL Editor" (un éclair >_).
-// 5. ➡️ Cliquez sur "+ New query".
-// 6. ➡️ Copiez-collez l'intégralité du script ci-dessous et cliquez "RUN".
+// But : Dire à Supabase "l'application a le droit de voir ces changements".
+//
+// 1. ➡️ Menu de gauche : Icône SQL Editor (>_).
+// 2. ➡️ Cliquez sur "+ New query".
+// 3. ➡️ Copiez-collez TOUT le script ci-dessous, puis cliquez sur "RUN".
 /*
--- Activez RLS pour les tables si ce n'est pas déjà fait
+-- Étape A : S'assurer que Row Level Security (RLS) est bien activé.
+-- Si RLS est désactivé, personne ne peut lire les données en temps réel.
 alter table public.expenses enable row level security;
 alter table public.reminders enable row level security;
 
--- Supprime les anciennes politiques pour éviter les conflits
+-- Étape B : Supprimer les anciennes règles pour éviter les conflits.
+DROP POLICY IF EXISTS "Allow anonymous read access to expenses" ON public.expenses;
+DROP POLICY IF EXISTS "Allow anonymous read access to reminders" ON public.reminders;
 DROP POLICY IF EXISTS "Allow all access for anonymous users on expenses" ON public.expenses;
 DROP POLICY IF EXISTS "Allow all access for anonymous users on reminders" ON public.reminders;
 
--- Crée des politiques qui autorisent TOUT pour les utilisateurs anonymes (votre app)
+-- Étape C : Créer la nouvelle règle qui autorise TOUT.
+-- C'est la règle la plus simple pour que l'application fonctionne.
 CREATE POLICY "Allow all access for anonymous users on expenses"
 ON public.expenses FOR ALL TO anon USING (true) WITH CHECK (true);
 
@@ -53,20 +59,19 @@ CREATE POLICY "Allow all access for anonymous users on reminders"
 ON public.reminders FOR ALL TO anon USING (true) WITH CHECK (true);
 */
 //
-// --- VÉRIFICATION VISUELLE ---
-// 1. Retournez dans "Authentication" > "Policies".
-// 2. Sélectionnez "expenses" dans la liste. Vous DEVEZ y voir une
-//    politique verte nommée "Allow all access...".
-// 3. Faites de même pour "reminders". Si la politique n'apparaît pas, le script a échoué.
+// --- VÉRIFICATION VISUELLE OBLIGATOIRE ---
+// 1. ➡️ Menu de gauche : Icône Authentification (clé) -> "Policies".
+// 2. ➡️ Sélectionnez la table "expenses". Vous DEVEZ y voir une politique
+//       verte nommée "Allow all access for anonymous users on expenses".
+// 3. ➡️ Faites de même pour "reminders".
+//
+// Si vous ne voyez pas les politiques, le script a échoué. Exécutez-le à nouveau.
 //
 // =============================================================================
-// SOLUTION DE DERNIER RECOURS
-// =============================================================================
 //
-// Si, après avoir VÉRIFIÉ VISUELLEMENT ces deux étapes, l'erreur persiste,
-// cela signifie qu'une configuration ancienne ou cachée de votre projet est
-// en conflit. La solution la plus sûre est de créer un NOUVEAU projet Supabase
-// et de refaire ces deux étapes.
+// Si après avoir VÉRIFIÉ VISUELLEMENT ces deux étapes, l'erreur persiste,
+// la seule explication est une configuration corrompue de votre projet.
+// La solution est de créer un NOUVEAU projet Supabase et de refaire ces 2 étapes.
 //
 // =============================================================================
 
