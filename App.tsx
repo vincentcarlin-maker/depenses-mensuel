@@ -122,11 +122,26 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
                     timestamp: expense.created_at,
                 }));
                 
-                setActivities(prev => 
-                    [...newActivities, ...prev]
+                // FIX: Implemented de-duplication logic to prevent the same activity
+                // from being added by both the real-time subscription and the sync/catch-up
+                // mechanism, which was causing duplicate entries in the activity feed.
+                setActivities(prev => {
+                    const existingAddExpenseIds = new Set(
+                        prev.filter(act => act.type === 'add').map(act => act.expense.id)
+                    );
+
+                    const uniqueNewActivities = newActivities.filter(
+                        act => !existingAddExpenseIds.has(act.expense.id)
+                    );
+
+                    if (uniqueNewActivities.length === 0) {
+                        return prev;
+                    }
+
+                    return [...uniqueNewActivities, ...prev]
                         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                        .slice(0, 20)
-                );
+                        .slice(0, 20);
+                });
             }
         }
         setExpenses(fetchedExpenses);
@@ -162,12 +177,21 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
       if (!newExpense?.id) return;
 
       if (newExpense.user !== user) {
-        setActivities(prev => [{
-            id: crypto.randomUUID(),
-            type: 'add',
-            expense: newExpense,
-            timestamp: new Date().toISOString()
-        }, ...prev].slice(0, 20));
+        // FIX: Implemented de-duplication logic to prevent the same activity
+        // from being added by both the real-time subscription and the sync/catch-up
+        // mechanism, which was causing duplicate entries in the activity feed.
+        setActivities(prev => {
+            const alreadyExists = prev.some(act => act.type === 'add' && act.expense.id === newExpense.id);
+            if (alreadyExists) {
+                return prev;
+            }
+            return [{
+                id: crypto.randomUUID(),
+                type: 'add',
+                expense: newExpense,
+                timestamp: new Date().toISOString()
+            }, ...prev].slice(0, 20);
+        });
       }
 
       const wasAddedLocally = recentlyAddedIds.current.has(newExpense.id);
