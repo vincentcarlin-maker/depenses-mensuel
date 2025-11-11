@@ -51,6 +51,14 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   const [activities, setActivities] = useLocalStorage<Activity[]>('activityLog', []);
   const [lastSyncTimestamp, setLastSyncTimestamp] = useLocalStorage('lastSyncTimestamp', '1970-01-01T00:00:00.000Z');
 
+  // FIX: Create a ref to hold the latest sync timestamp. This prevents an infinite
+  // loop where the realtime subscription useEffect re-runs every time syncData
+  // updates the timestamp.
+  const lastSyncTimestampRef = useRef(lastSyncTimestamp);
+  useEffect(() => {
+    lastSyncTimestampRef.current = lastSyncTimestamp;
+  }, [lastSyncTimestamp]);
+
   const { unreadCount, activityItemsForHeader } = useMemo(() => {
     if (!user) return { unreadCount: 0, activityItemsForHeader: [] };
     
@@ -100,8 +108,9 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
         // --- CATCH-UP LOGIC ---
         // On initial load or refresh, check for missed additions from other users.
         if (shouldCatchUp) {
+            // FIX: Read from the ref to avoid dependency cycle
             const missedAdditions = fetchedExpenses.filter(expense =>
-                new Date(expense.created_at) > new Date(lastSyncTimestamp) &&
+                new Date(expense.created_at) > new Date(lastSyncTimestampRef.current) &&
                 expense.user !== user
             );
             
@@ -132,7 +141,8 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     }
     
     setLastSyncTimestamp(new Date().toISOString());
-  }, [user, lastSyncTimestamp, setLastSyncTimestamp, setActivities]);
+      // FIX: Removed `lastSyncTimestamp` from dependencies to break the infinite loop.
+  }, [user, setLastSyncTimestamp, setActivities]);
 
   useEffect(() => {
     const performInitialSync = async () => {
@@ -265,7 +275,9 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
         switch (status) {
           case 'SUBSCRIBED':
             setRealtimeStatus('SUBSCRIBED');
-            console.log('Real-time channel connected.');
+            console.log('Real-time channel connected. Syncing data...');
+            // Sync data on successful connection/reconnection
+            syncData(true);
             break;
           case 'CHANNEL_ERROR':
             setRealtimeStatus('CHANNEL_ERROR');
@@ -275,7 +287,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
           case 'TIMED_OUT':
             // This happens when the tab is in the background. Treat it as a reconnecting state, not a hard error.
             setRealtimeStatus('CONNECTING');
-            console.warn('Real-time channel connection timed out. Attempting to reconnect...');
+            console.warn('Real-time connection timed out. Attempting to reconnect...');
             break;
           default:
             setRealtimeStatus('CONNECTING');
@@ -286,7 +298,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     return () => {
       supabase.removeChannel(allChangesChannel);
     };
-  }, [highlightExpense, user, setActivities]);
+  }, [highlightExpense, user, setActivities, syncData]);
 
   const addExpense = async (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => {
     const newId = crypto.randomUUID();
@@ -553,6 +565,8 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     setLastBellCheck(new Date().toISOString());
   };
 
+  const isConnected = realtimeStatus === 'SUBSCRIBED';
+
   if (isLoading) {
     return (
         <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-slate-900">
@@ -636,6 +650,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
                     expenses={expenses}
                     initialData={formInitialData}
                     loggedInUser={user}
+                    disabled={!isConnected}
                   />
                   <ExpenseSummary 
                       allExpenses={expenses}
