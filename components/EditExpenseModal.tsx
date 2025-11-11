@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { type Expense, Category, User } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import TrashIcon from './icons/TrashIcon';
@@ -31,6 +31,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
     const [transactionType, setTransactionType] = useState<'expense' | 'refund'>(expense.amount >= 0 ? 'expense' : 'refund');
     const [error, setError] = useState('');
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const nonFuelDescriptionRef = useRef(expense.category !== Category.Fuel ? expense.description : '');
 
     useEffect(() => {
         const handleEsc = (event: KeyboardEvent) => {
@@ -45,15 +46,19 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
     }, [onClose]);
 
     useEffect(() => {
+        // When category changes to Fuel, store the current description and set a car.
+        // When switching away, restore the previous description.
         if (category === Category.Fuel) {
             if (!CAR_OPTIONS.includes(description)) {
+                nonFuelDescriptionRef.current = description;
                 setDescription(CAR_OPTIONS[0]);
             }
         } else {
-             if (CAR_OPTIONS.includes(description)) {
-                setDescription('');
+            if (CAR_OPTIONS.includes(description)) {
+                setDescription(nonFuelDescriptionRef.current);
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [category]);
 
 

@@ -20,6 +20,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [error, setError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const amountInputRef = useRef<HTMLInputElement>(null);
+  const nonFuelDescriptionRef = useRef(initialData?.category !== Category.Fuel ? (initialData?.description || '') : '');
 
   const uniqueDescriptions = useMemo(() => {
     const tagRegex = /(#\w+)/g;
@@ -38,17 +39,19 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   }, []); // Run only on mount, since we are keying the component
 
   useEffect(() => {
-    // When category changes to Fuel, set a default car if description isn't already a car.
+    // When category changes to Fuel, store the current description and set a car.
+    // When switching away, restore the previous description.
     if (category === Category.Fuel) {
       if (!CAR_OPTIONS.includes(description)) {
+        nonFuelDescriptionRef.current = description;
         setDescription(CAR_OPTIONS[0]);
       }
     } else {
-      // If switching away from Fuel, clear the car description
       if (CAR_OPTIONS.includes(description)) {
-        setDescription('');
+        setDescription(nonFuelDescriptionRef.current);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category]);
 
 
