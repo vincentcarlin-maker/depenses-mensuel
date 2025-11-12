@@ -3,6 +3,7 @@ import SettingsIcon from './icons/SettingsIcon';
 import LogoutIcon from './icons/LogoutIcon';
 import BellIcon from './icons/BellIcon';
 import { User, type Expense } from '../types';
+import CloseIcon from './icons/CloseIcon';
 
 const Logo = () => (
     <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3">
@@ -27,9 +28,10 @@ interface HeaderProps {
   unreadCount: number;
   onMarkAsRead: () => void;
   realtimeStatus: 'SUBSCRIBED' | 'TIMED_OUT' | 'CHANNEL_ERROR' | 'CONNECTING';
+  onDeleteActivity: (activityId: string) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser, activityItems, unreadCount, onMarkAsRead, realtimeStatus }) => {
+const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser, activityItems, unreadCount, onMarkAsRead, realtimeStatus, onDeleteActivity }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -90,7 +92,13 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser,
                 >
                     <BellIcon className={`h-6 w-6 transition-colors ${currentStatusStyle?.textClass || 'text-slate-500 dark:text-slate-400'}`} />
                     {unreadCount > 0 && (
-                        <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-800" />
+                        unreadCount > 1 ? (
+                            <span className="absolute top-1 right-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-800">
+                                {unreadCount > 9 ? '9+' : unreadCount}
+                            </span>
+                        ) : (
+                            <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-800" />
+                        )
                     )}
                 </button>
 
@@ -103,16 +111,29 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser,
                             {activityItems.length > 0 ? (
                                 <ul className="divide-y divide-slate-100 dark:divide-slate-700">
                                     {activityItems.map(({ key, expense, type, timestamp }) => (
-                                        <li key={key} className="p-4">
-                                            <p className="text-sm text-slate-700 dark:text-slate-200">
-                                                <span className={`font-bold ${expense.user === User.Sophie ? 'text-rose-500' : 'text-sky-500'}`}>{expense.user}</span>
-                                                { type === 'add' ? ` a ajouté ` : type === 'update' ? ` a mis à jour ` : ' a supprimé ' }
-                                                <span className="font-semibold text-slate-800 dark:text-slate-100">{expense.description || 'une dépense'}</span>
-                                                {typeof expense.amount === 'number' && ` (${expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`}
-                                            </p>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                                {new Date(timestamp).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                            </p>
+                                        <li key={key} className="flex items-center justify-between p-4 gap-2">
+                                            <div className="flex-grow min-w-0">
+                                                <p className="text-sm text-slate-700 dark:text-slate-200">
+                                                    <span className={`font-bold ${expense.user === User.Sophie ? 'text-rose-500' : 'text-sky-500'}`}>{expense.user}</span>
+                                                    { type === 'add' ? ` a ajouté ` : type === 'update' ? ` a mis à jour ` : ' a supprimé ' }
+                                                    <span className="font-semibold text-slate-800 dark:text-slate-100">{expense.description || 'une dépense'}</span>
+                                                    {typeof expense.amount === 'number' && ` (${expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`}
+                                                </p>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                                    {new Date(timestamp).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onDeleteActivity(key);
+                                                }}
+                                                className="flex-shrink-0 p-1.5 rounded-full text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                                                aria-label="Supprimer cette activité"
+                                                title="Supprimer"
+                                            >
+                                                <CloseIcon />
+                                            </button>
                                         </li>
                                     ))}
                                 </ul>

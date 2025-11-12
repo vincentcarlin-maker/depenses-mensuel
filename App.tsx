@@ -601,6 +601,10 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     setLastBellCheck(new Date().toISOString());
   };
 
+  const deleteActivity = useCallback((activityId: string) => {
+    setActivities(prevActivities => prevActivities.filter(act => act.id !== activityId));
+  }, [setActivities]);
+
   const isConnected = realtimeStatus === 'SUBSCRIBED';
 
   if (isLoading) {
@@ -631,6 +635,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
           unreadCount={unreadCount}
           onMarkAsRead={markActivitiesAsRead}
           realtimeStatus={realtimeStatus}
+          onDeleteActivity={deleteActivity}
         />
 
         <main className="container mx-auto p-4 md:p-8">
