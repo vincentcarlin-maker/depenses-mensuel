@@ -393,19 +393,11 @@ const MainApp: React.FC<{
 
     if (undoableAction) {
         clearTimeout(undoableAction.timerId);
+        setUndoableAction(null);
     }
 
-    if (user === User.Vincent) {
-        setExpenses(prev => prev.filter(e => e.id !== id));
-        const timerId = window.setTimeout(() => {
-            _performDelete(id, expenseToDelete);
-            setUndoableAction(null);
-        }, 7000);
-        setUndoableAction({ type: 'delete', expense: expenseToDelete, timerId });
-    } else {
-        setExpenses(prev => prev.filter(e => e.id !== id));
-        _performDelete(id, expenseToDelete);
-    }
+    setExpenses(prev => prev.filter(e => e.id !== id));
+    _performDelete(id, expenseToDelete);
   };
   
   const updateExpense = async (updatedExpense: Expense) => {
@@ -428,23 +420,12 @@ const MainApp: React.FC<{
 
     const { id, created_at, ...updatePayload } = updatedExpense;
     
-    if (user === User.Vincent) {
-        const timerId = window.setTimeout(() => {
-            setUndoableAction(null);
-        }, 7000);
-        setUndoableAction({ type: 'update', expense: originalExpense, timerId });
-    }
-    
     const { error } = await supabase.from('expenses').update(updatePayload).eq('id', id);
       
     if (error) {
       console.error('Error updating expense:', error.message || error);
       setToastInfo({ message: "Erreur lors de la mise à jour.", type: 'error' });
       setExpenses(prev => prev.map(e => e.id === originalExpense.id ? originalExpense : e));
-      if (undoableAction) {
-          clearTimeout(undoableAction.timerId);
-          setUndoableAction(null);
-      }
     }
   };
 
