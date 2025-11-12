@@ -19,7 +19,6 @@ import Login from './components/Login';
 import PullToRefresh from './components/PullToRefresh';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import UndoToast from './components/UndoToast';
-import Papa from 'papaparse';
 import { DEFAULT_CATEGORIES } from './types';
 
 type Activity = {
@@ -592,7 +591,7 @@ const MainApp: React.FC<{
           setCurrentMonth(11);
           setCurrentYear(prev => prev - 1);
         } else {
-          setCurrentMonth(prev => prev - 1);
+          setCurrentMonth(prev => prev + 1);
         }
       }
   };
@@ -677,46 +676,6 @@ const MainApp: React.FC<{
         setToastInfo({ message: 'Vous devez conserver au moins une catégorie.', type: 'error' });
     }
   };
-
-  const exportExpensesToCSV = () => {
-    const csvData = Papa.unparse(expenses.map(e => ({
-        Date: e.date,
-        Description: e.description,
-        Montant: e.amount,
-        Categorie: e.category,
-        Utilisateur: e.user,
-    })));
-
-    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    if (link.download !== undefined) {
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `depenses_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setToastInfo({ message: "Exportation réussie !", type: 'info' });
-    }
-  };
-
-  const deleteAllExpenses = async () => {
-    const allIds = expenses.map(e => e.id);
-    const originalExpenses = [...expenses];
-    setExpenses([]); // Optimistic update
-
-    const { error } = await supabase.from('expenses').delete().in('id', allIds);
-
-    if (error) {
-        setExpenses(originalExpenses);
-        setToastInfo({ message: "Erreur lors de la suppression des dépenses.", type: 'error' });
-        console.error("Error deleting all expenses:", error);
-    } else {
-        setToastInfo({ message: "Toutes les dépenses ont été supprimées.", type: 'info' });
-    }
-  };
-
 
   const isConnected = realtimeStatus === 'SUBSCRIBED';
 
@@ -895,8 +854,6 @@ const MainApp: React.FC<{
           onAddProfile={onAddProfile}
           onUpdateProfilePassword={onUpdateProfilePassword}
           onDeleteProfile={onDeleteProfile}
-          onExportExpenses={exportExpensesToCSV}
-          onDeleteAllExpenses={deleteAllExpenses}
       />
       <OfflineIndicator />
     </div>

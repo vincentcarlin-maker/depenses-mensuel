@@ -4,9 +4,7 @@ import { type Profile } from '../hooks/useAuth';
 import TrashIcon from './icons/TrashIcon';
 import EditIcon from './icons/EditIcon';
 import EyeIcon from './icons/EyeIcon';
-import EyeSlashIcon from './icons/EyeSlashIcon';
 import ConfirmationModal from './ConfirmationModal';
-import CloseIcon from './icons/CloseIcon';
 
 // --- Section Header Component ---
 const SectionHeader: React.FC<{ title: string; description: string }> = ({ title, description }) => (
@@ -198,49 +196,6 @@ const CategoryManagement: React.FC<{
     );
 };
 
-// --- Data Management ---
-const DataManagement: React.FC<{
-    onExportExpenses: () => void;
-    onDeleteAllExpenses: () => Promise<void>;
-}> = ({ onExportExpenses, onDeleteAllExpenses }) => {
-    const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
-    
-    const handleDelete = async () => {
-        await onDeleteAllExpenses();
-        setIsConfirmDeleteOpen(false);
-    };
-
-    return (
-        <div className="space-y-6">
-             <SectionHeader title="Zone de Danger" description="Actions irréversibles sur les données de l'application." />
-             <div className="p-4 border border-red-300 dark:border-red-500/50 rounded-lg space-y-4">
-                 <div className="flex justify-between items-center">
-                    <div>
-                        <p className="font-semibold text-slate-700 dark:text-slate-200">Exporter toutes les données</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Télécharger un fichier CSV de toutes les dépenses.</p>
-                    </div>
-                    <button onClick={onExportExpenses} className="btn-secondary">Exporter</button>
-                 </div>
-                 <div className="flex justify-between items-center">
-                    <div>
-                        <p className="font-semibold text-red-600 dark:text-red-400">Réinitialiser les dépenses</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Supprimer définitivement toutes les dépenses.</p>
-                    </div>
-                    <button onClick={() => setIsConfirmDeleteOpen(true)} className="btn-danger">Supprimer</button>
-                 </div>
-             </div>
-             <ConfirmationModal
-                isOpen={isConfirmDeleteOpen}
-                onClose={() => setIsConfirmDeleteOpen(false)}
-                onConfirm={handleDelete}
-                title="Supprimer TOUTES les dépenses ?"
-                message="Cette action est irréversible et supprimera l'intégralité de votre historique de dépenses. Êtes-vous absolument sûr ?"
-             />
-        </div>
-    )
-};
-
-
 // --- Main Tab Component ---
 interface ManagementTabProps {
     profiles: Profile[];
@@ -252,8 +207,6 @@ interface ManagementTabProps {
     onAddCategory: (name: string) => boolean;
     onUpdateCategory: (oldName: string, newName: string) => boolean;
     onDeleteCategory: (name: string) => void;
-    onExportExpenses: () => void;
-    onDeleteAllExpenses: () => Promise<void>;
 }
 
 const ManagementTab: React.FC<ManagementTabProps> = (props) => {
@@ -324,7 +277,6 @@ const ManagementTab: React.FC<ManagementTabProps> = (props) => {
             `}</style>
             <UserManagement {...props} />
             <CategoryManagement {...props} />
-            <DataManagement {...props} />
         </div>
     );
 };

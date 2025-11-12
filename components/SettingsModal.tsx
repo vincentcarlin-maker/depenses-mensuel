@@ -27,8 +27,6 @@ interface SettingsModalProps {
   onAddProfile: (profile: Profile) => boolean;
   onUpdateProfilePassword: (username: string, newPassword: string) => boolean;
   onDeleteProfile: (username: string) => boolean;
-  onExportExpenses: () => void;
-  onDeleteAllExpenses: () => Promise<void>;
 }
 
 const SettingsMenuItem: React.FC<{
@@ -189,8 +187,6 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         onAddCategory={props.onAddCategory}
                         onUpdateCategory={props.onUpdateCategory}
                         onDeleteCategory={props.onDeleteCategory}
-                        onExportExpenses={props.onExportExpenses}
-                        onDeleteAllExpenses={props.onDeleteAllExpenses}
                     />
                 </div>
             )}
