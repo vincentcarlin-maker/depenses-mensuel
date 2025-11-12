@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { type Reminder, Category, User } from '../types';
+import { type Reminder, type Category, User } from '../types';
 import TrashIcon from './icons/TrashIcon';
 import EditIcon from './icons/EditIcon';
 import ConfirmationModal from './ConfirmationModal';
@@ -10,12 +10,16 @@ interface RemindersTabProps {
   onAddReminder: (reminder: Omit<Reminder, 'id' | 'created_at'>) => Promise<void>;
   onUpdateReminder: (reminder: Reminder) => Promise<void>;
   onDeleteReminder: (id: string) => Promise<void>;
+  categories: Category[];
 }
 
-const ReminderForm: React.FC<{ onAddReminder: (reminder: Omit<Reminder, 'id' | 'created_at'>) => Promise<void> }> = ({ onAddReminder }) => {
+const ReminderForm: React.FC<{ 
+    onAddReminder: (reminder: Omit<Reminder, 'id' | 'created_at'>) => Promise<void>;
+    categories: Category[];
+}> = ({ onAddReminder, categories }) => {
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
-    const [category, setCategory] = useState<Category>(Category.Mandatory);
+    const [category, setCategory] = useState<Category>(categories.includes("Dépenses obligatoires") ? "Dépenses obligatoires" : categories[0]);
     const [user, setUser] = useState<User>(User.Sophie);
     const [dayOfMonth, setDayOfMonth] = useState('');
     const [error, setError] = useState('');
@@ -50,7 +54,7 @@ const ReminderForm: React.FC<{ onAddReminder: (reminder: Omit<Reminder, 'id' | '
         setDescription('');
         setAmount('');
         setDayOfMonth('');
-        setCategory(Category.Mandatory);
+        setCategory(categories.includes("Dépenses obligatoires") ? "Dépenses obligatoires" : categories[0]);
         setError('');
     };
 
@@ -74,7 +78,7 @@ const ReminderForm: React.FC<{ onAddReminder: (reminder: Omit<Reminder, 'id' | '
                 <div>
                     <label htmlFor="reminder-category" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Catégorie</label>
                     <select id="reminder-category" value={category} onChange={(e) => setCategory(e.target.value as Category)} className="mt-1 block w-full pl-3 pr-10 py-2 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm rounded-md">
-                        {Object.values(Category).map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                        {categories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
                 </div>
                 <div>
@@ -168,7 +172,6 @@ const ReminderList: React.FC<{
             ) : (
                 <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
                     {reminders
-                        // FIX: Filter out malformed reminders to prevent crashes when accessing properties like 'amount'.
                         .filter(reminder => reminder && typeof reminder.amount === 'number')
                         .map(reminder => (
                             <ReminderItem
@@ -186,7 +189,7 @@ const ReminderList: React.FC<{
 };
 
 
-const RemindersTab: React.FC<RemindersTabProps> = ({ reminders, onAddReminder, onUpdateReminder, onDeleteReminder }) => {
+const RemindersTab: React.FC<RemindersTabProps> = ({ reminders, onAddReminder, onUpdateReminder, onDeleteReminder, categories }) => {
     const [reminderToEdit, setReminderToEdit] = useState<Reminder | null>(null);
 
     const handleUpdateReminder = async (updatedReminder: Reminder) => {
@@ -198,7 +201,7 @@ const RemindersTab: React.FC<RemindersTabProps> = ({ reminders, onAddReminder, o
         <>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="space-y-8">
-                    <ReminderForm onAddReminder={onAddReminder} />
+                    <ReminderForm onAddReminder={onAddReminder} categories={categories} />
                 </div>
                 <div className="space-y-8">
                     <ReminderList 
@@ -214,6 +217,7 @@ const RemindersTab: React.FC<RemindersTabProps> = ({ reminders, onAddReminder, o
                     reminder={reminderToEdit}
                     onUpdateReminder={handleUpdateReminder}
                     onClose={() => setReminderToEdit(null)}
+                    categories={categories}
                 />
             )}
         </>

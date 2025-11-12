@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { type Expense, Category, User } from '../types';
+import { type Expense, type Category, User } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import TrashIcon from './icons/TrashIcon';
 
@@ -8,6 +8,7 @@ interface EditExpenseModalProps {
     onUpdateExpense: (expense: Expense) => void;
     onDeleteExpense: (id: string) => void;
     onClose: () => void;
+    categories: Category[];
 }
 
 const toDatetimeLocal = (isoString: string): string => {
@@ -22,7 +23,7 @@ const toDatetimeLocal = (isoString: string): string => {
 
 const CAR_OPTIONS = ["Peugeot 5008", "Peugeot 207"];
 
-const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateExpense, onDeleteExpense, onClose }) => {
+const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateExpense, onDeleteExpense, onClose, categories }) => {
     const [description, setDescription] = useState(expense.description);
     const [amount, setAmount] = useState(Math.abs(expense.amount).toString());
     const [category, setCategory] = useState<Category>(expense.category);
@@ -31,7 +32,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
     const [transactionType, setTransactionType] = useState<'expense' | 'refund'>(expense.amount >= 0 ? 'expense' : 'refund');
     const [error, setError] = useState('');
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-    const nonFuelDescriptionRef = useRef(expense.category !== Category.Fuel ? expense.description : '');
+    const nonFuelDescriptionRef = useRef(expense.category !== "Carburant" ? expense.description : '');
 
     useEffect(() => {
         const handleEsc = (event: KeyboardEvent) => {
@@ -46,9 +47,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
     }, [onClose]);
 
     useEffect(() => {
-        // When category changes to Fuel, store the current description and set a car.
-        // When switching away, restore the previous description.
-        if (category === Category.Fuel) {
+        if (category === "Carburant") {
             if (!CAR_OPTIONS.includes(description)) {
                 nonFuelDescriptionRef.current = description;
                 setDescription(CAR_OPTIONS[0]);
@@ -74,7 +73,6 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
             return;
         }
 
-        // FIX: The variable `finalAmount` was being used in its own declaration. It should use `parsedAmount`.
         const finalAmount = transactionType === 'expense' ? parsedAmount : -parsedAmount;
         
         const finalDescription = description.trim();
@@ -128,7 +126,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                         <div>
                           <label htmlFor="edit-category" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Catégorie</label>
                           <select id="edit-category" value={category} onChange={(e) => setCategory(e.target.value as Category)} className={`${baseInputStyle} pl-3 pr-10`}>
-                            {Object.values(Category).map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
+                            {categories.map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
                           </select>
                         </div>
                         <div>
@@ -143,9 +141,9 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                         </div>
                         <div>
                           <label htmlFor="edit-description" className="block text-sm font-medium text-slate-600 dark:text-slate-300">
-                            {category === Category.Fuel ? 'Véhicule' : 'Description'}
+                            {category === "Carburant" ? 'Véhicule' : 'Description'}
                           </label>
-                          {category === Category.Fuel ? (
+                          {category === "Carburant" ? (
                             <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1 mt-1">
                                 <span
                                   className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out

@@ -3,15 +3,20 @@ export enum User {
   Vincent = "Vincent",
 }
 
-export enum Category {
-  Mandatory = "Dépenses obligatoires",
-  Fuel = "Carburant",
-  Heating = "Chauffage",
-  Groceries = "Courses",
-  Restaurant = "Restaurant",
-  CarRepairs = "Réparation voitures",
-  Misc = "Divers",
-}
+// Les catégories sont maintenant dynamiques.
+// Ceci est juste un type pour la clarté, la vraie liste est gérée dans l'état de l'application.
+export type Category = string;
+
+// Liste initiale des catégories lors du premier chargement de l'application.
+export const DEFAULT_CATEGORIES: Category[] = [
+  "Dépenses obligatoires",
+  "Carburant",
+  "Chauffage",
+  "Courses",
+  "Restaurant",
+  "Réparation voitures",
+  "Divers",
+];
 
 export interface Expense {
   id: string; // Correspond à l'UUID de Supabase

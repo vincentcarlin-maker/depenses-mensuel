@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase/client';
-import { type Expense, User, type Reminder } from './types';
+import { type Expense, User, type Reminder, type Category } from './types';
 import Header from './components/Header';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseSummary from './components/ExpenseSummary';
@@ -14,11 +14,13 @@ import ReminderAlerts from './components/ReminderAlerts';
 import SettingsModal from './components/SettingsModal';
 import { useTheme } from './hooks/useTheme';
 import OfflineIndicator from './components/OfflineIndicator';
-import { useAuth } from './hooks/useAuth';
+import { useAuth, type Profile } from './hooks/useAuth';
 import Login from './components/Login';
 import PullToRefresh from './components/PullToRefresh';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import UndoToast from './components/UndoToast';
+import Papa from 'papaparse';
+import { DEFAULT_CATEGORIES } from './types';
 
 type Activity = {
     id: string; // unique id for the activity
@@ -33,7 +35,14 @@ type UndoableAction = {
     timerId: number;
 };
 
-const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogout }) => {
+const MainApp: React.FC<{ 
+    user: User, 
+    onLogout: () => void,
+    profiles: Profile[],
+    onAddProfile: (profile: Profile) => boolean,
+    onUpdateProfilePassword: (username: string, newPassword: string) => boolean,
+    onDeleteProfile: (username: string) => boolean
+}> = ({ user, onLogout, profiles, onAddProfile, onUpdateProfilePassword, onDeleteProfile }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,10 +67,10 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   const [lastBellCheck, setLastBellCheck] = useLocalStorage('lastBellCheck', new Date().toISOString());
   const [activities, setActivities] = useLocalStorage<Activity[]>('activityLog', []);
   const [lastSyncTimestamp, setLastSyncTimestamp] = useLocalStorage('lastSyncTimestamp', '1970-01-01T00:00:00.000Z');
+  
+  // Dynamic categories
+  const [categories, setCategories] = useLocalStorage<Category[]>('expenseCategories', DEFAULT_CATEGORIES);
 
-  // FIX: Create a ref to hold the latest sync timestamp. This prevents an infinite
-  // loop where the realtime subscription useEffect re-runs every time syncData
-  // updates the timestamp.
   const lastSyncTimestampRef = useRef(lastSyncTimestamp);
   useEffect(() => {
     lastSyncTimestampRef.current = lastSyncTimestamp;
@@ -99,20 +108,17 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     }, 3500); // Highlight duration
   }, []);
   
-  // FIX: Centralized activity management to prevent race conditions and duplicates.
   const mergeAndDedupeActivities = useCallback((existing: Activity[], toAdd: Activity[]): Activity[] => {
       const combined = [...toAdd, ...existing];
       const uniqueMap = new Map<string, Activity>();
 
       for (const act of combined) {
-          // De-duplicate 'add' and 'delete' events based on their type and the expense ID.
           if (act.type === 'add' || act.type === 'delete') {
               const key = `${act.type}-${act.expense.id}`;
               if (!uniqueMap.has(key)) {
                   uniqueMap.set(key, act);
               }
           } else {
-              // Assume 'update' events are unique and key them by their own activity ID.
               uniqueMap.set(act.id, act);
           }
       }
@@ -128,17 +134,13 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
 
     const [expensesResponse, remindersResponse] = await Promise.all([expensesPromise, remindersPromise]);
 
-    // Process Expenses
     if (expensesResponse.error) {
         console.error('Error fetching expenses:', expensesResponse.error.message);
         setToastInfo({ message: "Erreur lors de la récupération des dépenses.", type: 'error' });
     } else if (expensesResponse.data) {
         const fetchedExpenses = expensesResponse.data as Expense[];
 
-        // --- CATCH-UP LOGIC ---
-        // On initial load or refresh, check for missed additions from other users.
         if (shouldCatchUp) {
-            // FIX: Read from the ref to avoid dependency cycle
             const missedAdditions = fetchedExpenses.filter(expense =>
                 new Date(expense.created_at) > new Date(lastSyncTimestampRef.current) &&
                 expense.user !== user
@@ -158,7 +160,6 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
         setExpenses(fetchedExpenses);
     }
     
-    // Process Reminders
     if (remindersResponse.error) {
         console.error('Error fetching reminders:', remindersResponse.error.message);
         setToastInfo({ message: "Erreur lors de la récupération des rappels.", type: 'error' });
@@ -167,7 +168,6 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     }
     
     setLastSyncTimestamp(new Date().toISOString());
-      // FIX: Removed `lastSyncTimestamp` from dependencies to break the infinite loop.
   }, [user, setLastSyncTimestamp, setActivities, mergeAndDedupeActivities]);
 
   useEffect(() => {
@@ -182,7 +182,6 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
 
 
   useEffect(() => {
-    // Handlers for real-time events
     const handleExpenseInsert = (payload: any) => {
       const newExpense = payload.new as Expense;
       if (!newExpense?.id) return;
@@ -254,7 +253,6 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
             const expenseToDelete = prevExpenses.find(e => e.id === deletedPayload.id);
 
             if (!expenseToDelete) {
-                // If the expense is not found locally, just filter it out to stay in sync.
                 return prevExpenses.filter(expense => expense.id !== deletedPayload.id);
             }
 
@@ -306,7 +304,6 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
       });
     };
 
-    // Single channel for all real-time updates
     const allChangesChannel = supabase
       .channel('all-changes-channel')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'expenses' }, handleExpenseInsert)
@@ -318,18 +315,13 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
           case 'SUBSCRIBED':
             setRealtimeStatus('SUBSCRIBED');
             console.log('Real-time channel connected. Syncing data...');
-            // Sync data on successful connection/reconnection
             syncData(true);
             break;
           case 'CHANNEL_ERROR':
             setRealtimeStatus('CHANNEL_ERROR');
             console.error('Real-time channel error:', err);
-            // The user has confirmed their Supabase configuration.
-            // The toast notification for this error has been removed by request.
-            // The error is still logged to the console for debugging.
             break;
           case 'TIMED_OUT':
-            // This happens when the tab is in the background. Treat it as a reconnecting state, not a hard error.
             setRealtimeStatus('CONNECTING');
             console.warn('Real-time connection timed out. Attempting to reconnect...');
             break;
@@ -338,7 +330,6 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
         }
       });
       
-    // Cleanup on unmount
     return () => {
       supabase.removeChannel(allChangesChannel);
     };
@@ -392,7 +383,6 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
       if (error) {
         console.error('Error deleting expense:', error.message || error);
         setToastInfo({ message: "Erreur lors de la suppression.", type: 'error' });
-        // Revert optimistic deletion
         setExpenses(prev => [...prev, expenseToDelete].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         recentlyDeletedIds.current.delete(id);
       }
@@ -439,7 +429,6 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
 
     const { id, created_at, ...updatePayload } = updatedExpense;
     
-    // For Vincent, create an undoable action
     if (user === User.Vincent) {
         const timerId = window.setTimeout(() => {
             setUndoableAction(null);
@@ -596,7 +585,6 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
           setCurrentMonth(prev => prev + 1);
         }
       } else {
-        // Prevent navigating before October 2025
         if (currentYear === 2025 && currentMonth === 9) {
           return;
         }
@@ -656,11 +644,79 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
       setExpenses(prev => [...prev, undoableAction.expense].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
       highlightExpense(undoableAction.expense.id);
     } else if (undoableAction.type === 'update') {
-      updateExpense(undoableAction.expense); // This re-triggers the update with the original data
+      updateExpense(undoableAction.expense);
     }
 
     setUndoableAction(null);
-  }, [undoableAction]);
+  }, [undoableAction, highlightExpense, updateExpense]);
+
+  const addCategory = (name: string): boolean => {
+    const trimmedName = name.trim();
+    if (trimmedName && !categories.find(c => c.toLowerCase() === trimmedName.toLowerCase())) {
+        setCategories(prev => [...prev, trimmedName]);
+        return true;
+    }
+    return false;
+  };
+
+  const updateCategory = (oldName: string, newName: string): boolean => {
+    const trimmedNewName = newName.trim();
+    if (!trimmedNewName || oldName === trimmedNewName) return false;
+    if (categories.find(c => c.toLowerCase() === trimmedNewName.toLowerCase())) {
+        setToastInfo({ message: `La catégorie "${trimmedNewName}" existe déjà.`, type: 'error' });
+        return false;
+    }
+    setCategories(prev => prev.map(c => c === oldName ? trimmedNewName : c));
+    return true;
+  };
+
+  const deleteCategory = (name: string) => {
+    if (categories.length > 1) {
+        setCategories(prev => prev.filter(c => c !== name));
+    } else {
+        setToastInfo({ message: 'Vous devez conserver au moins une catégorie.', type: 'error' });
+    }
+  };
+
+  const exportExpensesToCSV = () => {
+    const csvData = Papa.unparse(expenses.map(e => ({
+        Date: e.date,
+        Description: e.description,
+        Montant: e.amount,
+        Categorie: e.category,
+        Utilisateur: e.user,
+    })));
+
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `depenses_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setToastInfo({ message: "Exportation réussie !", type: 'info' });
+    }
+  };
+
+  const deleteAllExpenses = async () => {
+    const allIds = expenses.map(e => e.id);
+    const originalExpenses = [...expenses];
+    setExpenses([]); // Optimistic update
+
+    const { error } = await supabase.from('expenses').delete().in('id', allIds);
+
+    if (error) {
+        setExpenses(originalExpenses);
+        setToastInfo({ message: "Erreur lors de la suppression des dépenses.", type: 'error' });
+        console.error("Error deleting all expenses:", error);
+    } else {
+        setToastInfo({ message: "Toutes les dépenses ont été supprimées.", type: 'info' });
+    }
+  };
+
 
   const isConnected = realtimeStatus === 'SUBSCRIBED';
 
@@ -749,6 +805,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
                     initialData={formInitialData}
                     loggedInUser={user}
                     disabled={!isConnected}
+                    categories={categories}
                   />
                   <ExpenseSummary 
                       allExpenses={expenses}
@@ -808,6 +865,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
           onUpdateExpense={updateExpense}
           onDeleteExpense={deleteExpense}
           onClose={() => setExpenseToEdit(null)}
+          categories={categories}
         />
       )}
       
@@ -828,6 +886,17 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
           onAddReminder={addReminder}
           onUpdateReminder={updateReminder}
           onDeleteReminder={deleteReminder}
+          categories={categories}
+          onAddCategory={addCategory}
+          onUpdateCategory={updateCategory}
+          onDeleteCategory={deleteCategory}
+          profiles={profiles}
+          loggedInUser={user}
+          onAddProfile={onAddProfile}
+          onUpdateProfilePassword={onUpdateProfilePassword}
+          onDeleteProfile={onDeleteProfile}
+          onExportExpenses={exportExpensesToCSV}
+          onDeleteAllExpenses={deleteAllExpenses}
       />
       <OfflineIndicator />
     </div>
@@ -836,9 +905,8 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
 
 
 const App: React.FC = () => {
-  // Initialize theme
   useTheme();
-  const { user, login, logout, isLoading } = useAuth();
+  const { user, login, logout, isLoading, profiles, addProfile, updateProfilePassword, deleteProfile } = useAuth();
   
   if (isLoading) {
     return (
@@ -854,7 +922,16 @@ const App: React.FC = () => {
     return <Login onLogin={login} />;
   }
 
-  return <MainApp user={user} onLogout={logout} />;
+  return (
+    <MainApp 
+        user={user} 
+        onLogout={logout} 
+        profiles={profiles}
+        onAddProfile={addProfile}
+        onUpdateProfilePassword={updateProfilePassword}
+        onDeleteProfile={deleteProfile}
+    />
+  );
 };
 
 export default App;

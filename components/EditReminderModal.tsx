@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { type Reminder, Category, User } from '../types';
+import { type Reminder, type Category, User } from '../types';
 
 interface EditReminderModalProps {
     reminder: Reminder;
     onUpdateReminder: (reminder: Reminder) => void;
     onClose: () => void;
+    categories: Category[];
 }
 
-const EditReminderModal: React.FC<EditReminderModalProps> = ({ reminder, onUpdateReminder, onClose }) => {
+const EditReminderModal: React.FC<EditReminderModalProps> = ({ reminder, onUpdateReminder, onClose, categories }) => {
     const [description, setDescription] = useState(reminder.description);
     const [amount, setAmount] = useState(reminder.amount.toString());
     const [category, setCategory] = useState<Category>(reminder.category);
@@ -85,7 +86,7 @@ const EditReminderModal: React.FC<EditReminderModalProps> = ({ reminder, onUpdat
                     <div>
                       <label htmlFor="edit-reminder-category" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Catégorie</label>
                       <select id="edit-reminder-category" value={category} onChange={(e) => setCategory(e.target.value as Category)} className="mt-1 block w-full pl-3 pr-10 py-2 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm rounded-md">
-                        {Object.values(Category).map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
+                        {categories.map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
                       </select>
                     </div>
                      <div>

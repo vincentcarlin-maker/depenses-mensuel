@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { type Reminder } from '../types';
+import { type Reminder, type Category, User } from '../types';
 import RemindersTab from './RemindersTab';
 import CloseIcon from './icons/CloseIcon';
 import ThemeToggle from './ThemeToggle';
@@ -7,15 +7,28 @@ import ArrowLeftIcon from './icons/ArrowLeftIcon';
 import ChevronRightIcon from './icons/ChevronRightIcon';
 import PaintBrushIcon from './icons/PaintBrushIcon';
 import BellIcon from './icons/BellIcon';
+import { type Profile } from '../hooks/useAuth';
+import ManagementTab from './ManagementTab';
+import WrenchScrewdriverIcon from './icons/WrenchScrewdriverIcon';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   reminders: Reminder[];
-  // FIX: The keys to be omitted in the `Omit` type should be a union, not separate arguments.
   onAddReminder: (reminder: Omit<Reminder, 'id' | 'created_at'>) => Promise<void>;
   onUpdateReminder: (reminder: Reminder) => Promise<void>;
   onDeleteReminder: (id: string) => Promise<void>;
+  categories: Category[];
+  onAddCategory: (name: string) => boolean;
+  onUpdateCategory: (oldName: string, newName: string) => boolean;
+  onDeleteCategory: (name: string) => void;
+  profiles: Profile[];
+  loggedInUser: User;
+  onAddProfile: (profile: Profile) => boolean;
+  onUpdateProfilePassword: (username: string, newPassword: string) => boolean;
+  onDeleteProfile: (username: string) => boolean;
+  onExportExpenses: () => void;
+  onDeleteAllExpenses: () => Promise<void>;
 }
 
 const SettingsMenuItem: React.FC<{
@@ -42,15 +55,17 @@ const SettingsMenuItem: React.FC<{
 );
 
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ 
+const SettingsModal: React.FC<SettingsModalProps> = (props) => {
+  const { 
     isOpen, 
     onClose, 
     reminders, 
     onAddReminder, 
     onUpdateReminder, 
-    onDeleteReminder 
-}) => {
-  const [activeView, setActiveView] = useState<'main' | 'appearance' | 'reminders'>('main');
+    onDeleteReminder,
+    categories,
+  } = props;
+  const [activeView, setActiveView] = useState<'main' | 'appearance' | 'reminders' | 'management'>('main');
 
   useEffect(() => {
     if (isOpen) {
@@ -90,6 +105,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       main: 'Réglages',
       appearance: 'Apparence',
       reminders: 'Gestion des rappels',
+      management: 'Gestion de l\'application'
   }
 
   return (
@@ -136,6 +152,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         description="Gérer les dépenses mensuelles récurrentes"
                         onClick={() => setActiveView('reminders')}
                     />
+                    <SettingsMenuItem
+                        icon={<WrenchScrewdriverIcon />}
+                        title="Gestion"
+                        description="Utilisateurs, catégories et données"
+                        onClick={() => setActiveView('management')}
+                    />
                  </div>
             )}
             {activeView === 'appearance' && (
@@ -151,6 +173,24 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         onAddReminder={onAddReminder}
                         onUpdateReminder={onUpdateReminder}
                         onDeleteReminder={onDeleteReminder}
+                        categories={categories}
+                    />
+                </div>
+            )}
+            {activeView === 'management' && (
+                <div className="animate-fade-in">
+                    <ManagementTab 
+                        profiles={props.profiles}
+                        loggedInUser={props.loggedInUser}
+                        onAddProfile={props.onAddProfile}
+                        onUpdateProfilePassword={props.onUpdateProfilePassword}
+                        onDeleteProfile={props.onDeleteProfile}
+                        categories={props.categories}
+                        onAddCategory={props.onAddCategory}
+                        onUpdateCategory={props.onUpdateCategory}
+                        onDeleteCategory={props.onDeleteCategory}
+                        onExportExpenses={props.onExportExpenses}
+                        onDeleteAllExpenses={props.onDeleteAllExpenses}
                     />
                 </div>
             )}

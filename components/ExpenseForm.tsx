@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { type Expense, Category, User } from '../types';
+import { type Expense, type Category, User } from '../types';
 
 interface ExpenseFormProps {
   onAddExpense: (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => void;
@@ -7,27 +7,25 @@ interface ExpenseFormProps {
   initialData?: Omit<Expense, 'id' | 'date' | 'created_at'> | null;
   loggedInUser: User;
   disabled?: boolean;
+  categories: Category[];
 }
 
 const CAR_OPTIONS = ["Peugeot 5008", "Peugeot 207"];
 
-const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initialData, loggedInUser, disabled = false }) => {
+const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initialData, loggedInUser, disabled = false, categories }) => {
   const [description, setDescription] = useState(initialData?.description || '');
   const [amount, setAmount] = useState(initialData ? String(Math.abs(initialData.amount)) : '');
-  const [category, setCategory] = useState<Category>(initialData?.category || Category.Groceries);
+  const [category, setCategory] = useState<Category>(initialData?.category || categories[0] || '');
   const [user, setUser] = useState<User>(initialData?.user || loggedInUser);
   const [transactionType, setTransactionType] = useState<'expense' | 'refund'>(initialData && initialData.amount < 0 ? 'refund' : 'expense');
   const [error, setError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const amountInputRef = useRef<HTMLInputElement>(null);
-  const nonFuelDescriptionRef = useRef(initialData?.category !== Category.Fuel ? (initialData?.description || '') : '');
+  const nonFuelDescriptionRef = useRef(initialData?.category !== "Carburant" ? (initialData?.description || '') : '');
 
   const uniqueDescriptions = useMemo(() => {
     const tagRegex = /(#\w+)/g;
     const allDescriptions = expenses.map(e => e.description.replace(tagRegex, '').trim());
-    // FIX: Explicitly typed the Set to `Set<string>` to resolve an issue where
-    // TypeScript could not infer the type of the array elements after spreading
-    // the Set, which caused a compile error.
     return [...new Set<string>(allDescriptions)].filter(d => d.length > 0);
   }, [expenses]);
 
@@ -39,9 +37,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   }, []); // Run only on mount, since we are keying the component
 
   useEffect(() => {
-    // When category changes to Fuel, store the current description and set a car.
-    // When switching away, restore the previous description.
-    if (category === Category.Fuel) {
+    if (category === "Carburant") {
       if (!CAR_OPTIONS.includes(description)) {
         nonFuelDescriptionRef.current = description;
         setDescription(CAR_OPTIONS[0]);
@@ -101,12 +97,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
       user,
     });
     
-    // Clear form only on normal submission, not on pre-filled submission
-    // because the parent remounts the component anyway via the key prop.
     if (!initialData) {
-        setDescription(category === Category.Fuel ? CAR_OPTIONS[0] : '');
+        setDescription(category === "Carburant" ? CAR_OPTIONS[0] : '');
         setAmount('');
-        setCategory(Category.Groceries);
+        setCategory(categories[0] || '');
         setTransactionType('expense');
         setError('');
         setSuggestions([]);
@@ -146,7 +140,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             onChange={(e) => setCategory(e.target.value as Category)}
             className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent sm:text-sm rounded-lg"
           >
-            {Object.values(Category).map((cat) => (
+            {categories.map((cat) => (
               <option key={cat} value={cat}>
                 {cat}
               </option>
@@ -155,9 +149,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         </div>
         <div>
           <label htmlFor="description" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
-            {category === Category.Fuel ? 'Véhicule' : 'Description'}
+            {category === "Carburant" ? 'Véhicule' : 'Description'}
           </label>
-          {category === Category.Fuel ? (
+          {category === "Carburant" ? (
             <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1">
                 <span
                   className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out

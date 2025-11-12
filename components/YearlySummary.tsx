@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import { type Expense, Category } from '../types';
+import { type Expense, type Category } from '../types';
 import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
 
-// --- Modern SVG Icons (copied from CategoryChart.tsx) ---
+// --- Modern SVG Icons ---
 const MandatoryIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -45,14 +45,14 @@ const MiscIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
   </svg>
 );
 
-const CategoryVisuals: { [key in Category]: { icon: React.FC<{ className?: string }>; color: string; pieColor: string } } = {
-  [Category.Mandatory]: { icon: MandatoryIcon, color: 'bg-slate-500', pieColor: '#64748b' },
-  [Category.Fuel]: { icon: FuelIcon, color: 'bg-orange-500', pieColor: '#f97316' },
-  [Category.Heating]: { icon: HeatingIcon, color: 'bg-red-500', pieColor: '#ef4444' },
-  [Category.Groceries]: { icon: GroceriesIcon, color: 'bg-green-500', pieColor: '#22c55e' },
-  [Category.Restaurant]: { icon: RestaurantIcon, color: 'bg-purple-500', pieColor: '#a855f7' },
-  [Category.CarRepairs]: { icon: CarRepairsIcon, color: 'bg-yellow-500', pieColor: '#eab308' },
-  [Category.Misc]: { icon: MiscIcon, color: 'bg-cyan-500', pieColor: '#06b6d4' },
+const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; pieColor: string } } = {
+    "Dépenses obligatoires": { icon: MandatoryIcon, color: 'bg-slate-500', pieColor: '#64748b' },
+    "Carburant": { icon: FuelIcon, color: 'bg-orange-500', pieColor: '#f97316' },
+    "Chauffage": { icon: HeatingIcon, color: 'bg-red-500', pieColor: '#ef4444' },
+    "Courses": { icon: GroceriesIcon, color: 'bg-green-500', pieColor: '#22c55e' },
+    "Restaurant": { icon: RestaurantIcon, color: 'bg-purple-500', pieColor: '#a855f7' },
+    "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-yellow-500', pieColor: '#eab308' },
+    "Divers": { icon: MiscIcon, color: 'bg-cyan-500', pieColor: '#06b6d4' },
 };
 
 
@@ -71,25 +71,20 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
       return { categoryData: [], totalYearlyExpense: 0, monthlyAverage: 0, numberOfMonthsWithData: 0 };
     }
 
-    const categoryTotals: { [key in Category]?: number } = {};
-    for (const category of Object.values(Category)) {
-        categoryTotals[category] = 0;
-    }
+    const categoryTotals = new Map<Category, number>();
 
     let total = 0;
     const monthsWithData = new Set<number>();
 
     for (const expense of expenses) {
-      if(categoryTotals[expense.category] !== undefined) {
-        categoryTotals[expense.category]! += expense.amount;
-      }
+      categoryTotals.set(expense.category, (categoryTotals.get(expense.category) || 0) + expense.amount);
       total += expense.amount;
       monthsWithData.add(new Date(expense.date).getMonth());
     }
 
     const numMonths = monthsWithData.size > 0 ? monthsWithData.size : 1;
     
-    const data = (Object.entries(categoryTotals) as [Category, number][])
+    const data = Array.from(categoryTotals.entries())
       .map(([name, total]) => ({
         name,
         total,
@@ -175,7 +170,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
         <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-200">Moyenne mensuelle par catégorie</h3>
         <div className="space-y-3">
             {categoryData.map((entry) => {
-                const visual = CategoryVisuals[entry.name as Category] || CategoryVisuals[Category.Misc];
+                const visual = CategoryVisuals[entry.name as Category] || CategoryVisuals["Divers"];
                 const IconComponent = visual.icon;
                 const percentage = maxAverage > 0 ? (entry.average / maxAverage) * 100 : 0;
                 

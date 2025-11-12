@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { type Expense, Category } from '../types';
+import { type Expense, type Category } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
 
@@ -58,15 +58,14 @@ const TrendDownIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
 );
 
 
-// Using a map for consistent visuals
-const CategoryVisuals: { [key in Category]: { icon: React.FC<{ className?: string }>; color: string; pieColor: string } } = {
-  [Category.Mandatory]: { icon: MandatoryIcon, color: 'bg-slate-500', pieColor: '#64748b' },
-  [Category.Fuel]: { icon: FuelIcon, color: 'bg-orange-500', pieColor: '#f97316' },
-  [Category.Heating]: { icon: HeatingIcon, color: 'bg-red-500', pieColor: '#ef4444' },
-  [Category.Groceries]: { icon: GroceriesIcon, color: 'bg-green-500', pieColor: '#22c55e' },
-  [Category.Restaurant]: { icon: RestaurantIcon, color: 'bg-purple-500', pieColor: '#a855f7' },
-  [Category.CarRepairs]: { icon: CarRepairsIcon, color: 'bg-yellow-500', pieColor: '#eab308' },
-  [Category.Misc]: { icon: MiscIcon, color: 'bg-cyan-500', pieColor: '#06b6d4' },
+const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; pieColor: string } } = {
+  "Dépenses obligatoires": { icon: MandatoryIcon, color: 'bg-slate-500', pieColor: '#64748b' },
+  "Carburant": { icon: FuelIcon, color: 'bg-orange-500', pieColor: '#f97316' },
+  "Chauffage": { icon: HeatingIcon, color: 'bg-red-500', pieColor: '#ef4444' },
+  "Courses": { icon: GroceriesIcon, color: 'bg-green-500', pieColor: '#22c55e' },
+  "Restaurant": { icon: RestaurantIcon, color: 'bg-purple-500', pieColor: '#a855f7' },
+  "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-yellow-500', pieColor: '#eab308' },
+  "Divers": { icon: MiscIcon, color: 'bg-cyan-500', pieColor: '#06b6d4' },
 };
 
 
@@ -89,7 +88,7 @@ const CustomLegend = (props: any) => {
     return (
       <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-4 list-none p-0">
         {payload.map((entry: any, index: number) => {
-          const visual = CategoryVisuals[entry.value as Category];
+          const visual = CategoryVisuals[entry.value as Category] || CategoryVisuals["Divers"];
           if (!visual) return null;
           const IconComponent = visual.icon;
           return (
@@ -135,30 +134,28 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
   }, [expenses, previousMonthExpenses]);
 
   const { chartData } = useMemo(() => {
-    const totals: { [key in Category]?: number } = {};
-    for (const category of Object.values(Category)) {
-        totals[category] = 0;
-    }
-
+    const totals = new Map<Category, number>();
+    
     for (const expense of expenses) {
-      if (totals[expense.category] !== undefined) {
-          totals[expense.category]! += expense.amount;
-      }
+      totals.set(expense.category, (totals.get(expense.category) || 0) + expense.amount);
     }
 
-    const categoryAverages: { [key in Category]?: number } = {};
-    for (const cat of Object.values(Category)) {
-        const totalForCat = last3MonthsExpenses
-            .filter(e => e.category === cat)
-            .reduce((sum, e) => sum + e.amount, 0);
-        categoryAverages[cat] = totalForCat / 3;
-    }
+    const categoryAverages = new Map<Category, number>();
+    const categoryTotalsLast3Months = new Map<Category, number>();
+    
+    last3MonthsExpenses.forEach(e => {
+        categoryTotalsLast3Months.set(e.category, (categoryTotalsLast3Months.get(e.category) || 0) + e.amount);
+    });
 
-    const data = (Object.entries(totals) as [Category, number][])
+    categoryTotalsLast3Months.forEach((total, cat) => {
+        categoryAverages.set(cat, total / 3);
+    });
+
+    const data = Array.from(totals.entries())
         .map(([name, value]) => ({
             name,
             value,
-            average: categoryAverages[name] || 0,
+            average: categoryAverages.get(name) || 0,
         }))
         .filter(d => d.value > 0)
         .sort((a,b) => b.value - a.value); 
@@ -248,7 +245,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
         <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-200">Détails par catégorie</h3>
         <div className="space-y-3">
           {chartData.map((entry) => {
-            const visual = CategoryVisuals[entry.name as Category] || CategoryVisuals[Category.Misc];
+            const visual = CategoryVisuals[entry.name as Category] || CategoryVisuals["Divers"];
             const IconComponent = visual.icon;
             const percentage = totalExpenses > 0 ? (entry.value / totalExpenses) * 100 : 0;
             return (

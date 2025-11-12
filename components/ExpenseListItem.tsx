@@ -1,5 +1,5 @@
 import React from 'react';
-import { type Expense, User, Category } from '../types';
+import { type Expense, User, type Category } from '../types';
 
 // --- Modern SVG Icons ---
 const MandatoryIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
@@ -43,20 +43,19 @@ const MiscIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
   </svg>
 );
 
-// Define visual properties for each category
-const CategoryVisuals: { [key in Category]: { icon: React.FC<{ className?: string }>; color: string } } = {
-  [Category.Mandatory]: { icon: MandatoryIcon, color: 'bg-slate-500' },
-  [Category.Fuel]: { icon: FuelIcon, color: 'bg-orange-500' },
-  [Category.Heating]: { icon: HeatingIcon, color: 'bg-red-500' },
-  [Category.Groceries]: { icon: GroceriesIcon, color: 'bg-green-500' },
-  [Category.Restaurant]: { icon: RestaurantIcon, color: 'bg-purple-500' },
-  [Category.CarRepairs]: { icon: CarRepairsIcon, color: 'bg-yellow-500' },
-  [Category.Misc]: { icon: MiscIcon, color: 'bg-cyan-500' },
+const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string } } = {
+  "Dépenses obligatoires": { icon: MandatoryIcon, color: 'bg-slate-500' },
+  "Carburant": { icon: FuelIcon, color: 'bg-orange-500' },
+  "Chauffage": { icon: HeatingIcon, color: 'bg-red-500' },
+  "Courses": { icon: GroceriesIcon, color: 'bg-green-500' },
+  "Restaurant": { icon: RestaurantIcon, color: 'bg-purple-500' },
+  "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-yellow-500' },
+  "Divers": { icon: MiscIcon, color: 'bg-cyan-500' },
 };
 
 
 const ExpenseIcon: React.FC<{ category: Category }> = ({ category }) => {
-    const visual = CategoryVisuals[category] || CategoryVisuals[Category.Misc];
+    const visual = CategoryVisuals[category] || CategoryVisuals["Divers"];
     const IconComponent = visual.icon;
     return (
         <div className={`w-10 h-10 flex items-center justify-center rounded-full ${visual.color}`}>
