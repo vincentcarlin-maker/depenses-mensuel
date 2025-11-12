@@ -18,12 +18,19 @@ import { useAuth } from './hooks/useAuth';
 import Login from './components/Login';
 import PullToRefresh from './components/PullToRefresh';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import UndoToast from './components/UndoToast';
 
 type Activity = {
     id: string; // unique id for the activity
     type: 'add' | 'update' | 'delete';
     expense: Partial<Expense> & { id: string, user: User, date: string };
     timestamp: string;
+};
+
+type UndoableAction = {
+    type: 'delete' | 'update';
+    expense: Expense;
+    timerId: number;
 };
 
 const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogout }) => {
@@ -42,6 +49,7 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [highlightedExpenseIds, setHighlightedExpenseIds] = useState<Set<string>>(new Set());
   const [realtimeStatus, setRealtimeStatus] = useState<'SUBSCRIBED' | 'TIMED_OUT' | 'CHANNEL_ERROR' | 'CONNECTING'>('CONNECTING');
+  const [undoableAction, setUndoableAction] = useState<UndoableAction | null>(null);
   const recentlyAddedIds = useRef(new Set<string>());
   const recentlyUpdatedIds = useRef(new Set<string>());
   const recentlyDeletedIds = useRef(new Set<string>());
@@ -372,31 +380,53 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
       setToastInfo({ message: 'Dépense ajoutée avec succès !', type: 'info' });
     }
   };
+  
+  const _performDelete = async (id: string, expenseToDelete: Expense) => {
+      recentlyDeletedIds.current.add(id);
+      setTimeout(() => {
+          recentlyDeletedIds.current.delete(id);
+      }, 5000);
+
+      const { error } = await supabase.from('expenses').delete().eq('id', id);
+      
+      if (error) {
+        console.error('Error deleting expense:', error.message || error);
+        setToastInfo({ message: "Erreur lors de la suppression.", type: 'error' });
+        // Revert optimistic deletion
+        setExpenses(prev => [...prev, expenseToDelete].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        recentlyDeletedIds.current.delete(id);
+      }
+  };
 
   const deleteExpense = async (id: string) => {
     const expenseToDelete = expenses.find(e => e.id === id);
     if (!expenseToDelete) return;
 
-    recentlyDeletedIds.current.add(id);
-    setTimeout(() => {
-        recentlyDeletedIds.current.delete(id);
-    }, 5000);
+    if (undoableAction) {
+        clearTimeout(undoableAction.timerId);
+    }
 
-    setExpenses(prev => prev.filter(e => e.id !== id));
-
-    const { error } = await supabase.from('expenses').delete().eq('id', id);
-    
-    if (error) {
-      console.error('Error deleting expense:', error.message || error);
-      setToastInfo({ message: "Erreur lors de la suppression.", type: 'error' });
-      setExpenses(prev => [...prev, expenseToDelete]);
-      recentlyDeletedIds.current.delete(id);
+    if (user === User.Vincent) {
+        setExpenses(prev => prev.filter(e => e.id !== id));
+        const timerId = window.setTimeout(() => {
+            _performDelete(id, expenseToDelete);
+            setUndoableAction(null);
+        }, 7000);
+        setUndoableAction({ type: 'delete', expense: expenseToDelete, timerId });
+    } else {
+        setExpenses(prev => prev.filter(e => e.id !== id));
+        _performDelete(id, expenseToDelete);
     }
   };
   
   const updateExpense = async (updatedExpense: Expense) => {
     const originalExpense = expenses.find(e => e.id === updatedExpense.id);
     if (!originalExpense) return;
+
+    if (undoableAction) {
+        clearTimeout(undoableAction.timerId);
+        setUndoableAction(null);
+    }
 
     recentlyUpdatedIds.current.add(updatedExpense.id);
     setTimeout(() => {
@@ -408,13 +438,25 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     highlightExpense(updatedExpense.id);
 
     const { id, created_at, ...updatePayload } = updatedExpense;
+    
+    // For Vincent, create an undoable action
+    if (user === User.Vincent) {
+        const timerId = window.setTimeout(() => {
+            setUndoableAction(null);
+        }, 7000);
+        setUndoableAction({ type: 'update', expense: originalExpense, timerId });
+    }
+    
     const { error } = await supabase.from('expenses').update(updatePayload).eq('id', id);
       
     if (error) {
       console.error('Error updating expense:', error.message || error);
       setToastInfo({ message: "Erreur lors de la mise à jour.", type: 'error' });
-      // FIX: Correctly revert to the original expense object, not just its ID.
       setExpenses(prev => prev.map(e => e.id === originalExpense.id ? originalExpense : e));
+      if (undoableAction) {
+          clearTimeout(undoableAction.timerId);
+          setUndoableAction(null);
+      }
     }
   };
 
@@ -605,6 +647,21 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
     setActivities(prevActivities => prevActivities.filter(act => act.id !== activityId));
   }, [setActivities]);
 
+  const handleUndo = useCallback(() => {
+    if (!undoableAction) return;
+
+    clearTimeout(undoableAction.timerId);
+
+    if (undoableAction.type === 'delete') {
+      setExpenses(prev => [...prev, undoableAction.expense].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      highlightExpense(undoableAction.expense.id);
+    } else if (undoableAction.type === 'update') {
+      updateExpense(undoableAction.expense); // This re-triggers the update with the original data
+    }
+
+    setUndoableAction(null);
+  }, [undoableAction]);
+
   const isConnected = realtimeStatus === 'SUBSCRIBED';
 
   if (isLoading) {
@@ -761,7 +818,9 @@ const MainApp: React.FC<{ user: User, onLogout: () => void }> = ({ user, onLogou
           onClose={() => setToastInfo(null)}
         />
       )}
-      
+       
+      <UndoToast undoableAction={undoableAction} onUndo={handleUndo} />
+
       <SettingsModal 
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
