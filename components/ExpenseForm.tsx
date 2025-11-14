@@ -22,12 +22,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [store, setStore] = useState(groceryStores[0] || '');
   const [customStore, setCustomStore] = useState('');
   const [heatingType, setHeatingType] = useState(heatingTypes[0] || '');
-  const [repairCar, setRepairCar] = useState(cars[0] || '');
   const [error, setError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const amountInputRef = useRef<HTMLInputElement>(null);
   const nonSpecialCategoryDescriptionRef = useRef(
-      (initialData && !['Carburant', 'Courses', 'Réparation voitures', 'Chauffage'].includes(initialData.category))
+      (initialData && !['Carburant', 'Courses'].includes(initialData.category))
       ? (initialData.description || '')
       : ''
   );
@@ -52,7 +51,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         nonSpecialCategoryDescriptionRef.current = description;
         setDescription(cars[0] || '');
       }
-    } else if (['Courses', 'Réparation voitures', 'Chauffage'].includes(category)) {
+    } else if (category === "Courses") {
         if(cars.includes(description)) {
             setDescription(nonSpecialCategoryDescriptionRef.current);
         }
@@ -110,7 +109,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             setError('Veuillez sélectionner un magasin ou en spécifier un.');
             return;
         }
-        finalDescription = `Courses (${selectedStore})`;
+        if (finalDescription === '') {
+            finalDescription = 'Courses';
+        }
+        finalDescription = `${finalDescription} (${selectedStore})`;
     }
 
     if (category === 'Chauffage') {
@@ -118,15 +120,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             setError('Veuillez sélectionner un type de chauffage.');
             return;
         }
-        finalDescription = `Chauffage (${heatingType})`;
-    }
-
-    if (category === 'Réparation voitures') {
-        if (!repairCar) {
-            setError('Veuillez sélectionner un véhicule.');
-            return;
+        if (finalDescription === '') {
+            finalDescription = 'Chauffage';
         }
-        finalDescription = `${finalDescription} (${repairCar})`;
+        finalDescription = `${finalDescription} (${heatingType})`;
     }
 
     if (!finalDescription) {
@@ -147,7 +144,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         setStore(groceryStores[0] || '');
         setCustomStore('');
         setHeatingType(heatingTypes[0] || '');
-        setRepairCar(cars[0] || '');
         setCategory(categories[0] || '');
         setTransactionType('expense');
         setError('');
@@ -223,59 +219,43 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             </div>
         )}
 
-        { !['Courses', 'Chauffage'].includes(category) && (
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
-              {
-                category === "Carburant" ? 'Véhicule' :
-                category === "Réparation voitures" ? 'Détails de la réparation' :
-                'Description'
-              }
-            </label>
-            {category === "Carburant" ? (
-              <select id="car-select" value={description} onChange={(e) => setDescription(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent sm:text-sm rounded-lg">
-                  {cars.map(car => <option key={car} value={car}>{car}</option>)}
-              </select>
-            ) : (
-              <div className="relative">
-                <input
-                  type="text"
-                  id="description"
-                  value={description}
-                  onChange={handleDescriptionChange}
-                  onFocus={(e) => handleDescriptionChange(e)}
-                  onBlur={() => setTimeout(() => setSuggestions([]), 150)}
-                  className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
-                  placeholder={category === "Réparation voitures" ? "Ex: Changement pneus avant" : "Ex: McDo, Cadeau..."}
-                  autoComplete="off"
-                />
-                {suggestions.length > 0 && (
-                  <ul className="absolute z-10 w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md mt-1 shadow-lg max-h-48 overflow-y-auto">
-                    {suggestions.map((suggestion, index) => (
-                      <li
-                        key={index}
-                        className="px-4 py-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm"
-                        onMouseDown={() => handleSuggestionClick(suggestion)}
-                      >
-                        {suggestion}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {category === 'Réparation voitures' && (
-            <div>
-                <label htmlFor="repair-car-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Véhicule</label>
-                <select id="repair-car-select" value={repairCar} onChange={e => setRepairCar(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent sm:text-sm rounded-lg">
-                    {cars.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+        <div>
+          <label htmlFor="description" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
+            {category === "Carburant" ? 'Véhicule' : 'Description'}
+          </label>
+          {category === "Carburant" ? (
+             <select id="car-select" value={description} onChange={(e) => setDescription(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent sm:text-sm rounded-lg">
+                {cars.map(car => <option key={car} value={car}>{car}</option>)}
+             </select>
+          ) : (
+            <div className="relative">
+              <input
+                type="text"
+                id="description"
+                value={description}
+                onChange={handleDescriptionChange}
+                onFocus={(e) => handleDescriptionChange(e)}
+                onBlur={() => setTimeout(() => setSuggestions([]), 150)}
+                className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
+                placeholder="Ex: McDo, Courses Leclerc..."
+                autoComplete="off"
+              />
+              {suggestions.length > 0 && (
+                <ul className="absolute z-10 w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md mt-1 shadow-lg max-h-48 overflow-y-auto">
+                  {suggestions.map((suggestion, index) => (
+                    <li
+                      key={index}
+                      className="px-4 py-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm"
+                      onMouseDown={() => handleSuggestionClick(suggestion)}
+                    >
+                      {suggestion}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-        )}
-        
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type</label>

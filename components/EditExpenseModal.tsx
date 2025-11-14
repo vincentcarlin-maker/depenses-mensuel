@@ -34,55 +34,45 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
     const [store, setStore] = useState('');
     const [customStore, setCustomStore] = useState('');
     const [heatingType, setHeatingType] = useState('');
-    const [repairCar, setRepairCar] = useState('');
     const [error, setError] = useState('');
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     
     useEffect(() => {
-        // Reset states when expense changes
-        setCategory(expense.category);
-
         if (expense.category === 'Courses') {
             const storeRegex = /\s\(([^)]+)\)$/;
             const match = expense.description.match(storeRegex);
             if (match) {
                 const storeName = match[1];
+                const desc = expense.description.replace(storeRegex, '').trim();
+                setDescription(desc);
+
                 if (groceryStores.includes(storeName)) {
                     setStore(storeName);
-                    setCustomStore('');
                 } else {
                     setStore('Autres');
                     setCustomStore(storeName);
                 }
             } else {
+                setDescription(expense.description);
                 setStore(groceryStores[0] || '');
             }
-            setDescription(''); // No manual description
         } else if (expense.category === 'Chauffage') {
             const typeRegex = /\s\(([^)]+)\)$/;
             const match = expense.description.match(typeRegex);
             if (match) {
                 const typeName = match[1];
+                const desc = expense.description.replace(typeRegex, '').trim();
+                setDescription(desc);
                 setHeatingType(typeName);
             } else {
+                setDescription(expense.description);
                 setHeatingType(heatingTypes[0] || '');
             }
-            setDescription(''); // No manual description
-        } else if (expense.category === 'Réparation voitures') {
-            const carRegex = new RegExp(`\\s\\((${cars.join('|')})\\)$`);
-            const match = expense.description.match(carRegex);
-            if (match) {
-                const carName = match[1];
-                setRepairCar(carName);
-                setDescription(expense.description.replace(carRegex, ''));
-            } else {
-                setRepairCar(cars[0] || '');
-                setDescription(expense.description);
-            }
-        } else {
+        }
+        else {
             setDescription(expense.description);
         }
-    }, [expense, groceryStores, heatingTypes, cars]);
+    }, [expense, groceryStores, heatingTypes]);
 
     useEffect(() => {
         const handleEsc = (event: KeyboardEvent) => {
@@ -119,7 +109,10 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                 setError('Veuillez sélectionner un magasin ou en spécifier un.');
                 return;
             }
-            finalDescription = `Courses (${selectedStore})`;
+            if (finalDescription === '') {
+                finalDescription = 'Courses';
+            }
+            finalDescription = `${finalDescription} (${selectedStore})`;
         }
 
         if (category === 'Chauffage') {
@@ -127,18 +120,13 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                 setError('Veuillez sélectionner un type de chauffage.');
                 return;
             }
-            finalDescription = `Chauffage (${heatingType})`;
-        }
-
-        if (category === 'Réparation voitures') {
-            if (!repairCar) {
-                setError('Veuillez sélectionner un véhicule.');
-                return;
+            if (finalDescription === '') {
+                finalDescription = 'Chauffage';
             }
-            finalDescription = `${finalDescription} (${repairCar})`;
+            finalDescription = `${finalDescription} (${heatingType})`;
         }
         
-        if (!finalDescription && !['Courses', 'Chauffage'].includes(category)) {
+        if (!finalDescription) {
             setError('La description est requise.');
             return;
         }
@@ -246,34 +234,18 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                             </div>
                         )}
 
-                        { !['Courses', 'Chauffage'].includes(category) && (
-                            <div>
-                            <label htmlFor="edit-description" className="block text-sm font-medium text-slate-600 dark:text-slate-300">
-                                {
-                                category === "Carburant" ? 'Véhicule' :
-                                category === "Réparation voitures" ? 'Détails de la réparation' :
-                                'Description'
-                                }
-                            </label>
-                            {category === "Carburant" ? (
-                                <select id="edit-car-select" value={description} onChange={(e) => setDescription(e.target.value)} className={`${baseInputStyle} pl-3 pr-10`}>
-                                    {cars.map(car => <option key={car} value={car}>{car}</option>)}
-                                </select>
-                            ) : (
-                                <input type="text" id="edit-description" value={description} onChange={(e) => setDescription(e.target.value)} className={`${baseInputStyle} px-3 ${placeholderStyle}`} />
-                            )}
-                            </div>
-                        )}
-
-                        {category === 'Réparation voitures' && (
-                            <div>
-                                <label htmlFor="edit-repair-car-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Véhicule</label>
-                                <select id="edit-repair-car-select" value={repairCar} onChange={e => setRepairCar(e.target.value)} className={`${baseInputStyle} pl-3 pr-10`}>
-                                    {cars.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                            </div>
-                        )}
-
+                        <div>
+                          <label htmlFor="edit-description" className="block text-sm font-medium text-slate-600 dark:text-slate-300">
+                            {category === "Carburant" ? 'Véhicule' : 'Description'}
+                          </label>
+                          {category === "Carburant" ? (
+                            <select id="edit-car-select" value={description} onChange={(e) => setDescription(e.target.value)} className={`${baseInputStyle} pl-3 pr-10`}>
+                                {cars.map(car => <option key={car} value={car}>{car}</option>)}
+                            </select>
+                          ) : (
+                            <input type="text" id="edit-description" value={description} onChange={(e) => setDescription(e.target.value)} className={`${baseInputStyle} px-3 ${placeholderStyle}`} />
+                          )}
+                        </div>
                          <div>
                            <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type de transaction</label>
                             <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1">

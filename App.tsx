@@ -21,7 +21,6 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import UndoToast from './components/UndoToast';
 import { DEFAULT_CATEGORIES } from './types';
 import GlobalSearchModal from './components/GlobalSearchModal';
-import SupabaseInstructionsModal from './components/SupabaseInstructionsModal';
 
 type Activity = {
     id: string; // unique id for the activity
@@ -60,7 +59,6 @@ const MainApp: React.FC<{
   const [highlightedExpenseIds, setHighlightedExpenseIds] = useState<Set<string>>(new Set());
   const [realtimeStatus, setRealtimeStatus] = useState<'SUBSCRIBED' | 'TIMED_OUT' | 'CHANNEL_ERROR' | 'CONNECTING'>('CONNECTING');
   const [undoableAction, setUndoableAction] = useState<UndoableAction | null>(null);
-  const [isSupabaseInstructionsOpen, setIsSupabaseInstructionsOpen] = useState(false);
   const recentlyAddedIds = useRef(new Set<string>());
   const recentlyUpdatedIds = useRef(new Set<string>());
   const recentlyDeletedIds = useRef(new Set<string>());
@@ -326,10 +324,6 @@ const MainApp: React.FC<{
           case 'CHANNEL_ERROR':
             setRealtimeStatus('CHANNEL_ERROR');
             console.error('Real-time channel error:', err);
-            // This error is often due to missing RLS policies.
-            if (err?.message.includes('insufficient privilege')) {
-                setIsSupabaseInstructionsOpen(true);
-            }
             break;
           case 'TIMED_OUT':
             setRealtimeStatus('CONNECTING');
@@ -836,10 +830,6 @@ const MainApp: React.FC<{
           heatingTypes={heatingTypes}
           setHeatingTypes={setHeatingTypes}
           setToastInfo={setToastInfo}
-      />
-      <SupabaseInstructionsModal 
-        isOpen={isSupabaseInstructionsOpen}
-        onClose={() => setIsSupabaseInstructionsOpen(false)}
       />
       <OfflineIndicator />
     </div>
