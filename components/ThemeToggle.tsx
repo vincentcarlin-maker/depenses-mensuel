@@ -14,11 +14,14 @@ const MoonIcon = () => (
 );
 
 const ThemeToggle: React.FC = () => {
-  const { theme, toggleTheme } = useTheme();
+  // FIX: Replaced `toggleTheme` with `changeThemeSetting` from the `useTheme` hook.
+  // The `toggleTheme` function was removed and replaced with a more flexible function
+  // that can handle 'light', 'dark', and 'system' settings.
+  const { theme, changeThemeSetting } = useTheme();
 
   return (
     <button
-      onClick={toggleTheme}
+      onClick={() => changeThemeSetting(theme === 'dark' ? 'light' : 'dark')}
       className={`relative inline-flex items-center h-7 w-12 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800 ${
         theme === 'dark' ? 'bg-slate-700' : 'bg-slate-200'
       }`}

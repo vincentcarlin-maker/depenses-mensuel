@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { type Reminder, type Category, User } from '../types';
 import RemindersTab from './RemindersTab';
 import CloseIcon from './icons/CloseIcon';
-import ThemeToggle from './ThemeToggle';
+import ThemeSelector from './ThemeSelector';
 import ArrowLeftIcon from './icons/ArrowLeftIcon';
 import ChevronRightIcon from './icons/ChevronRightIcon';
 import PaintBrushIcon from './icons/PaintBrushIcon';
@@ -167,8 +167,8 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
             )}
             {activeView === 'appearance' && (
                 <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-lg flex justify-between items-center animate-fade-in">
-                    <span className="font-medium text-slate-600 dark:text-slate-300">Thème sombre</span>
-                    <ThemeToggle />
+                    <span className="font-medium text-slate-600 dark:text-slate-300">Thème</span>
+                    <ThemeSelector />
                 </div>
             )}
             {activeView === 'reminders' && (
