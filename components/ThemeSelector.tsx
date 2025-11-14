@@ -31,7 +31,7 @@ const ThemeSelector: React.FC = () => {
           aria-pressed={themeSetting === option.id}
         >
           {option.icon}
-          <span className="hidden sm:inline">{option.label}</span>
+          <span>{option.label}</span>
         </button>
       ))}
       <span

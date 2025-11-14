@@ -1,3 +1,5 @@
+// Version: 1.1.0 - Force update for theme selector and nav fixes.
+
 // --- Événements du Service Worker ---
 
 self.addEventListener('install', event => {

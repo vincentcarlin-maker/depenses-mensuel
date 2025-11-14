@@ -31,8 +31,17 @@ type Activity = {
 
 type UndoableAction = {
     type: 'delete' | 'update';
-    expense: Expense;
+    expense: Expense; // For delete, this is the one deleted. For update, this is the NEW state.
+    originalExpense?: Expense; // For update, this is the OLD state.
     timerId: number;
+};
+
+const getInitialDate = () => {
+    const now = new Date();
+    const limit = new Date('2025-10-01T00:00:00Z');
+    now.setUTCDate(1); // Set day to 1 to avoid month-end issues
+    limit.setUTCDate(1);
+    return now < limit ? limit : now;
 };
 
 const MainApp: React.FC<{ 
@@ -46,8 +55,7 @@ const MainApp: React.FC<{
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [currentDate, setCurrentDate] = useState(getInitialDate);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly'>('dashboard');
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -74,6 +82,10 @@ const MainApp: React.FC<{
   const [cars, setCars] = useLocalStorage<string[]>('cars', ['Peugeot 5008', 'Peugeot 207']);
   const [heatingTypes, setHeatingTypes] = useLocalStorage<string[]>('heatingTypes', ['Bois', 'Fioul']);
 
+  const { currentMonth, currentYear } = useMemo(() => ({
+      currentMonth: currentDate.getUTCMonth(),
+      currentYear: currentDate.getUTCFullYear(),
+  }), [currentDate]);
 
   const lastSyncTimestampRef = useRef(lastSyncTimestamp);
   useEffect(() => {
@@ -376,62 +388,65 @@ const MainApp: React.FC<{
     }
   };
   
-  const _performDelete = async (id: string, expenseToDelete: Expense) => {
+  const _performDelete = async (id: string) => {
       recentlyDeletedIds.current.add(id);
-      setTimeout(() => {
-          recentlyDeletedIds.current.delete(id);
-      }, 5000);
-
+      setTimeout(() => recentlyDeletedIds.current.delete(id), 5000);
       const { error } = await supabase.from('expenses').delete().eq('id', id);
-      
       if (error) {
         console.error('Error deleting expense:', error.message || error);
-        setToastInfo({ message: "Erreur lors de la suppression.", type: 'error' });
-        setExpenses(prev => [...prev, expenseToDelete].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-        recentlyDeletedIds.current.delete(id);
+        setToastInfo({ message: "La suppression a échoué. Veuillez réessayer.", type: 'error' });
+        // The undo logic will handle reverting the UI state if needed.
+        // We can force a refresh to be safe.
+        syncData();
       }
   };
 
-  const deleteExpense = async (id: string) => {
+  const _performUpdate = async (expenseToUpdate: Expense) => {
+      recentlyUpdatedIds.current.add(expenseToUpdate.id);
+      setTimeout(() => recentlyUpdatedIds.current.delete(expenseToUpdate.id), 5000);
+      
+      const { id, created_at, ...updatePayload } = expenseToUpdate;
+      const { error } = await supabase.from('expenses').update(updatePayload).eq('id', id);
+
+      if (error) {
+          console.error('Error updating expense:', error.message || error);
+          setToastInfo({ message: "La mise à jour a échoué. Veuillez réessayer.", type: 'error' });
+          syncData();
+      }
+  };
+
+  const deleteExpense = (id: string) => {
     const expenseToDelete = expenses.find(e => e.id === id);
     if (!expenseToDelete) return;
 
-    if (undoableAction) {
-        clearTimeout(undoableAction.timerId);
-        setUndoableAction(null);
-    }
+    if (undoableAction?.timerId) clearTimeout(undoableAction.timerId);
 
     setExpenses(prev => prev.filter(e => e.id !== id));
-    _performDelete(id, expenseToDelete);
+
+    const timerId = window.setTimeout(() => {
+        _performDelete(id);
+        setUndoableAction(null);
+    }, 7000);
+
+    setUndoableAction({ type: 'delete', expense: expenseToDelete, timerId });
   };
   
-  const updateExpense = async (updatedExpense: Expense) => {
+  const updateExpense = (updatedExpense: Expense) => {
     const originalExpense = expenses.find(e => e.id === updatedExpense.id);
     if (!originalExpense) return;
 
-    if (undoableAction) {
-        clearTimeout(undoableAction.timerId);
-        setUndoableAction(null);
-    }
-
-    recentlyUpdatedIds.current.add(updatedExpense.id);
-    setTimeout(() => {
-        recentlyUpdatedIds.current.delete(updatedExpense.id);
-    }, 5000);
+    if (undoableAction?.timerId) clearTimeout(undoableAction.timerId);
 
     setExpenses(prev => prev.map(e => e.id === updatedExpense.id ? updatedExpense : e));
     setExpenseToEdit(null);
     highlightExpense(updatedExpense.id);
 
-    const { id, created_at, ...updatePayload } = updatedExpense;
-    
-    const { error } = await supabase.from('expenses').update(updatePayload).eq('id', id);
-      
-    if (error) {
-      console.error('Error updating expense:', error.message || error);
-      setToastInfo({ message: "Erreur lors de la mise à jour.", type: 'error' });
-      setExpenses(prev => prev.map(e => e.id === originalExpense.id ? originalExpense : e));
-    }
+    const timerId = window.setTimeout(() => {
+        _performUpdate(updatedExpense);
+        setUndoableAction(null);
+    }, 7000);
+
+    setUndoableAction({ type: 'update', expense: updatedExpense, originalExpense, timerId });
   };
 
   const addReminder = async (reminder: Omit<Reminder, 'id' | 'created_at'>) => {
@@ -512,7 +527,7 @@ const MainApp: React.FC<{
   }, [expenses, currentMonth, currentYear]);
 
   const previousMonthExpenses = useMemo(() => {
-    const prevMonthDate = new Date(Date.UTC(currentYear, currentMonth, 1));
+    const prevMonthDate = new Date(currentDate);
     prevMonthDate.setUTCMonth(prevMonthDate.getUTCMonth() - 1);
     const prevMonth = prevMonthDate.getUTCMonth();
     const prevYear = prevMonthDate.getUTCFullYear();
@@ -521,19 +536,19 @@ const MainApp: React.FC<{
       const expenseDate = new Date(expense.date);
       return expenseDate.getUTCFullYear() === prevYear && expenseDate.getUTCMonth() === prevMonth;
     });
-  }, [expenses, currentMonth, currentYear]);
+  }, [expenses, currentDate]);
 
   const last3MonthsExpenses = useMemo(() => {
-    const threeMonthsAgo = new Date(Date.UTC(currentYear, currentMonth, 1));
+    const threeMonthsAgo = new Date(currentDate);
     threeMonthsAgo.setUTCMonth(threeMonthsAgo.getUTCMonth() - 3);
-    const oneMonthAgo = new Date(Date.UTC(currentYear, currentMonth, 1));
+    const oneMonthAgo = new Date(currentDate);
     
     return expenses.filter(expense => {
       const expenseDate = new Date(expense.date);
       const expenseTime = expenseDate.getTime();
       return expenseTime >= threeMonthsAgo.getTime() && expenseTime < oneMonthAgo.getTime();
     });
-  }, [expenses, currentMonth, currentYear]);
+  }, [expenses, currentDate]);
 
 
   const yearlyFilteredExpenses = useMemo(() => {
@@ -552,32 +567,32 @@ const MainApp: React.FC<{
   }, [filteredExpenses, searchTerm]);
 
   const handleMonthChange = (direction: 'next' | 'prev') => {
-      if (direction === 'next') {
-        if (currentMonth === 11) {
-          setCurrentMonth(0);
-          setCurrentYear(prev => prev + 1);
-        } else {
-          setCurrentMonth(prev => prev + 1);
-        }
-      } else {
-        if (currentYear === 2025 && currentMonth === 9) {
-          return;
-        }
-        if (currentMonth === 0) {
-          setCurrentMonth(11);
-          setCurrentYear(prev => prev - 1);
-        } else {
-          setCurrentMonth(prev => prev - 1);
-        }
-      }
+      setCurrentDate(prevDate => {
+          const newDate = new Date(prevDate);
+          newDate.setUTCMonth(newDate.getUTCMonth() + (direction === 'next' ? 1 : -1));
+          
+          const limit = new Date('2025-10-01T00:00:00Z');
+          if (newDate < limit) {
+              return prevDate;
+          }
+          return newDate;
+      });
   };
+  
+  const isPrevDisabled = useMemo(() => {
+      const newDate = new Date(currentDate);
+      newDate.setUTCMonth(newDate.getUTCMonth() - 1);
+      const limit = new Date('2025-10-01T00:00:00Z');
+      return newDate < limit;
+  }, [currentDate]);
 
   const currentMonthName = useMemo(() => {
-    return new Date(Date.UTC(currentYear, currentMonth)).toLocaleString('fr-FR', {
+    return currentDate.toLocaleString('fr-FR', {
       month: 'long',
-      year: 'numeric'
+      year: 'numeric',
+      timeZone: 'UTC'
     });
-  }, [currentMonth, currentYear]);
+  }, [currentDate]);
 
   const handleRefresh = async () => {
     if (isRefreshing) return;
@@ -616,14 +631,15 @@ const MainApp: React.FC<{
     clearTimeout(undoableAction.timerId);
 
     if (undoableAction.type === 'delete') {
-      setExpenses(prev => [...prev, undoableAction.expense].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-      highlightExpense(undoableAction.expense.id);
-    } else if (undoableAction.type === 'update') {
-      updateExpense(undoableAction.expense);
+        setExpenses(prev => [...prev, undoableAction.expense].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        highlightExpense(undoableAction.expense.id);
+    } else if (undoableAction.type === 'update' && undoableAction.originalExpense) {
+        setExpenses(prev => prev.map(e => e.id === undoableAction.originalExpense!.id ? undoableAction.originalExpense! : e));
+        highlightExpense(undoableAction.originalExpense.id);
     }
 
     setUndoableAction(null);
-  }, [undoableAction, highlightExpense, updateExpense]);
+  }, [undoableAction, highlightExpense]);
 
   const addCategory = (name: string): boolean => {
     const trimmedName = name.trim();
@@ -690,7 +706,7 @@ const MainApp: React.FC<{
           <div className="flex justify-between items-center mb-6 animate-fade-in-up">
             <button 
               onClick={() => handleMonthChange('prev')} 
-              disabled={currentYear === 2025 && currentMonth === 9}
+              disabled={isPrevDisabled}
               className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
