@@ -196,6 +196,122 @@ const CategoryManagement: React.FC<{
     );
 };
 
+// --- List Management ---
+interface ListManagerProps {
+    title: string;
+    list: string[];
+    setList: React.Dispatch<React.SetStateAction<string[]>>;
+    itemNoun: string;
+    setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
+}
+
+const ListManager: React.FC<ListManagerProps> = ({ title, list, setList, itemNoun, setToastInfo }) => {
+    const [newItem, setNewItem] = useState('');
+    const [editingItem, setEditingItem] = useState<{ old: string; new: string } | null>(null);
+    const [deletingItem, setDeletingItem] = useState<string | null>(null);
+
+    const handleAddItem = (e: React.FormEvent) => {
+        e.preventDefault();
+        const trimmedItem = newItem.trim();
+        if (!trimmedItem) return;
+        if (list.find(i => i.toLowerCase() === trimmedItem.toLowerCase())) {
+            setToastInfo({ message: `Cet élément existe déjà.`, type: 'error' });
+            return;
+        }
+        setList(prev => [...prev, trimmedItem]);
+        setNewItem('');
+    };
+
+    const handleUpdateItem = () => {
+        if (!editingItem) return;
+        const trimmedNewName = editingItem.new.trim();
+        if (!trimmedNewName || trimmedNewName === editingItem.old) {
+            setEditingItem(null);
+            return;
+        }
+        if (list.find(i => i.toLowerCase() === trimmedNewName.toLowerCase())) {
+            setToastInfo({ message: `Cet élément existe déjà.`, type: 'error' });
+            return;
+        }
+        setList(prev => prev.map(i => i === editingItem.old ? trimmedNewName : i));
+        setEditingItem(null);
+    };
+
+    const handleDeleteItem = () => {
+        if (deletingItem) {
+            if (list.length <= 1) {
+                 setToastInfo({ message: `Vous devez conserver au moins un ${itemNoun}.`, type: 'error' });
+                 setDeletingItem(null);
+                 return;
+            }
+            setList(prev => prev.filter(i => i !== deletingItem));
+            setDeletingItem(null);
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <h4 className="text-md font-bold text-slate-800 dark:text-slate-100">{title}</h4>
+            <div className="space-y-2">
+                {list.map(item => (
+                    <div key={item} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                        <span className="font-medium text-slate-700 dark:text-slate-200">{item}</span>
+                        <div className="flex items-center gap-2">
+                           <button onClick={() => setEditingItem({ old: item, new: item })} className="p-2 text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 rounded-full transition-colors"><EditIcon /></button>
+                           <button onClick={() => setDeletingItem(item)} className="p-2 text-slate-500 hover:text-red-600 dark:hover:text-red-400 rounded-full transition-colors"><TrashIcon /></button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <form onSubmit={handleAddItem} className="flex gap-2 items-center p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
+                <input type="text" placeholder={`Nouveau ${itemNoun}`} value={newItem} onChange={e => setNewItem(e.target.value)} className="input-style flex-grow" />
+                <button type="submit" className="btn-primary">Ajouter</button>
+            </form>
+
+            {editingItem && (
+                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-sm space-y-4">
+                        <h4 className="font-bold text-lg">Renommer "{editingItem.old}"</h4>
+                        <input type="text" value={editingItem.new} onChange={e => setEditingItem({ ...editingItem, new: e.target.value })} className="input-style w-full"/>
+                        <div className="flex justify-end gap-2">
+                            <button onClick={() => setEditingItem(null)} className="btn-secondary">Annuler</button>
+                            <button onClick={handleUpdateItem} className="btn-primary">Enregistrer</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            <ConfirmationModal
+                isOpen={!!deletingItem}
+                onClose={() => setDeletingItem(null)}
+                onConfirm={handleDeleteItem}
+                title="Confirmer la suppression"
+                message={`Êtes-vous sûr de vouloir supprimer "${deletingItem}" ?`}
+            />
+        </div>
+    );
+};
+
+
+const ListManagement: React.FC<{
+    groceryStores: string[];
+    setGroceryStores: React.Dispatch<React.SetStateAction<string[]>>;
+    cars: string[];
+    setCars: React.Dispatch<React.SetStateAction<string[]>>;
+    heatingTypes: string[];
+    setHeatingTypes: React.Dispatch<React.SetStateAction<string[]>>;
+    setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
+}> = ({ groceryStores, setGroceryStores, cars, setCars, heatingTypes, setHeatingTypes, setToastInfo }) => {
+    return (
+        <div className="space-y-12">
+            <SectionHeader title="Gestion des Listes" description="Personnalisez les options pour certaines catégories." />
+            <ListManager title="Magasins (Courses)" list={groceryStores} setList={setGroceryStores} itemNoun="magasin" setToastInfo={setToastInfo} />
+            <ListManager title="Véhicules (Carburant)" list={cars} setList={setCars} itemNoun="véhicule" setToastInfo={setToastInfo} />
+            <ListManager title="Types de Chauffage" list={heatingTypes} setList={setHeatingTypes} itemNoun="type de chauffage" setToastInfo={setToastInfo} />
+        </div>
+    );
+};
+
 // --- Main Tab Component ---
 interface ManagementTabProps {
     profiles: Profile[];
@@ -207,6 +323,13 @@ interface ManagementTabProps {
     onAddCategory: (name: string) => boolean;
     onUpdateCategory: (oldName: string, newName: string) => boolean;
     onDeleteCategory: (name: string) => void;
+    groceryStores: string[];
+    setGroceryStores: React.Dispatch<React.SetStateAction<string[]>>;
+    cars: string[];
+    setCars: React.Dispatch<React.SetStateAction<string[]>>;
+    heatingTypes: string[];
+    setHeatingTypes: React.Dispatch<React.SetStateAction<string[]>>;
+    setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
 }
 
 const ManagementTab: React.FC<ManagementTabProps> = (props) => {
@@ -277,6 +400,15 @@ const ManagementTab: React.FC<ManagementTabProps> = (props) => {
             `}</style>
             <UserManagement {...props} />
             <CategoryManagement {...props} />
+            <ListManagement 
+                groceryStores={props.groceryStores}
+                setGroceryStores={props.setGroceryStores}
+                cars={props.cars}
+                setCars={props.setCars}
+                heatingTypes={props.heatingTypes}
+                setHeatingTypes={props.setHeatingTypes}
+                setToastInfo={props.setToastInfo}
+            />
         </div>
     );
 };

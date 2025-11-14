@@ -8,24 +8,34 @@ interface ExpenseFormProps {
   loggedInUser: User;
   disabled?: boolean;
   categories: Category[];
+  groceryStores: string[];
+  cars: string[];
+  heatingTypes: string[];
 }
 
-const CAR_OPTIONS = ["Peugeot 5008", "Peugeot 207"];
-
-const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initialData, loggedInUser, disabled = false, categories }) => {
+const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initialData, loggedInUser, disabled = false, categories, groceryStores, cars, heatingTypes }) => {
   const [description, setDescription] = useState(initialData?.description || '');
   const [amount, setAmount] = useState(initialData ? String(Math.abs(initialData.amount)) : '');
   const [category, setCategory] = useState<Category>(initialData?.category || categories[0] || '');
   const [user, setUser] = useState<User>(initialData?.user || loggedInUser);
   const [transactionType, setTransactionType] = useState<'expense' | 'refund'>(initialData && initialData.amount < 0 ? 'refund' : 'expense');
+  const [store, setStore] = useState(groceryStores[0] || '');
+  const [customStore, setCustomStore] = useState('');
+  const [heatingType, setHeatingType] = useState(heatingTypes[0] || '');
+  const [repairCar, setRepairCar] = useState(cars[0] || '');
   const [error, setError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const amountInputRef = useRef<HTMLInputElement>(null);
-  const nonFuelDescriptionRef = useRef(initialData?.category !== "Carburant" ? (initialData?.description || '') : '');
+  const nonSpecialCategoryDescriptionRef = useRef(
+      (initialData && !['Carburant', 'Courses', 'Réparation voitures', 'Chauffage'].includes(initialData.category))
+      ? (initialData.description || '')
+      : ''
+  );
 
   const uniqueDescriptions = useMemo(() => {
     const tagRegex = /(#\w+)/g;
-    const allDescriptions = expenses.map(e => e.description.replace(tagRegex, '').trim());
+    const storeRegex = /\s\(([^)]+)\)$/;
+    const allDescriptions = expenses.map(e => e.description.replace(tagRegex, '').replace(storeRegex, '').trim());
     return [...new Set<string>(allDescriptions)].filter(d => d.length > 0);
   }, [expenses]);
 
@@ -38,17 +48,21 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
 
   useEffect(() => {
     if (category === "Carburant") {
-      if (!CAR_OPTIONS.includes(description)) {
-        nonFuelDescriptionRef.current = description;
-        setDescription(CAR_OPTIONS[0]);
+      if (!cars.includes(description)) {
+        nonSpecialCategoryDescriptionRef.current = description;
+        setDescription(cars[0] || '');
       }
+    } else if (['Courses', 'Réparation voitures', 'Chauffage'].includes(category)) {
+        if(cars.includes(description)) {
+            setDescription(nonSpecialCategoryDescriptionRef.current);
+        }
     } else {
-      if (CAR_OPTIONS.includes(description)) {
-        setDescription(nonFuelDescriptionRef.current);
+      if (cars.includes(description)) {
+        setDescription(nonSpecialCategoryDescriptionRef.current);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category]);
+  }, [category, cars]);
 
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,8 +90,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!description.trim() || !amount) {
-      setError('La description et le montant sont requis.');
+    if (!amount) {
+      setError('Le montant est requis.');
       return;
     }
     const parsedAmount = parseFloat(amount.replace(',', '.'));
@@ -88,7 +102,37 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
 
     const finalAmount = transactionType === 'expense' ? parsedAmount : -parsedAmount;
     
-    const finalDescription = description.trim();
+    let finalDescription = description.trim();
+
+    if (category === 'Courses') {
+        const selectedStore = store === 'Autres' ? customStore.trim() : store;
+        if (!selectedStore) {
+            setError('Veuillez sélectionner un magasin ou en spécifier un.');
+            return;
+        }
+        finalDescription = `Courses (${selectedStore})`;
+    }
+
+    if (category === 'Chauffage') {
+        if (!heatingType) {
+            setError('Veuillez sélectionner un type de chauffage.');
+            return;
+        }
+        finalDescription = `Chauffage (${heatingType})`;
+    }
+
+    if (category === 'Réparation voitures') {
+        if (!repairCar) {
+            setError('Veuillez sélectionner un véhicule.');
+            return;
+        }
+        finalDescription = `${finalDescription} (${repairCar})`;
+    }
+
+    if (!finalDescription) {
+        setError('La description est requise.');
+        return;
+    }
 
     onAddExpense({
       description: finalDescription,
@@ -98,8 +142,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
     });
     
     if (!initialData) {
-        setDescription(category === "Carburant" ? CAR_OPTIONS[0] : '');
+        setDescription(category === "Carburant" ? (cars[0] || '') : '');
         setAmount('');
+        setStore(groceryStores[0] || '');
+        setCustomStore('');
+        setHeatingType(heatingTypes[0] || '');
+        setRepairCar(cars[0] || '');
         setCategory(categories[0] || '');
         setTransactionType('expense');
         setError('');
@@ -147,54 +195,87 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             ))}
           </select>
         </div>
-        <div>
-          <label htmlFor="description" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
-            {category === "Carburant" ? 'Véhicule' : 'Description'}
-          </label>
-          {category === "Carburant" ? (
-            <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1">
-                <span
-                  className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out
-                    ${description === CAR_OPTIONS[1] ? 'translate-x-full' : 'translate-x-0'}
-                  `}
-                  aria-hidden="true"
+        
+        {category === 'Courses' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                 <div>
+                    <label htmlFor="store-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Magasin</label>
+                    <select id="store-select" value={store} onChange={e => setStore(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent sm:text-sm rounded-lg">
+                        {groceryStores.map(s => <option key={s} value={s}>{s}</option>)}
+                        <option value="Autres">Autres</option>
+                    </select>
+                 </div>
+                 {store === 'Autres' && (
+                     <div>
+                        <label htmlFor="custom-store" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Magasin personnalisé</label>
+                        <input type="text" id="custom-store" value={customStore} onChange={e => setCustomStore(e.target.value)} className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm" placeholder="Nom du magasin" />
+                     </div>
+                 )}
+            </div>
+        )}
+
+        {category === 'Chauffage' && (
+            <div>
+                <label htmlFor="heating-type-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type de Chauffage</label>
+                <select id="heating-type-select" value={heatingType} onChange={e => setHeatingType(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent sm:text-sm rounded-lg">
+                    {heatingTypes.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+            </div>
+        )}
+
+        { !['Courses', 'Chauffage'].includes(category) && (
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
+              {
+                category === "Carburant" ? 'Véhicule' :
+                category === "Réparation voitures" ? 'Détails de la réparation' :
+                'Description'
+              }
+            </label>
+            {category === "Carburant" ? (
+              <select id="car-select" value={description} onChange={(e) => setDescription(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent sm:text-sm rounded-lg">
+                  {cars.map(car => <option key={car} value={car}>{car}</option>)}
+              </select>
+            ) : (
+              <div className="relative">
+                <input
+                  type="text"
+                  id="description"
+                  value={description}
+                  onChange={handleDescriptionChange}
+                  onFocus={(e) => handleDescriptionChange(e)}
+                  onBlur={() => setTimeout(() => setSuggestions([]), 150)}
+                  className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
+                  placeholder={category === "Réparation voitures" ? "Ex: Changement pneus avant" : "Ex: McDo, Cadeau..."}
+                  autoComplete="off"
                 />
-                <button type="button" onClick={() => setDescription(CAR_OPTIONS[0])} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${description === CAR_OPTIONS[0] ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-600 dark:text-slate-300'}`}>
-                  {CAR_OPTIONS[0]}
-                </button>
-                <button type="button" onClick={() => setDescription(CAR_OPTIONS[1])} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${description === CAR_OPTIONS[1] ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-600 dark:text-slate-300'}`}>
-                  {CAR_OPTIONS[1]}
-                </button>
+                {suggestions.length > 0 && (
+                  <ul className="absolute z-10 w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md mt-1 shadow-lg max-h-48 overflow-y-auto">
+                    {suggestions.map((suggestion, index) => (
+                      <li
+                        key={index}
+                        className="px-4 py-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm"
+                        onMouseDown={() => handleSuggestionClick(suggestion)}
+                      >
+                        {suggestion}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {category === 'Réparation voitures' && (
+            <div>
+                <label htmlFor="repair-car-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Véhicule</label>
+                <select id="repair-car-select" value={repairCar} onChange={e => setRepairCar(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent sm:text-sm rounded-lg">
+                    {cars.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
             </div>
-          ) : (
-            <div className="relative">
-              <input
-                type="text"
-                id="description"
-                value={description}
-                onChange={handleDescriptionChange}
-                onFocus={(e) => handleDescriptionChange(e)}
-                onBlur={() => setTimeout(() => setSuggestions([]), 150)}
-                className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
-                placeholder="Ex: McDo, Courses Leclerc..."
-                autoComplete="off"
-              />
-              {suggestions.length > 0 && (
-                <ul className="absolute z-10 w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md mt-1 shadow-lg max-h-48 overflow-y-auto">
-                  {suggestions.map((suggestion, index) => (
-                    <li
-                      key={index}
-                      className="px-4 py-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm"
-                      onMouseDown={() => handleSuggestionClick(suggestion)}
-                    >
-                      {suggestion}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-        </div>
+        )}
+        
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type</label>

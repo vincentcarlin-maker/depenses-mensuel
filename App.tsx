@@ -68,8 +68,12 @@ const MainApp: React.FC<{
   const [activities, setActivities] = useLocalStorage<Activity[]>('activityLog', []);
   const [lastSyncTimestamp, setLastSyncTimestamp] = useLocalStorage('lastSyncTimestamp', '1970-01-01T00:00:00.000Z');
   
-  // Dynamic categories
+  // Dynamic categories and lists
   const [categories, setCategories] = useLocalStorage<Category[]>('expenseCategories', DEFAULT_CATEGORIES);
+  const [groceryStores, setGroceryStores] = useLocalStorage<string[]>('groceryStores', ['Leclerc', 'Leclerc Drive', 'Intermarché', 'Intermarché Drive', 'Carrefour']);
+  const [cars, setCars] = useLocalStorage<string[]>('cars', ['Peugeot 5008', 'Peugeot 207']);
+  const [heatingTypes, setHeatingTypes] = useLocalStorage<string[]>('heatingTypes', ['Bois', 'Fioul']);
+
 
   const lastSyncTimestampRef = useRef(lastSyncTimestamp);
   useEffect(() => {
@@ -735,6 +739,9 @@ const MainApp: React.FC<{
                     loggedInUser={user}
                     disabled={!isConnected}
                     categories={categories}
+                    groceryStores={groceryStores}
+                    cars={cars}
+                    heatingTypes={heatingTypes}
                   />
                   <ExpenseSummary 
                       allExpenses={expenses}
@@ -776,6 +783,9 @@ const MainApp: React.FC<{
           onDeleteExpense={deleteExpense}
           onClose={() => setExpenseToEdit(null)}
           categories={categories}
+          groceryStores={groceryStores}
+          cars={cars}
+          heatingTypes={heatingTypes}
         />
       )}
       
@@ -813,6 +823,13 @@ const MainApp: React.FC<{
           onAddProfile={onAddProfile}
           onUpdateProfilePassword={onUpdateProfilePassword}
           onDeleteProfile={onDeleteProfile}
+          groceryStores={groceryStores}
+          setGroceryStores={setGroceryStores}
+          cars={cars}
+          setCars={setCars}
+          heatingTypes={heatingTypes}
+          setHeatingTypes={setHeatingTypes}
+          setToastInfo={setToastInfo}
       />
       <OfflineIndicator />
     </div>

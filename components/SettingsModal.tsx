@@ -27,6 +27,13 @@ interface SettingsModalProps {
   onAddProfile: (profile: Profile) => boolean;
   onUpdateProfilePassword: (username: string, newPassword: string) => boolean;
   onDeleteProfile: (username: string) => boolean;
+  groceryStores: string[];
+  setGroceryStores: React.Dispatch<React.SetStateAction<string[]>>;
+  cars: string[];
+  setCars: React.Dispatch<React.SetStateAction<string[]>>;
+  heatingTypes: string[];
+  setHeatingTypes: React.Dispatch<React.SetStateAction<string[]>>;
+  setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
 }
 
 const SettingsMenuItem: React.FC<{
@@ -187,6 +194,13 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         onAddCategory={props.onAddCategory}
                         onUpdateCategory={props.onUpdateCategory}
                         onDeleteCategory={props.onDeleteCategory}
+                        groceryStores={props.groceryStores}
+                        setGroceryStores={props.setGroceryStores}
+                        cars={props.cars}
+                        setCars={props.setCars}
+                        heatingTypes={props.heatingTypes}
+                        setHeatingTypes={props.setHeatingTypes}
+                        setToastInfo={props.setToastInfo}
                     />
                 </div>
             )}
