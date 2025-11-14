@@ -20,6 +20,7 @@ import PullToRefresh from './components/PullToRefresh';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import UndoToast from './components/UndoToast';
 import { DEFAULT_CATEGORIES } from './types';
+import GlobalSearchModal from './components/GlobalSearchModal';
 
 type Activity = {
     id: string; // unique id for the activity
@@ -47,12 +48,12 @@ const MainApp: React.FC<{
   const [isLoading, setIsLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly' | 'search'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly'>('dashboard');
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [globalSearchTerm, setGlobalSearchTerm] = useState('');
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [formInitialData, setFormInitialData] = useState<(Omit<Expense, 'id' | 'date' | 'created_at'> & { formKey?: string }) | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [highlightedExpenseIds, setHighlightedExpenseIds] = useState<Set<string>>(new Set());
@@ -546,16 +547,6 @@ const MainApp: React.FC<{
     );
   }, [filteredExpenses, searchTerm]);
 
-  const globalSearchedExpenses = useMemo(() => {
-    if (!globalSearchTerm) return [];
-    return expenses.filter(e =>
-      e.description.toLowerCase().includes(globalSearchTerm.toLowerCase()) ||
-      e.amount.toString().includes(globalSearchTerm) ||
-      e.category.toLowerCase().includes(globalSearchTerm.toLowerCase()) ||
-      e.user.toLowerCase().includes(globalSearchTerm.toLowerCase())
-    ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [expenses, globalSearchTerm]);
-
   const handleMonthChange = (direction: 'next' | 'prev') => {
       if (direction === 'next') {
         if (currentMonth === 11) {
@@ -674,7 +665,6 @@ const MainApp: React.FC<{
     { id: 'dashboard', label: 'Tableau de bord' },
     { id: 'analysis', label: 'Analyse' },
     { id: 'yearly', label: 'Annuel' },
-    { id: 'search', label: 'Recherche' }
   ] as const;
 
   return (
@@ -682,6 +672,7 @@ const MainApp: React.FC<{
       <PullToRefresh isRefreshing={isRefreshing} onRefresh={handleRefresh}>
         <Header 
           onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenSearch={() => setIsSearchOpen(true)}
           onLogout={onLogout}
           loggedInUser={user}
           activityItems={activityItemsForHeader}
@@ -692,21 +683,19 @@ const MainApp: React.FC<{
         />
 
         <main className="container mx-auto p-4 md:p-8">
-          {activeTab !== 'search' && (
-            <div className="flex justify-between items-center mb-6 animate-fade-in-up">
-              <button 
-                onClick={() => handleMonthChange('prev')} 
-                disabled={currentYear === 2025 && currentMonth === 9}
-                className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-              </button>
-              <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 text-center capitalize">{currentMonthName}</h2>
-              <button onClick={() => handleMonthChange('next')} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-              </button>
-            </div>
-          )}
+          <div className="flex justify-between items-center mb-6 animate-fade-in-up">
+            <button 
+              onClick={() => handleMonthChange('prev')} 
+              disabled={currentYear === 2025 && currentMonth === 9}
+              className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 text-center capitalize">{currentMonthName}</h2>
+            <button onClick={() => handleMonthChange('next')} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            </button>
+          </div>
           
           <ReminderAlerts 
             reminders={reminders}
@@ -776,25 +765,6 @@ const MainApp: React.FC<{
             )}
             {activeTab === 'analysis' && <CategoryTotals expenses={filteredExpenses} previousMonthExpenses={previousMonthExpenses} last3MonthsExpenses={last3MonthsExpenses} />}
             {activeTab === 'yearly' && <YearlySummary expenses={yearlyFilteredExpenses} previousYearExpenses={previousYearFilteredExpenses} year={currentYear} />}
-            {activeTab === 'search' && (
-               <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg">
-                <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Recherche globale</h2>
-                <input
-                  type="text"
-                  placeholder="Rechercher par description, montant, catégorie..."
-                  value={globalSearchTerm}
-                  onChange={(e) => setGlobalSearchTerm(e.target.value)}
-                  className="w-full px-3 py-2 mb-4 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
-                />
-                {globalSearchTerm && (
-                  <GroupedExpenseList 
-                    expenses={globalSearchedExpenses} 
-                    onEditExpense={setExpenseToEdit} 
-                    highlightedIds={highlightedExpenseIds} 
-                  />
-                )}
-               </div>
-            )}
           </div>
         </main>
       </PullToRefresh>
@@ -818,6 +788,14 @@ const MainApp: React.FC<{
       )}
        
       <UndoToast undoableAction={undoableAction} onUndo={handleUndo} />
+
+      <GlobalSearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        allExpenses={expenses}
+        onEditExpense={setExpenseToEdit}
+        highlightedIds={highlightedExpenseIds}
+      />
 
       <SettingsModal 
           isOpen={isSettingsOpen}

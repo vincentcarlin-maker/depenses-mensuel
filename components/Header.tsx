@@ -4,6 +4,7 @@ import LogoutIcon from './icons/LogoutIcon';
 import BellIcon from './icons/BellIcon';
 import { User, type Expense } from '../types';
 import CloseIcon from './icons/CloseIcon';
+import SearchIcon from './icons/SearchIcon';
 
 const Logo = () => (
     <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3">
@@ -17,6 +18,7 @@ const Logo = () => (
 
 interface HeaderProps {
   onOpenSettings: () => void;
+  onOpenSearch: () => void;
   onLogout: () => void;
   loggedInUser: User;
   activityItems: {
@@ -31,7 +33,7 @@ interface HeaderProps {
   onDeleteActivity: (activityId: string) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser, activityItems, unreadCount, onMarkAsRead, realtimeStatus, onDeleteActivity }) => {
+const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout, loggedInUser, activityItems, unreadCount, onMarkAsRead, realtimeStatus, onDeleteActivity }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -83,6 +85,14 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onLogout, loggedInUser,
           </h1>
         </div>
         <div className="flex items-center space-x-1 sm:space-x-2">
+            <button
+                onClick={onOpenSearch}
+                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800"
+                aria-label="Rechercher"
+                title="Rechercher"
+            >
+                <SearchIcon className="h-6 w-6 text-slate-500 dark:text-slate-400" />
+            </button>
             <div className="relative" ref={notificationsRef}>
                 <button
                     onClick={handleNotificationsToggle}
