@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { type Expense, type Category, User } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import TrashIcon from './icons/TrashIcon';
+import SegmentedControl from './SegmentedControl';
 
 interface EditExpenseModalProps {
     expense: Expense;
@@ -168,11 +169,22 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
 
     const heatingOptions = useMemo(() => {
         const options = new Set(heatingTypes);
-        if (heatingType) {
+        if (heatingType && !options.has(heatingType)) {
             options.add(heatingType);
         }
         return Array.from(options);
     }, [heatingTypes, heatingType]);
+    
+    const carOptions = useMemo(() => {
+        const options = new Set(cars);
+        if (category === 'Réparation voitures' && repairedCar && !options.has(repairedCar)) {
+            options.add(repairedCar);
+        }
+        if (category === 'Carburant' && description && !options.has(description)) {
+            options.add(description);
+        }
+        return Array.from(options);
+    }, [cars, category, repairedCar, description]);
 
     const baseInputStyle = "mt-1 block w-full py-2.5 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm";
     const placeholderStyle = "placeholder-slate-400 dark:placeholder-slate-500";
@@ -242,40 +254,47 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
 
                         {category === 'Chauffage' && (
                             <div>
-                                <label htmlFor="edit-heating-type-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Type de Chauffage</label>
-                                <select 
-                                    id="edit-heating-type-select" 
-                                    value={heatingType} 
-                                    onChange={e => setHeatingType(e.target.value)} 
-                                    className={`${baseInputStyle} pl-3 pr-10`}
-                                >
-                                    {heatingOptions.map(h => <option key={h} value={h}>{h}</option>)}
-                                </select>
+                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">Type de Chauffage</label>
+                                <SegmentedControl
+                                    options={heatingOptions}
+                                    value={heatingType}
+                                    onChange={setHeatingType}
+                                    className="mt-1"
+                                />
                             </div>
                         )}
 
                         {category === 'Réparation voitures' && (
                             <div>
-                                <label htmlFor="edit-repaired-car-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Véhicule</label>
-                                <select id="edit-repaired-car-select" value={repairedCar} onChange={e => setRepairedCar(e.target.value)} className={`${baseInputStyle} pl-3 pr-10`}>
-                                    {cars.map(car => <option key={car} value={car}>{car}</option>)}
-                                </select>
+                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">Véhicule</label>
+                                 <SegmentedControl
+                                    options={carOptions}
+                                    value={repairedCar}
+                                    onChange={setRepairedCar}
+                                    className="mt-1"
+                                />
                             </div>
                         )}
                         
                         { !['Courses', 'Chauffage'].includes(category) && (
-                          <div>
-                            <label htmlFor="edit-description" className="block text-sm font-medium text-slate-600 dark:text-slate-300">
-                              {category === "Carburant" ? 'Véhicule' : 'Description'}
-                            </label>
-                            {category === "Carburant" ? (
-                              <select id="edit-car-select" value={description} onChange={(e) => setDescription(e.target.value)} className={`${baseInputStyle} pl-3 pr-10`}>
-                                  {cars.map(car => <option key={car} value={car}>{car}</option>)}
-                              </select>
-                            ) : (
-                              <input type="text" id="edit-description" value={description} onChange={(e) => setDescription(e.target.value)} className={`${baseInputStyle} px-3 ${placeholderStyle}`} />
-                            )}
-                          </div>
+                            <div>
+                                {category === "Carburant" ? (
+                                    <>
+                                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">Véhicule</label>
+                                        <SegmentedControl
+                                            options={carOptions}
+                                            value={description}
+                                            onChange={(val) => setDescription(val)}
+                                            className="mt-1"
+                                        />
+                                    </>
+                                ) : (
+                                    <>
+                                        <label htmlFor="edit-description" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Description</label>
+                                        <input type="text" id="edit-description" value={description} onChange={(e) => setDescription(e.target.value)} className={`${baseInputStyle} px-3 ${placeholderStyle}`} />
+                                    </>
+                                )}
+                            </div>
                         )}
 
                          <div>

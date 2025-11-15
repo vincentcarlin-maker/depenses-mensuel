@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { type Expense, type Category, User } from '../types';
+import SegmentedControl from './SegmentedControl';
 
 interface ExpenseFormProps {
   onAddExpense: (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => void;
@@ -220,58 +221,67 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
 
         {category === 'Chauffage' && (
             <div>
-                <label htmlFor="heating-type-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type de Chauffage</label>
-                <select id="heating-type-select" value={heatingType} onChange={e => setHeatingType(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent sm:text-sm rounded-lg">
-                    {heatingTypes.map(h => <option key={h} value={h}>{h}</option>)}
-                </select>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type de Chauffage</label>
+                <SegmentedControl
+                    options={heatingTypes}
+                    value={heatingType}
+                    onChange={setHeatingType}
+                />
             </div>
         )}
 
         {category === 'Réparation voitures' && (
             <div>
-                <label htmlFor="repaired-car-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Véhicule</label>
-                <select id="repaired-car-select" value={repairedCar} onChange={e => setRepairedCar(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent sm:text-sm rounded-lg">
-                    {cars.map(car => <option key={car} value={car}>{car}</option>)}
-                </select>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Véhicule</label>
+                <SegmentedControl
+                    options={cars}
+                    value={repairedCar}
+                    onChange={setRepairedCar}
+                />
             </div>
         )}
         
         { !['Courses', 'Chauffage'].includes(category) && (
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
-                {category === "Carburant" ? 'Véhicule' : 'Description'}
-              </label>
               {category === "Carburant" ? (
-                 <select id="car-select" value={description} onChange={(e) => setDescription(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent sm:text-sm rounded-lg">
-                    {cars.map(car => <option key={car} value={car}>{car}</option>)}
-                 </select>
-              ) : (
-                <div className="relative">
-                  <input
-                    type="text"
-                    id="description"
+                <>
+                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Véhicule</label>
+                  <SegmentedControl
+                    options={cars}
                     value={description}
-                    onChange={handleDescriptionChange}
-                    onFocus={(e) => handleDescriptionChange(e)}
-                    onBlur={() => setTimeout(() => setSuggestions([]), 150)}
-                    className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
-                    placeholder="Ex: McDo, Courses Leclerc..."
-                    autoComplete="off"
+                    onChange={(val) => setDescription(val)}
                   />
-                  {suggestions.length > 0 && (
-                    <ul className="absolute z-10 w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md mt-1 shadow-lg max-h-48 overflow-y-auto">
-                      {suggestions.map((suggestion, index) => (
-                        <li
-                          key={index}
-                          className="px-4 py-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm"
-                          onMouseDown={() => handleSuggestionClick(suggestion)}
-                        >
-                          {suggestion}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
+                </>
+              ) : (
+                <>
+                  <label htmlFor="description" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Description</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      id="description"
+                      value={description}
+                      onChange={handleDescriptionChange}
+                      onFocus={(e) => handleDescriptionChange(e)}
+                      onBlur={() => setTimeout(() => setSuggestions([]), 150)}
+                      className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
+                      placeholder="Ex: McDo, Courses Leclerc..."
+                      autoComplete="off"
+                    />
+                    {suggestions.length > 0 && (
+                      <ul className="absolute z-10 w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md mt-1 shadow-lg max-h-48 overflow-y-auto">
+                        {suggestions.map((suggestion, index) => (
+                          <li
+                            key={index}
+                            className="px-4 py-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm"
+                            onMouseDown={() => handleSuggestionClick(suggestion)}
+                          >
+                            {suggestion}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </>
               )}
             </div>
         )}
