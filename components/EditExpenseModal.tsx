@@ -42,14 +42,20 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
         if (expense.category === 'Courses') {
             const storeRegex = /\s\(([^)]+)\)$/;
             const match = expense.description.match(storeRegex);
-            if (match) {
-                const storeName = match[1];
-                if (groceryStores.includes(storeName)) {
-                    setStore(storeName);
-                } else {
-                    setStore('Autres');
-                    setCustomStore(storeName);
-                }
+            let storeName = '';
+
+            if (match && expense.description.startsWith('Courses')) { // Old format: "Courses (Store Name)"
+                storeName = match[1];
+            } else { // New format: "Store Name"
+                storeName = expense.description;
+            }
+
+            if (groceryStores.includes(storeName)) {
+                setStore(storeName);
+                setCustomStore('');
+            } else if (storeName) {
+                setStore('Autres');
+                setCustomStore(storeName);
             } else {
                 setStore(groceryStores[0] || '');
             }
@@ -117,7 +123,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                 setError('Veuillez sélectionner un magasin ou en spécifier un.');
                 return;
             }
-            finalDescription = `Courses (${selectedStore})`;
+            finalDescription = selectedStore;
         } else if (category === 'Chauffage') {
             if (!heatingType) {
                 setError('Veuillez sélectionner un type de chauffage.');

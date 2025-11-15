@@ -110,7 +110,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             setError('Veuillez sélectionner un magasin ou en spécifier un.');
             return;
         }
-        finalDescription = `Courses (${selectedStore})`;
+        finalDescription = selectedStore;
     } else if (category === 'Chauffage') {
         if (!heatingType) {
             setError('Veuillez sélectionner un type de chauffage.');
