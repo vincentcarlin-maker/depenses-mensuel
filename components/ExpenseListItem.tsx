@@ -32,9 +32,10 @@ const RestaurantIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
     </svg>
 );
 const CarRepairsIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="white">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.87-5.87m0 0L11.42 15.17m5.87-5.87L15.17 11.42m0 0L5.87 21m9.3-9.3L15.17 11.42M11.42 15.17l-9.3-9.3a2.652 2.652 0 0 1 0-3.752l3.75-3.752a2.652 2.652 0 0 1 3.752 0l9.3 9.3" />
-  </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="1.5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125V14.25m-17.25 4.5v-1.875a3.375 3.375 0 013.375-3.375h9.75a3.375 3.375 0 013.375 3.375v1.875" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v6m3-3h-6" />
+    </svg>
 );
 const MiscIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={2}>
