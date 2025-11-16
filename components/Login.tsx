@@ -5,10 +5,13 @@ import EyeSlashIcon from './icons/EyeSlashIcon';
 const Logo = () => (
     <svg width="48" height="48" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-4">
         <rect width="40" height="40" rx="8" className="fill-cyan-500"/>
-        <path d="M10 28V20" stroke="white" strokeWidth="3.5" strokeLinecap="round"/>
-        <path d="M16 28V15" stroke="white" strokeWidth="3.5" strokeLinecap="round"/>
-        <path d="M22 28V22" stroke="white" strokeWidth="3.5" strokeLinecap="round"/>
-        <path d="M28 28V12" stroke="white" strokeWidth="3.5" strokeLinecap="round"/>
+        <g transform="translate(5, 8)">
+            <rect x="12" y="3" width="16" height="10" rx="2" fill="#FBBF24"/>
+            <rect x="14" y="8" width="3.5" height="2.5" rx="0.5" fill="#F59E0B"/>
+            <path d="M0 10C0 8.89543 0.895431 8 2 8H28C29.1046 8 30 8.89543 30 10V22C30 23.1046 29.1046 24 28 24H2C0.895431 24 0 23.1046 0 22V10Z" fill="#475569"/>
+            <path d="M0 13C0 11.8954 0.895431 11 2 11H28C29.1046 11 30 11.8954 30 13V22C30 23.1046 29.1046 24 28 24H2C0.895431 24 0 23.1046 0 22V13Z" fill="#64748B"/>
+            <path d="M2 13.5H28" stroke="#94A3B8" strokeWidth="0.75" strokeLinecap="round" strokeDasharray="1.5 1.5"/>
+        </g>
     </svg>
 );
 
