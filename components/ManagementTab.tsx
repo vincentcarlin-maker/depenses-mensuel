@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { User, type Category } from '../types';
+import { User, type Category, type Expense } from '../types';
 import { type Profile } from '../hooks/useAuth';
 import TrashIcon from './icons/TrashIcon';
 import EditIcon from './icons/EditIcon';
 import EyeIcon from './icons/EyeIcon';
 import ConfirmationModal from './ConfirmationModal';
+import ArrowDownTrayIcon from './icons/ArrowDownTrayIcon';
 
 // --- Section Header Component ---
 const SectionHeader: React.FC<{ title: string; description: string }> = ({ title, description }) => (
@@ -13,6 +14,53 @@ const SectionHeader: React.FC<{ title: string; description: string }> = ({ title
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{description}</p>
     </div>
 );
+
+// --- Data Management ---
+const DataManagement: React.FC<{ expenses: Expense[] }> = ({ expenses }) => {
+    const handleExportCSV = () => {
+        const headers = ['Date', 'Utilisateur', 'Catégorie', 'Description', 'Montant'];
+        const rows = expenses.map(e => [
+            new Date(e.date).toLocaleDateString('fr-FR'),
+            e.user,
+            e.category,
+            `"${e.description.replace(/"/g, '""')}"`, // Escape quotes
+            e.amount.toString().replace('.', ',') // French format
+        ]);
+
+        const csvContent = [
+            headers.join(';'),
+            ...rows.map(r => r.join(';'))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `depenses_export_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    return (
+        <div className="space-y-6">
+             <SectionHeader title="Données" description="Exportez vos données pour les utiliser ailleurs." />
+             <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg flex items-center justify-between">
+                <div>
+                    <p className="font-medium text-slate-700 dark:text-slate-200">Exporter les dépenses</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Format CSV (Excel, Numbers...)</p>
+                </div>
+                <button 
+                    onClick={handleExportCSV}
+                    className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-600 border border-slate-300 dark:border-slate-500 rounded-lg text-slate-700 dark:text-slate-200 font-medium hover:bg-slate-50 dark:hover:bg-slate-500 transition-colors"
+                >
+                    <ArrowDownTrayIcon className="h-5 w-5" />
+                    <span>Télécharger</span>
+                </button>
+             </div>
+        </div>
+    );
+}
 
 // --- User Management ---
 const UserManagement: React.FC<{
@@ -314,6 +362,7 @@ const ListManagement: React.FC<{
 
 // --- Main Tab Component ---
 interface ManagementTabProps {
+    expenses: Expense[];
     profiles: Profile[];
     loggedInUser: User;
     onAddProfile: (profile: Profile) => boolean;
@@ -398,6 +447,7 @@ const ManagementTab: React.FC<ManagementTabProps> = (props) => {
                     background-color: rgb(185 28 28 / 1); /* hover:bg-red-700 */
                 }
             `}</style>
+            <DataManagement expenses={props.expenses} />
             <UserManagement {...props} />
             <CategoryManagement {...props} />
             <ListManagement 

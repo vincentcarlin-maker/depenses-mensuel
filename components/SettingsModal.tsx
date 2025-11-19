@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { type Reminder, type Category, User } from '../types';
+import { type Reminder, type Category, type Expense, User } from '../types';
 import RemindersTab from './RemindersTab';
 import CloseIcon from './icons/CloseIcon';
 import ThemeSelector from './ThemeSelector';
@@ -15,6 +15,7 @@ interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   reminders: Reminder[];
+  expenses: Expense[];
   onAddReminder: (reminder: Omit<Reminder, 'id' | 'created_at'>) => Promise<void>;
   onUpdateReminder: (reminder: Reminder) => Promise<void>;
   onDeleteReminder: (id: string) => Promise<void>;
@@ -160,7 +161,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                     <SettingsMenuItem
                         icon={<WrenchScrewdriverIcon />}
                         title="Gestion"
-                        description="Utilisateurs, catégories et données"
+                        description="Utilisateurs, données et catégories"
                         onClick={() => setActiveView('management')}
                     />
                  </div>
@@ -185,6 +186,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
             {activeView === 'management' && (
                 <div className="animate-fade-in">
                     <ManagementTab 
+                        expenses={props.expenses}
                         profiles={props.profiles}
                         loggedInUser={props.loggedInUser}
                         onAddProfile={props.onAddProfile}

@@ -673,10 +673,57 @@ const MainApp: React.FC<{
 
   if (isLoading) {
     return (
-        <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-slate-900">
-            <div className="text-center">
-                <p className="text-xl font-semibold text-slate-600 dark:text-slate-300">Chargement des données...</p>
-            </div>
+        <div className="bg-gray-50 dark:bg-slate-900 min-h-screen font-sans transition-colors duration-300">
+             {/* Header Skeleton */}
+             <div className="bg-white dark:bg-slate-800/80 shadow-sm h-16 w-full sticky top-0 z-20 flex items-center px-4 md:px-8">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse"></div>
+                    <div className="h-6 w-32 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                </div>
+             </div>
+             <main className="container mx-auto p-4 md:p-8 space-y-6">
+                {/* Month Nav Skeleton */}
+                <div className="flex justify-between items-center">
+                    <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse"></div>
+                    <div className="h-8 w-48 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                    <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse"></div>
+                </div>
+                
+                {/* Tabs Skeleton */}
+                <div className="flex gap-6 border-b border-slate-200 dark:border-slate-700 pb-1">
+                    <div className="h-6 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                    <div className="h-6 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                    <div className="h-6 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="space-y-8">
+                        {/* Form Skeleton */}
+                         <div className="h-96 bg-white dark:bg-slate-800 rounded-2xl shadow-lg animate-pulse"></div>
+                         {/* Summary Skeleton */}
+                         <div className="h-48 bg-white dark:bg-slate-800 rounded-2xl shadow-lg animate-pulse"></div>
+                    </div>
+                    <div className="space-y-8">
+                         {/* Search Input Skeleton */}
+                         <div className="h-10 bg-white dark:bg-slate-800 rounded-md shadow-sm animate-pulse"></div>
+                         {/* List Skeleton */}
+                         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-4 space-y-4">
+                            <div className="h-6 w-40 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mb-4"></div>
+                            {[1, 2, 3, 4, 5].map(i => (
+                                <div key={i} className="flex items-center gap-3">
+                                    <div className="w-1.5 h-10 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse"></div>
+                                    <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse"></div>
+                                    <div className="flex-1 space-y-2">
+                                        <div className="h-4 w-3/4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                                        <div className="h-3 w-1/2 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                                    </div>
+                                    <div className="w-20 h-6 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                                </div>
+                            ))}
+                         </div>
+                    </div>
+                </div>
+             </main>
         </div>
     );
   }
@@ -827,6 +874,7 @@ const MainApp: React.FC<{
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
           reminders={reminders}
+          expenses={expenses}
           onAddReminder={addReminder}
           onUpdateReminder={updateReminder}
           onDeleteReminder={deleteReminder}
@@ -858,11 +906,10 @@ const App: React.FC = () => {
   const { user, login, logout, isLoading, profiles, addProfile, updateProfilePassword, deleteProfile } = useAuth();
   
   if (isLoading) {
+    // Auth loading skeleton - simple centered spinner or similar, keeping it minimal as it's usually fast
     return (
         <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-slate-900">
-            <div className="text-center">
-                <p className="text-xl font-semibold text-slate-600 dark:text-slate-300">Chargement...</p>
-            </div>
+            <div className="w-10 h-10 border-4 border-cyan-500/30 border-t-cyan-600 rounded-full animate-spin"></div>
         </div>
     );
   }
