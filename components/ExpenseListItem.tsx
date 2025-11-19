@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { type Expense, User, type Category } from '../types';
 import { 
@@ -7,7 +8,8 @@ import {
     GroceriesIcon, 
     RestaurantIcon, 
     CarRepairsIcon, 
-    MiscIcon 
+    MiscIcon,
+    GiftIcon
 } from './icons/CategoryIcons';
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string } } = {
@@ -20,23 +22,11 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
   "Divers": { icon: MiscIcon, color: 'bg-cyan-500' },
 };
 
-
-const ExpenseIcon: React.FC<{ category: Category }> = ({ category }) => {
-    const visual = CategoryVisuals[category] || CategoryVisuals["Divers"];
-    const IconComponent = visual.icon;
-    return (
-        <div className={`w-10 h-10 flex items-center justify-center rounded-full ${visual.color}`}>
-            <IconComponent className="h-6 w-6 text-white" />
-        </div>
-    );
-};
-
 const parseDescription = (fullDescription: string) => {
     const tagRegex = /(#\w+)/g;
     const description = fullDescription.replace(tagRegex, '').trim();
     return { description };
 };
-
 
 const ExpenseListItem: React.FC<{
     expense: Expense;
@@ -59,6 +49,18 @@ const ExpenseListItem: React.FC<{
         ? 'text-green-600 dark:text-green-400' 
         : 'text-slate-800 dark:text-slate-100';
 
+    // Logique spéciale pour Noël
+    const isChristmas = expense.category === 'Divers' && /no[uëe]l/i.test(expense.description);
+    
+    const visual = CategoryVisuals[expense.category] || CategoryVisuals["Divers"];
+    let IconComponent = visual.icon;
+    let iconBgClass = visual.color;
+
+    if (isChristmas) {
+        IconComponent = GiftIcon;
+        iconBgClass = 'bg-red-600';
+    }
+
     return (
         <div
             onClick={() => onEditExpense(expense)}
@@ -75,7 +77,9 @@ const ExpenseListItem: React.FC<{
         >
             <div className={`w-1.5 h-10 rounded-full mr-3 ${userColorClass}`}></div>
             <div className="mr-3 flex-shrink-0">
-                <ExpenseIcon category={expense.category} />
+                <div className={`w-10 h-10 flex items-center justify-center rounded-full ${iconBgClass}`}>
+                    <IconComponent className="h-6 w-6 text-white" />
+                </div>
             </div>
             <div className="flex-1 min-w-0">
                  <p className="font-semibold truncate text-slate-700 dark:text-slate-200" title={description}>{description}</p>

@@ -53,3 +53,18 @@ export const MiscIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
   </svg>
 );
+
+export const GiftIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    {/* Body */}
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6z" />
+    {/* Lid */}
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8h18v4H3z" />
+    {/* Ribbon Vertical */}
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v12" />
+    {/* Bow Left */}
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-2-3-5-3-5 0 0 2 3 2 5 0" />
+    {/* Bow Right */}
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c2-3 5-3 5 0 0 2-3 2-5 0" />
+  </svg>
+);
