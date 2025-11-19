@@ -7,14 +7,18 @@ import CloseIcon from './icons/CloseIcon';
 import SearchIcon from './icons/SearchIcon';
 
 const Logo = () => (
-    <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3">
-        <rect width="40" height="40" rx="8" className="fill-cyan-500"/>
-        <g transform="translate(5, 8)">
-            <rect x="12" y="3" width="16" height="10" rx="2" fill="#FBBF24"/>
-            <rect x="14" y="8" width="3.5" height="2.5" rx="0.5" fill="#F59E0B"/>
-            <path d="M0 10C0 8.89543 0.895431 8 2 8H28C29.1046 8 30 8.89543 30 10V22C30 23.1046 29.1046 24 28 24H2C0.895431 24 0 23.1046 0 22V10Z" fill="#475569"/>
-            <path d="M0 13C0 11.8954 0.895431 11 2 11H28C29.1046 11 30 11.8954 30 13V22C30 23.1046 29.1046 24 28 24H2C0.895431 24 0 23.1046 0 22V13Z" fill="#64748B"/>
-            <path d="M2 13.5H28" stroke="#94A3B8" strokeWidth="0.75" strokeLinecap="round" strokeDasharray="1.5 1.5"/>
+    <svg width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3">
+        <defs>
+            <linearGradient id="header-logo-gradient" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#06b6d4" />
+                <stop offset="100%" stopColor="#2563eb" />
+            </linearGradient>
+        </defs>
+        <rect width="512" height="512" rx="128" fill="url(#header-logo-gradient)"/>
+        <g fill="white">
+            <rect x="136" y="256" width="64" height="160" rx="32"/>
+            <rect x="224" y="160" width="64" height="256" rx="32"/>
+            <rect x="312" y="96" width="64" height="320" rx="32"/>
         </g>
     </svg>
 );
