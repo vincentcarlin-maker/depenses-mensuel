@@ -37,13 +37,15 @@ export const useAuth = () => {
     // Fonction helper pour logger une visite en base de données
     // Utilise sessionStorage pour éviter de spammer la BDD si l'utilisateur rafraîchit la page
     const logVisit = useCallback(async (userName: User) => {
-        const LOG_COOLDOWN = 5 * 60 * 1000; // 5 minutes
-        const storageKey = `last_visit_log_${userName}`;
+        // Délai réduit à 1 minute pour plus de réactivité
+        const LOG_COOLDOWN = 60 * 1000; 
+        // Changement de clé (v2) pour forcer la réinitialisation du cache chez l'utilisateur
+        const storageKey = `last_visit_log_v2_${userName}`;
         const lastLogTime = sessionStorage.getItem(storageKey);
 
         const now = Date.now();
 
-        // Si on a déjà loggé une visite il y a moins de 5 minutes, on ignore
+        // Si on a déjà loggé une visite il y a moins d'une minute, on ignore
         if (lastLogTime && (now - parseInt(lastLogTime, 10) < LOG_COOLDOWN)) {
             return;
         }
@@ -57,6 +59,7 @@ export const useAuth = () => {
         if (!error) {
             sessionStorage.setItem(storageKey, now.toString());
         } else {
+            // Si erreur (ex: table inexistante), on ne bloque pas l'app mais on log en console
             console.warn("Erreur lors de l'enregistrement de la visite:", error.message);
         }
     }, []);
@@ -84,10 +87,21 @@ export const useAuth = () => {
         const channel = supabase.channel('public:login_logs')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'login_logs' }, (payload) => {
                 const newLog = payload.new;
-                setLoginHistory(prev => [{
-                    user: newLog.user_name as User,
-                    timestamp: newLog.timestamp
-                }, ...prev].slice(0, 50));
+                setLoginHistory(prev => {
+                    // Éviter les doublons si l'événement vient de nous-même (déjà ajouté optimistiquement)
+                    // On vérifie si un log identique existe dans les 2 dernières secondes
+                    const isDuplicate = prev.some(log => 
+                        log.user === newLog.user_name && 
+                        Math.abs(new Date(log.timestamp).getTime() - new Date(newLog.timestamp).getTime()) < 2000
+                    );
+                    
+                    if (isDuplicate) return prev;
+
+                    return [{
+                        user: newLog.user_name as User,
+                        timestamp: newLog.timestamp
+                    }, ...prev].slice(0, 50);
+                });
             })
             .subscribe();
 
@@ -132,14 +146,23 @@ export const useAuth = () => {
             window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
             setUser(profile.user);
             
-            // Enregistrement de la connexion manuelle (saisie mot de passe)
-            // Ici on force le log même si le cooldown est actif car c'est une action explicite
+            // Création du log pour l'affichage immédiat (Optimistic UI)
+            const newLogEntry: LoginEvent = {
+                user: profile.user,
+                timestamp: new Date().toISOString()
+            };
+
+            // Mise à jour immédiate de l'état local pour que l'utilisateur le voie tout de suite
+            setLoginHistory(prev => [newLogEntry, ...prev]);
+
+            // Enregistrement en base de données (Fire and forget)
             supabase.from('login_logs').insert({
                 user_name: profile.user,
-                timestamp: new Date().toISOString()
+                timestamp: newLogEntry.timestamp
             }).then(({ error }) => {
                 if (!error) {
-                     sessionStorage.setItem(`last_visit_log_${profile.user}`, Date.now().toString());
+                     // On marque le sessionStorage pour éviter que le rechargement de page ne crée un doublon immédiat
+                     sessionStorage.setItem(`last_visit_log_v2_${profile.user}`, Date.now().toString());
                 }
             });
             
@@ -152,7 +175,7 @@ export const useAuth = () => {
         window.localStorage.removeItem(SESSION_KEY);
         // On nettoie aussi le tracker de visite pour permettre un re-log immédiat si besoin
         if (user) {
-             sessionStorage.removeItem(`last_visit_log_${user}`);
+             sessionStorage.removeItem(`last_visit_log_v2_${user}`);
         }
         setUser(null);
     }, [user]);
