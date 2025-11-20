@@ -34,6 +34,33 @@ export const useAuth = () => {
     const [profiles, setProfiles] = useLocalStorage<Profile[]>(PROFILES_KEY, INITIAL_PROFILES);
     const [loginHistory, setLoginHistory] = useState<LoginEvent[]>([]);
 
+    // Fonction helper pour logger une visite en base de données
+    // Utilise sessionStorage pour éviter de spammer la BDD si l'utilisateur rafraîchit la page
+    const logVisit = useCallback(async (userName: User) => {
+        const LOG_COOLDOWN = 5 * 60 * 1000; // 5 minutes
+        const storageKey = `last_visit_log_${userName}`;
+        const lastLogTime = sessionStorage.getItem(storageKey);
+
+        const now = Date.now();
+
+        // Si on a déjà loggé une visite il y a moins de 5 minutes, on ignore
+        if (lastLogTime && (now - parseInt(lastLogTime, 10) < LOG_COOLDOWN)) {
+            return;
+        }
+
+        // Sinon, on enregistre dans Supabase
+        const { error } = await supabase.from('login_logs').insert({
+            user_name: userName,
+            timestamp: new Date().toISOString()
+        });
+
+        if (!error) {
+            sessionStorage.setItem(storageKey, now.toString());
+        } else {
+            console.warn("Erreur lors de l'enregistrement de la visite:", error.message);
+        }
+    }, []);
+
     // Charge l'historique global depuis Supabase et écoute les nouvelles connexions
     useEffect(() => {
         const fetchHistory = async () => {
@@ -76,6 +103,8 @@ export const useAuth = () => {
                 const session: Session = JSON.parse(sessionItem);
                 if (session.expiresAt > Date.now()) {
                     setUser(session.user);
+                    // Enregistrer la visite automatique (rechargement de page ou réouverture d'app)
+                    logVisit(session.user);
                 } else {
                     window.localStorage.removeItem(SESSION_KEY);
                 }
@@ -86,7 +115,7 @@ export const useAuth = () => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [logVisit]);
 
     const login = useCallback(async (username: string, password: string): Promise<boolean> => {
         const normalizedUsername = username.toLowerCase().trim();
@@ -103,13 +132,15 @@ export const useAuth = () => {
             window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
             setUser(profile.user);
             
-            // Enregistrement de la connexion dans Supabase (Historique Global)
-            // On ne bloque pas l'UI si ça échoue (fire and forget)
+            // Enregistrement de la connexion manuelle (saisie mot de passe)
+            // Ici on force le log même si le cooldown est actif car c'est une action explicite
             supabase.from('login_logs').insert({
                 user_name: profile.user,
                 timestamp: new Date().toISOString()
             }).then(({ error }) => {
-                if (error) console.warn("Erreur lors de l'enregistrement de la connexion:", error.message);
+                if (!error) {
+                     sessionStorage.setItem(`last_visit_log_${profile.user}`, Date.now().toString());
+                }
             });
             
             return true;
@@ -119,8 +150,12 @@ export const useAuth = () => {
 
     const logout = useCallback(() => {
         window.localStorage.removeItem(SESSION_KEY);
+        // On nettoie aussi le tracker de visite pour permettre un re-log immédiat si besoin
+        if (user) {
+             sessionStorage.removeItem(`last_visit_log_${user}`);
+        }
         setUser(null);
-    }, []);
+    }, [user]);
 
     const addProfile = useCallback((newProfile: Profile): boolean => {
         const normalizedUsername = newProfile.username.toLowerCase().trim();
