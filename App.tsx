@@ -564,6 +564,8 @@ const MainApp: React.FC<{
     
     return expenses.filter(expense => {
       const expenseDate = new Date(expense.date);
+      // IGNORED: October 2025 (Initial data) from trends
+      if (expenseDate.getUTCFullYear() === 2025 && expenseDate.getUTCMonth() === 9) return false;
       return expenseDate.getUTCFullYear() === prevYear && expenseDate.getUTCMonth() === prevMonth;
     });
   }, [expenses, currentDate]);
@@ -575,14 +577,30 @@ const MainApp: React.FC<{
     
     return expenses.filter(expense => {
       const expenseDate = new Date(expense.date);
+      // IGNORED: October 2025 (Initial data) from trends
+      if (expenseDate.getUTCFullYear() === 2025 && expenseDate.getUTCMonth() === 9) return false;
       const expenseTime = expenseDate.getTime();
       return expenseTime >= threeMonthsAgo.getTime() && expenseTime < oneMonthAgo.getTime();
     });
   }, [expenses, currentDate]);
 
+  // Filtered expenses for the Analysis tab
+  // We explicitly remove October 2025 from the analysis view if the user navigates there
+  const analysisExpenses = useMemo(() => {
+     return filteredExpenses.filter(expense => {
+        const d = new Date(expense.date);
+        // Exclude Oct 2025
+        return !(d.getUTCFullYear() === 2025 && d.getUTCMonth() === 9);
+     });
+  }, [filteredExpenses]);
 
   const yearlyFilteredExpenses = useMemo(() => {
-    return expenses.filter(expense => new Date(expense.date).getUTCFullYear() === currentYear);
+    return expenses.filter(expense => {
+        const d = new Date(expense.date);
+        // IGNORED: October 2025 (Initial data) from yearly summary
+        if (d.getUTCFullYear() === 2025 && d.getUTCMonth() === 9) return false;
+        return d.getUTCFullYear() === currentYear;
+    });
   }, [expenses, currentYear]);
 
   const previousYearFilteredExpenses = useMemo(() => {
@@ -865,7 +883,7 @@ const MainApp: React.FC<{
                 </div>
               </div>
             )}
-            {activeTab === 'analysis' && <CategoryTotals expenses={filteredExpenses} previousMonthExpenses={previousMonthExpenses} last3MonthsExpenses={last3MonthsExpenses} />}
+            {activeTab === 'analysis' && <CategoryTotals expenses={analysisExpenses} previousMonthExpenses={previousMonthExpenses} last3MonthsExpenses={last3MonthsExpenses} />}
             {activeTab === 'yearly' && <YearlySummary expenses={yearlyFilteredExpenses} previousYearExpenses={previousYearFilteredExpenses} year={currentYear} />}
             {activeTab === 'history' && (
                 <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg animate-fade-in">
