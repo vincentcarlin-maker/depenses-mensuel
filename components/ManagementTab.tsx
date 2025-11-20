@@ -6,7 +6,6 @@ import EditIcon from './icons/EditIcon';
 import EyeIcon from './icons/EyeIcon';
 import ConfirmationModal from './ConfirmationModal';
 import ArrowDownTrayIcon from './icons/ArrowDownTrayIcon';
-import InfoIcon from './icons/InfoIcon';
 import SupabaseInstructionsModal from './SupabaseInstructionsModal';
 
 // --- Section Header Component ---
@@ -28,13 +27,6 @@ const HistoryManagement: React.FC<{ loginHistory: LoginEvent[] }> = ({ loginHist
                     <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Historique des connexions</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Connexions des 30 derniers jours.</p>
                 </div>
-                <button 
-                    onClick={() => setIsInstructionsOpen(true)}
-                    className="text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 p-2 rounded-full transition-colors"
-                    title="Configurer la Base de Données"
-                >
-                    <InfoIcon />
-                </button>
             </div>
             
             {loginHistory.length === 0 ? (
