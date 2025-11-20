@@ -38,9 +38,10 @@ interface HeaderProps {
   onMarkAsRead: () => void;
   realtimeStatus: 'SUBSCRIBED' | 'TIMED_OUT' | 'CHANNEL_ERROR' | 'CONNECTING';
   onDeleteActivity: (activityId: string) => void;
+  onlineUsers: User[];
 }
 
-const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout, loggedInUser, activityItems, unreadCount, onMarkAsRead, realtimeStatus, onDeleteActivity }) => {
+const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout, loggedInUser, activityItems, unreadCount, onMarkAsRead, realtimeStatus, onDeleteActivity, onlineUsers }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -49,6 +50,8 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
   const userColorClass = loggedInUser === User.Sophie ? 'bg-rose-500' : 'bg-sky-500';
   const userColorTextClass = loggedInUser === User.Sophie ? 'text-rose-500' : 'text-sky-500';
   const userInitial = loggedInUser.charAt(0).toUpperCase();
+
+  const otherUsersOnline = onlineUsers.filter(u => u !== loggedInUser);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -92,6 +95,19 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
           </h1>
         </div>
         <div className="flex items-center space-x-1 sm:space-x-2">
+            
+            {otherUsersOnline.map((user, idx) => (
+                 <div key={idx} className="hidden sm:flex items-center gap-1 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded-full mr-1 animate-fade-in">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    </span>
+                    <span className="text-xs font-medium text-green-700 dark:text-green-400 whitespace-nowrap">
+                        {user} est en ligne
+                    </span>
+                 </div>
+            ))}
+
             <button
                 onClick={onOpenSearch}
                 className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800"
@@ -176,6 +192,18 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
                 </button>
                 {isDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-xl py-2 z-30 border border-slate-200 dark:border-slate-700 animate-fade-in">
+                        <div className="sm:hidden px-4 py-2 border-b border-slate-100 dark:border-slate-700 mb-1">
+                             {otherUsersOnline.length > 0 ? (
+                                otherUsersOnline.map((u, i) => (
+                                    <p key={i} className="text-xs font-medium text-green-600 dark:text-green-400 flex items-center gap-1">
+                                         <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                                         {u} est en ligne
+                                    </p>
+                                ))
+                             ) : (
+                                 <p className="text-xs text-slate-400">Personne d'autre en ligne</p>
+                             )}
+                        </div>
                         <button
                             onClick={() => {
                                 onOpenSettings();

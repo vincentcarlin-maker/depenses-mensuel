@@ -70,6 +70,9 @@ const MainApp: React.FC<{
   const recentlyAddedIds = useRef(new Set<string>());
   const recentlyUpdatedIds = useRef(new Set<string>());
   const recentlyDeletedIds = useRef(new Set<string>());
+  
+  // Presence state
+  const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
 
   // Persistent Activity Log states
   const [lastBellCheck, setLastBellCheck] = useLocalStorage('lastBellCheck', new Date().toISOString());
@@ -196,6 +199,32 @@ const MainApp: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Presence Effect
+  useEffect(() => {
+      const presenceChannel = supabase.channel('online-users', {
+          config: {
+              presence: {
+                  key: user,
+              },
+          },
+      });
+
+      presenceChannel
+          .on('presence', { event: 'sync' }, () => {
+              const newState = presenceChannel.presenceState();
+              const users = Object.keys(newState) as User[];
+              setOnlineUsers(users);
+          })
+          .subscribe(async (status) => {
+              if (status === 'SUBSCRIBED') {
+                 await presenceChannel.track({ online_at: new Date().toISOString(), user_id: user });
+              }
+          });
+      
+      return () => {
+          supabase.removeChannel(presenceChannel);
+      }
+  }, [user]);
 
   useEffect(() => {
     const handleExpenseInsert = (payload: any) => {
@@ -747,6 +776,7 @@ const MainApp: React.FC<{
           onMarkAsRead={markActivitiesAsRead}
           realtimeStatus={realtimeStatus}
           onDeleteActivity={deleteActivity}
+          onlineUsers={onlineUsers}
         />
 
         <main className="container mx-auto p-4 md:p-8">
