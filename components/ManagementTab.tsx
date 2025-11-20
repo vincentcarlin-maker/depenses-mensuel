@@ -25,8 +25,8 @@ const HistoryManagement: React.FC<{ loginHistory: LoginEvent[] }> = ({ loginHist
         <div className="space-y-6">
             <div className="flex justify-between items-start">
                 <div>
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Historique global</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Connexions sur tous les appareils.</p>
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Historique des connexions</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Connexions des 30 derniers jours.</p>
                 </div>
                 <button 
                     onClick={() => setIsInstructionsOpen(true)}

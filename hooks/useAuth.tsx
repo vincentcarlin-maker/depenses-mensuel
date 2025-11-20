@@ -67,11 +67,14 @@ export const useAuth = () => {
     // Charge l'historique global depuis Supabase et écoute les nouvelles connexions
     useEffect(() => {
         const fetchHistory = async () => {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
             const { data, error } = await supabase
                 .from('login_logs')
                 .select('*')
-                .order('timestamp', { ascending: false })
-                .limit(50);
+                .gte('timestamp', thirtyDaysAgo.toISOString())
+                .order('timestamp', { ascending: false });
 
             if (!error && data) {
                 const formattedHistory: LoginEvent[] = data.map((log: any) => ({
@@ -100,7 +103,7 @@ export const useAuth = () => {
                     return [{
                         user: newLog.user_name as User,
                         timestamp: newLog.timestamp
-                    }, ...prev].slice(0, 50);
+                    }, ...prev];
                 });
             })
             .subscribe();
