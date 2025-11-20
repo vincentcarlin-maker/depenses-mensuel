@@ -7,7 +7,7 @@ import ArrowLeftIcon from './icons/ArrowLeftIcon';
 import ChevronRightIcon from './icons/ChevronRightIcon';
 import PaintBrushIcon from './icons/PaintBrushIcon';
 import BellIcon from './icons/BellIcon';
-import { type Profile } from '../hooks/useAuth';
+import { type Profile, type LoginEvent } from '../hooks/useAuth';
 import ManagementTab from './ManagementTab';
 import WrenchScrewdriverIcon from './icons/WrenchScrewdriverIcon';
 
@@ -35,6 +35,7 @@ interface SettingsModalProps {
   heatingTypes: string[];
   setHeatingTypes: React.Dispatch<React.SetStateAction<string[]>>;
   setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
+  loginHistory: LoginEvent[];
 }
 
 const SettingsMenuItem: React.FC<{
@@ -203,6 +204,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         heatingTypes={props.heatingTypes}
                         setHeatingTypes={props.setHeatingTypes}
                         setToastInfo={props.setToastInfo}
+                        loginHistory={props.loginHistory}
                     />
                 </div>
             )}

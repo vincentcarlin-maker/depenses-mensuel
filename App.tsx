@@ -14,7 +14,7 @@ import ReminderAlerts from './components/ReminderAlerts';
 import SettingsModal from './components/SettingsModal';
 import { useTheme } from './hooks/useTheme';
 import OfflineIndicator from './components/OfflineIndicator';
-import { useAuth, type Profile } from './hooks/useAuth';
+import { useAuth, type Profile, type LoginEvent } from './hooks/useAuth';
 import Login from './components/Login';
 import PullToRefresh from './components/PullToRefresh';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -50,8 +50,9 @@ const MainApp: React.FC<{
     profiles: Profile[],
     onAddProfile: (profile: Profile) => boolean,
     onUpdateProfilePassword: (username: string, newPassword: string) => boolean,
-    onDeleteProfile: (username: string) => boolean
-}> = ({ user, onLogout, profiles, onAddProfile, onUpdateProfilePassword, onDeleteProfile }) => {
+    onDeleteProfile: (username: string) => boolean,
+    loginHistory: LoginEvent[]
+}> = ({ user, onLogout, profiles, onAddProfile, onUpdateProfilePassword, onDeleteProfile, loginHistory }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -942,6 +943,7 @@ const MainApp: React.FC<{
           heatingTypes={heatingTypes}
           setHeatingTypes={setHeatingTypes}
           setToastInfo={setToastInfo}
+          loginHistory={loginHistory}
       />
       <OfflineIndicator />
     </div>
@@ -951,7 +953,7 @@ const MainApp: React.FC<{
 
 const App: React.FC = () => {
   useTheme();
-  const { user, login, logout, isLoading, profiles, addProfile, updateProfilePassword, deleteProfile } = useAuth();
+  const { user, login, logout, isLoading, profiles, addProfile, updateProfilePassword, deleteProfile, loginHistory } = useAuth();
   
   if (isLoading) {
     // Auth loading skeleton - simple centered spinner or similar, keeping it minimal as it's usually fast
@@ -974,6 +976,7 @@ const App: React.FC = () => {
         onAddProfile={addProfile}
         onUpdateProfilePassword={updateProfilePassword}
         onDeleteProfile={deleteProfile}
+        loginHistory={loginHistory}
     />
   );
 };

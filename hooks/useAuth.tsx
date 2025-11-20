@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { User } from '../types';
 import { useLocalStorage } from './useLocalStorage';
+import { supabase } from '../supabase/client';
 
 const SESSION_KEY = 'expense-app-session';
 const PROFILES_KEY = 'expense-app-profiles';
@@ -9,6 +10,11 @@ export interface Profile {
     username: string;
     password: string;
     user: User;
+}
+
+export interface LoginEvent {
+    user: User;
+    timestamp: string;
 }
 
 interface Session {
@@ -26,6 +32,42 @@ export const useAuth = () => {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [profiles, setProfiles] = useLocalStorage<Profile[]>(PROFILES_KEY, INITIAL_PROFILES);
+    const [loginHistory, setLoginHistory] = useState<LoginEvent[]>([]);
+
+    // Charge l'historique global depuis Supabase et écoute les nouvelles connexions
+    useEffect(() => {
+        const fetchHistory = async () => {
+            const { data, error } = await supabase
+                .from('login_logs')
+                .select('*')
+                .order('timestamp', { ascending: false })
+                .limit(50);
+
+            if (!error && data) {
+                const formattedHistory: LoginEvent[] = data.map((log: any) => ({
+                    user: log.user_name as User,
+                    timestamp: log.timestamp
+                }));
+                setLoginHistory(formattedHistory);
+            }
+        };
+
+        fetchHistory();
+
+        const channel = supabase.channel('public:login_logs')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'login_logs' }, (payload) => {
+                const newLog = payload.new;
+                setLoginHistory(prev => [{
+                    user: newLog.user_name as User,
+                    timestamp: newLog.timestamp
+                }, ...prev].slice(0, 50));
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
 
     useEffect(() => {
         try {
@@ -60,6 +102,16 @@ export const useAuth = () => {
             };
             window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
             setUser(profile.user);
+            
+            // Enregistrement de la connexion dans Supabase (Historique Global)
+            // On ne bloque pas l'UI si ça échoue (fire and forget)
+            supabase.from('login_logs').insert({
+                user_name: profile.user,
+                timestamp: new Date().toISOString()
+            }).then(({ error }) => {
+                if (error) console.warn("Erreur lors de l'enregistrement de la connexion:", error.message);
+            });
+            
             return true;
         }
         return false;
@@ -101,5 +153,5 @@ export const useAuth = () => {
         return true;
     }, [profiles, setProfiles, user]);
     
-    return { user, login, logout, isLoading, profiles, addProfile, updateProfilePassword, deleteProfile };
+    return { user, login, logout, isLoading, profiles, addProfile, updateProfilePassword, deleteProfile, loginHistory };
 };

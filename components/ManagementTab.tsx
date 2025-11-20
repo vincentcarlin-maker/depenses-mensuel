@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { User, type Category, type Expense } from '../types';
-import { type Profile } from '../hooks/useAuth';
+import { type Profile, type LoginEvent } from '../hooks/useAuth';
 import TrashIcon from './icons/TrashIcon';
 import EditIcon from './icons/EditIcon';
 import EyeIcon from './icons/EyeIcon';
 import ConfirmationModal from './ConfirmationModal';
 import ArrowDownTrayIcon from './icons/ArrowDownTrayIcon';
+import InfoIcon from './icons/InfoIcon';
+import SupabaseInstructionsModal from './SupabaseInstructionsModal';
 
 // --- Section Header Component ---
 const SectionHeader: React.FC<{ title: string; description: string }> = ({ title, description }) => (
@@ -14,6 +16,62 @@ const SectionHeader: React.FC<{ title: string; description: string }> = ({ title
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{description}</p>
     </div>
 );
+
+// --- History Management ---
+const HistoryManagement: React.FC<{ loginHistory: LoginEvent[] }> = ({ loginHistory }) => {
+    const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-start">
+                <div>
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Historique global</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Connexions sur tous les appareils.</p>
+                </div>
+                <button 
+                    onClick={() => setIsInstructionsOpen(true)}
+                    className="text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 p-2 rounded-full transition-colors"
+                    title="Configurer la Base de Données"
+                >
+                    <InfoIcon />
+                </button>
+            </div>
+            
+            {loginHistory.length === 0 ? (
+                <div className="text-center py-4 bg-slate-50 dark:bg-slate-700/30 rounded-lg border border-slate-100 dark:border-slate-700">
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Aucun historique disponible.</p>
+                    <button 
+                        onClick={() => setIsInstructionsOpen(true)}
+                        className="mt-2 text-xs text-cyan-600 dark:text-cyan-400 underline"
+                    >
+                        Configurer la base de données si vide
+                    </button>
+                </div>
+            ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
+                    {loginHistory.map((event, index) => {
+                         const userColorClass = event.user === User.Sophie ? 'bg-rose-500' : 'bg-sky-500';
+                         const formattedDate = new Date(event.timestamp).toLocaleString('fr-FR', {
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                         });
+
+                        return (
+                            <div key={index} className="flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                <div className={`w-2 h-2 rounded-full ${userColorClass} mr-3`}></div>
+                                <span className="font-medium text-slate-700 dark:text-slate-200 mr-2">{event.user}</span>
+                                <span className="text-sm text-slate-400 dark:text-slate-500 ml-auto">{formattedDate}</span>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+            <SupabaseInstructionsModal isOpen={isInstructionsOpen} onClose={() => setIsInstructionsOpen(false)} />
+        </div>
+    );
+};
 
 // --- Data Management ---
 const DataManagement: React.FC<{ expenses: Expense[] }> = ({ expenses }) => {
@@ -244,7 +302,7 @@ const CategoryManagement: React.FC<{
     );
 };
 
-// --- List Management ---
+// --- List Manager (Generic) ---
 interface ListManagerProps {
     title: string;
     list: string[];
@@ -340,8 +398,8 @@ const ListManager: React.FC<ListManagerProps> = ({ title, list, setList, itemNou
     );
 };
 
-
-const ListManagement: React.FC<{
+// --- List Management Section ---
+interface ListManagementProps {
     groceryStores: string[];
     setGroceryStores: React.Dispatch<React.SetStateAction<string[]>>;
     cars: string[];
@@ -349,13 +407,43 @@ const ListManagement: React.FC<{
     heatingTypes: string[];
     setHeatingTypes: React.Dispatch<React.SetStateAction<string[]>>;
     setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
-}> = ({ groceryStores, setGroceryStores, cars, setCars, heatingTypes, setHeatingTypes, setToastInfo }) => {
+}
+
+const ListManagement: React.FC<ListManagementProps> = ({
+    groceryStores,
+    setGroceryStores,
+    cars,
+    setCars,
+    heatingTypes,
+    setHeatingTypes,
+    setToastInfo,
+}) => {
     return (
-        <div className="space-y-12">
-            <SectionHeader title="Gestion des Listes" description="Personnalisez les options pour certaines catégories." />
-            <ListManager title="Magasins (Courses)" list={groceryStores} setList={setGroceryStores} itemNoun="magasin" setToastInfo={setToastInfo} />
-            <ListManager title="Véhicules (Carburant)" list={cars} setList={setCars} itemNoun="véhicule" setToastInfo={setToastInfo} />
-            <ListManager title="Types de Chauffage" list={heatingTypes} setList={setHeatingTypes} itemNoun="type de chauffage" setToastInfo={setToastInfo} />
+        <div className="space-y-6">
+             <SectionHeader title="Contenu des Listes" description="Personnalisez les options disponibles (magasins, véhicules...)." />
+             <div className="space-y-10">
+                <ListManager 
+                    title="Magasins" 
+                    list={groceryStores} 
+                    setList={setGroceryStores} 
+                    itemNoun="magasin" 
+                    setToastInfo={setToastInfo} 
+                />
+                <ListManager 
+                    title="Véhicules" 
+                    list={cars} 
+                    setList={setCars} 
+                    itemNoun="véhicule" 
+                    setToastInfo={setToastInfo} 
+                />
+                <ListManager 
+                    title="Types de Chauffage" 
+                    list={heatingTypes} 
+                    setList={setHeatingTypes} 
+                    itemNoun="type de chauffage" 
+                    setToastInfo={setToastInfo} 
+                />
+             </div>
         </div>
     );
 };
@@ -379,6 +467,7 @@ interface ManagementTabProps {
     heatingTypes: string[];
     setHeatingTypes: React.Dispatch<React.SetStateAction<string[]>>;
     setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
+    loginHistory: LoginEvent[];
 }
 
 const ManagementTab: React.FC<ManagementTabProps> = (props) => {
@@ -447,6 +536,7 @@ const ManagementTab: React.FC<ManagementTabProps> = (props) => {
                     background-color: rgb(185 28 28 / 1); /* hover:bg-red-700 */
                 }
             `}</style>
+            <HistoryManagement loginHistory={props.loginHistory} />
             <DataManagement expenses={props.expenses} />
             <UserManagement {...props} />
             <CategoryManagement {...props} />
