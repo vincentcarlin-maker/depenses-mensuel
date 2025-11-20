@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import SettingsIcon from './icons/SettingsIcon';
 import LogoutIcon from './icons/LogoutIcon';
@@ -5,6 +6,7 @@ import BellIcon from './icons/BellIcon';
 import { User, type Expense } from '../types';
 import CloseIcon from './icons/CloseIcon';
 import SearchIcon from './icons/SearchIcon';
+import ConfirmationModal from './ConfirmationModal';
 
 const Logo = () => (
     <svg width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3">
@@ -46,6 +48,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
   const userColorClass = loggedInUser === User.Sophie ? 'bg-rose-500' : 'bg-sky-500';
   const userColorTextClass = loggedInUser === User.Sophie ? 'text-rose-500' : 'text-sky-500';
@@ -219,8 +222,8 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
                         </button>
                         <button
                             onClick={() => {
-                                onLogout();
                                 setIsDropdownOpen(false);
+                                setIsLogoutConfirmOpen(true);
                             }}
                             className="w-full flex items-center px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
                         >
@@ -231,6 +234,16 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
                 )}
             </div>
         </div>
+        <ConfirmationModal
+            isOpen={isLogoutConfirmOpen}
+            onClose={() => setIsLogoutConfirmOpen(false)}
+            onConfirm={() => {
+                setIsLogoutConfirmOpen(false);
+                onLogout();
+            }}
+            title="Déconnexion"
+            message="Êtes-vous sûr de vouloir vous déconnecter ?"
+        />
       </div>
     </header>
   );
