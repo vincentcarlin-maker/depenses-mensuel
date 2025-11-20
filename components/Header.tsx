@@ -51,7 +51,9 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
   const userColorTextClass = loggedInUser === User.Sophie ? 'text-rose-500' : 'text-sky-500';
   const userInitial = loggedInUser.charAt(0).toUpperCase();
 
-  const otherUsersOnline = onlineUsers.filter(u => u !== loggedInUser);
+  // Determine the partner (the other user)
+  const partnerName = loggedInUser === User.Sophie ? User.Vincent : User.Sophie;
+  const isPartnerOnline = onlineUsers.includes(partnerName);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -96,17 +98,29 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
         </div>
         <div className="flex items-center space-x-1 sm:space-x-2">
             
-            {otherUsersOnline.map((user, idx) => (
-                 <div key={idx} className="hidden sm:flex items-center gap-1 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded-full mr-1 animate-fade-in">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                    </span>
-                    <span className="text-xs font-medium text-green-700 dark:text-green-400 whitespace-nowrap">
-                        {user} est en ligne
-                    </span>
-                 </div>
-            ))}
+            {/* Partner Status Indicator (Desktop) */}
+            <div className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full mr-1 animate-fade-in transition-colors duration-300">
+                {isPartnerOnline ? (
+                    <>
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        </span>
+                        <span className="text-xs font-medium text-green-700 dark:text-green-400 whitespace-nowrap ml-1">
+                            {partnerName} est en ligne
+                        </span>
+                    </>
+                ) : (
+                    <>
+                         <span className="relative flex h-2 w-2">
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-300 dark:bg-slate-600"></span>
+                        </span>
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap ml-1">
+                            {partnerName} est hors ligne
+                        </span>
+                    </>
+                )}
+            </div>
 
             <button
                 onClick={onOpenSearch}
@@ -193,16 +207,17 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
                 {isDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-xl py-2 z-30 border border-slate-200 dark:border-slate-700 animate-fade-in">
                         <div className="sm:hidden px-4 py-2 border-b border-slate-100 dark:border-slate-700 mb-1">
-                             {otherUsersOnline.length > 0 ? (
-                                otherUsersOnline.map((u, i) => (
-                                    <p key={i} className="text-xs font-medium text-green-600 dark:text-green-400 flex items-center gap-1">
-                                         <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500"></span>
-                                         {u} est en ligne
-                                    </p>
-                                ))
-                             ) : (
-                                 <p className="text-xs text-slate-400">Personne d'autre en ligne</p>
-                             )}
+                            {isPartnerOnline ? (
+                                <p className="text-xs font-medium text-green-600 dark:text-green-400 flex items-center gap-1">
+                                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                                     {partnerName} est en ligne
+                                </p>
+                            ) : (
+                                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+                                     {partnerName} est hors ligne
+                                </p>
+                            )}
                         </div>
                         <button
                             onClick={() => {
