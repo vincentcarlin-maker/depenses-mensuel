@@ -56,7 +56,7 @@ const MainApp: React.FC<{
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(getInitialDate);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly' | 'history'>('dashboard');
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
@@ -761,6 +761,7 @@ const MainApp: React.FC<{
     { id: 'dashboard', label: 'Tableau de bord' },
     { id: 'analysis', label: 'Analyse' },
     { id: 'yearly', label: 'Annuel' },
+    { id: 'history', label: 'Historique' },
   ] as const;
 
   return (
@@ -802,7 +803,7 @@ const MainApp: React.FC<{
             currentYear={currentYear}
           />
 
-          <div className="border-b border-slate-200 dark:border-slate-700 mb-6">
+          <div className="border-b border-slate-200 dark:border-slate-700 mb-6 overflow-x-auto no-scrollbar">
               <nav className="-mb-px flex space-x-6" aria-label="Tabs">
                    {tabs.map(tab => (
                       <button
@@ -865,6 +866,23 @@ const MainApp: React.FC<{
             )}
             {activeTab === 'analysis' && <CategoryTotals expenses={filteredExpenses} previousMonthExpenses={previousMonthExpenses} last3MonthsExpenses={last3MonthsExpenses} />}
             {activeTab === 'yearly' && <YearlySummary expenses={yearlyFilteredExpenses} previousYearExpenses={previousYearFilteredExpenses} year={currentYear} />}
+            {activeTab === 'history' && (
+                <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg animate-fade-in">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Historique Complet</h2>
+                        <div className="text-sm text-slate-500 dark:text-slate-400">
+                            {expenses.length} transactions
+                        </div>
+                    </div>
+                    <div className="max-h-[calc(100vh-250px)] overflow-y-auto pr-2">
+                        <GroupedExpenseList
+                            expenses={expenses}
+                            onEditExpense={setExpenseToEdit}
+                            highlightedIds={highlightedExpenseIds}
+                        />
+                    </div>
+                </div>
+            )}
           </div>
         </main>
       </PullToRefresh>
