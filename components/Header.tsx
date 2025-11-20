@@ -92,36 +92,37 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
       <div className="container mx-auto px-4 py-4 md:px-8 flex items-center justify-between">
         <div className="flex items-center">
           <Logo />
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
+          {/* Title hidden on mobile to make room for status */}
+          <h1 className="hidden sm:block text-xl md:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100 mr-4">
             Dépenses
           </h1>
-        </div>
-        <div className="flex items-center space-x-1 sm:space-x-2">
-            
-            {/* Partner Status Indicator (Desktop) */}
-            <div className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full mr-1 animate-fade-in transition-colors duration-300">
+          
+          {/* Partner Status Indicator (Now Visible on All Screens) */}
+           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-700/50 animate-fade-in transition-colors duration-300">
                 {isPartnerOnline ? (
                     <>
-                        <span className="relative flex h-2 w-2">
+                        <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
                         </span>
-                        <span className="text-xs font-medium text-green-700 dark:text-green-400 whitespace-nowrap ml-1">
-                            {partnerName} est en ligne
+                        <span className="text-xs font-semibold text-green-700 dark:text-green-400 whitespace-nowrap">
+                            {partnerName} en ligne
                         </span>
                     </>
                 ) : (
                     <>
-                         <span className="relative flex h-2 w-2">
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-300 dark:bg-slate-600"></span>
+                         <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-slate-300 dark:bg-slate-600"></span>
                         </span>
-                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap ml-1">
-                            {partnerName} est hors ligne
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                            {partnerName} hors ligne
                         </span>
                     </>
                 )}
             </div>
-
+        </div>
+        
+        <div className="flex items-center space-x-1 sm:space-x-2 ml-2">
             <button
                 onClick={onOpenSearch}
                 className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800"
@@ -206,19 +207,6 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
                 </button>
                 {isDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-xl py-2 z-30 border border-slate-200 dark:border-slate-700 animate-fade-in">
-                        <div className="sm:hidden px-4 py-2 border-b border-slate-100 dark:border-slate-700 mb-1">
-                            {isPartnerOnline ? (
-                                <p className="text-xs font-medium text-green-600 dark:text-green-400 flex items-center gap-1">
-                                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500"></span>
-                                     {partnerName} est en ligne
-                                </p>
-                            ) : (
-                                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
-                                     {partnerName} est hors ligne
-                                </p>
-                            )}
-                        </div>
                         <button
                             onClick={() => {
                                 onOpenSettings();
