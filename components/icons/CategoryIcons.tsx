@@ -69,14 +69,19 @@ export const GiftIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   </svg>
 );
 
+// UPDATED: ClothingIcon to a Hanger (Cintre)
 export const ClothingIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3.5 7c0-1.1.9-2 2-2h2.5a1 1 0 0 0 1.42 0l.58-.58V3.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v.92l.58.58a1 1 0 0 0 1.42 0h2.5a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-1.01v9a1 1 0 0 1-1 1h-10a1 1 0 0 1-1-1v-9H5.5a2 2 0 0 1-2-2v-2z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4 18h16L12 8 4 18Z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8V5a2 2 0 0 0-2-2" />
   </svg>
 );
 
+// UPDATED: BirthdayIcon to a simpler cake with candle
 export const BirthdayIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.87c1.355 0 2.697.056 4.024.166C17.155 8.51 18 9.473 18 10.608v2.513M15 8.25v-1.5m-6 1.5v-1.5m12 9.75-1.5.75a3.354 3.354 0 0 1-3 1.5 3.354 3.354 0 0 1-3-1.5 3.354 3.354 0 0 1-3 1.5 3.354 3.354 0 0 1-3-1.5l-1.5-.75m15 0V18a2.25 2.25 0 0 1-2.25 2.25h-13.5A2.25 2.25 0 0 1 3 18v-5.25m15 0c.024-.072.042-.146.052-.223a3.163 3.163 0 0 0-2.592-1.958c-.513-.045-1.026-.061-1.535-.061zm0 0c.42.003.843.048 1.255.132.521.104 1.005.33 1.444.675.383.299.629.728.698 1.211a3.164 3.164 0 0 1-2.82 3.56c-.42.048-.843.08-1.267.097m-13.125-1.56c.42-.003.843-.048 1.255-.132.521-.104 1.005-.33 1.444-.675.383-.299.629-.728.698-1.211a3.164 3.164 0 0 1-2.82-3.56c-.42-.048-.843-.08-1.267-.097m13.125 4.86a4.296 4.296 0 0 1-2.676 1.08c-.86.06-1.72.09-2.585.09-1.318 0-2.617-.067-3.884-.198a4.296 4.296 0 0 1-2.676-1.08" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 15h14v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15V8" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5a1.5 1.5 0 0 1 1.5 1.5c0 .83-.67 1.5-1.5 1.5S10.5 6.83 10.5 6c0-.83.67-1.5 1.5-1.5z" />
   </svg>
 );
