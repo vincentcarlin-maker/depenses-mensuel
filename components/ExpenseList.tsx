@@ -1,14 +1,15 @@
+
 import React from 'react';
 import { type Expense } from '../types';
 import ExpenseListItem from './ExpenseListItem';
 
 interface ExpenseListProps {
   expenses: Expense[];
-  onEditExpense: (expense: Expense) => void;
+  onExpenseClick: (expense: Expense) => void;
   highlightedIds: Set<string>;
 }
 
-const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEditExpense, highlightedIds }) => {
+const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onExpenseClick, highlightedIds }) => {
   if (expenses.length === 0) {
     return (
       <div className="text-center py-10">
@@ -25,7 +26,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onEditExpense, high
             <ExpenseListItem
                 key={expense.id}
                 expense={expense}
-                onEditExpense={onEditExpense}
+                onExpenseClick={onExpenseClick}
                 isHighlighted={highlightedIds.has(expense.id)}
             />
         ))}

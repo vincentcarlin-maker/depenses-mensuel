@@ -34,9 +34,9 @@ const parseDescription = (fullDescription: string) => {
 
 const ExpenseListItem: React.FC<{
     expense: Expense;
-    onEditExpense: (expense: Expense) => void;
+    onExpenseClick: (expense: Expense) => void;
     isHighlighted: boolean;
-}> = ({ expense, onEditExpense, isHighlighted }) => {
+}> = ({ expense, onExpenseClick, isHighlighted }) => {
     const { description } = parseDescription(expense.description);
 
     const formattedDate = new Date(expense.date).toLocaleString('fr-FR', {
@@ -73,8 +73,8 @@ const ExpenseListItem: React.FC<{
 
     return (
         <div
-            onClick={() => onEditExpense(expense)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onEditExpense(expense); }}
+            onClick={() => onExpenseClick(expense)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onExpenseClick(expense); }}
             role="button"
             tabIndex={0}
             className={`

@@ -8,6 +8,7 @@ import ExpenseSummary from './components/ExpenseSummary';
 import ExpenseList from './components/ExpenseList';
 import CategoryTotals from './components/CategoryChart';
 import EditExpenseModal from './components/EditExpenseModal';
+import ExpenseDetailModal from './components/ExpenseDetailModal';
 import Toast from './components/Toast';
 import YearlySummary from './components/YearlySummary';
 import GroupedExpenseList from './components/GroupedExpenseList';
@@ -52,7 +53,11 @@ const MainApp: React.FC<{
   const [isLoading, setIsLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(getInitialDate);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly' | 'history'>('dashboard');
+  
+  // Split state for Viewing vs Editing
+  const [expenseToView, setExpenseToView] = useState<Expense | null>(null);
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -134,9 +139,6 @@ const MainApp: React.FC<{
               }
           } else {
               // For updates, we want to keep them distinct if possible, or dedupe by ID if strictly identical
-              // But usually update IDs are unique per event in our generation.
-              // If we want to prevent duplicate update logs for the same change, we'd need a tighter check.
-              // For now, ID-based dedupe is fine.
               uniqueMap.set(act.id, act);
           }
       }
@@ -261,7 +263,6 @@ const MainApp: React.FC<{
       if (!updatedExpense?.id) return;
 
       if (updatedExpense.user !== user) {
-        // Capture old state from ref to enable diffing
         const oldExpense = expensesRef.current.find(e => e.id === updatedExpense.id);
 
         const newActivity: Activity = {
@@ -427,8 +428,6 @@ const MainApp: React.FC<{
       if (error) {
         console.error('Error deleting expense:', error.message || error);
         setToastInfo({ message: "La suppression a échoué. Veuillez réessayer.", type: 'error' });
-        // The undo logic will handle reverting the UI state if needed.
-        // We can force a refresh to be safe.
         syncData();
       }
   };
@@ -587,7 +586,6 @@ const MainApp: React.FC<{
   }, [expenses, currentDate]);
 
   // Filtered expenses for the Analysis tab
-  // We explicitly remove October 2025 from the analysis view if the user navigates there
   const analysisExpenses = useMemo(() => {
      return filteredExpenses.filter(expense => {
         const d = new Date(expense.date);
@@ -878,7 +876,7 @@ const MainApp: React.FC<{
                         />
                       <ExpenseList 
                         expenses={searchedExpenses} 
-                        onEditExpense={setExpenseToEdit} 
+                        onExpenseClick={setExpenseToView} 
                         highlightedIds={highlightedExpenseIds} 
                       />
                     </div>
@@ -898,7 +896,7 @@ const MainApp: React.FC<{
                     <div className="max-h-[calc(100vh-250px)] overflow-y-auto pr-2">
                         <GroupedExpenseList
                             expenses={expenses}
-                            onEditExpense={setExpenseToEdit}
+                            onExpenseClick={setExpenseToView}
                             highlightedIds={highlightedExpenseIds}
                         />
                     </div>
@@ -908,6 +906,19 @@ const MainApp: React.FC<{
         </main>
       </PullToRefresh>
 
+      {/* Detail Modal (View) */}
+      {expenseToView && (
+          <ExpenseDetailModal
+            expense={expenseToView}
+            onClose={() => setExpenseToView(null)}
+            onEdit={() => {
+                setExpenseToEdit(expenseToView);
+                setExpenseToView(null);
+            }}
+          />
+      )}
+
+      {/* Edit Modal (Action) */}
       {expenseToEdit && (
         <EditExpenseModal
           expense={expenseToEdit}
@@ -935,7 +946,7 @@ const MainApp: React.FC<{
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         allExpenses={expenses}
-        onEditExpense={setExpenseToEdit}
+        onEditExpense={setExpenseToView}
         highlightedIds={highlightedExpenseIds}
       />
 

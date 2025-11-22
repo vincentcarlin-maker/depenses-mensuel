@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { type Expense } from '../types';
 import GroupedExpenseList from './GroupedExpenseList';
@@ -97,7 +98,7 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, onClose, 
                 <div className="animate-fade-in-up">
                     <GroupedExpenseList
                         expenses={searchedExpenses}
-                        onEditExpense={onEditExpense}
+                        onExpenseClick={onEditExpense}
                         highlightedIds={highlightedIds}
                     />
                 </div>
