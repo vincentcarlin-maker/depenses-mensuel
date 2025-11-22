@@ -1,6 +1,7 @@
+
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase/client';
-import { type Expense, User, type Reminder, type Category } from './types';
+import { type Expense, User, type Reminder, type Category, type Activity } from './types';
 import Header from './components/Header';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseSummary from './components/ExpenseSummary';
@@ -21,13 +22,6 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import UndoToast from './components/UndoToast';
 import { DEFAULT_CATEGORIES } from './types';
 import GlobalSearchModal from './components/GlobalSearchModal';
-
-type Activity = {
-    id: string; // unique id for the activity
-    type: 'add' | 'update' | 'delete';
-    expense: Partial<Expense> & { id: string, user: User, date: string };
-    timestamp: string;
-};
 
 type UndoableAction = {
     type: 'delete' | 'update';
@@ -71,7 +65,8 @@ const MainApp: React.FC<{
   const recentlyAddedIds = useRef(new Set<string>());
   const recentlyUpdatedIds = useRef(new Set<string>());
   const recentlyDeletedIds = useRef(new Set<string>());
-  
+  const expensesRef = useRef<Expense[]>([]); // Ref to access current expenses in realtime callbacks
+
   // Presence state
   const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
 
@@ -91,6 +86,10 @@ const MainApp: React.FC<{
       currentYear: currentDate.getUTCFullYear(),
   }), [currentDate]);
 
+  useEffect(() => {
+    expensesRef.current = expenses;
+  }, [expenses]);
+
   const lastSyncTimestampRef = useRef(lastSyncTimestamp);
   useEffect(() => {
     lastSyncTimestampRef.current = lastSyncTimestamp;
@@ -107,12 +106,7 @@ const MainApp: React.FC<{
     
     const items = otherUserActivities
         .slice(0, 10) // Show last 10 activities from other user
-        .map(act => ({
-            key: act.id,
-            expense: act.expense,
-            type: act.type,
-            timestamp: act.timestamp
-        }));
+        .map(act => act); // Just return the Activity object directly
         
     return { unreadCount: unread, activityItemsForHeader: items };
   }, [activities, lastBellCheck, user]);
@@ -139,6 +133,10 @@ const MainApp: React.FC<{
                   uniqueMap.set(key, act);
               }
           } else {
+              // For updates, we want to keep them distinct if possible, or dedupe by ID if strictly identical
+              // But usually update IDs are unique per event in our generation.
+              // If we want to prevent duplicate update logs for the same change, we'd need a tighter check.
+              // For now, ID-based dedupe is fine.
               uniqueMap.set(act.id, act);
           }
       }
@@ -263,10 +261,14 @@ const MainApp: React.FC<{
       if (!updatedExpense?.id) return;
 
       if (updatedExpense.user !== user) {
+        // Capture old state from ref to enable diffing
+        const oldExpense = expensesRef.current.find(e => e.id === updatedExpense.id);
+
         const newActivity: Activity = {
            id: crypto.randomUUID(),
            type: 'update',
            expense: updatedExpense,
+           oldExpense: oldExpense,
            timestamp: new Date().toISOString()
         };
         setActivities(prev => mergeAndDedupeActivities(prev, [newActivity]));

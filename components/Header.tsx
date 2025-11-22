@@ -3,10 +3,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import SettingsIcon from './icons/SettingsIcon';
 import LogoutIcon from './icons/LogoutIcon';
 import BellIcon from './icons/BellIcon';
-import { User, type Expense } from '../types';
+import { User, type Expense, type Activity } from '../types';
 import CloseIcon from './icons/CloseIcon';
 import SearchIcon from './icons/SearchIcon';
 import ConfirmationModal from './ConfirmationModal';
+import ActivityDetailModal from './ActivityDetailModal';
 
 const Logo = () => (
     <svg width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3">
@@ -30,12 +31,7 @@ interface HeaderProps {
   onOpenSearch: () => void;
   onLogout: () => void;
   loggedInUser: User;
-  activityItems: {
-    key: string;
-    expense: Partial<Expense> & { user: User; id: string; date: string; description?: string, amount?: number };
-    type: 'add' | 'update' | 'delete';
-    timestamp: string;
-  }[];
+  activityItems: Activity[];
   unreadCount: number;
   onMarkAsRead: () => void;
   realtimeStatus: 'SUBSCRIBED' | 'TIMED_OUT' | 'CHANNEL_ERROR' | 'CONNECTING';
@@ -49,6 +45,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
 
   const userColorClass = loggedInUser === User.Sophie ? 'bg-rose-500' : 'bg-sky-500';
   const userColorTextClass = loggedInUser === User.Sophie ? 'text-rose-500' : 'text-sky-500';
@@ -79,6 +76,11 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
       if (shouldOpen) {
         onMarkAsRead();
       }
+  };
+  
+  const handleActivityClick = (activity: Activity) => {
+    setSelectedActivity(activity);
+    setIsNotificationsOpen(false);
   };
   
   const realtimeStatusStyles = {
@@ -161,23 +163,27 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
                         <div className="max-h-96 overflow-y-auto">
                             {activityItems.length > 0 ? (
                                 <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-                                    {activityItems.map(({ key, expense, type, timestamp }) => (
-                                        <li key={key} className="flex items-center justify-between p-4 gap-2">
+                                    {activityItems.map((activity) => (
+                                        <li 
+                                            key={activity.id} 
+                                            className="flex items-center justify-between p-4 gap-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors"
+                                            onClick={() => handleActivityClick(activity)}
+                                        >
                                             <div className="flex-grow min-w-0">
                                                 <p className="text-sm text-slate-700 dark:text-slate-200">
-                                                    <span className={`font-bold ${expense.user === User.Sophie ? 'text-rose-500' : 'text-sky-500'}`}>{expense.user}</span>
-                                                    { type === 'add' ? ` a ajouté ` : type === 'update' ? ` a mis à jour ` : ' a supprimé ' }
-                                                    <span className="font-semibold text-slate-800 dark:text-slate-100">{expense.description || 'une dépense'}</span>
-                                                    {typeof expense.amount === 'number' && ` (${expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`}
+                                                    <span className={`font-bold ${activity.expense.user === User.Sophie ? 'text-rose-500' : 'text-sky-500'}`}>{activity.expense.user}</span>
+                                                    { activity.type === 'add' ? ` a ajouté ` : activity.type === 'update' ? ` a mis à jour ` : ' a supprimé ' }
+                                                    <span className="font-semibold text-slate-800 dark:text-slate-100">{activity.expense.description || 'une dépense'}</span>
+                                                    {typeof activity.expense.amount === 'number' && ` (${activity.expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`}
                                                 </p>
                                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                                    {new Date(timestamp).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                    {new Date(activity.timestamp).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                                 </p>
                                             </div>
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    onDeleteActivity(key);
+                                                    onDeleteActivity(activity.id);
                                                 }}
                                                 className="flex-shrink-0 p-1.5 rounded-full text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                                                 aria-label="Supprimer cette activité"
@@ -244,6 +250,13 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
             title="Déconnexion"
             message="Êtes-vous sûr de vouloir vous déconnecter ?"
         />
+        {selectedActivity && (
+            <ActivityDetailModal
+                isOpen={!!selectedActivity}
+                onClose={() => setSelectedActivity(null)}
+                activity={selectedActivity}
+            />
+        )}
       </div>
     </header>
   );
