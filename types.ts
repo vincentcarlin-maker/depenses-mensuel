@@ -1,3 +1,4 @@
+
 export enum User {
   Sophie = "Sophie",
   Vincent = "Vincent",
@@ -15,6 +16,8 @@ export const DEFAULT_CATEGORIES: Category[] = [
   "Courses",
   "Restaurant",
   "Réparation voitures",
+  "Vêtements",
+  "Cadeau",
   "Divers",
 ];
 

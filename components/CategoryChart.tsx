@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { type Expense, type Category } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -9,10 +10,12 @@ import {
     GroceriesIcon, 
     RestaurantIcon, 
     CarRepairsIcon, 
-    MiscIcon 
+    MiscIcon,
+    ClothingIcon,
+    GiftIcon
 } from './icons/CategoryIcons';
 
-const PIE_COLORS = ['#06b6d4', '#ec4899', '#f97316', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'];
+const PIE_COLORS = ['#06b6d4', '#ec4899', '#f97316', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#d946ef'];
 
 const TrendUpIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -33,6 +36,8 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
   "Courses": { icon: GroceriesIcon, color: 'bg-green-500', pieColor: '#22c55e' },
   "Restaurant": { icon: RestaurantIcon, color: 'bg-purple-500', pieColor: '#a855f7' },
   "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-yellow-500', pieColor: '#eab308' },
+  "Vêtements": { icon: ClothingIcon, color: 'bg-indigo-500', pieColor: '#6366f1' },
+  "Cadeau": { icon: GiftIcon, color: 'bg-fuchsia-500', pieColor: '#d946ef' },
   "Divers": { icon: MiscIcon, color: 'bg-cyan-500', pieColor: '#06b6d4' },
 };
 

@@ -9,7 +9,9 @@ import {
     RestaurantIcon, 
     CarRepairsIcon, 
     MiscIcon,
-    GiftIcon
+    GiftIcon,
+    ClothingIcon,
+    BirthdayIcon
 } from './icons/CategoryIcons';
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string } } = {
@@ -19,6 +21,8 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
   "Courses": { icon: GroceriesIcon, color: 'bg-green-500' },
   "Restaurant": { icon: RestaurantIcon, color: 'bg-purple-500' },
   "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-yellow-500' },
+  "Vêtements": { icon: ClothingIcon, color: 'bg-indigo-500' },
+  "Cadeau": { icon: GiftIcon, color: 'bg-fuchsia-500' },
   "Divers": { icon: MiscIcon, color: 'bg-cyan-500' },
 };
 
@@ -50,7 +54,8 @@ const ExpenseListItem: React.FC<{
         : 'text-slate-800 dark:text-slate-100';
 
     // Logique spéciale pour Noël
-    const isChristmas = expense.category === 'Divers' && /no[uëe]l/i.test(expense.description);
+    const isChristmas = (expense.category === 'Divers' && /no[uëe]l/i.test(expense.description)) || (expense.category === 'Cadeau' && /no[uëe]l/i.test(expense.description));
+    const isBirthday = expense.category === 'Cadeau' && /anniversaire/i.test(expense.description);
     
     const visual = CategoryVisuals[expense.category] || CategoryVisuals["Divers"];
     let IconComponent = visual.icon;
@@ -59,6 +64,11 @@ const ExpenseListItem: React.FC<{
     if (isChristmas) {
         IconComponent = GiftIcon;
         iconBgClass = 'bg-red-600';
+    } else if (isBirthday) {
+        IconComponent = BirthdayIcon;
+        // Keep category color or specific birthday color? 
+        // Let's use category color for consistency, or a variation. 
+        // Default behavior: keep category color (fuchsia for Gift).
     }
 
     return (

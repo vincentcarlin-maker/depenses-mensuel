@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { type Expense, type Category, User } from '../types';
 import SegmentedControl from './SegmentedControl';
@@ -24,6 +25,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [customStore, setCustomStore] = useState('');
   const [heatingType, setHeatingType] = useState(heatingTypes[0] || '');
   const [repairedCar, setRepairedCar] = useState(cars[0] || '');
+  
+  // Specific states for new categories
+  const [clothingPerson, setClothingPerson] = useState('Nathan');
+  const [giftPerson, setGiftPerson] = useState('Nathan');
+  const [giftOccasion, setGiftOccasion] = useState('Noël');
+  
   const [error, setError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const amountInputRef = useRef<HTMLInputElement>(null);
@@ -32,6 +39,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
       ? (initialData.description || '')
       : ''
   );
+
+  const childrenOptions = ['Nathan', 'Chloé'];
+  const occasionOptions = ['Noël', 'Anniversaire'];
 
   const uniqueDescriptions = useMemo(() => {
     const tagRegex = /(#\w+)/g;
@@ -129,6 +139,20 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             return;
         }
         finalDescription = `${trimmedDescription} (${repairedCar})`;
+    } else if (category === 'Vêtements') {
+        const trimmedDescription = description.trim();
+        if (!trimmedDescription) {
+            setError('La description est requise.');
+            return;
+        }
+        finalDescription = `${trimmedDescription} (${clothingPerson})`;
+    } else if (category === 'Cadeau') {
+        const trimmedDescription = description.trim();
+        if (!trimmedDescription) {
+            setError('La description est requise.');
+            return;
+        }
+        finalDescription = `${trimmedDescription} (${giftPerson} - ${giftOccasion})`;
     }
     else {
         finalDescription = description.trim();
@@ -157,6 +181,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         setError('');
         setSuggestions([]);
         setRepairedCar(cars[0] || '');
+        setClothingPerson('Nathan');
+        setGiftPerson('Nathan');
+        setGiftOccasion('Noël');
     }
   };
 
@@ -240,6 +267,38 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                 />
             </div>
         )}
+
+        {category === 'Vêtements' && (
+            <div>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label>
+                <SegmentedControl
+                    options={childrenOptions}
+                    value={clothingPerson}
+                    onChange={setClothingPerson}
+                />
+            </div>
+        )}
+
+        {category === 'Cadeau' && (
+             <div className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label>
+                    <SegmentedControl
+                        options={childrenOptions}
+                        value={giftPerson}
+                        onChange={setGiftPerson}
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Occasion</label>
+                    <SegmentedControl
+                        options={occasionOptions}
+                        value={giftOccasion}
+                        onChange={setGiftOccasion}
+                    />
+                </div>
+            </div>
+        )}
         
         { !['Courses', 'Chauffage'].includes(category) && (
             <div>
@@ -264,7 +323,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                       onFocus={(e) => handleDescriptionChange(e)}
                       onBlur={() => setTimeout(() => setSuggestions([]), 150)}
                       className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
-                      placeholder="Ex: McDo, Courses Leclerc..."
+                      placeholder={category === 'Vêtements' ? "Ex: Pantalon, Manteau..." : category === 'Cadeau' ? "Ex: Lego, Poupée..." : "Ex: McDo, Courses Leclerc..."}
                       autoComplete="off"
                     />
                     {suggestions.length > 0 && (

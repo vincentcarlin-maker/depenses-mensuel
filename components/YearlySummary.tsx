@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { type Expense, type Category } from '../types';
 import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
@@ -9,7 +10,9 @@ import {
     GroceriesIcon, 
     RestaurantIcon, 
     CarRepairsIcon, 
-    MiscIcon 
+    MiscIcon,
+    ClothingIcon,
+    GiftIcon
 } from './icons/CategoryIcons';
 
 
@@ -20,6 +23,8 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
     "Courses": { icon: GroceriesIcon, color: 'bg-green-500', pieColor: '#22c55e' },
     "Restaurant": { icon: RestaurantIcon, color: 'bg-purple-500', pieColor: '#a855f7' },
     "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-yellow-500', pieColor: '#eab308' },
+    "Vêtements": { icon: ClothingIcon, color: 'bg-indigo-500', pieColor: '#6366f1' },
+    "Cadeau": { icon: GiftIcon, color: 'bg-fuchsia-500', pieColor: '#d946ef' },
     "Divers": { icon: MiscIcon, color: 'bg-cyan-500', pieColor: '#06b6d4' },
 };
 

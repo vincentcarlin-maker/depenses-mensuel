@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { type Expense, type Category, User } from '../types';
 import ConfirmationModal from './ConfirmationModal';
@@ -36,9 +37,18 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
     const [customStore, setCustomStore] = useState('');
     const [heatingType, setHeatingType] = useState('');
     const [repairedCar, setRepairedCar] = useState('');
+    
+    // New states
+    const [clothingPerson, setClothingPerson] = useState('Nathan');
+    const [giftPerson, setGiftPerson] = useState('Nathan');
+    const [giftOccasion, setGiftOccasion] = useState('Noël');
+
     const [error, setError] = useState('');
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     
+    const childrenOptions = ['Nathan', 'Chloé'];
+    const occasionOptions = ['Noël', 'Anniversaire'];
+
     useEffect(() => {
         if (expense.category === 'Courses') {
             const storeRegex = /\s\(([^)]+)\)$/;
@@ -82,6 +92,30 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
             } else {
                 setDescription(expense.description);
                 setRepairedCar(cars[0] || '');
+            }
+        } else if (expense.category === 'Vêtements') {
+            // Format: Description (Person)
+            const personRegex = /\s\(([^)]+)\)$/;
+            const match = expense.description.match(personRegex);
+            if (match) {
+                setClothingPerson(match[1]);
+                setDescription(expense.description.replace(personRegex, '').trim());
+            } else {
+                setDescription(expense.description);
+                setClothingPerson('Nathan');
+            }
+        } else if (expense.category === 'Cadeau') {
+            // Format: Description (Person - Occasion)
+            const detailsRegex = /\s\(([^)]+)\s-\s([^)]+)\)$/;
+            const match = expense.description.match(detailsRegex);
+            if (match) {
+                setGiftPerson(match[1]);
+                setGiftOccasion(match[2]);
+                setDescription(expense.description.replace(detailsRegex, '').trim());
+            } else {
+                setDescription(expense.description);
+                setGiftPerson('Nathan');
+                setGiftOccasion('Noël');
             }
         }
         else {
@@ -142,6 +176,20 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                 return;
             }
             finalDescription = `${trimmedDescription} (${repairedCar})`;
+        } else if (category === 'Vêtements') {
+            const trimmedDescription = description.trim();
+            if (!trimmedDescription) {
+                setError('La description est requise.');
+                return;
+            }
+            finalDescription = `${trimmedDescription} (${clothingPerson})`;
+        } else if (category === 'Cadeau') {
+            const trimmedDescription = description.trim();
+            if (!trimmedDescription) {
+                setError('La description est requise.');
+                return;
+            }
+            finalDescription = `${trimmedDescription} (${giftPerson} - ${giftOccasion})`;
         }
         else {
             finalDescription = description.trim();
@@ -273,6 +321,41 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                                     onChange={setRepairedCar}
                                     className="mt-1"
                                 />
+                            </div>
+                        )}
+
+                        {category === 'Vêtements' && (
+                            <div>
+                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label>
+                                <SegmentedControl
+                                    options={childrenOptions}
+                                    value={clothingPerson}
+                                    onChange={setClothingPerson}
+                                    className="mt-1"
+                                />
+                            </div>
+                        )}
+
+                        {category === 'Cadeau' && (
+                             <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label>
+                                    <SegmentedControl
+                                        options={childrenOptions}
+                                        value={giftPerson}
+                                        onChange={setGiftPerson}
+                                        className="mt-1"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Occasion</label>
+                                    <SegmentedControl
+                                        options={occasionOptions}
+                                        value={giftOccasion}
+                                        onChange={setGiftOccasion}
+                                        className="mt-1"
+                                    />
+                                </div>
                             </div>
                         )}
                         
