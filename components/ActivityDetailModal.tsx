@@ -4,7 +4,6 @@ import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { type Activity, User } from '../types';
 import CloseIcon from './icons/CloseIcon';
-import ArrowRightIcon from './icons/ArrowRightIcon';
 
 interface ActivityDetailModalProps {
   isOpen: boolean;
@@ -46,13 +45,13 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
   const actionText = type === 'add' ? 'ajouté' : type === 'update' ? 'modifié' : 'supprimé';
   
   const renderDiff = (label: string, oldValue: string | number | undefined, newValue: string | number | undefined, isCurrency = false) => {
-      // Si c'est une création ou suppression, pas de diff
+      // 1. ADD / DELETE / Simple view
       if (type !== 'update') {
-          if (newValue === undefined || newValue === '') return null;
+          if (newValue === undefined || newValue === '' || newValue === null) return null;
           return (
             <div className="mb-3 p-3 bg-slate-50 dark:bg-slate-700/30 rounded-lg">
                 <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">{label}</p>
-                <p className="text-slate-800 dark:text-slate-200 font-medium">
+                <p className="text-slate-800 dark:text-slate-200 font-medium break-all">
                     {isCurrency && typeof newValue === 'number' 
                         ? newValue.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) 
                         : newValue
@@ -62,50 +61,32 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
           );
       }
 
-      // Si les valeurs sont identiques, on affiche juste la valeur actuelle pour information, sans style de modification
-      if (oldValue === newValue) {
-          return (
-            <div className="mb-3 px-3 py-2 border-l-2 border-slate-200 dark:border-slate-600">
-                <p className="text-xs text-slate-400 dark:text-slate-500 uppercase font-semibold">{label}</p>
-                <p className="text-slate-600 dark:text-slate-300">
-                    {isCurrency && typeof newValue === 'number' 
-                        ? newValue.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) 
-                        : newValue
-                    }
-                </p>
-            </div>
-          );
+      // 2. UPDATE: Show only if changed (or if context allows, but minimizing noise)
+      if (oldValue === newValue || (oldValue === undefined && newValue === undefined)) {
+          return null;
       }
 
-      // C'est une modification : on met en avant le changement
-      // Si oldValue est undefined (historique manquant), on affiche quand même le bloc mais avec une mention.
+      const formatVal = (val: any) => {
+          if (val === undefined || val === null) return "Inconnu";
+          if (isCurrency && typeof val === 'number') return val.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+          return String(val);
+      };
+
       return (
-        <div className="mb-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 p-4 rounded-xl">
-             <p className="text-xs text-amber-600 dark:text-amber-400 uppercase font-bold mb-2 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                {label} modifié
-             </p>
-             <div className="flex flex-col gap-2">
-                 <div className="flex items-center text-slate-500 dark:text-slate-400 text-sm">
-                    <span className="w-16 text-xs uppercase">Avant :</span>
-                    <span className="line-through decoration-slate-400 dark:decoration-slate-500">
-                        {isCurrency && typeof oldValue === 'number'
-                            ? oldValue.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
-                            : (oldValue !== undefined ? oldValue : '(Inconnu)')
-                        }
-                    </span>
-                 </div>
-                 <div className="flex items-center font-bold text-slate-800 dark:text-slate-100 text-lg">
-                    <span className="w-16 text-xs uppercase font-normal text-slate-500 dark:text-slate-400">Après :</span>
-                    <span className="text-cyan-700 dark:text-cyan-400">
-                        {isCurrency && typeof newValue === 'number'
-                            ? newValue.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
-                            : newValue
-                        }
-                    </span>
-                 </div>
+          <div className="flex flex-col text-sm mt-2 bg-slate-100 dark:bg-slate-700/50 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+             <span className="text-xs uppercase text-slate-500 dark:text-slate-400 font-bold mb-2">{label}</span>
+             <div className="grid grid-cols-[min-content_1fr] gap-x-3 gap-y-1">
+                 <span className="text-[10px] uppercase text-rose-500 font-bold tracking-wider self-center bg-rose-50 dark:bg-rose-900/20 px-1.5 py-0.5 rounded">AVANT</span>
+                 <span className="text-slate-500 dark:text-slate-400 line-through text-xs self-center break-all">
+                     {formatVal(oldValue)}
+                 </span>
+                 
+                 <span className="text-[10px] uppercase text-emerald-600 dark:text-emerald-400 font-bold tracking-wider self-center bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">APRÈS</span>
+                 <span className="font-bold text-slate-800 dark:text-slate-100 text-sm self-center break-all">
+                     {formatVal(newValue)}
+                 </span>
              </div>
-        </div>
+          </div>
       );
   };
 
@@ -140,13 +121,21 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
         <div className="space-y-1">
             {type === 'update' ? (
                 <>
-                    {renderDiff("Description", oldExpense?.description, expense.description)}
+                    {renderDiff(
+                        expense.category === 'Courses' ? 'Magasin' : 'Description', 
+                        oldExpense?.description, 
+                        expense.description
+                    )}
                     {renderDiff("Montant", oldExpense?.amount, expense.amount, true)}
                     {renderDiff("Catégorie", oldExpense?.category, expense.category)}
                 </>
             ) : (
                 <>
-                    {renderDiff("Description", undefined, expense.description)}
+                    {renderDiff(
+                        expense.category === 'Courses' ? 'Magasin' : 'Description', 
+                        undefined, 
+                        expense.description
+                    )}
                     {renderDiff("Montant", undefined, expense.amount, true)}
                     {renderDiff("Catégorie", undefined, expense.category)}
                 </>

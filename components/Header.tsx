@@ -80,10 +80,8 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
   };
 
   const handleActivityClick = (activity: Activity) => {
-      if (activity.type !== 'update') {
-          setSelectedActivity(activity);
-          setIsNotificationsOpen(false);
-      }
+      setSelectedActivity(activity);
+      setIsNotificationsOpen(false);
   };
   
   const realtimeStatusStyles = {
@@ -170,7 +168,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
                                         <li 
                                             key={activity.id} 
                                             onClick={() => handleActivityClick(activity)}
-                                            className={`flex items-center justify-between p-4 gap-2 transition-colors ${activity.type !== 'update' ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50' : ''}`}
+                                            className="flex items-center justify-between p-4 gap-2 transition-colors cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50"
                                         >
                                             <div className="flex-grow min-w-0">
                                                 <p className="text-sm text-slate-700 dark:text-slate-200">
