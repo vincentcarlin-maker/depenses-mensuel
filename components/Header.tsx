@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useRef } from 'react';
 import SettingsIcon from './icons/SettingsIcon';
 import LogoutIcon from './icons/LogoutIcon';
@@ -169,8 +168,9 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
                                             key={activity.id} 
                                             onClick={() => handleActivityClick(activity)}
                                             className="flex items-center justify-between p-4 gap-2 transition-colors cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                                            role="button"
                                         >
-                                            <div className="flex-grow min-w-0">
+                                            <div className="flex-grow min-w-0 pointer-events-none">
                                                 <p className="text-sm text-slate-700 dark:text-slate-200">
                                                     <span className={`font-bold ${activity.expense.user === User.Sophie ? 'text-rose-500' : 'text-sky-500'}`}>{activity.expense.user}</span>
                                                     { activity.type === 'add' ? ` a ajouté ` : activity.type === 'update' ? ` a mis à jour ` : ' a supprimé ' }

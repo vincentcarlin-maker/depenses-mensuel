@@ -1,5 +1,4 @@
 
-
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { type Activity, User } from '../types';
@@ -29,9 +28,15 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !activity || !activity.expense) return null;
 
   const { type, expense, oldExpense, timestamp } = activity;
+  
+  // Sécurisation des valeurs
+  const safeCategory = expense.category || '';
+  const safeDescription = expense.description || '';
+  const safeUser = expense.user || 'Inconnu';
+  
   const formattedDate = new Date(timestamp).toLocaleString('fr-FR', {
     weekday: 'long',
     year: 'numeric',
@@ -41,7 +46,7 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
     minute: '2-digit'
   });
   
-  const userColorClass = expense.user === User.Sophie ? 'text-rose-600 dark:text-rose-400' : 'text-sky-600 dark:text-sky-400';
+  const userColorClass = safeUser === User.Sophie ? 'text-rose-600 dark:text-rose-400' : 'text-sky-600 dark:text-sky-400';
   const actionText = type === 'add' ? 'ajouté' : type === 'update' ? 'modifié' : 'supprimé';
   
   const renderDiff = (label: string, oldValue: string | number | undefined, newValue: string | number | undefined, isCurrency = false) => {
@@ -91,13 +96,13 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
   };
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-start pt-20 overflow-y-auto" aria-modal="true" role="dialog">
+    <div className="fixed inset-0 bg-black/60 z-[100] flex justify-center items-start pt-20 overflow-y-auto" aria-modal="true" role="dialog">
       <div 
         className="fixed inset-0"
         onClick={onClose}
         aria-hidden="true"
       ></div>
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-2xl z-50 w-full max-w-md m-4 animate-fade-in relative">
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-2xl z-[100] w-full max-w-md m-4 animate-fade-in relative">
         <div className="flex justify-between items-start mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
             <div>
                 <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Détail de l'activité</h2>
@@ -114,7 +119,7 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
         
         <div className="mb-6">
             <p className="text-lg text-slate-700 dark:text-slate-300">
-                <span className={`font-bold ${userColorClass}`}>{expense.user}</span> a {actionText} une transaction.
+                <span className={`font-bold ${userColorClass}`}>{safeUser}</span> a {actionText} une transaction.
             </p>
         </div>
 
@@ -122,22 +127,22 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
             {type === 'update' ? (
                 <>
                     {renderDiff(
-                        expense.category === 'Courses' ? 'Magasin' : 'Description', 
+                        safeCategory === 'Courses' ? 'Magasin' : 'Description', 
                         oldExpense?.description, 
-                        expense.description
+                        safeDescription
                     )}
                     {renderDiff("Montant", oldExpense?.amount, expense.amount, true)}
-                    {renderDiff("Catégorie", oldExpense?.category, expense.category)}
+                    {renderDiff("Catégorie", oldExpense?.category, safeCategory)}
                 </>
             ) : (
                 <>
                     {renderDiff(
-                        expense.category === 'Courses' ? 'Magasin' : 'Description', 
+                        safeCategory === 'Courses' ? 'Magasin' : 'Description', 
                         undefined, 
-                        expense.description
+                        safeDescription
                     )}
                     {renderDiff("Montant", undefined, expense.amount, true)}
-                    {renderDiff("Catégorie", undefined, expense.category)}
+                    {renderDiff("Catégorie", undefined, safeCategory)}
                 </>
             )}
         </div>
