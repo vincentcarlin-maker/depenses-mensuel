@@ -132,7 +132,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
       }
 
       return (
-          <div className="flex-grow min-w-0 pointer-events-none">
+          <div className="flex-grow min-w-0">
                 <p className="text-sm text-slate-700 dark:text-slate-200">
                     <span className={`font-bold ${userColor}`}>{activity.expense.user}</span>
                     { activity.type === 'add' ? ` a ajouté ` : activity.type === 'update' ? ` a mis à jour ` : ' a supprimé ' }

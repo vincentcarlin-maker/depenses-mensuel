@@ -67,12 +67,18 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
       }
 
       // 2. UPDATE: Show only if changed (or if context allows, but minimizing noise)
-      if (oldValue === newValue || (oldValue === undefined && newValue === undefined)) {
+      // Si c'est une mise à jour et que les valeurs sont identiques, on n'affiche rien.
+      if (oldValue === newValue) {
+          return null;
+      }
+      
+      // Si l'ancienne et la nouvelle valeur sont toutes deux indéfinies, rien à afficher.
+      if (oldValue === undefined && newValue === undefined) {
           return null;
       }
 
       const formatVal = (val: any) => {
-          if (val === undefined || val === null) return "Inconnu";
+          if (val === undefined || val === null || val === '') return "Non enregistré";
           if (isCurrency && typeof val === 'number') return val.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
           return String(val);
       };
@@ -82,7 +88,7 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
              <span className="text-xs uppercase text-slate-500 dark:text-slate-400 font-bold mb-2">{label}</span>
              <div className="grid grid-cols-[min-content_1fr] gap-x-3 gap-y-1">
                  <span className="text-[10px] uppercase text-rose-500 font-bold tracking-wider self-center bg-rose-50 dark:bg-rose-900/20 px-1.5 py-0.5 rounded">AVANT</span>
-                 <span className="text-slate-500 dark:text-slate-400 line-through text-xs self-center break-all">
+                 <span className={`text-xs self-center break-all ${oldValue === undefined || oldValue === null ? 'text-slate-400 italic' : 'text-slate-500 dark:text-slate-400 line-through'}`}>
                      {formatVal(oldValue)}
                  </span>
                  
