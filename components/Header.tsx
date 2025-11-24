@@ -95,7 +95,6 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
       const isUpdate = activity.type === 'update';
       const userColor = activity.expense.user === User.Sophie ? 'text-rose-500' : 'text-sky-500';
       
-      let diffSummary = null;
       if (isUpdate && activity.oldExpense) {
           const changes = [];
           const old = activity.oldExpense;
@@ -119,18 +118,32 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
           }
           
           if (changes.length > 0) {
-              diffSummary = (
-                  <div className="mt-1 pl-2 border-l-2 border-slate-300 dark:border-slate-600">
-                      {changes.map((c, i) => (
-                          <span key={i} className="block text-xs text-slate-500 dark:text-slate-400 font-mono">
-                            {c}
-                          </span>
-                      ))}
+              return (
+                  <div className="flex-grow min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                           <span className={`font-bold text-sm ${userColor}`}>{activity.expense.user}</span>
+                           <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                                {new Date(activity.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                           </span>
+                      </div>
+                      
+                      <div className="space-y-1">
+                          {changes.map((c, i) => (
+                              <div key={i} className="text-sm font-medium text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-700/50 rounded px-2 py-1 border-l-2 border-cyan-500">
+                                {c}
+                              </div>
+                          ))}
+                      </div>
+                      
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 italic truncate">
+                           sur {activity.expense.description}
+                      </p>
                   </div>
               );
           }
       }
 
+      // Default for Add/Delete
       return (
           <div className="flex-grow min-w-0">
                 <p className="text-sm text-slate-700 dark:text-slate-200">
@@ -139,7 +152,6 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
                     <span className="font-semibold text-slate-800 dark:text-slate-100">{activity.expense.description || 'une dépense'}</span>
                     {activity.type !== 'update' && typeof activity.expense.amount === 'number' && ` (${activity.expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`}
                 </p>
-                {diffSummary}
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     {new Date(activity.timestamp).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                 </p>
