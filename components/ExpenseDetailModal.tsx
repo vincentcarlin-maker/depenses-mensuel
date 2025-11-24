@@ -1,6 +1,7 @@
 
+
 import React, { useEffect, useMemo } from 'react';
-import { type Expense, User } from '../types';
+import { type Expense, User, type Activity } from '../types';
 import CloseIcon from './icons/CloseIcon';
 import EditIcon from './icons/EditIcon';
 import { 
@@ -30,11 +31,12 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
 
 interface ExpenseDetailModalProps {
   expense: Expense;
+  history?: Activity[];
   onClose: () => void;
   onEdit: () => void;
 }
 
-const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, onClose, onEdit }) => {
+const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, history = [], onClose, onEdit }) => {
   
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
@@ -100,7 +102,6 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, onClos
           }
       } else if (expense.category === 'Carburant') {
           // Usually description IS the car name for fuel
-           // No specific parsing needed unless we want to verify against car list
       }
 
       return { displayDescription, store, person, occasion, vehicle, heating };
@@ -118,6 +119,24 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, onClos
   const userColorClass = expense.user === User.Sophie ? 'bg-rose-500' : 'bg-sky-500';
   const isRefund = expense.amount < 0;
 
+  const renderDiffLine = (label: string, oldVal: any, newVal: any, isCurrency = false) => {
+      if (oldVal === newVal || oldVal === undefined) return null;
+      return (
+          <div className="flex flex-col text-sm mt-1 bg-white/50 dark:bg-black/20 p-2 rounded-lg">
+             <span className="text-xs uppercase text-slate-500 dark:text-slate-400 font-semibold">{label}</span>
+             <div className="flex items-center gap-2">
+                 <span className="line-through text-slate-400">
+                     {isCurrency && typeof oldVal === 'number' ? oldVal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) : oldVal}
+                 </span>
+                 <span className="text-slate-400">→</span>
+                 <span className="font-medium text-slate-700 dark:text-slate-200">
+                     {isCurrency && typeof newVal === 'number' ? newVal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) : newVal}
+                 </span>
+             </div>
+          </div>
+      );
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 backdrop-blur-sm z-50 flex justify-center items-center" aria-modal="true" role="dialog">
       <div 
@@ -126,13 +145,13 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, onClos
         aria-hidden="true"
       ></div>
       
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-2xl z-50 w-full max-w-sm m-4 animate-fade-in relative overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-2xl z-50 w-full max-w-md m-4 animate-fade-in relative overflow-hidden flex flex-col max-h-[90vh]">
          {/* Header Background Accent */}
          <div className={`absolute top-0 left-0 w-full h-24 ${visual.color} opacity-50`}></div>
          
-         <div className="relative flex flex-col items-center text-center pt-4">
+         <div className="relative flex flex-col items-center text-center pt-4 overflow-y-auto">
             {/* Category Icon */}
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg bg-white dark:bg-slate-700 mb-4`}>
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg bg-white dark:bg-slate-700 mb-4 flex-shrink-0`}>
                 <IconComponent className={`h-8 w-8 ${visual.textColor}`} />
             </div>
             
@@ -217,6 +236,40 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, onClos
                     )}
                 </div>
 
+                {/* Modification History */}
+                {history.length > 0 && (
+                    <div className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-4">
+                        <h3 className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-3">Historique des modifications</h3>
+                        <div className="space-y-4">
+                            {history.map(act => (
+                                <div key={act.id} className="bg-slate-50 dark:bg-slate-700/30 p-3 rounded-xl text-sm">
+                                    <div className="flex justify-between items-start mb-1">
+                                         <span className={`font-bold ${act.expense.user === User.Sophie ? 'text-rose-600 dark:text-rose-400' : 'text-sky-600 dark:text-sky-400'}`}>
+                                             {act.expense.user}
+                                         </span>
+                                         <span className="text-xs text-slate-400">
+                                             {new Date(act.timestamp).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                                         </span>
+                                    </div>
+                                    <div className="space-y-1">
+                                        {/* Smart label for description based on category */}
+                                        {renderDiffLine(
+                                            act.expense.category === 'Courses' ? 'Magasin' : 'Description', 
+                                            act.oldExpense?.description, 
+                                            act.expense.description
+                                        )}
+                                        {renderDiffLine("Montant", act.oldExpense?.amount, act.expense.amount, true)}
+                                        {renderDiffLine("Catégorie", act.oldExpense?.category, act.expense.category)}
+                                        {renderDiffLine("Date", 
+                                            act.oldExpense?.date ? new Date(act.oldExpense.date).toLocaleDateString() : undefined,
+                                            new Date(act.expense.date!).toLocaleDateString()
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Actions */}

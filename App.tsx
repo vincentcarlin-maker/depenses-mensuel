@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase/client';
 import { type Expense, User, type Reminder, type Category, type Activity } from './types';
@@ -103,18 +104,31 @@ const MainApp: React.FC<{
   const { unreadCount, activityItemsForHeader } = useMemo(() => {
     if (!user) return { unreadCount: 0, activityItemsForHeader: [] };
     
-    const otherUserActivities = activities.filter(act => act.expense.user !== user);
+    // Filter activities where the other user did something
+    // EXCLUDE updates from the header notification as requested
+    const otherUserActivities = activities.filter(act => 
+        act.expense.user !== user && 
+        act.type !== 'update' // Hide modifications from recent activity list
+    );
     
     const unread = otherUserActivities.filter(act => 
         new Date(act.timestamp) > new Date(lastBellCheck)
     ).length;
     
     const items = otherUserActivities
-        .slice(0, 10) // Show last 10 activities from other user
-        .map(act => act); // Just return the Activity object directly
+        .slice(0, 10) // Show last 10 activities
+        .map(act => act);
         
     return { unreadCount: unread, activityItemsForHeader: items };
   }, [activities, lastBellCheck, user]);
+
+  // Compute history for the currently viewed expense
+  const expenseHistory = useMemo(() => {
+      if (!expenseToView) return [];
+      return activities
+          .filter(a => a.expense.id === expenseToView.id && a.type === 'update')
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [expenseToView, activities]);
 
   const highlightExpense = useCallback((id: string) => {
     setHighlightedExpenseIds(prev => new Set(prev).add(id));
@@ -138,14 +152,14 @@ const MainApp: React.FC<{
                   uniqueMap.set(key, act);
               }
           } else {
-              // For updates, we want to keep them distinct if possible, or dedupe by ID if strictly identical
+              // For updates, we keep them all but use ID to prevent exact duplicates
               uniqueMap.set(act.id, act);
           }
       }
 
       return Array.from(uniqueMap.values())
           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-          .slice(0, 20);
+          .slice(0, 50); // Increased limit to store more history for details
   }, []);
 
   const syncData = useCallback(async (shouldCatchUp = false) => {
@@ -261,8 +275,12 @@ const MainApp: React.FC<{
     const handleExpenseUpdate = (payload: any) => {
       const updatedExpense = payload.new as Expense;
       if (!updatedExpense?.id) return;
+      
+      const wasUpdatedLocally = recentlyUpdatedIds.current.has(updatedExpense.id);
 
-      if (updatedExpense.user !== user) {
+      // We want to capture history for ALL updates (local or remote), but we handle local ones in updateExpense
+      // so we only need to handle REMOTE updates here to avoid duplicates.
+      if (!wasUpdatedLocally) {
         const existingExpense = expensesRef.current.find(e => e.id === updatedExpense.id);
         const oldExpense = existingExpense ? { ...existingExpense } : undefined;
 
@@ -274,17 +292,17 @@ const MainApp: React.FC<{
            timestamp: new Date().toISOString()
         };
         setActivities(prev => mergeAndDedupeActivities(prev, [newActivity]));
+        
+        if (updatedExpense.user !== user) {
+            setToastInfo({ message: `${updatedExpense.user} a modifié "${updatedExpense.description}".`, type: 'info' });
+        }
       }
 
-      const wasUpdatedLocally = recentlyUpdatedIds.current.has(updatedExpense.id);
       setExpenses(prevExpenses =>
         prevExpenses.map(expense =>
           expense.id === updatedExpense.id ? updatedExpense : expense
         )
       );
-      if (!wasUpdatedLocally) {
-        setToastInfo({ message: `${updatedExpense.user} a modifié "${updatedExpense.description}".`, type: 'info' });
-      }
       highlightExpense(updatedExpense.id);
     };
 
@@ -468,6 +486,16 @@ const MainApp: React.FC<{
     if (!originalExpense) return;
 
     if (undoableAction?.timerId) clearTimeout(undoableAction.timerId);
+
+    // Create activity for local updates immediately so it appears in history
+    const newActivity: Activity = {
+        id: crypto.randomUUID(),
+        type: 'update',
+        expense: updatedExpense,
+        oldExpense: originalExpense,
+        timestamp: new Date().toISOString()
+    };
+    setActivities(prev => mergeAndDedupeActivities(prev, [newActivity]));
 
     setExpenses(prev => prev.map(e => e.id === updatedExpense.id ? updatedExpense : e));
     setExpenseToEdit(null);
@@ -912,6 +940,7 @@ const MainApp: React.FC<{
       {expenseToView && (
           <ExpenseDetailModal
             expense={expenseToView}
+            history={expenseHistory}
             onClose={() => setExpenseToView(null)}
             onEdit={() => {
                 setExpenseToEdit(expenseToView);
