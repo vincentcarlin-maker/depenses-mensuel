@@ -263,7 +263,8 @@ const MainApp: React.FC<{
       if (!updatedExpense?.id) return;
 
       if (updatedExpense.user !== user) {
-        const oldExpense = expensesRef.current.find(e => e.id === updatedExpense.id);
+        const existingExpense = expensesRef.current.find(e => e.id === updatedExpense.id);
+        const oldExpense = existingExpense ? { ...existingExpense } : undefined;
 
         const newActivity: Activity = {
            id: crypto.randomUUID(),

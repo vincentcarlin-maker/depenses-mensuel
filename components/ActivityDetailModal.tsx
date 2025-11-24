@@ -60,8 +60,8 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
           );
       }
 
-      // Si les valeurs sont identiques, on affiche juste la valeur actuelle
-      if (oldValue === newValue || (oldValue === undefined && newValue !== undefined)) {
+      // Si les valeurs sont identiques, on affiche juste la valeur actuelle pour information, sans style de modification
+      if (oldValue === newValue) {
           return (
             <div className="mb-3 px-3 py-2 border-l-2 border-slate-200 dark:border-slate-600">
                 <p className="text-xs text-slate-400 dark:text-slate-500 uppercase font-semibold">{label}</p>
@@ -76,6 +76,7 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
       }
 
       // C'est une modification : on met en avant le changement
+      // Si oldValue est undefined (historique manquant), on affiche quand même le bloc mais avec une mention.
       return (
         <div className="mb-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 p-4 rounded-xl">
              <p className="text-xs text-amber-600 dark:text-amber-400 uppercase font-bold mb-2 flex items-center gap-2">
@@ -88,7 +89,7 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
                     <span className="line-through decoration-slate-400 dark:decoration-slate-500">
                         {isCurrency && typeof oldValue === 'number'
                             ? oldValue.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })
-                            : oldValue || '(Vide)'
+                            : (oldValue !== undefined ? oldValue : '(Inconnu)')
                         }
                     </span>
                  </div>
@@ -135,11 +136,11 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
         </div>
 
         <div className="space-y-1">
-            {type === 'update' && oldExpense ? (
+            {type === 'update' ? (
                 <>
-                    {renderDiff("Description", oldExpense.description, expense.description)}
-                    {renderDiff("Montant", oldExpense.amount, expense.amount, true)}
-                    {renderDiff("Catégorie", oldExpense.category, expense.category)}
+                    {renderDiff("Description", oldExpense?.description, expense.description)}
+                    {renderDiff("Montant", oldExpense?.amount, expense.amount, true)}
+                    {renderDiff("Catégorie", oldExpense?.category, expense.category)}
                 </>
             ) : (
                 <>
