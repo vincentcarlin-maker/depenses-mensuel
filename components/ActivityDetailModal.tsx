@@ -66,19 +66,26 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
           );
       }
 
-      // 2. UPDATE: Show only if changed (or if context allows, but minimizing noise)
-      // Si c'est une mise à jour et que les valeurs sont identiques, on n'affiche rien.
+      // 2. UPDATE: Show only if strictly changed
+      
+      // Si les valeurs sont identiques, on n'affiche rien.
       if (oldValue === newValue) {
           return null;
       }
       
-      // Si l'ancienne et la nouvelle valeur sont toutes deux indéfinies, rien à afficher.
-      if (oldValue === undefined && newValue === undefined) {
+      // STRICT : Si l'ancienne valeur est inconnue (undefined), on considère qu'on ne peut pas afficher de différence fiable.
+      // Cela évite l'affichage "Avant: Non enregistré" pour des champs qui n'ont probablement pas changé.
+      if (oldValue === undefined) {
+          return null;
+      }
+
+      // Si l'ancienne et la nouvelle valeur sont nulles/vide, rien à afficher.
+      if ((oldValue === null || oldValue === '') && (newValue === null || newValue === '')) {
           return null;
       }
 
       const formatVal = (val: any) => {
-          if (val === undefined || val === null || val === '') return "Non enregistré";
+          if (val === undefined || val === null || val === '') return "Vide";
           if (isCurrency && typeof val === 'number') return val.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
           return String(val);
       };
@@ -88,7 +95,7 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
              <span className="text-xs uppercase text-slate-500 dark:text-slate-400 font-bold mb-2">{label}</span>
              <div className="grid grid-cols-[min-content_1fr] gap-x-3 gap-y-1">
                  <span className="text-[10px] uppercase text-rose-500 font-bold tracking-wider self-center bg-rose-50 dark:bg-rose-900/20 px-1.5 py-0.5 rounded">AVANT</span>
-                 <span className={`text-xs self-center break-all ${oldValue === undefined || oldValue === null ? 'text-slate-400 italic' : 'text-slate-500 dark:text-slate-400 line-through'}`}>
+                 <span className="text-slate-500 dark:text-slate-400 line-through text-xs self-center break-all">
                      {formatVal(oldValue)}
                  </span>
                  
@@ -111,7 +118,7 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
       <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-2xl z-[100] w-full max-w-md m-4 animate-fade-in relative">
         <div className="flex justify-between items-start mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
             <div>
-                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Détail de l'activité</h2>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Détail de la modification</h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{formattedDate}</p>
             </div>
             <button
@@ -125,7 +132,7 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
         
         <div className="mb-6">
             <p className="text-lg text-slate-700 dark:text-slate-300">
-                <span className={`font-bold ${userColorClass}`}>{safeUser}</span> a {actionText} une transaction.
+                <span className={`font-bold ${userColorClass}`}>{safeUser}</span> a {actionText} : <span className="font-medium text-slate-900 dark:text-slate-100">{safeDescription}</span>
             </p>
         </div>
 
@@ -150,6 +157,15 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
                     {renderDiff("Montant", undefined, expense.amount, true)}
                     {renderDiff("Catégorie", undefined, safeCategory)}
                 </>
+            )}
+            
+            {/* Fallback si aucune différence n'est affichée (ex: bug ou historique manquant) */}
+            {type === 'update' && 
+             oldExpense && 
+             oldExpense.description === safeDescription && 
+             oldExpense.amount === expense.amount && 
+             oldExpense.category === safeCategory && (
+                <p className="text-sm text-slate-400 italic text-center py-4">Aucune modification visible détectée.</p>
             )}
         </div>
         
