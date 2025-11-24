@@ -821,6 +821,7 @@ const MainApp: React.FC<{
             onPayReminder={handlePayReminder}
             currentMonth={currentMonth}
             currentYear={currentYear}
+            loggedInUser={user}
           />
 
           <div className="border-b border-slate-200 dark:border-slate-700 mb-6 overflow-x-auto no-scrollbar">

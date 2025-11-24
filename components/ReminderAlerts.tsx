@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { type Reminder, type Expense } from '../types';
+import { type Reminder, type Expense, User } from '../types';
 
 interface ReminderAlertsProps {
   reminders: Reminder[];
@@ -7,9 +8,10 @@ interface ReminderAlertsProps {
   onPayReminder: (reminder: Reminder) => void;
   currentYear: number;
   currentMonth: number;
+  loggedInUser: User;
 }
 
-const ReminderAlerts: React.FC<ReminderAlertsProps> = ({ reminders, monthlyExpenses, onPayReminder, currentYear, currentMonth }) => {
+const ReminderAlerts: React.FC<ReminderAlertsProps> = ({ reminders, monthlyExpenses, onPayReminder, currentYear, currentMonth, loggedInUser }) => {
   const viewedMonthDate = new Date(Date.UTC(currentYear, currentMonth));
   const reminderStartDate = new Date('2025-11-01T00:00:00Z');
 
@@ -28,9 +30,14 @@ const ReminderAlerts: React.FC<ReminderAlertsProps> = ({ reminders, monthlyExpen
   const isCurrentMonth = currentYear === realCurrentYear && currentMonth === realCurrentMonth;
 
   const pendingReminders = reminders.filter(reminder => {
-    // FIX: Added validation to prevent crashes from malformed reminder data, which could be missing an amount or description.
+    // FIX: Added validation to prevent crashes from malformed reminder data.
     if (!reminder || typeof reminder.amount !== 'number' || typeof reminder.description !== 'string' || !reminder.is_active) {
       return false;
+    }
+
+    // Filter: Show reminders only for the logged-in user
+    if (reminder.user !== loggedInUser) {
+        return false;
     }
 
     // Never show reminders for a future month
@@ -78,7 +85,7 @@ const ReminderAlerts: React.FC<ReminderAlertsProps> = ({ reminders, monthlyExpen
           </svg>
         </div>
         <div className="ml-3 flex-1">
-          <p className="text-sm font-bold text-yellow-800 dark:text-yellow-200">Rappels de Dépenses</p>
+          <p className="text-sm font-bold text-yellow-800 dark:text-yellow-200">Rappels de Dépenses ({loggedInUser})</p>
           <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
             <ul className="space-y-2">
               {pendingReminders.map(reminder => (
