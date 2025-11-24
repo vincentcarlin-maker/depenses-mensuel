@@ -121,16 +121,25 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
 
   const renderDiffLine = (label: string, oldVal: any, newVal: any, isCurrency = false) => {
       if (oldVal === newVal || oldVal === undefined) return null;
+
+      const formatVal = (val: any) => {
+          if (val === undefined || val === null) return "Inconnu";
+          if (isCurrency && typeof val === 'number') return val.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+          return String(val);
+      };
+
       return (
-          <div className="flex flex-col text-sm mt-1 bg-white/50 dark:bg-black/20 p-2 rounded-lg">
-             <span className="text-xs uppercase text-slate-500 dark:text-slate-400 font-semibold">{label}</span>
-             <div className="flex items-center gap-2">
-                 <span className="line-through text-slate-400">
-                     {isCurrency && typeof oldVal === 'number' ? oldVal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) : oldVal}
+          <div className="flex flex-col text-sm mt-2 bg-slate-100 dark:bg-slate-700/50 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+             <span className="text-xs uppercase text-slate-500 dark:text-slate-400 font-bold mb-2">{label}</span>
+             <div className="grid grid-cols-[min-content_1fr] gap-x-3 gap-y-1">
+                 <span className="text-[10px] uppercase text-rose-500 font-bold tracking-wider self-center bg-rose-50 dark:bg-rose-900/20 px-1.5 py-0.5 rounded">AVANT</span>
+                 <span className="text-slate-500 dark:text-slate-400 line-through text-xs self-center break-all">
+                     {formatVal(oldVal)}
                  </span>
-                 <span className="text-slate-400">→</span>
-                 <span className="font-medium text-slate-700 dark:text-slate-200">
-                     {isCurrency && typeof newVal === 'number' ? newVal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) : newVal}
+                 
+                 <span className="text-[10px] uppercase text-emerald-600 dark:text-emerald-400 font-bold tracking-wider self-center bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">APRÈS</span>
+                 <span className="font-bold text-slate-800 dark:text-slate-100 text-sm self-center break-all">
+                     {formatVal(newVal)}
                  </span>
              </div>
           </div>
@@ -239,16 +248,21 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
                 {/* Modification History */}
                 {history.length > 0 && (
                     <div className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-4">
-                        <h3 className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-3">Historique des modifications</h3>
+                        <h3 className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-2">
+                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                             </svg>
+                             Historique des modifications
+                        </h3>
                         <div className="space-y-4">
                             {history.map(act => (
                                 <div key={act.id} className="bg-slate-50 dark:bg-slate-700/30 p-3 rounded-xl text-sm">
-                                    <div className="flex justify-between items-start mb-1">
+                                    <div className="flex justify-between items-start mb-1 pb-2 border-b border-slate-200 dark:border-slate-600">
                                          <span className={`font-bold ${act.expense.user === User.Sophie ? 'text-rose-600 dark:text-rose-400' : 'text-sky-600 dark:text-sky-400'}`}>
                                              {act.expense.user}
                                          </span>
                                          <span className="text-xs text-slate-400">
-                                             {new Date(act.timestamp).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                                             {new Date(act.timestamp).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                          </span>
                                     </div>
                                     <div className="space-y-1">
@@ -261,8 +275,8 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
                                         {renderDiffLine("Montant", act.oldExpense?.amount, act.expense.amount, true)}
                                         {renderDiffLine("Catégorie", act.oldExpense?.category, act.expense.category)}
                                         {renderDiffLine("Date", 
-                                            act.oldExpense?.date ? new Date(act.oldExpense.date).toLocaleDateString() : undefined,
-                                            new Date(act.expense.date!).toLocaleDateString()
+                                            act.oldExpense?.date ? new Date(act.oldExpense.date).toLocaleDateString('fr-FR') : undefined,
+                                            new Date(act.expense.date!).toLocaleDateString('fr-FR')
                                         )}
                                     </div>
                                 </div>
