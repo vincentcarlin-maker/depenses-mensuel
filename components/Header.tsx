@@ -91,6 +91,62 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
   };
   const currentStatusStyle = realtimeStatusStyles[realtimeStatus];
 
+  const renderActivityContent = (activity: Activity) => {
+      const isUpdate = activity.type === 'update';
+      const userColor = activity.expense.user === User.Sophie ? 'text-rose-500' : 'text-sky-500';
+      
+      let diffSummary = null;
+      if (isUpdate && activity.oldExpense) {
+          const changes = [];
+          const old = activity.oldExpense;
+          const curr = activity.expense;
+          
+          if (old.amount !== curr.amount) {
+              const oldAmt = typeof old.amount === 'number' ? old.amount : 0;
+              const newAmt = typeof curr.amount === 'number' ? curr.amount : 0;
+              changes.push(`${oldAmt}€ ➔ ${newAmt}€`);
+          }
+          if (old.description !== curr.description) {
+               const oldDesc = old.description || '';
+               const newDesc = curr.description || '';
+               // Truncate if too long
+               const oldD = oldDesc.length > 15 ? oldDesc.substring(0, 12) + '...' : oldDesc;
+               const newD = newDesc.length > 15 ? newDesc.substring(0, 12) + '...' : newDesc;
+               changes.push(`${oldD} ➔ ${newD}`);
+          }
+          if (old.category !== curr.category) {
+              changes.push(`${old.category} ➔ ${curr.category}`);
+          }
+          
+          if (changes.length > 0) {
+              diffSummary = (
+                  <div className="mt-1 pl-2 border-l-2 border-slate-300 dark:border-slate-600">
+                      {changes.map((c, i) => (
+                          <span key={i} className="block text-xs text-slate-500 dark:text-slate-400 font-mono">
+                            {c}
+                          </span>
+                      ))}
+                  </div>
+              );
+          }
+      }
+
+      return (
+          <div className="flex-grow min-w-0 pointer-events-none">
+                <p className="text-sm text-slate-700 dark:text-slate-200">
+                    <span className={`font-bold ${userColor}`}>{activity.expense.user}</span>
+                    { activity.type === 'add' ? ` a ajouté ` : activity.type === 'update' ? ` a mis à jour ` : ' a supprimé ' }
+                    <span className="font-semibold text-slate-800 dark:text-slate-100">{activity.expense.description || 'une dépense'}</span>
+                    {activity.type !== 'update' && typeof activity.expense.amount === 'number' && ` (${activity.expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`}
+                </p>
+                {diffSummary}
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    {new Date(activity.timestamp).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                </p>
+            </div>
+      );
+  }
+
 
   return (
     <header className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-sm shadow-sm sticky top-0 z-20">
@@ -167,26 +223,16 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
                                         <li 
                                             key={activity.id} 
                                             onClick={() => handleActivityClick(activity)}
-                                            className="flex items-center justify-between p-4 gap-2 transition-colors cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                                            className="flex items-center justify-between p-4 gap-2 transition-colors cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 group"
                                             role="button"
                                         >
-                                            <div className="flex-grow min-w-0 pointer-events-none">
-                                                <p className="text-sm text-slate-700 dark:text-slate-200">
-                                                    <span className={`font-bold ${activity.expense.user === User.Sophie ? 'text-rose-500' : 'text-sky-500'}`}>{activity.expense.user}</span>
-                                                    { activity.type === 'add' ? ` a ajouté ` : activity.type === 'update' ? ` a mis à jour ` : ' a supprimé ' }
-                                                    <span className="font-semibold text-slate-800 dark:text-slate-100">{activity.expense.description || 'une dépense'}</span>
-                                                    {typeof activity.expense.amount === 'number' && ` (${activity.expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`}
-                                                </p>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                                    {new Date(activity.timestamp).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                                </p>
-                                            </div>
+                                            {renderActivityContent(activity)}
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     onDeleteActivity(activity.id);
                                                 }}
-                                                className="flex-shrink-0 p-1.5 rounded-full text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                                                className="flex-shrink-0 p-1.5 rounded-full text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600 hover:text-slate-600 dark:hover:text-slate-300 transition-colors opacity-0 group-hover:opacity-100"
                                                 aria-label="Supprimer cette activité"
                                                 title="Supprimer"
                                             >
