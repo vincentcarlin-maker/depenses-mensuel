@@ -8,6 +8,7 @@ import { User, type Expense, type Activity } from '../types';
 import CloseIcon from './icons/CloseIcon';
 import SearchIcon from './icons/SearchIcon';
 import ConfirmationModal from './ConfirmationModal';
+import ActivityDetailModal from './ActivityDetailModal';
 
 const Logo = () => (
     <svg width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3">
@@ -45,6 +46,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
 
   const userColorClass = loggedInUser === User.Sophie ? 'bg-rose-500' : 'bg-sky-500';
   const userColorTextClass = loggedInUser === User.Sophie ? 'text-rose-500' : 'text-sky-500';
@@ -74,6 +76,13 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
       setIsNotificationsOpen(shouldOpen);
       if (shouldOpen) {
         onMarkAsRead();
+      }
+  };
+
+  const handleActivityClick = (activity: Activity) => {
+      if (activity.type !== 'update') {
+          setSelectedActivity(activity);
+          setIsNotificationsOpen(false);
       }
   };
   
@@ -160,7 +169,8 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
                                     {activityItems.map((activity) => (
                                         <li 
                                             key={activity.id} 
-                                            className="flex items-center justify-between p-4 gap-2"
+                                            onClick={() => handleActivityClick(activity)}
+                                            className={`flex items-center justify-between p-4 gap-2 transition-colors ${activity.type !== 'update' ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50' : ''}`}
                                         >
                                             <div className="flex-grow min-w-0">
                                                 <p className="text-sm text-slate-700 dark:text-slate-200">
@@ -243,6 +253,13 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
             title="Déconnexion"
             message="Êtes-vous sûr de vouloir vous déconnecter ?"
         />
+        {selectedActivity && (
+            <ActivityDetailModal
+                isOpen={!!selectedActivity}
+                onClose={() => setSelectedActivity(null)}
+                activity={selectedActivity}
+            />
+        )}
       </div>
     </header>
   );

@@ -1,5 +1,7 @@
 
+
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { type Activity, User } from '../types';
 import CloseIcon from './icons/CloseIcon';
 import ArrowRightIcon from './icons/ArrowRightIcon';
@@ -107,8 +109,8 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
       );
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-start pt-20 overflow-y-auto" aria-modal="true" role="dialog">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-start pt-20 overflow-y-auto" aria-modal="true" role="dialog">
       <div 
         className="fixed inset-0"
         onClick={onClose}
@@ -160,7 +162,8 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
             </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
