@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import SettingsIcon from './icons/SettingsIcon';
 import LogoutIcon from './icons/LogoutIcon';
@@ -79,6 +80,9 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
   };
   
   const handleActivityClick = (activity: Activity) => {
+    if (activity.type === 'update') {
+        return; 
+    }
     setSelectedActivity(activity);
     setIsNotificationsOpen(false);
   };
@@ -166,8 +170,8 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
                                     {activityItems.map((activity) => (
                                         <li 
                                             key={activity.id} 
-                                            className="flex items-center justify-between p-4 gap-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors"
-                                            onClick={() => handleActivityClick(activity)}
+                                            className={`flex items-center justify-between p-4 gap-2 transition-colors ${activity.type !== 'update' ? 'hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer' : ''}`}
+                                            onClick={() => activity.type !== 'update' && handleActivityClick(activity)}
                                         >
                                             <div className="flex-grow min-w-0">
                                                 <p className="text-sm text-slate-700 dark:text-slate-200">

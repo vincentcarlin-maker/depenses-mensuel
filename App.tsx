@@ -105,10 +105,8 @@ const MainApp: React.FC<{
     if (!user) return { unreadCount: 0, activityItemsForHeader: [] };
     
     // Filter activities where the other user did something
-    // EXCLUDE updates from the header notification as requested
     const otherUserActivities = activities.filter(act => 
-        act.expense.user !== user && 
-        act.type !== 'update' // Hide modifications from recent activity list
+        act.expense.user !== user
     );
     
     const unread = otherUserActivities.filter(act => 
