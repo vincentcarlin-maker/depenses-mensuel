@@ -69,15 +69,14 @@ export const GiftIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   </svg>
 );
 
-// UPDATED: ClothingIcon to a Hanger (Cintre)
+// UPDATED: ClothingIcon to a clearer Hanger (Cintre)
 export const ClothingIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M4 18h16L12 8 4 18Z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8V5a2 2 0 0 0-2-2" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16 5a2 2 0 0 0-4 0v3" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16l9-8 9 8H3z" />
   </svg>
 );
 
-// UPDATED: BirthdayIcon to a simpler cake with candle
 export const BirthdayIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M5 15h14v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5z" />
