@@ -47,7 +47,7 @@ const ExpenseListItem: React.FC<{
     }).replace(' ', ' - ');
 
     const isSophie = expense.user === User.Sophie;
-    const userColorClass = isSophie ? 'bg-rose-500' : 'bg-sky-500';
+    const userColorClass = isSophie ? 'bg-pink-500' : 'bg-sky-500';
     
     const amountColorClass = expense.amount < 0 
         ? 'text-green-600 dark:text-green-400' 

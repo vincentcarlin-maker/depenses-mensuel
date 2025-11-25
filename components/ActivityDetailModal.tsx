@@ -46,7 +46,7 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
     minute: '2-digit'
   });
   
-  const userColorClass = safeUser === User.Sophie ? 'text-rose-600 dark:text-rose-400' : 'text-sky-600 dark:text-sky-400';
+  const userColorClass = safeUser === User.Sophie ? 'text-pink-600 dark:text-pink-400' : 'text-sky-600 dark:text-sky-400';
   const actionText = type === 'add' ? 'ajouté' : type === 'update' ? 'modifié' : 'supprimé';
   
   const renderDiff = (label: string, oldValue: string | number | undefined, newValue: string | number | undefined, isCurrency = false) => {

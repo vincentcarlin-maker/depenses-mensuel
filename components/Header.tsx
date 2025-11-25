@@ -47,8 +47,8 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
 
-  const userColorClass = loggedInUser === User.Sophie ? 'bg-rose-500' : 'bg-sky-500';
-  const userColorTextClass = loggedInUser === User.Sophie ? 'text-rose-500' : 'text-sky-500';
+  const userColorClass = loggedInUser === User.Sophie ? 'bg-pink-500' : 'bg-sky-500';
+  const userColorTextClass = loggedInUser === User.Sophie ? 'text-pink-500' : 'text-sky-500';
   const userInitial = loggedInUser.charAt(0).toUpperCase();
 
   // Determine the partner (the other user)
@@ -79,8 +79,13 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
   };
 
   const handleActivityClick = (activity: Activity) => {
-      setSelectedActivity(activity);
-      setIsNotificationsOpen(false);
+      if (activity.type === 'update') {
+          setSelectedActivity(activity);
+          setIsNotificationsOpen(false);
+      } else {
+        setSelectedActivity(activity);
+        setIsNotificationsOpen(false);
+      }
   };
   
   const realtimeStatusStyles = {
@@ -93,7 +98,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
 
   const renderActivityContent = (activity: Activity) => {
       const isUpdate = activity.type === 'update';
-      const userColor = activity.expense.user === User.Sophie ? 'text-rose-500' : 'text-sky-500';
+      const userColor = activity.expense.user === User.Sophie ? 'text-pink-500' : 'text-sky-500';
       
       if (isUpdate && activity.oldExpense) {
           const changes = [];
@@ -237,6 +242,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
                                             onClick={() => handleActivityClick(activity)}
                                             className="flex items-center justify-between p-4 gap-2 transition-colors cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 group"
                                             role="button"
+                                            style={{ cursor: 'pointer' }}
                                         >
                                             {renderActivityContent(activity)}
                                             <button

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { User, type Category, type Expense } from '../types';
 import { type Profile, type LoginEvent } from '../hooks/useAuth';
@@ -42,7 +43,7 @@ const HistoryManagement: React.FC<{ loginHistory: LoginEvent[] }> = ({ loginHist
             ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
                     {loginHistory.map((event, index) => {
-                         const userColorClass = event.user === User.Sophie ? 'bg-rose-500' : 'bg-sky-500';
+                         const userColorClass = event.user === User.Sophie ? 'bg-pink-500' : 'bg-sky-500';
                          const formattedDate = new Date(event.timestamp).toLocaleString('fr-FR', {
                             day: 'numeric',
                             month: 'short',

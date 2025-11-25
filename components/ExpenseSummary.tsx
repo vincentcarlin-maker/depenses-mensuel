@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { type Expense, User } from '../types';
 
@@ -62,9 +63,9 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                     </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="flex justify-between items-center bg-rose-50 dark:bg-rose-500/10 p-4 rounded-xl">
-                        <span className="font-semibold text-rose-800 dark:text-rose-300">Total Sophie</span>
-                        <span className="font-bold text-lg text-rose-600 dark:text-rose-400">
+                    <div className="flex justify-between items-center bg-pink-50 dark:bg-pink-500/10 p-4 rounded-xl">
+                        <span className="font-semibold text-pink-800 dark:text-pink-300">Total Sophie</span>
+                        <span className="font-bold text-lg text-pink-600 dark:text-pink-400">
                             {sophieTotalMonth.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                         </span>
                     </div>

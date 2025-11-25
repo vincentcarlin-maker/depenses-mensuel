@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { type Reminder, type Category, User } from '../types';
 
@@ -75,7 +76,7 @@ const EditReminderModal: React.FC<EditReminderModalProps> = ({ reminder, onUpdat
                               `}
                               aria-hidden="true"
                             />
-                            <button type="button" onClick={() => setUser(User.Sophie)} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${user === User.Sophie ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                            <button type="button" onClick={() => setUser(User.Sophie)} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${user === User.Sophie ? 'text-pink-600 dark:text-pink-400' : 'text-slate-600 dark:text-slate-300'}`}>
                               Sophie
                             </button>
                             <button type="button" onClick={() => setUser(User.Vincent)} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${user === User.Vincent ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-300'}`}>
