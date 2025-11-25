@@ -49,6 +49,11 @@ const ExpenseListItem: React.FC<{
     const isSophie = expense.user === User.Sophie;
     const userColorClass = isSophie ? 'bg-pink-500' : 'bg-sky-500';
     
+    // Add background tint and border based on user for better distinction
+    const userStyleClass = isSophie 
+        ? 'bg-pink-50/60 dark:bg-pink-500/10 border-pink-100 dark:border-pink-500/20 hover:bg-pink-100 dark:hover:bg-pink-500/20 hover:border-pink-200 dark:hover:border-pink-500/30'
+        : 'bg-sky-50/60 dark:bg-sky-500/10 border-sky-100 dark:border-sky-500/20 hover:bg-sky-100 dark:hover:bg-sky-500/20 hover:border-sky-200 dark:hover:border-sky-500/30';
+    
     const amountColorClass = expense.amount < 0 
         ? 'text-green-600 dark:text-green-400' 
         : 'text-slate-800 dark:text-slate-100';
@@ -66,9 +71,6 @@ const ExpenseListItem: React.FC<{
         iconBgClass = 'bg-red-600';
     } else if (isBirthday) {
         IconComponent = BirthdayIcon;
-        // Keep category color or specific birthday color? 
-        // Let's use category color for consistency, or a variation. 
-        // Default behavior: keep category color (fuchsia for Gift).
     }
 
     return (
@@ -78,16 +80,16 @@ const ExpenseListItem: React.FC<{
             role="button"
             tabIndex={0}
             className={`
-                flex items-center p-3 rounded-xl border border-transparent
+                flex items-center p-3 rounded-xl border
                 transition-all duration-200 ease-out cursor-pointer 
-                hover:bg-slate-100 hover:dark:bg-slate-700/50 hover:border-slate-200 hover:dark:border-slate-700
                 focus:outline-none focus:ring-2 focus:ring-cyan-500
+                ${userStyleClass}
                 ${isHighlighted ? 'animate-highlight' : ''}
             `}
         >
-            <div className={`w-1.5 h-10 rounded-full mr-3 ${userColorClass}`}></div>
+            <div className={`w-1.5 h-10 rounded-full mr-3 ${userColorClass} shadow-sm`}></div>
             <div className="mr-3 flex-shrink-0">
-                <div className={`w-10 h-10 flex items-center justify-center rounded-full ${iconBgClass}`}>
+                <div className={`w-10 h-10 flex items-center justify-center rounded-full ${iconBgClass} shadow-sm`}>
                     <IconComponent className="h-6 w-6 text-white" />
                 </div>
             </div>
