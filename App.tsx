@@ -920,7 +920,7 @@ const MainApp: React.FC<{
                             />
                             <button
                                 onClick={() => setShowFilters(!showFilters)}
-                                className={`p-2 rounded-lg border transition-colors ${showFilters || filterUser !== 'All' || filterCategory !== 'All' ? 'bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800 text-cyan-600 dark:text-cyan-400' : 'bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600'}`}
+                                className={`flex-shrink-0 p-2 rounded-lg border transition-colors ${showFilters || filterUser !== 'All' || filterCategory !== 'All' ? 'bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800 text-cyan-600 dark:text-cyan-400' : 'bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600'}`}
                                 aria-label="Filtres"
                             >
                                 <FunnelIcon />
@@ -1043,6 +1043,7 @@ const MainApp: React.FC<{
         allExpenses={expenses}
         onEditExpense={setExpenseToView}
         highlightedIds={highlightedExpenseIds}
+        categories={categories}
       />
 
       <SettingsModal 
