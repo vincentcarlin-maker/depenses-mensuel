@@ -24,6 +24,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import UndoToast from './components/UndoToast';
 import { DEFAULT_CATEGORIES } from './types';
 import GlobalSearchModal from './components/GlobalSearchModal';
+import FunnelIcon from './components/icons/FunnelIcon';
 
 type UndoableAction = {
     type: 'delete' | 'update';
@@ -59,7 +60,12 @@ const MainApp: React.FC<{
   const [expenseToView, setExpenseToView] = useState<Expense | null>(null);
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
   
+  // Filter States
   const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterUser, setFilterUser] = useState<User | 'All'>('All');
+  const [filterCategory, setFilterCategory] = useState<Category | 'All'>('All');
+
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -634,12 +640,19 @@ const MainApp: React.FC<{
     return expenses.filter(expense => new Date(expense.date).getUTCFullYear() === currentYear - 1);
   }, [expenses, currentYear]);
   
+  // Advanced Filter Logic
   const searchedExpenses = useMemo(() => {
-    if (!searchTerm) return filteredExpenses;
-    return filteredExpenses.filter(e =>
-      e.description.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [filteredExpenses, searchTerm]);
+    return filteredExpenses.filter(e => {
+        // Text Match
+        const matchesSearch = !searchTerm || e.description.toLowerCase().includes(searchTerm.toLowerCase());
+        // User Match
+        const matchesUser = filterUser === 'All' || e.user === filterUser;
+        // Category Match
+        const matchesCategory = filterCategory === 'All' || e.category === filterCategory;
+
+        return matchesSearch && matchesUser && matchesCategory;
+    });
+  }, [filteredExpenses, searchTerm, filterUser, filterCategory]);
 
   const handleMonthChange = (direction: 'next' | 'prev') => {
       setCurrentDate(prevDate => {
@@ -895,13 +908,66 @@ const MainApp: React.FC<{
                 <div className="space-y-8">
                     <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg">
                       <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Dépenses du mois</h2>
-                       <input
-                          type="text"
-                          placeholder="Filtrer les dépenses du mois..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="w-full px-3 py-2 mb-4 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
-                        />
+                       
+                       {/* Filtering UI */}
+                       <div className="flex gap-2 mb-4">
+                           <input
+                              type="text"
+                              placeholder="Rechercher..."
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
+                            />
+                            <button
+                                onClick={() => setShowFilters(!showFilters)}
+                                className={`p-2 rounded-lg border transition-colors ${showFilters || filterUser !== 'All' || filterCategory !== 'All' ? 'bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800 text-cyan-600 dark:text-cyan-400' : 'bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600'}`}
+                                aria-label="Filtres"
+                            >
+                                <FunnelIcon />
+                            </button>
+                       </div>
+
+                       {showFilters && (
+                           <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700 space-y-4 animate-fade-in">
+                               <div>
+                                   <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Par personne</label>
+                                   <div className="flex gap-2">
+                                       <button 
+                                           onClick={() => setFilterUser('All')}
+                                           className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors border ${filterUser === 'All' ? 'bg-slate-200 dark:bg-slate-600 border-transparent text-slate-800 dark:text-slate-100' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                                       >
+                                           Tous
+                                       </button>
+                                       <button 
+                                           onClick={() => setFilterUser(User.Sophie)}
+                                           className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors border ${filterUser === User.Sophie ? 'bg-pink-500 border-pink-600 text-white' : 'bg-white dark:bg-slate-800 border-pink-200 dark:border-pink-900/30 text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-900/10'}`}
+                                       >
+                                           Sophie
+                                       </button>
+                                       <button 
+                                           onClick={() => setFilterUser(User.Vincent)}
+                                           className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors border ${filterUser === User.Vincent ? 'bg-sky-500 border-sky-600 text-white' : 'bg-white dark:bg-slate-800 border-sky-200 dark:border-sky-900/30 text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/10'}`}
+                                       >
+                                           Vincent
+                                       </button>
+                                   </div>
+                               </div>
+                               <div>
+                                   <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Par catégorie</label>
+                                   <select
+                                       value={filterCategory}
+                                       onChange={(e) => setFilterCategory(e.target.value as Category | 'All')}
+                                       className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                   >
+                                       <option value="All">Toutes les catégories</option>
+                                       {categories.map(cat => (
+                                           <option key={cat} value={cat}>{cat}</option>
+                                       ))}
+                                   </select>
+                               </div>
+                           </div>
+                       )}
+
                       <ExpenseList 
                         expenses={searchedExpenses} 
                         onExpenseClick={setExpenseToView} 
