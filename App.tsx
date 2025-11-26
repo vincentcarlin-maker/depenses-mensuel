@@ -12,7 +12,6 @@ import EditExpenseModal from './components/EditExpenseModal';
 import ExpenseDetailModal from './components/ExpenseDetailModal';
 import Toast from './components/Toast';
 import YearlySummary from './components/YearlySummary';
-import GroupedExpenseList from './components/GroupedExpenseList';
 import ReminderAlerts from './components/ReminderAlerts';
 import SettingsModal from './components/SettingsModal';
 import { useTheme } from './hooks/useTheme';
@@ -54,7 +53,7 @@ const MainApp: React.FC<{
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(getInitialDate);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly' | 'history'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly'>('dashboard');
   
   // Split state for Viewing vs Editing
   const [expenseToView, setExpenseToView] = useState<Expense | null>(null);
@@ -820,7 +819,6 @@ const MainApp: React.FC<{
     { id: 'dashboard', label: 'Tableau de bord' },
     { id: 'analysis', label: 'Analyse' },
     { id: 'yearly', label: 'Annuel' },
-    { id: 'history', label: 'Historique' },
   ] as const;
 
   return (
@@ -979,23 +977,6 @@ const MainApp: React.FC<{
             )}
             {activeTab === 'analysis' && <CategoryTotals expenses={analysisExpenses} previousMonthExpenses={previousMonthExpenses} last3MonthsExpenses={last3MonthsExpenses} />}
             {activeTab === 'yearly' && <YearlySummary expenses={yearlyFilteredExpenses} previousYearExpenses={previousYearFilteredExpenses} year={currentYear} />}
-            {activeTab === 'history' && (
-                <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg animate-fade-in">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Historique Complet</h2>
-                        <div className="text-sm text-slate-500 dark:text-slate-400">
-                            {expenses.length} transactions
-                        </div>
-                    </div>
-                    <div className="max-h-[calc(100vh-250px)] overflow-y-auto pr-2">
-                        <GroupedExpenseList
-                            expenses={expenses}
-                            onExpenseClick={setExpenseToView}
-                            highlightedIds={highlightedExpenseIds}
-                        />
-                    </div>
-                </div>
-            )}
           </div>
         </main>
       </PullToRefresh>
