@@ -1,5 +1,6 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { type Expense, type Category } from '../types';
 import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
@@ -45,6 +46,15 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
   const { theme } = useTheme();
   const tickColor = theme === 'dark' ? '#94a3b8' : '#64748b';
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+
+  useEffect(() => {
+    if (selectedCategory) {
+        document.body.style.overflow = 'hidden';
+    } else {
+        document.body.style.overflow = 'auto';
+    }
+    return () => { document.body.style.overflow = 'auto'; };
+  }, [selectedCategory]);
 
   const { categoryData, totalYearlyExpense, monthlyAverage, numberOfMonthsWithData } = useMemo(() => {
     if (expenses.length === 0) {
@@ -310,8 +320,8 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
         </div>
 
         {/* Breakdown Modal */}
-        {selectedCategory && (
-            <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm" aria-modal="true" role="dialog">
+        {selectedCategory && createPortal(
+            <div className="fixed inset-0 bg-black/60 z-[100] flex justify-center items-center p-4 backdrop-blur-sm" aria-modal="true" role="dialog">
                 <div 
                     className="fixed inset-0"
                     onClick={() => setSelectedCategory(null)}
@@ -378,7 +388,8 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                         </div>
                     </div>
                 </div>
-            </div>
+            </div>,
+            document.body
         )}
     </div>
   );
