@@ -185,6 +185,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
               }
           }
           else {
+              // Pour "Dépenses obligatoires" et autres : on groupe par description exacte
               label = expense.description;
           }
 
@@ -205,7 +206,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
 
   }, [selectedCategory, expenses]);
 
-  const categoriesWithDetails = ['Courses', 'Cadeau', 'Carburant', 'Vêtements', 'Réparation voitures'];
+  const categoriesWithDetails = ['Courses', 'Cadeau', 'Carburant', 'Vêtements', 'Réparation voitures', 'Dépenses obligatoires'];
 
   const handleCategoryClick = (category: Category) => {
       if (categoriesWithDetails.includes(category)) {
@@ -243,7 +244,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
         </div>
 
         <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-200">Moyenne mensuelle par catégorie</h3>
-        <p className="text-xs text-slate-400 dark:text-slate-500 mb-3 -mt-3 italic">Cliquez sur les catégories (Courses, Cadeaux...) pour voir le détail.</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500 mb-3 -mt-3 italic">Cliquez sur les catégories (Courses, Cadeaux, Dépenses obligatoires...) pour voir le détail.</p>
         
         <div className="space-y-3">
             {categoryData.map((entry) => {
