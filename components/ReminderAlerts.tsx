@@ -45,10 +45,30 @@ const ReminderAlerts: React.FC<ReminderAlertsProps> = ({ reminders, monthlyExpen
       return false;
     }
 
-    const isPaid = monthlyExpenses.some(expense => 
-        expense.description?.toLowerCase().includes(reminder.description.toLowerCase()) &&
-        expense.amount === reminder.amount
-    );
+    const isPaid = monthlyExpenses.some(expense => {
+        // 1. Vérification du montant (avec une tolérance minime pour les flottants)
+        const amountMatch = Math.abs(expense.amount - reminder.amount) < 0.01;
+        if (!amountMatch) return false;
+
+        // 2. Vérification de la description (l'une contient l'autre)
+        const normalize = (s: string) => s.toLowerCase().trim();
+        const expDesc = normalize(expense.description);
+        const remDesc = normalize(reminder.description);
+        const descMatch = expDesc.includes(remDesc) || remDesc.includes(expDesc);
+
+        // 3. Vérification de la catégorie
+        const categoryMatch = expense.category === reminder.category;
+
+        // CONDITION DE SUCCÈS :
+        // Si la description correspond (ex: "Loyer" vs "Loyer Janvier") -> Payé
+        if (descMatch) return true;
+
+        // Si la catégorie correspond EXACTEMENT (ex: Rappel "Courses" vs Dépense "Leclerc") -> Payé
+        // Cela couvre le cas où le nom change lors de la saisie (ex: magasin spécifique)
+        if (categoryMatch) return true;
+
+        return false;
+    });
 
     if (isPaid) {
       return false;
