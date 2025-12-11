@@ -115,7 +115,11 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
       minute: '2-digit'
   });
 
-  const userColorClass = expense.user === User.Sophie ? 'bg-pink-500' : 'bg-sky-500';
+  let userColorClass = 'bg-slate-500';
+  if (expense.user === User.Sophie) userColorClass = 'bg-pink-500';
+  else if (expense.user === User.Vincent) userColorClass = 'bg-sky-500';
+  else if (expense.user === User.Commun) userColorClass = 'bg-emerald-500';
+
   const isRefund = expense.amount < 0;
 
   const renderDiffLine = (label: string, oldVal: any, newVal: any, isCurrency = false) => {
@@ -257,7 +261,7 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
                             {history.map(act => (
                                 <div key={act.id} className="bg-slate-50 dark:bg-slate-700/30 p-3 rounded-xl text-sm">
                                     <div className="flex justify-between items-start mb-1 pb-2 border-b border-slate-200 dark:border-slate-600">
-                                         <span className={`font-bold ${act.expense.user === User.Sophie ? 'text-pink-600 dark:text-pink-400' : 'text-sky-600 dark:text-sky-400'}`}>
+                                         <span className={`font-bold ${act.expense.user === User.Sophie ? 'text-pink-600 dark:text-pink-400' : (act.expense.user === User.Vincent ? 'text-sky-600 dark:text-sky-400' : 'text-emerald-600 dark:text-emerald-400')}`}>
                                              {act.expense.user}
                                          </span>
                                          <span className="text-xs text-slate-400">

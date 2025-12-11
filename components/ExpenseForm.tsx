@@ -3,6 +3,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { type Expense, type Category, User } from '../types';
 import SegmentedControl from './SegmentedControl';
 import ConfirmationModal from './ConfirmationModal';
+import PiggyBankIcon from './icons/PiggyBankIcon';
 
 interface ExpenseFormProps {
   onAddExpense: (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => void;
@@ -234,6 +235,16 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
     }
   };
 
+  // Helper to calculate slider position
+  const getUserSliderPosition = () => {
+      switch (user) {
+          case User.Sophie: return 'translate-x-0';
+          case User.Vincent: return 'translate-x-[100%]';
+          case User.Commun: return 'translate-x-[200%]';
+          default: return 'translate-x-0';
+      }
+  };
+
   return (
     <>
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden">
@@ -245,16 +256,18 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Qui a payé ?</label>
             <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1">
                 <span
-                className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out
-                    ${user === User.Vincent ? 'translate-x-full' : 'translate-x-0'}
-                `}
+                className={`absolute top-1 bottom-1 left-1 w-[calc(33.33%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out ${getUserSliderPosition()}`}
                 aria-hidden="true"
                 />
-                <button type="button" onClick={() => setUser(User.Sophie)} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${user === User.Sophie ? 'text-pink-600 dark:text-pink-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                <button type="button" onClick={() => setUser(User.Sophie)} className={`relative z-10 w-1/3 p-2 rounded-full text-sm font-semibold transition-colors ${user === User.Sophie ? 'text-pink-600 dark:text-pink-400' : 'text-slate-600 dark:text-slate-300'}`}>
                 Sophie
                 </button>
-                <button type="button" onClick={() => setUser(User.Vincent)} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${user === User.Vincent ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                <button type="button" onClick={() => setUser(User.Vincent)} className={`relative z-10 w-1/3 p-2 rounded-full text-sm font-semibold transition-colors ${user === User.Vincent ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-300'}`}>
                 Vincent
+                </button>
+                <button type="button" onClick={() => setUser(User.Commun)} className={`relative z-10 w-1/3 p-2 rounded-full text-sm font-semibold transition-colors flex items-center justify-center gap-1 ${user === User.Commun ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                    <PiggyBankIcon className="w-4 h-4" />
+                    <span className="hidden sm:inline">Cagnotte</span>
                 </button>
             </div>
             </div>

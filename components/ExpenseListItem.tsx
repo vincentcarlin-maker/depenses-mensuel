@@ -13,6 +13,7 @@ import {
     ClothingIcon,
     BirthdayIcon
 } from './icons/CategoryIcons';
+import PiggyBankIcon from './icons/PiggyBankIcon';
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string } } = {
   "Dépenses obligatoires": { icon: MandatoryIcon, color: 'bg-slate-500' },
@@ -46,13 +47,25 @@ const ExpenseListItem: React.FC<{
         minute: '2-digit',
     }).replace(' ', ' - ');
 
+    // Logic for styling based on User
     const isSophie = expense.user === User.Sophie;
-    const userColorClass = isSophie ? 'bg-pink-500' : 'bg-sky-500';
-    
-    // Add background tint and border based on user for better distinction
-    const userStyleClass = isSophie 
-        ? 'bg-pink-50/60 dark:bg-pink-500/10 border-pink-100 dark:border-pink-500/20 hover:bg-pink-100 dark:hover:bg-pink-500/20 hover:border-pink-200 dark:hover:border-pink-500/30'
-        : 'bg-sky-50/60 dark:bg-sky-500/10 border-sky-100 dark:border-sky-500/20 hover:bg-sky-100 dark:hover:bg-sky-500/20 hover:border-sky-200 dark:hover:border-sky-500/30';
+    const isVincent = expense.user === User.Vincent;
+    // Fallback for "Commun" or others
+    const isCommun = expense.user === User.Commun;
+
+    let userColorClass = 'bg-slate-500';
+    let userStyleClass = '';
+
+    if (isSophie) {
+        userColorClass = 'bg-pink-500';
+        userStyleClass = 'bg-pink-50/60 dark:bg-pink-500/10 border-pink-100 dark:border-pink-500/20 hover:bg-pink-100 dark:hover:bg-pink-500/20 hover:border-pink-200 dark:hover:border-pink-500/30';
+    } else if (isVincent) {
+        userColorClass = 'bg-sky-500';
+        userStyleClass = 'bg-sky-50/60 dark:bg-sky-500/10 border-sky-100 dark:border-sky-500/20 hover:bg-sky-100 dark:hover:bg-sky-500/20 hover:border-sky-200 dark:hover:border-sky-500/30';
+    } else if (isCommun) {
+        userColorClass = 'bg-emerald-500';
+        userStyleClass = 'bg-emerald-50/60 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 hover:border-emerald-200 dark:hover:border-emerald-500/30';
+    }
     
     const amountColorClass = expense.amount < 0 
         ? 'text-green-600 dark:text-green-400' 
@@ -94,7 +107,10 @@ const ExpenseListItem: React.FC<{
                 </div>
             </div>
             <div className="flex-1 min-w-0">
-                 <p className="font-semibold truncate text-slate-700 dark:text-slate-200" title={description}>{description}</p>
+                 <div className="flex items-center gap-1.5">
+                    {isCommun && <PiggyBankIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+                    <p className="font-semibold truncate text-slate-700 dark:text-slate-200" title={description}>{description}</p>
+                 </div>
                  <p className="text-sm text-slate-500 dark:text-slate-400 truncate" title={expense.category}>{expense.category}</p>
             </div>
             <div className="pl-4 flex-shrink-0 text-right">

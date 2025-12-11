@@ -11,9 +11,19 @@ interface BalanceReportProps {
 }
 
 const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear, currentMonth, sophieTotalMonth, vincentTotalMonth }) => {
-  const { historicDifference, cumulativeDifference, message } = useMemo(() => {
+  const { historicDifference, cumulativeDifference, message, communTotalMonth } = useMemo(() => {
     const firstDayOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1));
     
+    // Expenses for the current month paid by "Commun" (Cagnotte)
+    const currentMonthExpenses = allExpenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate.getUTCFullYear() === currentYear && expenseDate.getUTCMonth() === currentMonth;
+    });
+
+    const communTotalMonth = currentMonthExpenses
+        .filter(e => e.user === User.Commun)
+        .reduce((sum, e) => sum + e.amount, 0);
+
     const historicExpenses = allExpenses.filter(exp => new Date(exp.date) < firstDayOfMonth);
     
     const sophieHistoric = historicExpenses
@@ -24,6 +34,7 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
       .filter(e => e.user === User.Vincent)
       .reduce((sum, e) => sum + e.amount, 0);
 
+    // Expenses paid by "Commun" do not affect the debt balance between Sophie and Vincent.
     const historicDifference = sophieHistoric - vincentHistoric;
     const currentMonthDifference = sophieTotalMonth - vincentTotalMonth;
     const cumulativeDifference = historicDifference + currentMonthDifference;
@@ -37,10 +48,11 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
       message = `Vincent a dépensé ${(-cumulativeDifference).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} de plus.`;
     }
     
-    return { historicDifference, cumulativeDifference, message };
+    return { historicDifference, cumulativeDifference, message, communTotalMonth };
   }, [allExpenses, currentYear, currentMonth, sophieTotalMonth, vincentTotalMonth]);
   
-  const totalExpenses = sophieTotalMonth + vincentTotalMonth;
+  // Total including individual spending AND common spending
+  const totalExpenses = sophieTotalMonth + vincentTotalMonth + communTotalMonth;
 
   return (
     <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg space-y-6">
@@ -62,6 +74,14 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                         {totalExpenses.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                     </span>
                 </div>
+                {communTotalMonth > 0 && (
+                    <div className="flex justify-between items-center bg-emerald-50 dark:bg-emerald-500/10 p-4 rounded-xl">
+                        <span className="font-semibold text-emerald-800 dark:text-emerald-300">Payé par la Cagnotte</span>
+                        <span className="font-bold text-lg text-emerald-600 dark:text-emerald-400">
+                            {communTotalMonth.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                        </span>
+                    </div>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="flex justify-between items-center bg-pink-50 dark:bg-pink-500/10 p-4 rounded-xl">
                         <span className="font-semibold text-pink-800 dark:text-pink-300">Total Sophie</span>

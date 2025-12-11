@@ -2,6 +2,7 @@
 export enum User {
   Sophie = "Sophie",
   Vincent = "Vincent",
+  Commun = "Commun",
 }
 
 // Les catégories sont maintenant dynamiques.

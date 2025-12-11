@@ -4,6 +4,7 @@ import { type Expense, type Category, User } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import TrashIcon from './icons/TrashIcon';
 import SegmentedControl from './SegmentedControl';
+import PiggyBankIcon from './icons/PiggyBankIcon';
 
 interface EditExpenseModalProps {
     expense: Expense;
@@ -237,6 +238,15 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
     const baseInputStyle = "mt-1 block w-full py-2.5 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm";
     const placeholderStyle = "placeholder-slate-400 dark:placeholder-slate-500";
 
+    const getUserSliderPosition = () => {
+        switch (user) {
+            case User.Sophie: return 'translate-x-0';
+            case User.Vincent: return 'translate-x-[100%]';
+            case User.Commun: return 'translate-x-[200%]';
+            default: return 'translate-x-0';
+        }
+    };
+
     return (
         <>
             <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 backdrop-blur-sm z-40 flex justify-center items-center" aria-modal="true" role="dialog">
@@ -252,16 +262,18 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                           <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Qui a payé ?</label>
                            <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1">
                             <span
-                              className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out
-                                ${user === User.Vincent ? 'translate-x-full' : 'translate-x-0'}
-                              `}
+                              className={`absolute top-1 bottom-1 left-1 w-[calc(33.33%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out ${getUserSliderPosition()}`}
                               aria-hidden="true"
                             />
-                            <button type="button" onClick={() => setUser(User.Sophie)} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${user === User.Sophie ? 'text-pink-600 dark:text-pink-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                            <button type="button" onClick={() => setUser(User.Sophie)} className={`relative z-10 w-1/3 p-2 rounded-full text-sm font-semibold transition-colors ${user === User.Sophie ? 'text-pink-600 dark:text-pink-400' : 'text-slate-600 dark:text-slate-300'}`}>
                               Sophie
                             </button>
-                            <button type="button" onClick={() => setUser(User.Vincent)} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${user === User.Vincent ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                            <button type="button" onClick={() => setUser(User.Vincent)} className={`relative z-10 w-1/3 p-2 rounded-full text-sm font-semibold transition-colors ${user === User.Vincent ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-300'}`}>
                               Vincent
+                            </button>
+                            <button type="button" onClick={() => setUser(User.Commun)} className={`relative z-10 w-1/3 p-2 rounded-full text-sm font-semibold transition-colors flex items-center justify-center gap-1 ${user === User.Commun ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                                <PiggyBankIcon className="w-4 h-4" />
+                                <span className="hidden sm:inline">Cagnotte</span>
                             </button>
                           </div>
                         </div>
