@@ -173,8 +173,8 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
         </div>
       </div>
 
-      <div style={{ width: '100%', height: 450 }} className="relative">
-        <div className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+      <div style={{ width: '100%', height: 400 }} className="relative">
+        <div className="absolute top-[calc(50%-20px)] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
             <p className="text-slate-500 dark:text-slate-400 text-sm">Total du mois</p>
             <p className="text-3xl font-bold text-slate-800 dark:text-slate-100">
                 {totalExpenses.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
@@ -185,11 +185,11 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
             <Pie
               data={chartData}
               cx="50%"
-              cy="40%"
+              cy="50%"
               labelLine={false}
               label={renderCustomizedLabel}
-              innerRadius={80}
-              outerRadius={125}
+              innerRadius={90}
+              outerRadius={140}
               fill="#8884d8"
               paddingAngle={3}
               dataKey="value"
@@ -248,3 +248,4 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
 };
 
 export default CategoryTotals;
+    
