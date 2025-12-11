@@ -174,12 +174,6 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
       </div>
 
       <div style={{ width: '100%', height: 450 }} className="relative">
-        <div className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-            <p className="text-slate-500 dark:text-slate-400 text-sm">Total du mois</p>
-            <p className="text-3xl font-bold text-slate-800 dark:text-slate-100">
-                {totalExpenses.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-            </p>
-        </div>
         <ResponsiveContainer>
           <PieChart>
             <Pie
@@ -212,6 +206,12 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
             <Legend content={<CustomLegend />} verticalAlign="bottom" wrapperStyle={{ bottom: 0 }} />
           </PieChart>
         </ResponsiveContainer>
+        <div className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none z-10">
+            <p className="text-slate-500 dark:text-slate-400 text-sm">Total du mois</p>
+            <p className="text-3xl font-bold text-slate-800 dark:text-slate-100">
+                {totalExpenses.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+            </p>
+        </div>
       </div>
 
       <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
