@@ -47,7 +47,7 @@ export interface MoneyPotTransaction {
   id: string;
   amount: number; // Positif pour ajout, Négatif pour retrait
   description: string;
-  user: string; // Modifié de User à string pour permettre "Commun"
+  user_name: string; // Renamed from 'user' to avoid reserved keyword conflicts
   date: string;
   created_at: string;
 }

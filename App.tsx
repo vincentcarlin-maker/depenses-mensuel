@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase/client';
 import { type Expense, User, type Reminder, type Category, type Activity, type MoneyPotTransaction } from './types';
@@ -388,7 +386,11 @@ const MainApp: React.FC<{
     const handleMoneyPotChange = (payload: any) => {
         if (payload.eventType === 'INSERT') {
             const newTransaction = payload.new as MoneyPotTransaction;
-            setMoneyPotTransactions(prev => [newTransaction, ...prev]);
+            setMoneyPotTransactions(prev => {
+                // Prevent duplicate if we added it optimistically
+                if (prev.some(t => t.id === newTransaction.id)) return prev;
+                return [newTransaction, ...prev];
+            });
         } else if (payload.eventType === 'DELETE') {
             const deletedId = payload.old.id;
             setMoneyPotTransactions(prev => prev.filter(t => t.id !== deletedId));
@@ -591,20 +593,46 @@ const MainApp: React.FC<{
   
   // Money Pot Handlers
   const addMoneyPotTransaction = async (transaction: Omit<MoneyPotTransaction, 'id' | 'created_at'>) => {
-      const { error } = await supabase.from('money_pot').insert(transaction);
+      // 1. Generate client-side ID and timestamp for optimistic UI
+      const newId = crypto.randomUUID();
+      const newTransaction: MoneyPotTransaction = {
+          ...transaction,
+          id: newId,
+          created_at: new Date().toISOString()
+      };
+
+      // 2. Optimistic Update: Show immediately
+      setMoneyPotTransactions(prev => [newTransaction, ...prev]);
+
+      // 3. Send to Supabase
+      const { error } = await supabase.from('money_pot').insert({
+          ...transaction,
+          id: newId // Ensure ID matches
+      });
+
       if (error) {
           console.error("Error adding money pot transaction", error);
           setToastInfo({ message: "Erreur lors de l'ajout à la cagnotte.", type: "error" });
+          // Rollback on error
+          setMoneyPotTransactions(prev => prev.filter(t => t.id !== newId));
       } else {
           setToastInfo({ message: "Opération enregistrée !", type: "info" });
       }
   };
 
   const deleteMoneyPotTransaction = async (id: string) => {
+      // 1. Optimistic Update
+      const previousTransactions = [...moneyPotTransactions];
+      setMoneyPotTransactions(prev => prev.filter(t => t.id !== id));
+
+      // 2. Send to Supabase
       const { error } = await supabase.from('money_pot').delete().eq('id', id);
+      
       if (error) {
           console.error("Error deleting money pot transaction", error);
           setToastInfo({ message: "Erreur lors de la suppression.", type: "error" });
+          // Rollback
+          setMoneyPotTransactions(previousTransactions);
       } else {
           setToastInfo({ message: "Opération supprimée.", type: "info" });
       }

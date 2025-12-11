@@ -37,7 +37,7 @@ const MoneyPotTab: React.FC<MoneyPotTabProps> = ({ transactions, onAddTransactio
     await onAddTransaction({
       amount: finalAmount,
       description: description.trim(),
-      user: 'Commun', // Opération anonyme / commune
+      user_name: 'Commun', // Opération anonyme / commune
       date: new Date().toISOString(),
     });
 

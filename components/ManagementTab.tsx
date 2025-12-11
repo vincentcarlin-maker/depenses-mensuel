@@ -8,6 +8,7 @@ import EyeIcon from './icons/EyeIcon';
 import ConfirmationModal from './ConfirmationModal';
 import ArrowDownTrayIcon from './icons/ArrowDownTrayIcon';
 import SupabaseInstructionsModal from './SupabaseInstructionsModal';
+import WrenchScrewdriverIcon from './icons/WrenchScrewdriverIcon';
 
 // --- Section Header Component ---
 const SectionHeader: React.FC<{ title: string; description: string }> = ({ title, description }) => (
@@ -17,10 +18,33 @@ const SectionHeader: React.FC<{ title: string; description: string }> = ({ title
     </div>
 );
 
-// --- History Management ---
-const HistoryManagement: React.FC<{ loginHistory: LoginEvent[] }> = ({ loginHistory }) => {
+// --- Database Management ---
+const DatabaseManagement: React.FC = () => {
     const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
 
+    return (
+        <div className="space-y-6">
+            <SectionHeader title="Base de Données" description="Configuration et maintenance de la base de données Supabase." />
+            <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg flex items-center justify-between">
+                <div>
+                    <p className="font-medium text-slate-700 dark:text-slate-200">Configuration SQL</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Créer ou mettre à jour les tables (Cagnotte, etc.)</p>
+                </div>
+                <button 
+                    onClick={() => setIsInstructionsOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-600 border border-slate-300 dark:border-slate-500 rounded-lg text-slate-700 dark:text-slate-200 font-medium hover:bg-slate-50 dark:hover:bg-slate-500 transition-colors"
+                >
+                    <WrenchScrewdriverIcon />
+                    <span>Afficher les instructions</span>
+                </button>
+            </div>
+            <SupabaseInstructionsModal isOpen={isInstructionsOpen} onClose={() => setIsInstructionsOpen(false)} />
+        </div>
+    );
+};
+
+// --- History Management ---
+const HistoryManagement: React.FC<{ loginHistory: LoginEvent[] }> = ({ loginHistory }) => {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-start">
@@ -33,12 +57,6 @@ const HistoryManagement: React.FC<{ loginHistory: LoginEvent[] }> = ({ loginHist
             {loginHistory.length === 0 ? (
                 <div className="text-center py-4 bg-slate-50 dark:bg-slate-700/30 rounded-lg border border-slate-100 dark:border-slate-700">
                     <p className="text-slate-500 dark:text-slate-400 text-sm">Aucun historique disponible.</p>
-                    <button 
-                        onClick={() => setIsInstructionsOpen(true)}
-                        className="mt-2 text-xs text-cyan-600 dark:text-cyan-400 underline"
-                    >
-                        Configurer la base de données si vide
-                    </button>
                 </div>
             ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
@@ -61,7 +79,6 @@ const HistoryManagement: React.FC<{ loginHistory: LoginEvent[] }> = ({ loginHist
                     })}
                 </div>
             )}
-            <SupabaseInstructionsModal isOpen={isInstructionsOpen} onClose={() => setIsInstructionsOpen(false)} />
         </div>
     );
 };
@@ -529,6 +546,7 @@ const ManagementTab: React.FC<ManagementTabProps> = (props) => {
                     background-color: rgb(185 28 28 / 1); /* hover:bg-red-700 */
                 }
             `}</style>
+            <DatabaseManagement />
             <HistoryManagement loginHistory={props.loginHistory} />
             <DataManagement expenses={props.expenses} />
             <UserManagement {...props} />

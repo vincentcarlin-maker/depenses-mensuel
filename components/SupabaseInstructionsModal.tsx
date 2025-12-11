@@ -42,10 +42,19 @@ CREATE TABLE IF NOT EXISTS public.money_pot (
   id uuid default gen_random_uuid() primary key,
   amount float not null,
   description text not null,
-  user text not null,
+  user_name text not null, -- Renommé de 'user' à 'user_name' pour éviter les conflits
   date timestamptz default now(),
   created_at timestamptz default now()
 );
+
+-- 2b. MIGRATION : Si la table existe déjà avec la colonne 'user' (ancien format), on la renomme
+DO $$ 
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='money_pot' AND column_name='user') THEN
+    ALTER TABLE public.money_pot RENAME COLUMN "user" TO user_name;
+  END IF;
+END $$;
+
 
 -- 3. Activer la sécurité au niveau des lignes (RLS)
 alter table public.expenses enable row level security;
@@ -84,7 +93,7 @@ CREATE POLICY "Allow all access" ON public.money_pot FOR ALL TO anon USING (true
             <div className="ml-4 flex-1">
                 <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Configuration de la Base de Données</h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    Pour activer l'historique global, la synchronisation et la nouvelle fonctionnalité "Argent Commun", exécutez ce script dans Supabase.
+                    Exécutez ce script dans Supabase pour créer la table "Cagnotte" et corriger les erreurs d'ajout.
                 </p>
             </div>
             <button
@@ -102,13 +111,13 @@ CREATE POLICY "Allow all access" ON public.money_pot FOR ALL TO anon USING (true
                 <ol className="list-decimal list-inside space-y-1 text-sm">
                     <li>Dans Supabase, allez dans <strong>Database → Publications</strong>.</li>
                     <li>Cliquez sur <strong>supabase_realtime</strong>.</li>
-                    <li>Assurez-vous que les tables <strong>login_logs</strong> et <strong>money_pot</strong> sont cochées (en plus de expenses et reminders).</li>
+                    <li>Assurez-vous que les tables <strong>login_logs</strong> et <strong>money_pot</strong> sont cochées.</li>
                     <li>Cliquez sur <strong>Save</strong>.</li>
                 </ol>
             </div>
 
             <div>
-                <h3 className="font-bold text-lg text-slate-700 dark:text-slate-200 mb-2">Étape 2 : Créer les tables et règles</h3>
+                <h3 className="font-bold text-lg text-slate-700 dark:text-slate-200 mb-2">Étape 2 : Créer ou Mettre à jour les tables</h3>
                  <ol className="list-decimal list-inside space-y-1 mb-2 text-sm">
                     <li>Allez dans le <strong>SQL Editor</strong>.</li>
                     <li>Cliquez sur <strong>+ New query</strong>.</li>
