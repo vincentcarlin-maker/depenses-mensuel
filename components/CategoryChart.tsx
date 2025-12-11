@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { type Expense, type Category } from '../types';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, Label } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
 import { 
     MandatoryIcon, 
@@ -11,7 +11,7 @@ import {
     RestaurantIcon, 
     CarRepairsIcon, 
     MiscIcon,
-    ClothingIcon,
+    ClothingIcon, 
     GiftIcon
 } from './icons/CategoryIcons';
 
@@ -192,6 +192,20 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={CategoryVisuals[entry.name as Category]?.pieColor || PIE_COLORS[index % PIE_COLORS.length]} strokeWidth={0} />
               ))}
+              <Label
+                 position="center"
+                 content={({ viewBox }) => {
+                    const { cx, cy } = viewBox as { cx: number; cy: number };
+                    return (
+                        <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle">
+                            <tspan x={cx} y={cy - 15} className="fill-slate-500 dark:fill-slate-400 text-sm font-medium">Total du mois</tspan>
+                            <tspan x={cx} y={cy + 20} className="fill-slate-800 dark:fill-slate-100 text-3xl font-bold">
+                                {totalExpenses.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                            </tspan>
+                        </text>
+                    );
+                 }}
+              />
             </Pie>
             <Tooltip 
               formatter={(value: number) => `${value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`}
@@ -206,12 +220,6 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
             <Legend content={<CustomLegend />} verticalAlign="bottom" wrapperStyle={{ bottom: 0 }} />
           </PieChart>
         </ResponsiveContainer>
-        <div className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none z-10">
-            <p className="text-slate-500 dark:text-slate-400 text-sm">Total du mois</p>
-            <p className="text-3xl font-bold text-slate-800 dark:text-slate-100">
-                {totalExpenses.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-            </p>
-        </div>
       </div>
 
       <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
