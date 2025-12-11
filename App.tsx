@@ -1025,7 +1025,6 @@ const MainApp: React.FC<{
                     transactions={moneyPotTransactions} 
                     onAddTransaction={addMoneyPotTransaction} 
                     onDeleteTransaction={deleteMoneyPotTransaction}
-                    loggedInUser={user}
                 />
             )}
           </div>

@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { type MoneyPotTransaction, User } from '../types';
+import { type MoneyPotTransaction } from '../types';
 import TrashIcon from './icons/TrashIcon';
 import ConfirmationModal from './ConfirmationModal';
 import PiggyBankIcon from './icons/PiggyBankIcon';
@@ -9,13 +9,11 @@ interface MoneyPotTabProps {
   transactions: MoneyPotTransaction[];
   onAddTransaction: (transaction: Omit<MoneyPotTransaction, 'id' | 'created_at'>) => Promise<void>;
   onDeleteTransaction: (id: string) => Promise<void>;
-  loggedInUser: User;
 }
 
-const MoneyPotTab: React.FC<MoneyPotTabProps> = ({ transactions, onAddTransaction, onDeleteTransaction, loggedInUser }) => {
+const MoneyPotTab: React.FC<MoneyPotTabProps> = ({ transactions, onAddTransaction, onDeleteTransaction }) => {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [user, setUser] = useState<User>(loggedInUser);
   const [type, setType] = useState<'deposit' | 'withdrawal'>('deposit');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -39,7 +37,7 @@ const MoneyPotTab: React.FC<MoneyPotTabProps> = ({ transactions, onAddTransactio
     await onAddTransaction({
       amount: finalAmount,
       description: description.trim(),
-      user,
+      user: 'Commun', // Opération anonyme / commune
       date: new Date().toISOString(),
     });
 
@@ -118,24 +116,6 @@ const MoneyPotTab: React.FC<MoneyPotTabProps> = ({ transactions, onAddTransactio
                     />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Qui ?</label>
-                   <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1">
-                        <span
-                          className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out
-                            ${user === User.Vincent ? 'translate-x-full' : 'translate-x-0'}
-                          `}
-                          aria-hidden="true"
-                        />
-                        <button type="button" onClick={() => setUser(User.Sophie)} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${user === User.Sophie ? 'text-pink-600 dark:text-pink-400' : 'text-slate-600 dark:text-slate-300'}`}>
-                          Sophie
-                        </button>
-                        <button type="button" onClick={() => setUser(User.Vincent)} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${user === User.Vincent ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-300'}`}>
-                          Vincent
-                        </button>
-                      </div>
-                </div>
-
                 <button
                     type="submit"
                     disabled={isSubmitting || !amount || !description}
@@ -164,7 +144,7 @@ const MoneyPotTab: React.FC<MoneyPotTabProps> = ({ transactions, onAddTransactio
                                  <div>
                                      <p className="font-semibold text-slate-800 dark:text-slate-100">{t.description}</p>
                                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                                         {new Date(t.date).toLocaleDateString('fr-FR')} par {t.user}
+                                         {new Date(t.date).toLocaleDateString('fr-FR')}
                                      </p>
                                  </div>
                              </div>
