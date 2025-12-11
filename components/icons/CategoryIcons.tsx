@@ -56,16 +56,7 @@ export const MiscIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 
 export const GiftIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    {/* Body */}
-    <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6z" />
-    {/* Lid */}
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8h18v4H3z" />
-    {/* Ribbon Vertical */}
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v12" />
-    {/* Bow Left */}
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-2-3-5-3-5 0 0 2 3 2 5 0" />
-    {/* Bow Right */}
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c2-3 5-3 5 0 0 2-3 2-5 0" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H4.5a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21" />
   </svg>
 );
 
