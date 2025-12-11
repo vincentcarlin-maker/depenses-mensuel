@@ -42,6 +42,15 @@ export interface Reminder {
   created_at: string;
 }
 
+export interface MoneyPotTransaction {
+  id: string;
+  amount: number; // Positif pour ajout, Négatif pour retrait
+  description: string;
+  user: User;
+  date: string;
+  created_at: string;
+}
+
 export type Activity = {
     id: string; // unique id for the activity
     type: 'add' | 'update' | 'delete';

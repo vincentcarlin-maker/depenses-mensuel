@@ -1,5 +1,6 @@
+
 import { createClient } from '@supabase/supabase-js';
-import { type Expense, type Reminder } from '../types';
+import { type Expense, type Reminder, type MoneyPotTransaction } from '../types';
 
 // NOTE: Real-time channel connection errors are logged to the console in App.tsx.
 
@@ -18,6 +19,11 @@ export type Database = {
         Row: Reminder;
         Insert: Omit<Reminder, 'created_at'>;
         Update: Partial<Reminder>;
+      };
+      money_pot: {
+        Row: MoneyPotTransaction;
+        Insert: Omit<MoneyPotTransaction, 'created_at'>;
+        Update: Partial<MoneyPotTransaction>;
       };
       // ... (autres tables)
     };

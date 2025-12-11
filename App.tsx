@@ -1,8 +1,9 @@
 
 
+
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase/client';
-import { type Expense, User, type Reminder, type Category, type Activity } from './types';
+import { type Expense, User, type Reminder, type Category, type Activity, type MoneyPotTransaction } from './types';
 import Header from './components/Header';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseSummary from './components/ExpenseSummary';
@@ -24,6 +25,7 @@ import UndoToast from './components/UndoToast';
 import { DEFAULT_CATEGORIES } from './types';
 import GlobalSearchModal from './components/GlobalSearchModal';
 import FunnelIcon from './components/icons/FunnelIcon';
+import MoneyPotTab from './components/MoneyPotTab';
 
 type UndoableAction = {
     type: 'delete' | 'update';
@@ -51,9 +53,10 @@ const MainApp: React.FC<{
 }> = ({ user, onLogout, profiles, onAddProfile, onUpdateProfilePassword, onDeleteProfile, loginHistory }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [moneyPotTransactions, setMoneyPotTransactions] = useState<MoneyPotTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(getInitialDate);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly' | 'moneypot'>('dashboard');
   
   // Split state for Viewing vs Editing
   const [expenseToView, setExpenseToView] = useState<Expense | null>(null);
@@ -168,8 +171,9 @@ const MainApp: React.FC<{
   const syncData = useCallback(async (shouldCatchUp = false) => {
     const expensesPromise = supabase.from('expenses').select('*').gte('date', '2025-10-01T00:00:00Z').order('date', { ascending: false });
     const remindersPromise = supabase.from('reminders').select('*').order('day_of_month', { ascending: true });
+    const moneyPotPromise = supabase.from('money_pot').select('*').order('date', { ascending: false });
 
-    const [expensesResponse, remindersResponse] = await Promise.all([expensesPromise, remindersPromise]);
+    const [expensesResponse, remindersResponse, moneyPotResponse] = await Promise.all([expensesPromise, remindersPromise, moneyPotPromise]);
 
     if (expensesResponse.error) {
         console.error('Error fetching expenses:', expensesResponse.error.message);
@@ -202,6 +206,12 @@ const MainApp: React.FC<{
         setToastInfo({ message: "Erreur lors de la récupération des rappels.", type: 'error' });
     } else if (remindersResponse.data) {
         setReminders(remindersResponse.data as Reminder[]);
+    }
+
+    if (moneyPotResponse.error) {
+        console.warn('Error fetching money pot (Table may not exist yet):', moneyPotResponse.error.message);
+    } else if (moneyPotResponse.data) {
+        setMoneyPotTransactions(moneyPotResponse.data as MoneyPotTransaction[]);
     }
     
     setLastSyncTimestamp(new Date().toISOString());
@@ -374,6 +384,16 @@ const MainApp: React.FC<{
         return [...prev, changedReminder].sort((a, b) => a.day_of_month - b.day_of_month);
       });
     };
+    
+    const handleMoneyPotChange = (payload: any) => {
+        if (payload.eventType === 'INSERT') {
+            const newTransaction = payload.new as MoneyPotTransaction;
+            setMoneyPotTransactions(prev => [newTransaction, ...prev]);
+        } else if (payload.eventType === 'DELETE') {
+            const deletedId = payload.old.id;
+            setMoneyPotTransactions(prev => prev.filter(t => t.id !== deletedId));
+        }
+    }
 
     const allChangesChannel = supabase
       .channel('all-changes-channel')
@@ -381,6 +401,7 @@ const MainApp: React.FC<{
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'expenses' }, handleExpenseUpdate)
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'expenses' }, handleExpenseDelete)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reminders' }, handleReminderChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'money_pot' }, handleMoneyPotChange)
       .subscribe((status, err) => {
         switch (status) {
           case 'SUBSCRIBED':
@@ -568,6 +589,27 @@ const MainApp: React.FC<{
     }
   };
   
+  // Money Pot Handlers
+  const addMoneyPotTransaction = async (transaction: Omit<MoneyPotTransaction, 'id' | 'created_at'>) => {
+      const { error } = await supabase.from('money_pot').insert(transaction);
+      if (error) {
+          console.error("Error adding money pot transaction", error);
+          setToastInfo({ message: "Erreur lors de l'ajout à la cagnotte.", type: "error" });
+      } else {
+          setToastInfo({ message: "Opération enregistrée !", type: "info" });
+      }
+  };
+
+  const deleteMoneyPotTransaction = async (id: string) => {
+      const { error } = await supabase.from('money_pot').delete().eq('id', id);
+      if (error) {
+          console.error("Error deleting money pot transaction", error);
+          setToastInfo({ message: "Erreur lors de la suppression.", type: "error" });
+      } else {
+          setToastInfo({ message: "Opération supprimée.", type: "info" });
+      }
+  }
+
   const { filteredExpenses, sophieTotalMonth, vincentTotalMonth } = useMemo(() => {
     const filtered = expenses.filter(expense => {
       const expenseDate = new Date(expense.date);
@@ -819,6 +861,7 @@ const MainApp: React.FC<{
     { id: 'dashboard', label: 'Tableau de bord' },
     { id: 'analysis', label: 'Analyse' },
     { id: 'yearly', label: 'Annuel' },
+    { id: 'moneypot', label: 'Argent Commun' },
   ] as const;
 
   return (
@@ -977,6 +1020,14 @@ const MainApp: React.FC<{
             )}
             {activeTab === 'analysis' && <CategoryTotals expenses={analysisExpenses} previousMonthExpenses={previousMonthExpenses} last3MonthsExpenses={last3MonthsExpenses} />}
             {activeTab === 'yearly' && <YearlySummary expenses={yearlyFilteredExpenses} previousYearExpenses={previousYearFilteredExpenses} year={currentYear} />}
+            {activeTab === 'moneypot' && (
+                <MoneyPotTab 
+                    transactions={moneyPotTransactions} 
+                    onAddTransaction={addMoneyPotTransaction} 
+                    onDeleteTransaction={deleteMoneyPotTransaction}
+                    loggedInUser={user}
+                />
+            )}
           </div>
         </main>
       </PullToRefresh>

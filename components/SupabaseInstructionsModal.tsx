@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import CloseIcon from './icons/CloseIcon';
 import WarningIcon from './icons/WarningIcon';
@@ -36,22 +37,35 @@ CREATE TABLE IF NOT EXISTS public.login_logs (
   timestamp timestamptz default now()
 );
 
--- 2. Activer la sécurité au niveau des lignes (RLS)
+-- 2. Créer la table pour la cagnotte (argent commun)
+CREATE TABLE IF NOT EXISTS public.money_pot (
+  id uuid default gen_random_uuid() primary key,
+  amount float not null,
+  description text not null,
+  user text not null,
+  date timestamptz default now(),
+  created_at timestamptz default now()
+);
+
+-- 3. Activer la sécurité au niveau des lignes (RLS)
 alter table public.expenses enable row level security;
 alter table public.reminders enable row level security;
 alter table public.login_logs enable row level security;
+alter table public.money_pot enable row level security;
 
--- 3. Supprimer les anciennes règles pour éviter les conflits
+-- 4. Supprimer les anciennes règles pour éviter les conflits
 DROP POLICY IF EXISTS "Allow all access" ON public.expenses;
 DROP POLICY IF EXISTS "Allow all access" ON public.reminders;
 DROP POLICY IF EXISTS "Allow all access" ON public.login_logs;
+DROP POLICY IF EXISTS "Allow all access" ON public.money_pot;
 DROP POLICY IF EXISTS "Allow all access for anonymous users on expenses" ON public.expenses;
 DROP POLICY IF EXISTS "Allow all access for anonymous users on reminders" ON public.reminders;
 
--- 4. Créer les nouvelles règles qui autorisent l'accès
+-- 5. Créer les nouvelles règles qui autorisent l'accès
 CREATE POLICY "Allow all access" ON public.expenses FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access" ON public.reminders FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access" ON public.login_logs FOR ALL TO anon USING (true) WITH CHECK (true);`;
+CREATE POLICY "Allow all access" ON public.login_logs FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all access" ON public.money_pot FOR ALL TO anon USING (true) WITH CHECK (true);`;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center" aria-modal="true" role="dialog">
@@ -70,7 +84,7 @@ CREATE POLICY "Allow all access" ON public.login_logs FOR ALL TO anon USING (tru
             <div className="ml-4 flex-1">
                 <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Configuration de la Base de Données</h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    Pour activer l'historique global et la synchronisation, exécutez ce script dans Supabase.
+                    Pour activer l'historique global, la synchronisation et la nouvelle fonctionnalité "Argent Commun", exécutez ce script dans Supabase.
                 </p>
             </div>
             <button
@@ -88,7 +102,7 @@ CREATE POLICY "Allow all access" ON public.login_logs FOR ALL TO anon USING (tru
                 <ol className="list-decimal list-inside space-y-1 text-sm">
                     <li>Dans Supabase, allez dans <strong>Database → Publications</strong>.</li>
                     <li>Cliquez sur <strong>supabase_realtime</strong>.</li>
-                    <li>Assurez-vous que la table <strong>login_logs</strong> (ainsi que expenses et reminders) est cochée.</li>
+                    <li>Assurez-vous que les tables <strong>login_logs</strong> et <strong>money_pot</strong> sont cochées (en plus de expenses et reminders).</li>
                     <li>Cliquez sur <strong>Save</strong>.</li>
                 </ol>
             </div>
