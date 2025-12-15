@@ -618,7 +618,7 @@ const MainApp: React.FC<{
             description: `Ajustement : ${updatedExpense.description}`,
             user_name: 'Commun',
             date: new Date().toISOString()
-        });
+            });
     }
     // --------------------------------------
 
@@ -981,7 +981,7 @@ const MainApp: React.FC<{
           onlineUsers={onlineUsers}
         />
 
-        <main className="container mx-auto p-4 md:p-8 pb-24">
+        <main className="container mx-auto p-4 md:p-8 pb-32">
           <div className="flex justify-between items-center mb-6 animate-fade-in-up">
             <button 
               onClick={() => handleMonthChange('prev')} 
