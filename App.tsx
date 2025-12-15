@@ -24,6 +24,7 @@ import { DEFAULT_CATEGORIES } from './types';
 import GlobalSearchModal from './components/GlobalSearchModal';
 import FunnelIcon from './components/icons/FunnelIcon';
 import MoneyPotTab from './components/MoneyPotTab';
+import BottomNavigation, { TabId } from './components/BottomNavigation';
 
 type UndoableAction = {
     type: 'delete' | 'update';
@@ -54,7 +55,7 @@ const MainApp: React.FC<{
   const [moneyPotTransactions, setMoneyPotTransactions] = useState<MoneyPotTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(getInitialDate);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'analysis' | 'yearly' | 'moneypot'>('dashboard');
+  const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   
   // Split state for Viewing vs Editing
   const [expenseToView, setExpenseToView] = useState<Expense | null>(null);
@@ -964,13 +965,6 @@ const MainApp: React.FC<{
     );
   }
 
-  const tabs = [
-    { id: 'dashboard', label: 'Tableau de bord' },
-    { id: 'analysis', label: 'Analyse' },
-    { id: 'yearly', label: 'Annuel' },
-    { id: 'moneypot', label: 'Argent Commun' },
-  ] as const;
-
   return (
     <div className="bg-gray-50 dark:bg-slate-900 min-h-screen font-sans">
       <PullToRefresh isRefreshing={isRefreshing} onRefresh={handleRefresh}>
@@ -987,7 +981,7 @@ const MainApp: React.FC<{
           onlineUsers={onlineUsers}
         />
 
-        <main className="container mx-auto p-4 md:p-8">
+        <main className="container mx-auto p-4 md:p-8 pb-24">
           <div className="flex justify-between items-center mb-6 animate-fade-in-up">
             <button 
               onClick={() => handleMonthChange('prev')} 
@@ -1010,24 +1004,6 @@ const MainApp: React.FC<{
             currentYear={currentYear}
             loggedInUser={user}
           />
-
-          <div className="border-b border-slate-200 dark:border-slate-700 mb-6 overflow-x-auto no-scrollbar">
-              <nav className="-mb-px flex space-x-6" aria-label="Tabs">
-                   {tabs.map(tab => (
-                      <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors
-                          ${activeTab === tab.id
-                            ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400'
-                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'
-                          }`}
-                      >
-                        {tab.label}
-                      </button>
-                    ))}
-              </nav>
-          </div>
           
           <div className="animate-fade-in">
             {activeTab === 'dashboard' && (
@@ -1137,6 +1113,8 @@ const MainApp: React.FC<{
           </div>
         </main>
       </PullToRefresh>
+      
+      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Detail Modal (View) */}
       {expenseToView && (
