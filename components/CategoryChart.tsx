@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { type Expense, type Category } from '../types';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
 import { 
     MandatoryIcon, 
@@ -14,8 +14,6 @@ import {
     ClothingIcon,
     GiftIcon
 } from './icons/CategoryIcons';
-
-const PIE_COLORS = ['#06b6d4', '#ec4899', '#f97316', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#d946ef'];
 
 const TrendUpIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -41,42 +39,6 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
   "Divers": { icon: MiscIcon, color: 'bg-cyan-500', pieColor: '#06b6d4' },
 };
 
-
-const RADIAN = Math.PI / 180;
-const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
-  if (percent * 100 < 5) return null;
-  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-  const x = cx + radius * Math.cos(-midAngle * RADIAN);
-  const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-  return (
-    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" className="font-bold text-sm">
-      {`${(percent * 100).toFixed(0)}%`}
-    </text>
-  );
-};
-
-const CustomLegend = (props: any) => {
-    const { payload } = props;
-    return (
-      <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-4 list-none p-0">
-        {payload.map((entry: any, index: number) => {
-          const visual = CategoryVisuals[entry.value as Category] || CategoryVisuals["Divers"];
-          if (!visual) return null;
-          const IconComponent = visual.icon;
-          return (
-            <li key={`item-${index}`} className="flex items-center text-sm text-slate-600 dark:text-slate-300">
-              <span className={`w-5 h-5 flex items-center justify-center rounded-full mr-2 ${visual.color}`}>
-                <IconComponent className="h-3.5 w-3.5 text-white" />
-              </span>
-              <span>{entry.value}</span>
-            </li>
-          );
-        })}
-      </ul>
-    );
-};
-
 interface CategoryTotalsProps {
   expenses: Expense[];
   previousMonthExpenses: Expense[];
@@ -85,6 +47,8 @@ interface CategoryTotalsProps {
 
 const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonthExpenses, last3MonthsExpenses }) => {
   const { theme } = useTheme();
+  const tickColor = theme === 'dark' ? '#94a3b8' : '#475569';
+  const gridColor = theme === 'dark' ? '#334155' : '#e2e8f0';
 
   const { totalExpenses, trend } = useMemo(() => {
     const currentTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -173,44 +137,40 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
         </div>
       </div>
 
-      <div style={{ width: '100%', height: 400 }} className="relative">
-        <div className="absolute top-[calc(50%-20px)] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-            <p className="text-slate-500 dark:text-slate-400 text-sm">Total du mois</p>
-            <p className="text-3xl font-bold text-slate-800 dark:text-slate-100">
-                {totalExpenses.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-            </p>
-        </div>
+      <div style={{ width: '100%', height: Math.max(300, chartData.length * 50) }} className="relative">
         <ResponsiveContainer>
-          <PieChart>
-            <Pie
-              data={chartData}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              label={renderCustomizedLabel}
-              innerRadius={90}
-              outerRadius={140}
-              fill="#8884d8"
-              paddingAngle={3}
-              dataKey="value"
-              nameKey="name"
-            >
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={CategoryVisuals[entry.name as Category]?.pieColor || PIE_COLORS[index % PIE_COLORS.length]} strokeWidth={0} />
-              ))}
-            </Pie>
+          <BarChart
+            layout="vertical"
+            data={chartData}
+            margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={gridColor} />
+            <XAxis type="number" hide />
+            <YAxis 
+                dataKey="name" 
+                type="category" 
+                width={120} 
+                tick={{ fill: tickColor, fontSize: 12 }}
+                interval={0}
+            />
             <Tooltip 
-              formatter={(value: number) => `${value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`}
+              cursor={{ fill: theme === 'dark' ? '#334155' : '#f1f5f9', opacity: 0.4 }}
+              formatter={(value: number) => [`${value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`, 'Montant']}
               contentStyle={{
-                backgroundColor: theme === 'dark' ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+                backgroundColor: theme === 'dark' ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
                 color: theme === 'dark' ? '#f1f5f9' : '#1e293b',
                 backdropFilter: 'blur(4px)',
-                border: '1px solid #e2e8f0',
+                border: `1px solid ${theme === 'dark' ? '#475569' : '#e2e8f0'}`,
                 borderRadius: '0.75rem',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
               }}
             />
-            <Legend content={<CustomLegend />} verticalAlign="bottom" wrapperStyle={{ bottom: 0 }} />
-          </PieChart>
+            <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={24}>
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={CategoryVisuals[entry.name as Category]?.pieColor || '#8884d8'} />
+              ))}
+            </Bar>
+          </BarChart>
         </ResponsiveContainer>
       </div>
 
@@ -248,4 +208,3 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
 };
 
 export default CategoryTotals;
-    
