@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase/client';
-import { type Expense, User, type Reminder, type Category, type Activity, type MoneyPotTransaction } from './types';
+import { type Expense, User, type Activity, type MoneyPotTransaction } from './types';
 import Header from './components/Header';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseSummary from './components/ExpenseSummary';
@@ -51,7 +51,7 @@ const MainApp: React.FC<{
     loginHistory: LoginEvent[]
 }> = ({ user, onLogout, profiles, onAddProfile, onUpdateProfilePassword, onDeleteProfile, loginHistory }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [reminders, setReminders] = useState<any[]>([]);
   const [moneyPotTransactions, setMoneyPotTransactions] = useState<MoneyPotTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(getInitialDate);
@@ -65,7 +65,7 @@ const MainApp: React.FC<{
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filterUser, setFilterUser] = useState<User | 'All'>('All');
-  const [filterCategory, setFilterCategory] = useState<Category | 'All'>('All');
+  const [filterCategory, setFilterCategory] = useState<any | 'All'>('All');
 
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -85,12 +85,12 @@ const MainApp: React.FC<{
 
   // Persistent Activity Log states
   const [lastBellCheck, setLastBellCheck] = useLocalStorage('lastBellCheck', new Date().toISOString());
-  const [activities, setActivities] = useLocalStorage<Activity[]>('activityLog', []);
+  const [activities, setActivities] = useLocalStorage<any[]>('activityLog', []);
   const [lastSyncTimestamp, setLastSyncTimestamp] = useLocalStorage('lastSyncTimestamp', '1970-01-01T00:00:00.000Z');
   
   // Dynamic categories and lists
-  const [categories, setCategories] = useLocalStorage<Category[]>('expenseCategories', DEFAULT_CATEGORIES);
-  const [groceryStores, setGroceryStores] = useLocalStorage<string[]>('groceryStores', ['Leclerc', 'Leclerc Drive', 'Intermarché', 'Intermarché Drive', 'Carrefour']);
+  const [categories, setCategories] = useLocalStorage<any[]>('expenseCategories', DEFAULT_CATEGORIES);
+  const [groceryStores, setGroceryStores] = useLocalStorage<string[]>('groceryStores', ['Leclerc', 'Leclerc Drive', 'Intermarché', 'Intermarché Drive', 'Carrefour', 'Boulangerie']);
   const [cars, setCars] = useLocalStorage<string[]>('cars', ['Peugeot 5008', 'Peugeot 207']);
   const [heatingTypes, setHeatingTypes] = useLocalStorage<string[]>('heatingTypes', ['Bois', 'Fioul']);
 
@@ -146,9 +146,9 @@ const MainApp: React.FC<{
     }, 3500); // Highlight duration
   }, []);
   
-  const mergeAndDedupeActivities = useCallback((existing: Activity[], toAdd: Activity[]): Activity[] => {
+  const mergeAndDedupeActivities = useCallback((existing: any[], toAdd: any[]): any[] => {
       const combined = [...toAdd, ...existing];
-      const uniqueMap = new Map<string, Activity>();
+      const uniqueMap = new Map<string, any>();
 
       for (const act of combined) {
           if (act.type === 'add' || act.type === 'delete') {
@@ -187,7 +187,7 @@ const MainApp: React.FC<{
             );
             
             if (missedAdditions.length > 0) {
-                 const newActivities: Activity[] = missedAdditions.map(expense => ({
+                 const newActivities: any[] = missedAdditions.map(expense => ({
                     id: crypto.randomUUID(),
                     type: 'add',
                     expense: expense,
@@ -204,7 +204,7 @@ const MainApp: React.FC<{
         console.error('Error fetching reminders:', remindersResponse.error.message);
         setToastInfo({ message: "Erreur lors de la récupération des rappels.", type: 'error' });
     } else if (remindersResponse.data) {
-        setReminders(remindersResponse.data as Reminder[]);
+        setReminders(remindersResponse.data as any[]);
     }
 
     if (moneyPotResponse.error) {
@@ -259,7 +259,7 @@ const MainApp: React.FC<{
       if (!newExpense?.id) return;
 
       if (newExpense.user !== user) {
-        const newActivity: Activity = {
+        const newActivity: any = {
             id: crypto.randomUUID(),
             type: 'add',
             expense: newExpense,
@@ -296,7 +296,7 @@ const MainApp: React.FC<{
         const existingExpense = expensesRef.current.find(e => e.id === updatedExpense.id);
         const oldExpense = existingExpense ? { ...existingExpense } : undefined;
 
-        const newActivity: Activity = {
+        const newActivity: any = {
            id: crypto.randomUUID(),
            type: 'update',
            expense: updatedExpense,
@@ -343,7 +343,7 @@ const MainApp: React.FC<{
             });
 
             if (expenseToDelete.user !== user) {
-                const newActivity: Activity = {
+                const newActivity: any = {
                     id: crypto.randomUUID(),
                     type: 'delete',
                     expense: {
@@ -365,14 +365,14 @@ const MainApp: React.FC<{
 
     const handleReminderChange = (payload: any) => {
       if (payload.eventType === 'DELETE') {
-        const deletedReminder = payload.old as Partial<Reminder>;
+        const deletedReminder = payload.old as Partial<any>;
         if (deletedReminder && deletedReminder.id) {
           setReminders(prev => prev.filter(r => r.id !== deletedReminder.id));
         }
         return;
       }
 
-      const changedReminder = payload.new as Reminder;
+      const changedReminder = payload.new as any;
       setReminders(prev => {
         const existingIndex = prev.findIndex(r => r.id === changedReminder.id);
         if (existingIndex !== -1) {
@@ -623,7 +623,7 @@ const MainApp: React.FC<{
     // --------------------------------------
 
     // Create activity for local updates immediately so it appears in history
-    const newActivity: Activity = {
+    const newActivity: any = {
         id: crypto.randomUUID(),
         type: 'update',
         expense: updatedExpense,
@@ -644,14 +644,14 @@ const MainApp: React.FC<{
     setUndoableAction({ type: 'update', expense: updatedExpense, originalExpense, timerId });
   };
 
-  const addReminder = async (reminder: Omit<Reminder, 'id' | 'created_at'>) => {
+  const addReminder = async (reminder: Omit<any, 'id' | 'created_at'>) => {
     const newId = crypto.randomUUID();
     const reminderData = {
         ...reminder,
         id: newId,
     };
 
-    const optimisticReminder: Reminder = {
+    const optimisticReminder: any = {
         ...reminderData,
         created_at: new Date().toISOString(),
     };
@@ -670,7 +670,7 @@ const MainApp: React.FC<{
     }
   };
 
-  const updateReminder = async (updatedReminder: Reminder) => {
+  const updateReminder = async (updatedReminder: any) => {
     const originalReminder = reminders.find(r => r.id === updatedReminder.id);
     if (!originalReminder) return;
 
@@ -822,7 +822,7 @@ const MainApp: React.FC<{
     setIsRefreshing(false);
   };
   
-  const handlePayReminder = (reminder: Reminder) => {
+  const handlePayReminder = (reminder: any) => {
     setFormInitialData({
       formKey: crypto.randomUUID(),
       description: reminder.description,
@@ -1080,7 +1080,7 @@ const MainApp: React.FC<{
                                    <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Par catégorie</label>
                                    <select
                                        value={filterCategory}
-                                       onChange={(e) => setFilterCategory(e.target.value as Category | 'All')}
+                                       onChange={(e) => setFilterCategory(e.target.value as any | 'All')}
                                        className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                    >
                                        <option value="All">Toutes les catégories</option>
