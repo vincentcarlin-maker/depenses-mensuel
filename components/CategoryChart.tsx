@@ -26,6 +26,25 @@ const TrendDownIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
     </svg>
 );
 
+const StableIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 9h16M4 15h16" />
+    </svg>
+);
+
+const TrendIndicator: React.FC<{ current: number, previous: number }> = ({ current, previous }) => {
+    if (previous === 0) return <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter">Nouveau</span>;
+    
+    const diffPercent = ((current - previous) / previous) * 100;
+
+    if (diffPercent > 1) {
+        return <TrendUpIcon className="h-4 w-4 text-rose-500" />;
+    } else if (diffPercent < -1) {
+        return <TrendDownIcon className="h-4 w-4 text-emerald-500" />;
+    } else {
+        return <StableIcon className="h-3.5 w-3.5 text-slate-400" />;
+    }
+};
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; pieColor: string } } = {
   "Dépenses obligatoires": { icon: MandatoryIcon, color: 'bg-slate-500', pieColor: '#64748b' },
@@ -42,10 +61,11 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
 interface CategoryTotalsProps {
   expenses: Expense[];
   previousMonthExpenses: Expense[];
+  previousYearMonthExpenses: Expense[]; // For Year-on-Year comparison
   last3MonthsExpenses: Expense[];
 }
 
-const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonthExpenses, last3MonthsExpenses }) => {
+const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonthExpenses, previousYearMonthExpenses, last3MonthsExpenses }) => {
   const { theme } = useTheme();
   const tickColor = theme === 'dark' ? '#94a3b8' : '#475569';
   const gridColor = theme === 'dark' ? '#334155' : '#e2e8f0';
@@ -72,9 +92,13 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
 
   const { chartData } = useMemo(() => {
     const totals = new Map<Category, number>();
-    
     for (const expense of expenses) {
       totals.set(expense.category, (totals.get(expense.category) || 0) + expense.amount);
+    }
+
+    const prevYearMonthTotals = new Map<Category, number>();
+    for (const expense of previousYearMonthExpenses) {
+        prevYearMonthTotals.set(expense.category, (prevYearMonthTotals.get(expense.category) || 0) + expense.amount);
     }
 
     const categoryAverages = new Map<Category, number>();
@@ -92,13 +116,14 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
         .map(([name, value]) => ({
             name,
             value,
+            previousYearMonthValue: prevYearMonthTotals.get(name) || 0,
             average: categoryAverages.get(name) || 0,
         }))
         .filter(d => d.value > 0)
         .sort((a,b) => b.value - a.value); 
 
     return { chartData: data };
-  }, [expenses, last3MonthsExpenses]);
+  }, [expenses, last3MonthsExpenses, previousYearMonthExpenses]);
 
   if (expenses.length === 0) {
     return (
@@ -120,7 +145,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
       <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Analyse des Dépenses</h2>
       
       <div className="my-6 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl">
-        <h3 className="text-base font-semibold mb-2 text-slate-700 dark:text-slate-200">Tendance Mensuelle</h3>
+        <h3 className="text-base font-semibold mb-2 text-slate-700 dark:text-slate-200">Tendance Mensuelle (M-1)</h3>
         <div className="flex items-center gap-3">
             <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${trend.percentageChange > 0 ? 'bg-red-100 dark:bg-red-500/20' : 'bg-green-100 dark:bg-green-500/20'}`}>
                 <TrendIcon className={trendColor} />
@@ -175,19 +200,25 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
       </div>
 
       <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
-        <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-200">Détails par catégorie</h3>
+        <div className="flex justify-between items-baseline mb-4">
+            <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Détails par catégorie</h3>
+            <span className="text-[10px] uppercase font-bold text-slate-400">Tendance (Y/Y)</span>
+        </div>
         <div className="space-y-3">
           {chartData.map((entry) => {
             const visual = CategoryVisuals[entry.name as Category] || CategoryVisuals["Divers"];
             const IconComponent = visual.icon;
             const percentage = totalExpenses > 0 ? (entry.value / totalExpenses) * 100 : 0;
             return (
-              <div key={`detail-${entry.name}`} className="flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+              <div key={`detail-${entry.name}`} className="flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl group">
                 <div className={`w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full mr-4 ${visual.color}`}>
                   <IconComponent className="h-5 w-5 text-white" />
                 </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-slate-700 dark:text-slate-200">{entry.name}</p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-slate-700 dark:text-slate-200 truncate">{entry.name}</p>
+                    <TrendIndicator current={entry.value} previous={entry.previousYearMonthValue} />
+                  </div>
                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       Moyenne 3 mois: {entry.average.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                    </p>

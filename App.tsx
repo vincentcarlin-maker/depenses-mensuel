@@ -735,6 +735,15 @@ const MainApp: React.FC<{
     });
   }, [expenses, currentDate]);
 
+  // NEW: Same month of previous year for detailed trend comparison
+  const previousYearMonthExpenses = useMemo(() => {
+    const prevYear = currentYear - 1;
+    return expenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate.getUTCFullYear() === prevYear && expenseDate.getUTCMonth() === currentMonth;
+    });
+  }, [expenses, currentYear, currentMonth]);
+
   const last3MonthsExpenses = useMemo(() => {
     const threeMonthsAgo = new Date(currentDate);
     threeMonthsAgo.setUTCMonth(threeMonthsAgo.getUTCMonth() - 3);
@@ -1101,7 +1110,7 @@ const MainApp: React.FC<{
                 </div>
               </div>
             )}
-            {activeTab === 'analysis' && <CategoryTotals expenses={analysisExpenses} previousMonthExpenses={previousMonthExpenses} last3MonthsExpenses={last3MonthsExpenses} />}
+            {activeTab === 'analysis' && <CategoryTotals expenses={analysisExpenses} previousMonthExpenses={previousMonthExpenses} previousYearMonthExpenses={previousYearMonthExpenses} last3MonthsExpenses={last3MonthsExpenses} />}
             {activeTab === 'yearly' && <YearlySummary expenses={yearlyFilteredExpenses} previousYearExpenses={previousYearFilteredExpenses} year={currentYear} />}
             {activeTab === 'moneypot' && (
                 <MoneyPotTab 
