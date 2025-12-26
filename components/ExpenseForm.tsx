@@ -39,7 +39,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   // Duplicate Detection States
   const [duplicateConfirmationOpen, setDuplicateConfirmationOpen] = useState(false);
   const [pendingExpenseData, setPendingExpenseData] = useState<Omit<Expense, 'id' | 'date' | 'created_at'> | null>(null);
-  const [detectedDuplicate, setDetectedDuplicate] = useState<Expense | null>(null);
+  const [detectedDuplicates, setDetectedDuplicates] = useState<Expense[]>([]);
 
   const amountInputRef = useRef<HTMLInputElement>(null);
   const nonSpecialCategoryDescriptionRef = useRef(
@@ -107,7 +107,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
     setSuggestions([]);
   };
 
-  const findPossibleDuplicate = (newExpense: Omit<Expense, 'id' | 'date' | 'created_at'>): Expense | undefined => {
+  const findPossibleDuplicates = (newExpense: Omit<Expense, 'id' | 'date' | 'created_at'>): Expense[] => {
       // Nous comparons avec le mois en cours (date d'ajout par défaut)
       const now = new Date();
       const currentMonth = now.getMonth();
@@ -116,7 +116,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
       const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
       const newDescNormalized = normalize(newExpense.description);
 
-      return expenses.find(e => {
+      return expenses.filter(e => {
           const eDate = new Date(e.date);
           
           // 1. Check same month and year
@@ -145,7 +145,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
           submitExpense(pendingExpenseData);
           setDuplicateConfirmationOpen(false);
           setPendingExpenseData(null);
-          setDetectedDuplicate(null);
+          setDetectedDuplicates([]);
       }
   };
 
@@ -241,10 +241,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
     };
 
     // Check for duplicates before submitting
-    const duplicate = findPossibleDuplicate(newExpensePayload);
-    if (duplicate) {
+    const duplicates = findPossibleDuplicates(newExpensePayload);
+    if (duplicates.length > 0) {
         setPendingExpenseData(newExpensePayload);
-        setDetectedDuplicate(duplicate);
+        setDetectedDuplicates(duplicates);
         setDuplicateConfirmationOpen(true);
     } else {
         submitExpense(newExpensePayload);
@@ -485,14 +485,25 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             onClose={() => {
                 setDuplicateConfirmationOpen(false);
                 setPendingExpenseData(null);
-                setDetectedDuplicate(null);
+                setDetectedDuplicates([]);
             }}
             onConfirm={handleConfirmDuplicate}
             title="Doublon potentiel détecté"
-            message={detectedDuplicate 
-                ? `Une dépense identique (${detectedDuplicate.description} - ${detectedDuplicate.amount} €) existe déjà pour ce mois (ajoutée le ${new Date(detectedDuplicate.date).toLocaleDateString()}). Voulez-vous vraiment l'ajouter à nouveau ?`
-                : "Une dépense très similaire existe déjà ce mois-ci. Voulez-vous confirmer l'ajout ?"
-            }
+            message={detectedDuplicates.length > 0 ? (
+                <div className="text-left">
+                    <p className="font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                        Attention, {detectedDuplicates.length} dépense{detectedDuplicates.length > 1 ? 's' : ''} identique{detectedDuplicates.length > 1 ? 's' : ''} trouvée{detectedDuplicates.length > 1 ? 's' : ''} pour ce mois :
+                    </p>
+                    <ul className="list-disc pl-4 mb-4 space-y-1 bg-slate-50 dark:bg-slate-700/50 p-2 rounded-lg text-xs sm:text-sm">
+                        {detectedDuplicates.map(d => (
+                            <li key={d.id} className="text-slate-600 dark:text-slate-300">
+                                <span className="font-bold text-slate-800 dark:text-slate-200">{new Date(d.date).toLocaleDateString()}</span> - {d.description} ({Math.abs(d.amount)} €)
+                            </li>
+                        ))}
+                    </ul>
+                    <p>Voulez-vous vraiment ajouter cette dépense à nouveau ?</p>
+                </div>
+            ) : "Une dépense très similaire existe déjà ce mois-ci. Voulez-vous confirmer l'ajout ?"}
         />
     </>
   );

@@ -8,7 +8,7 @@ interface ConfirmationModalProps {
   onClose: () => void;
   onConfirm: () => void;
   title: string;
-  message: string;
+  message: React.ReactNode;
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, onConfirm, title, message }) => {
@@ -52,14 +52,14 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, 
                     <WarningIcon />
                 </div>
             </div>
-            <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+            <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                 <h3 className="text-lg leading-6 font-bold text-slate-900 dark:text-slate-100" id="modal-title">
                     {title}
                 </h3>
                 <div className="mt-2">
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                    <div className="text-sm text-slate-500 dark:text-slate-400">
                         {message}
-                    </p>
+                    </div>
                 </div>
             </div>
         </div>
