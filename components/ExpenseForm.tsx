@@ -108,19 +108,35 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   };
 
   const findPossibleDuplicate = (newExpense: Omit<Expense, 'id' | 'date' | 'created_at'>): Expense | undefined => {
-      // Check for expenses created in the last 48 hours
-      const threshold = new Date();
-      threshold.setHours(threshold.getHours() - 48);
+      // Nous comparons avec le mois en cours (date d'ajout par défaut)
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
 
       const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
       const newDescNormalized = normalize(newExpense.description);
 
       return expenses.find(e => {
-          const isRecent = new Date(e.date) > threshold;
-          const isSameAmount = Math.abs(e.amount - newExpense.amount) < 0.01; // Float safety
+          const eDate = new Date(e.date);
+          
+          // 1. Check same month and year
+          const isSameMonth = eDate.getMonth() === currentMonth && eDate.getFullYear() === currentYear;
+          if (!isSameMonth) return false;
+
+          // 2. Check same User
+          if (e.user !== newExpense.user) return false;
+
+          // 3. Check same Category
+          if (e.category !== newExpense.category) return false;
+
+          // 4. Check same Amount
+          const isSameAmount = Math.abs(e.amount - newExpense.amount) < 0.01; 
+          if (!isSameAmount) return false;
+
+          // 5. Check same Description
           const isSameDescription = normalize(e.description) === newDescNormalized;
           
-          return isRecent && isSameAmount && isSameDescription;
+          return isSameDescription;
       });
   };
 
@@ -472,10 +488,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                 setDetectedDuplicate(null);
             }}
             onConfirm={handleConfirmDuplicate}
-            title="Doublon détecté"
+            title="Doublon potentiel détecté"
             message={detectedDuplicate 
-                ? `Une dépense identique ("${detectedDuplicate.description}" - ${detectedDuplicate.amount} €) a déjà été ajoutée par ${detectedDuplicate.user} le ${new Date(detectedDuplicate.date).toLocaleDateString()}. Voulez-vous vraiment l'ajouter de nouveau ?`
-                : "Une dépense identique a déjà été ajoutée récemment. Voulez-vous vraiment l'ajouter de nouveau ?"
+                ? `Une dépense identique (${detectedDuplicate.description} - ${detectedDuplicate.amount} €) existe déjà pour ce mois (ajoutée le ${new Date(detectedDuplicate.date).toLocaleDateString()}). Voulez-vous vraiment l'ajouter à nouveau ?`
+                : "Une dépense très similaire existe déjà ce mois-ci. Voulez-vous confirmer l'ajout ?"
             }
         />
     </>
