@@ -494,10 +494,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                     <p className="font-semibold text-slate-700 dark:text-slate-300 mb-2">
                         Attention, {detectedDuplicates.length} dépense{detectedDuplicates.length > 1 ? 's' : ''} identique{detectedDuplicates.length > 1 ? 's' : ''} trouvée{detectedDuplicates.length > 1 ? 's' : ''} pour ce mois :
                     </p>
-                    <ul className="list-disc pl-4 mb-4 space-y-1 bg-slate-50 dark:bg-slate-700/50 p-2 rounded-lg text-xs sm:text-sm">
+                    <ul className="list-disc pl-4 mb-4 space-y-2 bg-slate-50 dark:bg-slate-700/50 p-2 rounded-lg text-xs sm:text-sm max-h-40 overflow-y-auto custom-scrollbar">
                         {detectedDuplicates.map(d => (
-                            <li key={d.id} className="text-slate-600 dark:text-slate-300">
-                                <span className="font-bold text-slate-800 dark:text-slate-200">{new Date(d.date).toLocaleDateString()}</span> - {d.description} ({Math.abs(d.amount)} €)
+                            <li key={d.id} className="text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-600 last:border-0 pb-1 last:pb-0">
+                                <span className="font-bold text-slate-800 dark:text-slate-200 block">{new Date(d.date).toLocaleDateString()}</span>
+                                <span className="block truncate">{d.description}</span>
+                                <span className="block font-medium text-slate-800 dark:text-slate-100">{Math.abs(d.amount)} €</span>
                             </li>
                         ))}
                     </ul>

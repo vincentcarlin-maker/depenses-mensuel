@@ -45,25 +45,27 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, 
         aria-hidden="true"
       ></div>
       
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-2xl z-[101] w-full max-w-sm m-4 animate-fade-in relative transform transition-all">
-        <div className="sm:flex sm:items-start">
-            <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-800/20 sm:mx-0 sm:h-10 sm:w-10">
-                <div className="text-red-600 dark:text-red-400">
-                    <WarningIcon />
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-2xl z-[101] w-full max-w-sm m-4 animate-fade-in relative transform transition-all flex flex-col max-h-[90vh]">
+        <div className="overflow-y-auto custom-scrollbar">
+            <div className="sm:flex sm:items-start">
+                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-800/20 sm:mx-0 sm:h-10 sm:w-10">
+                    <div className="text-red-600 dark:text-red-400">
+                        <WarningIcon />
+                    </div>
                 </div>
-            </div>
-            <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                <h3 className="text-lg leading-6 font-bold text-slate-900 dark:text-slate-100" id="modal-title">
-                    {title}
-                </h3>
-                <div className="mt-2">
-                    <div className="text-sm text-slate-500 dark:text-slate-400">
-                        {message}
+                <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                    <h3 className="text-lg leading-6 font-bold text-slate-900 dark:text-slate-100" id="modal-title">
+                        {title}
+                    </h3>
+                    <div className="mt-2">
+                        <div className="text-sm text-slate-500 dark:text-slate-400">
+                            {message}
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div className="mt-6 sm:mt-4 sm:flex sm:flex-row-reverse gap-3">
+        <div className="mt-6 sm:mt-4 sm:flex sm:flex-row-reverse gap-3 pt-2 border-t border-transparent sm:border-t-0">
             <button
                 type="button"
                 className="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2.5 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm transition-all active:scale-95"
