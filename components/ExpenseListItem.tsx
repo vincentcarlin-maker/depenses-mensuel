@@ -14,6 +14,7 @@ import {
     BirthdayIcon
 } from './icons/CategoryIcons';
 import PiggyBankIcon from './icons/PiggyBankIcon';
+import ArrowRightIcon from './icons/ArrowRightIcon';
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string } } = {
   "Dépenses obligatoires": { icon: MandatoryIcon, color: 'bg-slate-500' },
@@ -85,6 +86,14 @@ const ExpenseListItem: React.FC<{
     } else if (isBirthday) {
         IconComponent = BirthdayIcon;
     }
+    
+    const hasSubtractions = expense.category === 'Courses' && expense.subtracted_items && expense.subtracted_items.length > 0;
+
+    let originalAmount = 0;
+    if (hasSubtractions) {
+        const totalSubtracted = expense.subtracted_items!.reduce((sum, item) => sum + item.amount, 0);
+        originalAmount = expense.amount + totalSubtracted;
+    }
 
     return (
         <div
@@ -114,10 +123,22 @@ const ExpenseListItem: React.FC<{
                  <p className="text-sm text-slate-500 dark:text-slate-400 truncate" title={expense.category}>{expense.category}</p>
             </div>
             <div className="pl-4 flex-shrink-0 text-right">
-                <p className={`font-bold ${amountColorClass}`}>
-                    {expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                </p>
-                <p className="text-xs text-slate-400 dark:text-slate-500">{formattedDate}</p>
+                 {hasSubtractions ? (
+                    <div className="flex items-center justify-end gap-1.5">
+                        <span className="text-sm text-slate-400 dark:text-slate-500 line-through">
+                            {originalAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                        </span>
+                        <ArrowRightIcon className="h-3 w-3 text-slate-400 dark:text-slate-500" />
+                        <p className={`font-bold ${amountColorClass}`}>
+                            {expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                        </p>
+                    </div>
+                ) : (
+                    <p className={`font-bold ${amountColorClass}`}>
+                        {expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                    </p>
+                )}
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{formattedDate}</p>
             </div>
         </div>
     );
