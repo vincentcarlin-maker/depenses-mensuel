@@ -28,7 +28,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [heatingType, setHeatingType] = useState(heatingTypes[0] || '');
   const [repairedCar, setRepairedCar] = useState(cars[0] || '');
   
-  // Specific states for new categories
+  // Specific states for personal split in Groceries
+  const [showSplit, setShowSplit] = useState(false);
+  const [sophiePart, setSophiePart] = useState('');
+  const [vincentPart, setVincentPart] = useState('');
+
+  // Specific states for other categories
   const [clothingPerson, setClothingPerson] = useState('Nathan');
   const [giftPerson, setGiftPerson] = useState('Nathan');
   const [giftOccasion, setGiftOccasion] = useState('Noël');
@@ -36,7 +41,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [error, setError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   
-  // Duplicate Detection States
   const [duplicateConfirmationOpen, setDuplicateConfirmationOpen] = useState(false);
   const [pendingExpenseData, setPendingExpenseData] = useState<Omit<Expense, 'id' | 'date' | 'created_at'> | null>(null);
   const [detectedDuplicates, setDetectedDuplicates] = useState<Expense[]>([]);
@@ -63,7 +67,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
       amountInputRef.current?.focus();
       amountInputRef.current?.select();
     }
-  }, []); // Run only on mount, since we are keying the component
+  }, []);
 
   useEffect(() => {
     if (category === "Carburant") {
@@ -80,9 +84,15 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         setDescription(nonSpecialCategoryDescriptionRef.current);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, cars]);
 
+  const commonPartCalculated = useMemo(() => {
+      const total = parseFloat(amount.replace(',', '.'));
+      const sPart = parseFloat(sophiePart.replace(',', '.')) || 0;
+      const vPart = parseFloat(vincentPart.replace(',', '.')) || 0;
+      if (isNaN(total)) return 0;
+      return Math.max(0, total - sPart - vPart);
+  }, [amount, sophiePart, vincentPart]);
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -108,35 +118,21 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   };
 
   const findPossibleDuplicates = (newExpense: Omit<Expense, 'id' | 'date' | 'created_at'>): Expense[] => {
-      // Nous comparons avec le mois en cours (date d'ajout par défaut)
       const now = new Date();
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
-
       const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
       const newDescNormalized = normalize(newExpense.description);
 
       return expenses.filter(e => {
           const eDate = new Date(e.date);
-          
-          // 1. Check same month and year
           const isSameMonth = eDate.getMonth() === currentMonth && eDate.getFullYear() === currentYear;
           if (!isSameMonth) return false;
-
-          // 2. Check same User
           if (e.user !== newExpense.user) return false;
-
-          // 3. Check same Category
           if (e.category !== newExpense.category) return false;
-
-          // 4. Check same Amount
           const isSameAmount = Math.abs(e.amount - newExpense.amount) < 0.01; 
           if (!isSameAmount) return false;
-
-          // 5. Check same Description
-          const isSameDescription = normalize(e.description) === newDescNormalized;
-          
-          return isSameDescription;
+          return normalize(e.description) === newDescNormalized;
       });
   };
 
@@ -160,6 +156,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         setHeatingType(heatingTypes[0] || '');
         setCategory(categories[0] || '');
         setTransactionType('expense');
+        setSophiePart('');
+        setVincentPart('');
+        setShowSplit(false);
         setError('');
         setSuggestions([]);
         setRepairedCar(cars[0] || '');
@@ -181,50 +180,32 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
       return;
     }
 
-    const finalAmount = transactionType === 'expense' ? parsedAmount : -parsedAmount;
-    
+    const sPart = parseFloat(sophiePart.replace(',', '.')) || 0;
+    const vPart = parseFloat(vincentPart.replace(',', '.')) || 0;
+
+    if (showSplit && (sPart + vPart > parsedAmount)) {
+        setError('Le total des parts personnelles dépasse le montant du ticket.');
+        return;
+    }
+
     let finalDescription = '';
+    const selectedStore = store === 'Autres' ? customStore.trim() : store;
 
     if (category === 'Courses') {
-        const selectedStore = store === 'Autres' ? customStore.trim() : store;
         if (!selectedStore) {
             setError('Veuillez sélectionner un magasin ou en spécifier un.');
             return;
         }
         finalDescription = selectedStore;
     } else if (category === 'Chauffage') {
-        if (!heatingType) {
-            setError('Veuillez sélectionner un type de chauffage.');
-            return;
-        }
         finalDescription = `Chauffage (${heatingType})`;
     } else if (category === 'Réparation voitures') {
-        const trimmedDescription = description.trim();
-        if (!trimmedDescription) {
-            setError('La description de la réparation est requise.');
-            return;
-        }
-        if (!repairedCar) {
-            setError('Veuillez sélectionner un véhicule.');
-            return;
-        }
-        finalDescription = `${trimmedDescription} (${repairedCar})`;
+        finalDescription = `${description.trim()} (${repairedCar})`;
     } else if (category === 'Vêtements') {
-        const trimmedDescription = description.trim();
-        if (!trimmedDescription) {
-            setError('La description est requise.');
-            return;
-        }
-        finalDescription = `${trimmedDescription} (${clothingPerson})`;
+        finalDescription = `${description.trim()} (${clothingPerson})`;
     } else if (category === 'Cadeau') {
-        const trimmedDescription = description.trim();
-        if (!trimmedDescription) {
-            setError('La description est requise.');
-            return;
-        }
-        finalDescription = `${trimmedDescription} (${giftPerson} - ${giftOccasion})`;
-    }
-    else {
+        finalDescription = `${description.trim()} (${giftPerson} - ${giftOccasion})`;
+    } else {
         finalDescription = description.trim();
     }
 
@@ -233,25 +214,58 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         return;
     }
 
-    const newExpensePayload = {
-      description: finalDescription,
-      amount: finalAmount,
-      category,
-      user,
-    };
+    if (category === 'Courses' && showSplit) {
+        // Handle split logic: Add up to 3 separate expenses
+        const commonAmount = parsedAmount - sPart - vPart;
 
-    // Check for duplicates before submitting
-    const duplicates = findPossibleDuplicates(newExpensePayload);
-    if (duplicates.length > 0) {
-        setPendingExpenseData(newExpensePayload);
-        setDetectedDuplicates(duplicates);
-        setDuplicateConfirmationOpen(true);
+        if (commonAmount > 0) {
+            onAddExpense({
+                description: `${finalDescription} (Part Commune)`,
+                amount: transactionType === 'expense' ? commonAmount : -commonAmount,
+                category,
+                user,
+            });
+        }
+
+        if (sPart > 0) {
+            onAddExpense({
+                description: `${finalDescription} (Perso Sophie)`,
+                amount: transactionType === 'expense' ? sPart : -sPart,
+                category,
+                user: User.Sophie,
+            });
+        }
+
+        if (vPart > 0) {
+            onAddExpense({
+                description: `${finalDescription} (Perso Vincent)`,
+                amount: transactionType === 'expense' ? vPart : -vPart,
+                category,
+                user: User.Vincent,
+            });
+        }
+        
+        // Reset form
+        setAmount(''); setSophiePart(''); setVincentPart(''); setShowSplit(false); setError('');
     } else {
-        submitExpense(newExpensePayload);
+        const newExpensePayload = {
+            description: finalDescription,
+            amount: transactionType === 'expense' ? parsedAmount : -parsedAmount,
+            category,
+            user,
+        };
+
+        const duplicates = findPossibleDuplicates(newExpensePayload);
+        if (duplicates.length > 0) {
+            setPendingExpenseData(newExpensePayload);
+            setDetectedDuplicates(duplicates);
+            setDuplicateConfirmationOpen(true);
+        } else {
+            submitExpense(newExpensePayload);
+        }
     }
   };
 
-  // Helper to calculate slider position
   const getUserSliderPosition = () => {
       switch (user) {
           case User.Sophie: return 'translate-x-0';
@@ -306,18 +320,51 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             </div>
             
             {category === 'Courses' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label htmlFor="store-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Magasin</label>
-                        <select id="store-select" value={store} onChange={e => setStore(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent sm:text-sm rounded-lg">
-                            {groceryStores.map(s => <option key={s} value={s}>{s}</option>)}
-                            <option value="Autres">Autres</option>
-                        </select>
-                    </div>
-                    {store === 'Autres' && (
+                <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label htmlFor="custom-store" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Magasin personnalisé</label>
-                            <input type="text" id="custom-store" value={customStore} onChange={e => setCustomStore(e.target.value)} className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm" placeholder="Nom du magasin" />
+                            <label htmlFor="store-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Magasin</label>
+                            <select id="store-select" value={store} onChange={e => setStore(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent sm:text-sm rounded-lg">
+                                {groceryStores.map(s => <option key={s} value={s}>{s}</option>)}
+                                <option value="Autres">Autres</option>
+                            </select>
+                        </div>
+                        {store === 'Autres' && (
+                            <div>
+                                <label htmlFor="custom-store" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Magasin personnalisé</label>
+                                <input type="text" id="custom-store" value={customStore} onChange={e => setCustomStore(e.target.value)} className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm" placeholder="Nom du magasin" />
+                            </div>
+                        )}
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 bg-cyan-50 dark:bg-cyan-900/10 rounded-xl border border-cyan-100 dark:border-cyan-800/20">
+                        <span className="text-sm font-semibold text-cyan-800 dark:text-cyan-300">Déduire des articles personnels ?</span>
+                        <button 
+                            type="button" 
+                            onClick={() => setShowSplit(!showSplit)}
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${showSplit ? 'bg-cyan-600' : 'bg-slate-200 dark:bg-slate-600'}`}
+                        >
+                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${showSplit ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </button>
+                    </div>
+
+                    {showSplit && (
+                        <div className="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-200 dark:border-slate-600 space-y-4 animate-fade-in">
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Parts personnelles à retirer</p>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-medium text-pink-600 dark:text-pink-400 mb-1">Articles Sophie (€)</label>
+                                    <input type="text" inputMode="decimal" value={sophiePart} onChange={e => setSophiePart(e.target.value)} className="block w-full px-3 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-pink-500" placeholder="0.00" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-sky-600 dark:text-sky-400 mb-1">Articles Vincent (€)</label>
+                                    <input type="text" inputMode="decimal" value={vincentPart} onChange={e => setVincentPart(e.target.value)} className="block w-full px-3 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-sky-500" placeholder="0.00" />
+                                </div>
+                            </div>
+                            <div className="pt-2 border-t border-slate-200 dark:border-slate-600 flex justify-between items-center">
+                                <span className="text-sm font-bold text-slate-600 dark:text-slate-300">Reste en commun :</span>
+                                <span className="text-lg font-black text-cyan-600 dark:text-cyan-400">{commonPartCalculated.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -326,33 +373,21 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             {category === 'Chauffage' && (
                 <div>
                     <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type de Chauffage</label>
-                    <SegmentedControl
-                        options={heatingTypes}
-                        value={heatingType}
-                        onChange={setHeatingType}
-                    />
+                    <SegmentedControl options={heatingTypes} value={heatingType} onChange={setHeatingType} />
                 </div>
             )}
 
             {category === 'Réparation voitures' && (
                 <div>
                     <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Véhicule</label>
-                    <SegmentedControl
-                        options={cars}
-                        value={repairedCar}
-                        onChange={setRepairedCar}
-                    />
+                    <SegmentedControl options={cars} value={repairedCar} onChange={setRepairedCar} />
                 </div>
             )}
 
             {category === 'Vêtements' && (
                 <div>
                     <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label>
-                    <SegmentedControl
-                        options={childrenOptions}
-                        value={clothingPerson}
-                        onChange={setClothingPerson}
-                    />
+                    <SegmentedControl options={childrenOptions} value={clothingPerson} onChange={setClothingPerson} />
                 </div>
             )}
 
@@ -360,19 +395,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label>
-                        <SegmentedControl
-                            options={childrenOptions}
-                            value={giftPerson}
-                            onChange={setGiftPerson}
-                        />
+                        <SegmentedControl options={childrenOptions} value={giftPerson} onChange={setGiftPerson} />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Occasion</label>
-                        <SegmentedControl
-                            options={occasionOptions}
-                            value={giftOccasion}
-                            onChange={setGiftOccasion}
-                        />
+                        <SegmentedControl options={occasionOptions} value={giftOccasion} onChange={setGiftOccasion} />
                     </div>
                 </div>
             )}
@@ -382,11 +409,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                 {category === "Carburant" ? (
                     <>
                     <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Véhicule</label>
-                    <SegmentedControl
-                        options={cars}
-                        value={description}
-                        onChange={(val) => setDescription(val)}
-                    />
+                    <SegmentedControl options={cars} value={description} onChange={(val) => setDescription(val)} />
                     </>
                 ) : (
                     <>
@@ -441,7 +464,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             </div>
             <div>
                 <label htmlFor="amount" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
-                Montant (€)
+                Montant Total (€)
                 </label>
                 <input
                 ref={amountInputRef}
@@ -474,7 +497,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                     </svg>
-                    <span>Ajouter</span>
+                    <span>Ajouter {showSplit ? 'les parts' : ''}</span>
                 </>
             )}
             </button>
