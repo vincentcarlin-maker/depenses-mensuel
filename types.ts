@@ -5,8 +5,11 @@ export enum User {
   Commun = "Commun",
 }
 
+// Les catégories sont maintenant dynamiques.
+// Ceci est juste un type pour la clarté, la vraie liste est gérée dans l'état de l'application.
 export type Category = string;
 
+// Liste initiale des catégories lors du premier chargement de l'application.
 export const DEFAULT_CATEGORIES: Category[] = [
   "Dépenses obligatoires",
   "Carburant",
@@ -19,22 +22,14 @@ export const DEFAULT_CATEGORIES: Category[] = [
   "Divers",
 ];
 
-export interface Deduction {
-  id: string;
-  name: string;
-  price: number;
-  user: User.Sophie | User.Vincent;
-}
-
 export interface Expense {
-  id: string;
+  id: string; // Correspond à l'UUID de Supabase
   description: string;
   amount: number;
   category: Category;
-  date: string;
+  date: string; // ISO 8601 format (TIMESTAMPTZ)
   user: User;
   created_at: string;
-  metadata?: string; // JSON stringified object: { totalTicket: number, deductions: Deduction[] }
 }
 
 export interface Reminder {
@@ -50,17 +45,17 @@ export interface Reminder {
 
 export interface MoneyPotTransaction {
   id: string;
-  amount: number;
+  amount: number; // Positif pour ajout, Négatif pour retrait
   description: string;
-  user_name: string;
+  user_name: string; // Renamed from 'user' to avoid reserved keyword conflicts
   date: string;
   created_at: string;
 }
 
 export type Activity = {
-    id: string;
+    id: string; // unique id for the activity
     type: 'add' | 'update' | 'delete';
     expense: Partial<Expense> & { id: string, user: User, date: string };
-    oldExpense?: Partial<Expense>;
+    oldExpense?: Partial<Expense>; // Used to show diff on updates
     timestamp: string;
 };
