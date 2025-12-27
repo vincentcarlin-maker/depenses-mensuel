@@ -1,9 +1,11 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { type Expense, type Category, User } from '../types';
+import { type Expense, type Category, User, type SubtractedItem } from '../types';
 import SegmentedControl from './SegmentedControl';
 import ConfirmationModal from './ConfirmationModal';
 import PiggyBankIcon from './icons/PiggyBankIcon';
+import ScissorsIcon from './icons/ScissorsIcon';
+import TrashIcon from './icons/TrashIcon';
 
 interface ExpenseFormProps {
   onAddExpense: (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => void;
@@ -28,7 +30,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [heatingType, setHeatingType] = useState(heatingTypes[0] || '');
   const [repairedCar, setRepairedCar] = useState(cars[0] || '');
   
-  // Specific states for new categories
+  // States for "Courses" subtractions
+  const [receiptTotal, setReceiptTotal] = useState('');
+  const [subtractedItems, setSubtractedItems] = useState<SubtractedItem[]>([]);
+  const [itemDescription, setItemDescription] = useState('');
+  const [itemAmount, setItemAmount] = useState('');
+
   const [clothingPerson, setClothingPerson] = useState('Nathan');
   const [giftPerson, setGiftPerson] = useState('Nathan');
   const [giftOccasion, setGiftOccasion] = useState('Noël');
@@ -36,7 +43,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [error, setError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   
-  // Duplicate Detection States
   const [duplicateConfirmationOpen, setDuplicateConfirmationOpen] = useState(false);
   const [pendingExpenseData, setPendingExpenseData] = useState<Omit<Expense, 'id' | 'date' | 'created_at'> | null>(null);
   const [detectedDuplicates, setDetectedDuplicates] = useState<Expense[]>([]);
@@ -57,13 +63,20 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
     const allDescriptions = expenses.map(e => e.description.replace(tagRegex, '').replace(storeRegex, '').trim());
     return [...new Set<string>(allDescriptions)].filter(d => d.length > 0);
   }, [expenses]);
+  
+  const finalCalculatedAmount = useMemo(() => {
+    const total = parseFloat(receiptTotal.replace(',', '.')) || 0;
+    const subtractions = subtractedItems.reduce((sum, item) => sum + item.amount, 0);
+    return total - subtractions;
+  }, [receiptTotal, subtractedItems]);
+
 
   useEffect(() => {
     if (initialData) {
       amountInputRef.current?.focus();
       amountInputRef.current?.select();
     }
-  }, []); // Run only on mount, since we are keying the component
+  }, []); 
 
   useEffect(() => {
     if (category === "Carburant") {
@@ -108,7 +121,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   };
 
   const findPossibleDuplicates = (newExpense: Omit<Expense, 'id' | 'date' | 'created_at'>): Expense[] => {
-      // Nous comparons avec le mois en cours (date d'ajout par défaut)
       const now = new Date();
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
@@ -118,24 +130,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
 
       return expenses.filter(e => {
           const eDate = new Date(e.date);
-          
-          // 1. Check same month and year
-          const isSameMonth = eDate.getMonth() === currentMonth && eDate.getFullYear() === currentYear;
-          if (!isSameMonth) return false;
-
-          // 2. Check same User
+          if (eDate.getMonth() !== currentMonth || eDate.getFullYear() !== currentYear) return false;
           if (e.user !== newExpense.user) return false;
-
-          // 3. Check same Category
           if (e.category !== newExpense.category) return false;
-
-          // 4. Check same Amount
           const isSameAmount = Math.abs(e.amount - newExpense.amount) < 0.01; 
           if (!isSameAmount) return false;
-
-          // 5. Check same Description
           const isSameDescription = normalize(e.description) === newDescNormalized;
-          
           return isSameDescription;
       });
   };
@@ -166,24 +166,52 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         setClothingPerson('Nathan');
         setGiftPerson('Nathan');
         setGiftOccasion('Noël');
+        setReceiptTotal('');
+        setSubtractedItems([]);
+    }
+  };
+  
+   const handleAddSubtractedItem = () => {
+    const parsedAmount = parseFloat(itemAmount.replace(',', '.'));
+    if (itemDescription.trim() && !isNaN(parsedAmount) && parsedAmount > 0) {
+        setSubtractedItems([...subtractedItems, { description: itemDescription.trim(), amount: parsedAmount }]);
+        setItemDescription('');
+        setItemAmount('');
     }
   };
 
+  const handleRemoveSubtractedItem = (index: number) => {
+    setSubtractedItems(subtractedItems.filter((_, i) => i !== index));
+  };
+
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount) {
-      setError('Le montant est requis.');
-      return;
-    }
-    const parsedAmount = parseFloat(amount.replace(',', '.'));
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      setError('Veuillez entrer un montant positif.');
-      return;
-    }
-
-    const finalAmount = transactionType === 'expense' ? parsedAmount : -parsedAmount;
     
+    let finalAmount;
+    if (category === 'Courses') {
+      finalAmount = finalCalculatedAmount;
+      const parsedTotal = parseFloat(receiptTotal.replace(',', '.'));
+      if (isNaN(parsedTotal) || parsedTotal <= 0) {
+        setError('Le montant du ticket est requis.');
+        return;
+      }
+    } else {
+      if (!amount) {
+        setError('Le montant est requis.');
+        return;
+      }
+      const parsedAmount = parseFloat(amount.replace(',', '.'));
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        setError('Veuillez entrer un montant positif.');
+        return;
+      }
+      finalAmount = transactionType === 'expense' ? parsedAmount : -parsedAmount;
+    }
+    
+
     let finalDescription = '';
+    let finalSubtractedItems: SubtractedItem[] | undefined = undefined;
 
     if (category === 'Courses') {
         const selectedStore = store === 'Autres' ? customStore.trim() : store;
@@ -192,6 +220,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             return;
         }
         finalDescription = selectedStore;
+        finalSubtractedItems = subtractedItems;
     } else if (category === 'Chauffage') {
         if (!heatingType) {
             setError('Veuillez sélectionner un type de chauffage.');
@@ -238,9 +267,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
       amount: finalAmount,
       category,
       user,
+      subtracted_items: finalSubtractedItems
     };
 
-    // Check for duplicates before submitting
     const duplicates = findPossibleDuplicates(newExpensePayload);
     if (duplicates.length > 0) {
         setPendingExpenseData(newExpensePayload);
@@ -251,7 +280,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
     }
   };
 
-  // Helper to calculate slider position
   const getUserSliderPosition = () => {
       switch (user) {
           case User.Sophie: return 'translate-x-0';
@@ -305,7 +333,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             </select>
             </div>
             
-            {category === 'Courses' && (
+            {category === 'Courses' ? (
+              <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label htmlFor="store-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Magasin</label>
@@ -321,140 +350,189 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                         </div>
                     )}
                 </div>
-            )}
+                 <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-700 space-y-4">
+                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                      <ScissorsIcon />
+                      <h4 className="font-semibold">Articles à déduire (achats non communs)</h4>
+                    </div>
 
-            {category === 'Chauffage' && (
-                <div>
-                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type de Chauffage</label>
-                    <SegmentedControl
-                        options={heatingTypes}
-                        value={heatingType}
-                        onChange={setHeatingType}
-                    />
+                     {subtractedItems.length > 0 && (
+                      <div className="space-y-2 max-h-28 overflow-y-auto pr-2">
+                        {subtractedItems.map((item, index) => (
+                          <div key={index} className="flex items-center justify-between bg-white dark:bg-slate-600 p-2 rounded-md">
+                            <span className="text-sm text-slate-700 dark:text-slate-200">{item.description}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-slate-800 dark:text-slate-100">{item.amount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})}</span>
+                              <button type="button" onClick={() => handleRemoveSubtractedItem(index)} className="p-1 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full">
+                                <TrashIcon />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1">
+                          <label className="text-xs font-medium text-slate-500">Article</label>
+                          <input type="text" value={itemDescription} onChange={e => setItemDescription(e.target.value)} placeholder="Ex: Shampoing" className="block w-full px-2 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border-slate-300 dark:border-slate-500"/>
+                      </div>
+                      <div className="w-24">
+                          <label className="text-xs font-medium text-slate-500">Montant</label>
+                          <input type="text" inputMode="decimal" value={itemAmount} onChange={e => setItemAmount(e.target.value)} placeholder="0.00" className="block w-full px-2 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border-slate-300 dark:border-slate-500"/>
+                      </div>
+                      <button type="button" onClick={handleAddSubtractedItem} className="px-3 py-1.5 bg-cyan-500 text-white text-sm font-semibold rounded-md hover:bg-cyan-600">+</button>
+                    </div>
                 </div>
-            )}
 
-            {category === 'Réparation voitures' && (
-                <div>
-                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Véhicule</label>
-                    <SegmentedControl
-                        options={cars}
-                        value={repairedCar}
-                        onChange={setRepairedCar}
-                    />
-                </div>
-            )}
-
-            {category === 'Vêtements' && (
-                <div>
-                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label>
-                    <SegmentedControl
-                        options={childrenOptions}
-                        value={clothingPerson}
-                        onChange={setClothingPerson}
-                    />
-                </div>
-            )}
-
-            {category === 'Cadeau' && (
-                <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label>
-                        <SegmentedControl
-                            options={childrenOptions}
-                            value={giftPerson}
-                            onChange={setGiftPerson}
-                        />
+                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Montant du ticket (€)</label>
+                        <input type="text" inputMode="decimal" value={receiptTotal} onChange={e => setReceiptTotal(e.target.value)} className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg font-semibold"/>
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Occasion</label>
-                        <SegmentedControl
-                            options={occasionOptions}
-                            value={giftOccasion}
-                            onChange={setGiftOccasion}
-                        />
+                     <div>
+                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Montant final (commun)</label>
+                        <input type="text" value={finalCalculatedAmount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})} readOnly className="block w-full px-3 py-2.5 bg-slate-200 dark:bg-slate-600 text-cyan-600 dark:text-cyan-400 border-transparent rounded-lg font-bold"/>
                     </div>
                 </div>
+              </>
+            ) : (
+                <>
+                  {category === 'Chauffage' && (
+                      <div>
+                          <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type de Chauffage</label>
+                          <SegmentedControl
+                              options={heatingTypes}
+                              value={heatingType}
+                              onChange={setHeatingType}
+                          />
+                      </div>
+                  )}
+
+                  {category === 'Réparation voitures' && (
+                      <div>
+                          <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Véhicule</label>
+                          <SegmentedControl
+                              options={cars}
+                              value={repairedCar}
+                              onChange={setRepairedCar}
+                          />
+                      </div>
+                  )}
+
+                  {category === 'Vêtements' && (
+                      <div>
+                          <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label>
+                          <SegmentedControl
+                              options={childrenOptions}
+                              value={clothingPerson}
+                              onChange={setClothingPerson}
+                          />
+                      </div>
+                  )}
+
+                  {category === 'Cadeau' && (
+                      <div className="space-y-4">
+                          <div>
+                              <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label>
+                              <SegmentedControl
+                                  options={childrenOptions}
+                                  value={giftPerson}
+                                  onChange={setGiftPerson}
+                              />
+                          </div>
+                          <div>
+                              <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Occasion</label>
+                              <SegmentedControl
+                                  options={occasionOptions}
+                                  value={giftOccasion}
+                                  onChange={setGiftOccasion}
+                              />
+                          </div>
+                      </div>
+                  )}
+                  
+                  { !['Chauffage'].includes(category) && (
+                      <div>
+                      {category === "Carburant" ? (
+                          <>
+                          <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Véhicule</label>
+                          <SegmentedControl
+                              options={cars}
+                              value={description}
+                              onChange={(val) => setDescription(val)}
+                          />
+                          </>
+                      ) : (
+                          <>
+                          <label htmlFor="description" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Description</label>
+                          <div className="relative">
+                              <input
+                              type="text"
+                              id="description"
+                              value={description}
+                              onChange={handleDescriptionChange}
+                              onFocus={(e) => handleDescriptionChange(e)}
+                              onBlur={() => setTimeout(() => setSuggestions([]), 150)}
+                              className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
+                              placeholder={category === 'Vêtements' ? "Ex: Pantalon, Manteau..." : category === 'Cadeau' ? "Ex: Lego, Poupée..." : "Ex: McDo, Courses Leclerc..."}
+                              autoComplete="off"
+                              />
+                              {suggestions.length > 0 && (
+                              <ul className="absolute z-10 w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md mt-1 shadow-lg max-h-48 overflow-y-auto">
+                                  {suggestions.map((suggestion, index) => (
+                                  <li
+                                      key={index}
+                                      className="px-4 py-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm"
+                                      onMouseDown={() => handleSuggestionClick(suggestion)}
+                                  >
+                                      {suggestion}
+                                  </li>
+                                  ))}
+                              </ul>
+                              )}
+                          </div>
+                          </>
+                      )}
+                      </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-4">
+                  <div>
+                      <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type</label>
+                      <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1">
+                          <span
+                          className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out
+                              ${transactionType === 'refund' ? 'translate-x-full' : 'translate-x-0'}
+                          `}
+                          aria-hidden="true"
+                          />
+                          <button type="button" onClick={() => setTransactionType('expense')} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${transactionType === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                          Dépense
+                          </button>
+                          <button type="button" onClick={() => setTransactionType('refund')} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${transactionType === 'refund' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                          Remb.
+                          </button>
+                      </div>
+                  </div>
+                  <div>
+                      <label htmlFor="amount" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
+                      Montant (€)
+                      </label>
+                      <input
+                      ref={amountInputRef}
+                      type="text"
+                      inputMode="decimal"
+                      id="amount"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
+                      placeholder="0.00"
+                      />
+                  </div>
+                  </div>
+                </>
             )}
-            
-            { !['Courses', 'Chauffage'].includes(category) && (
-                <div>
-                {category === "Carburant" ? (
-                    <>
-                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Véhicule</label>
-                    <SegmentedControl
-                        options={cars}
-                        value={description}
-                        onChange={(val) => setDescription(val)}
-                    />
-                    </>
-                ) : (
-                    <>
-                    <label htmlFor="description" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Description</label>
-                    <div className="relative">
-                        <input
-                        type="text"
-                        id="description"
-                        value={description}
-                        onChange={handleDescriptionChange}
-                        onFocus={(e) => handleDescriptionChange(e)}
-                        onBlur={() => setTimeout(() => setSuggestions([]), 150)}
-                        className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
-                        placeholder={category === 'Vêtements' ? "Ex: Pantalon, Manteau..." : category === 'Cadeau' ? "Ex: Lego, Poupée..." : "Ex: McDo, Courses Leclerc..."}
-                        autoComplete="off"
-                        />
-                        {suggestions.length > 0 && (
-                        <ul className="absolute z-10 w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md mt-1 shadow-lg max-h-48 overflow-y-auto">
-                            {suggestions.map((suggestion, index) => (
-                            <li
-                                key={index}
-                                className="px-4 py-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm"
-                                onMouseDown={() => handleSuggestionClick(suggestion)}
-                            >
-                                {suggestion}
-                            </li>
-                            ))}
-                        </ul>
-                        )}
-                    </div>
-                    </>
-                )}
-                </div>
-            )}
-            <div className="grid grid-cols-2 gap-4">
-            <div>
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type</label>
-                <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1">
-                    <span
-                    className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out
-                        ${transactionType === 'refund' ? 'translate-x-full' : 'translate-x-0'}
-                    `}
-                    aria-hidden="true"
-                    />
-                    <button type="button" onClick={() => setTransactionType('expense')} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${transactionType === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-300'}`}>
-                    Dépense
-                    </button>
-                    <button type="button" onClick={() => setTransactionType('refund')} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${transactionType === 'refund' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'}`}>
-                    Remb.
-                    </button>
-                </div>
-            </div>
-            <div>
-                <label htmlFor="amount" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
-                Montant (€)
-                </label>
-                <input
-                ref={amountInputRef}
-                type="text"
-                inputMode="decimal"
-                id="amount"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
-                placeholder="0.00"
-                />
-            </div>
-            </div>
+
             {error && <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>}
             <button
             type="submit"

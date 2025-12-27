@@ -55,6 +55,14 @@ BEGIN
   END IF;
 END $$;
 
+-- 2c. AJOUT : Ajoute la colonne pour les articles déduits des courses
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='expenses' AND column_name='subtracted_items') THEN
+    ALTER TABLE public.expenses ADD COLUMN subtracted_items jsonb;
+  END IF;
+END $$;
+
 
 -- 3. Activer la sécurité au niveau des lignes (RLS)
 alter table public.expenses enable row level security;

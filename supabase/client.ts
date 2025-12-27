@@ -13,7 +13,7 @@ export type Database = {
       expenses: {
         Row: Expense;
         Insert: Omit<Expense, 'created_at'>;
-        Update: Partial<Expense>;
+        Update: Partial<Omit<Expense, 'created_at'>>;
       };
       reminders: {
         Row: Reminder;

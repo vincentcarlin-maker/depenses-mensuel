@@ -6,7 +6,7 @@ export enum User {
 }
 
 // Les catégories sont maintenant dynamiques.
-// Ceci est juste un type pour la clarté, la vraie liste est gérée dans l'état de l'application.
+// Ceci est juste un type pour la cléarité, la vraie liste est gérée dans l'état de l'application.
 export type Category = string;
 
 // Liste initiale des catégories lors du premier chargement de l'application.
@@ -22,6 +22,11 @@ export const DEFAULT_CATEGORIES: Category[] = [
   "Divers",
 ];
 
+export interface SubtractedItem {
+  description: string;
+  amount: number;
+}
+
 export interface Expense {
   id: string; // Correspond à l'UUID de Supabase
   description: string;
@@ -30,6 +35,7 @@ export interface Expense {
   date: string; // ISO 8601 format (TIMESTAMPTZ)
   user: User;
   created_at: string;
+  subtracted_items?: SubtractedItem[];
 }
 
 export interface Reminder {
