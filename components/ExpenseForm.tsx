@@ -36,6 +36,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [subtractedItems, setSubtractedItems] = useState<SubtractedItem[]>([]);
   const [itemDescription, setItemDescription] = useState('');
   const [itemAmount, setItemAmount] = useState('');
+  const itemDescriptionInputRef = useRef<HTMLInputElement>(null);
 
   const [clothingPerson, setClothingPerson] = useState('Nathan');
   const [giftPerson, setGiftPerson] = useState('Nathan');
@@ -68,8 +69,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const finalCalculatedAmount = useMemo(() => {
     const total = parseFloat(receiptTotal.replace(',', '.')) || 0;
     const subtractions = subtractedItems.reduce((sum, item) => sum + item.amount, 0);
-    return total - subtractions;
-  }, [receiptTotal, subtractedItems]);
+    const currentItemAmount = parseFloat(itemAmount.replace(',', '.')) || 0;
+    // Soustraire l'article en cours de saisie uniquement si une description est également présente
+    const intentionalSubtraction = itemDescription.trim() ? currentItemAmount : 0;
+    return total - subtractions - intentionalSubtraction;
+  }, [receiptTotal, subtractedItems, itemAmount, itemDescription]);
 
 
   useEffect(() => {
@@ -189,11 +193,19 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         setSubtractedItems([...subtractedItems, { description: itemDescription.trim(), amount: parsedAmount }]);
         setItemDescription('');
         setItemAmount('');
+        itemDescriptionInputRef.current?.focus();
     }
   };
 
   const handleRemoveSubtractedItem = (index: number) => {
     setSubtractedItems(subtractedItems.filter((_, i) => i !== index));
+  };
+  
+  const handleItemInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddSubtractedItem();
+    }
   };
 
 
@@ -204,13 +216,21 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
     let finalSubtractedItems: SubtractedItem[] | undefined = undefined;
 
     if (category === 'Courses' && showSubtractions) {
-      finalAmount = finalCalculatedAmount;
+      const currentSubtractedItems = [...subtractedItems];
+      const parsedPendingAmount = parseFloat(itemAmount.replace(',', '.'));
+      if (itemDescription.trim() && !isNaN(parsedPendingAmount) && parsedPendingAmount > 0) {
+          currentSubtractedItems.push({ description: itemDescription.trim(), amount: parsedPendingAmount });
+      }
+
       const parsedTotal = parseFloat(receiptTotal.replace(',', '.'));
       if (isNaN(parsedTotal) || parsedTotal <= 0) {
         setError('Le montant du ticket est requis.');
         return;
       }
-      finalSubtractedItems = subtractedItems;
+
+      const subtractions = currentSubtractedItems.reduce((sum, item) => sum + item.amount, 0);
+      finalAmount = parsedTotal - subtractions;
+      finalSubtractedItems = currentSubtractedItems;
     } else {
       if (!amount) {
         setError('Le montant est requis.');
@@ -409,11 +429,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                     <div className="flex gap-2 items-end">
                       <div className="flex-1">
                           <label className="text-xs font-medium text-slate-500">Article</label>
-                          <input type="text" value={itemDescription} onChange={e => setItemDescription(e.target.value)} placeholder="Ex: Shampoing" className="block w-full px-2 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border-slate-300 dark:border-slate-500"/>
+                          <input ref={itemDescriptionInputRef} type="text" value={itemDescription} onChange={e => setItemDescription(e.target.value)} onKeyDown={handleItemInputKeyDown} placeholder="Ex: Shampoing" className="block w-full px-2 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border-slate-300 dark:border-slate-500"/>
                       </div>
                       <div className="w-24">
                           <label className="text-xs font-medium text-slate-500">Montant</label>
-                          <input type="text" inputMode="decimal" value={itemAmount} onChange={e => setItemAmount(e.target.value)} placeholder="0.00" className="block w-full px-2 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border-slate-300 dark:border-slate-500"/>
+                          <input type="text" inputMode="decimal" value={itemAmount} onChange={e => setItemAmount(e.target.value)} onKeyDown={handleItemInputKeyDown} placeholder="0.00" className="block w-full px-2 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border-slate-300 dark:border-slate-500"/>
                       </div>
                       <button type="button" onClick={handleAddSubtractedItem} className="px-3 py-1.5 bg-cyan-500 text-white text-sm font-semibold rounded-md hover:bg-cyan-600">+</button>
                     </div>
@@ -575,7 +595,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             >
             {disabled ? (
                 <>
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { type Expense, type Category, User, type SubtractedItem } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import TrashIcon from './icons/TrashIcon';
@@ -42,6 +42,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
     const [subtractedItems, setSubtractedItems] = useState<SubtractedItem[]>([]);
     const [itemDescription, setItemDescription] = useState('');
     const [itemAmount, setItemAmount] = useState('');
+    const itemDescriptionInputRef = useRef<HTMLInputElement>(null);
 
     const [store, setStore] = useState('');
     const [customStore, setCustomStore] = useState('');
@@ -61,8 +62,11 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
     const finalCalculatedAmount = useMemo(() => {
         const total = parseFloat(receiptTotal.replace(',', '.')) || 0;
         const subtractions = subtractedItems.reduce((sum, item) => sum + item.amount, 0);
-        return total - subtractions;
-    }, [receiptTotal, subtractedItems]);
+        const currentItemAmount = parseFloat(itemAmount.replace(',', '.')) || 0;
+        // Soustraire l'article en cours de saisie uniquement si une description est également présente
+        const intentionalSubtraction = itemDescription.trim() ? currentItemAmount : 0;
+        return total - subtractions - intentionalSubtraction;
+    }, [receiptTotal, subtractedItems, itemAmount, itemDescription]);
 
 
     useEffect(() => {
@@ -145,13 +149,21 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
         let finalSubtractedItems: SubtractedItem[] | undefined = undefined;
 
         if (category === 'Courses' && showSubtractions) {
-          finalAmount = finalCalculatedAmount;
+          const currentSubtractedItems = [...subtractedItems];
+          const parsedPendingAmount = parseFloat(itemAmount.replace(',', '.'));
+          if (itemDescription.trim() && !isNaN(parsedPendingAmount) && parsedPendingAmount > 0) {
+            currentSubtractedItems.push({ description: itemDescription.trim(), amount: parsedPendingAmount });
+          }
+
           const parsedTotal = parseFloat(receiptTotal.replace(',', '.'));
           if (isNaN(parsedTotal) || parsedTotal <= 0) {
             setError('Le montant du ticket est requis.');
             return;
           }
-           finalSubtractedItems = subtractedItems;
+
+          const subtractions = currentSubtractedItems.reduce((sum, item) => sum + item.amount, 0);
+          finalAmount = parsedTotal - subtractions;
+          finalSubtractedItems = currentSubtractedItems;
         } else {
           if (!amount) {
             setError('Le montant est requis.');
@@ -232,11 +244,19 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
             setSubtractedItems([...subtractedItems, { description: itemDescription.trim(), amount: parsedItemAmount }]);
             setItemDescription('');
             setItemAmount('');
+            itemDescriptionInputRef.current?.focus();
         }
     };
 
     const handleRemoveSubtractedItem = (index: number) => {
         setSubtractedItems(subtractedItems.filter((_, i) => i !== index));
+    };
+
+    const handleItemInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleAddSubtractedItem();
+        }
     };
 
 
@@ -382,8 +402,8 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                                       </div>
                                     )}
                                     <div className="flex gap-2 items-end">
-                                      <div className="flex-1"><label className="text-xs font-medium text-slate-500">Article</label><input type="text" value={itemDescription} onChange={e => setItemDescription(e.target.value)} placeholder="Ex: Shampoing" className="block w-full px-2 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border-slate-300 dark:border-slate-500"/></div>
-                                      <div className="w-24"><label className="text-xs font-medium text-slate-500">Montant</label><input type="text" inputMode="decimal" value={itemAmount} onChange={e => setItemAmount(e.target.value)} placeholder="0.00" className="block w-full px-2 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border-slate-300 dark:border-slate-500"/></div>
+                                      <div className="flex-1"><label className="text-xs font-medium text-slate-500">Article</label><input ref={itemDescriptionInputRef} type="text" value={itemDescription} onChange={e => setItemDescription(e.target.value)} onKeyDown={handleItemInputKeyDown} placeholder="Ex: Shampoing" className="block w-full px-2 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border-slate-300 dark:border-slate-500"/></div>
+                                      <div className="w-24"><label className="text-xs font-medium text-slate-500">Montant</label><input type="text" inputMode="decimal" value={itemAmount} onChange={e => setItemAmount(e.target.value)} onKeyDown={handleItemInputKeyDown} placeholder="0.00" className="block w-full px-2 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border-slate-300 dark:border-slate-500"/></div>
                                       <button type="button" onClick={handleAddSubtractedItem} className="px-3 py-1.5 bg-cyan-500 text-white text-sm font-semibold rounded-md hover:bg-cyan-600">+</button>
                                     </div>
                                 </div>
