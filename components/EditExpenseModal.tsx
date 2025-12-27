@@ -36,7 +36,8 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
     const [date, setDate] = useState(toDatetimeLocal(expense.date));
     const [transactionType, setTransactionType] = useState<'expense' | 'refund'>(expense.amount >= 0 ? 'expense' : 'refund');
     
-    // States for "Courses" subtractions
+    // State for "Courses" subtractions toggle
+    const [showSubtractions, setShowSubtractions] = useState(expense.category === 'Courses' && Array.isArray(expense.subtracted_items) && expense.subtracted_items.length > 0);
     const [receiptTotal, setReceiptTotal] = useState('');
     const [subtractedItems, setSubtractedItems] = useState<SubtractedItem[]>([]);
     const [itemDescription, setItemDescription] = useState('');
@@ -66,9 +67,11 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
 
     useEffect(() => {
         if (expense.category === 'Courses') {
-            const originalTotal = expense.amount + (expense.subtracted_items || []).reduce((sum, item) => sum + item.amount, 0);
-            setReceiptTotal(originalTotal.toString());
-            setSubtractedItems(expense.subtracted_items || []);
+            if (showSubtractions) {
+                const originalTotal = expense.amount + (expense.subtracted_items || []).reduce((sum, item) => sum + item.amount, 0);
+                setReceiptTotal(originalTotal.toString());
+                setSubtractedItems(expense.subtracted_items || []);
+            }
 
             const storeName = expense.description;
             if (groceryStores.includes(storeName)) {
@@ -114,7 +117,14 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
         else {
             setDescription(expense.description);
         }
-    }, [expense, groceryStores, heatingTypes, cars]);
+    }, [expense, groceryStores, heatingTypes, cars, showSubtractions]);
+
+    useEffect(() => {
+        if (category === 'Courses' && !showSubtractions) {
+            setSubtractedItems([]);
+            setReceiptTotal('');
+        }
+    }, [showSubtractions, category]);
 
     useEffect(() => {
         const handleEsc = (event: KeyboardEvent) => {
@@ -132,13 +142,16 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
         e.preventDefault();
         
         let finalAmount;
-        if (category === 'Courses') {
+        let finalSubtractedItems: SubtractedItem[] | undefined = undefined;
+
+        if (category === 'Courses' && showSubtractions) {
           finalAmount = finalCalculatedAmount;
           const parsedTotal = parseFloat(receiptTotal.replace(',', '.'));
           if (isNaN(parsedTotal) || parsedTotal <= 0) {
             setError('Le montant du ticket est requis.');
             return;
           }
+           finalSubtractedItems = subtractedItems;
         } else {
           if (!amount) {
             setError('Le montant est requis.');
@@ -153,8 +166,6 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
         }
         
         let finalDescription = '';
-        let finalSubtractedItems: SubtractedItem[] | undefined = undefined;
-
 
         if (category === 'Courses') {
             const selectedStore = store === 'Autres' ? customStore.trim() : store;
@@ -163,7 +174,6 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                 return;
             }
             finalDescription = selectedStore;
-            finalSubtractedItems = subtractedItems;
         } else if (category === 'Chauffage') {
             if (!heatingType) {
                 setError('Veuillez sélectionner un type de chauffage.');
@@ -313,8 +323,8 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                             />
                         </div>
 
-                         {category === 'Courses' ? (
-                            <>
+                        {category === 'Courses' && (
+                            <div className="space-y-4">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label htmlFor="edit-store-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Magasin</label>
@@ -330,6 +340,27 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                                         </div>
                                     )}
                                 </div>
+                                <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700/50 p-3 rounded-lg">
+                                    <label htmlFor="edit-toggle-sub" className="font-medium text-slate-700 dark:text-slate-200 cursor-pointer flex items-center gap-2">
+                                        <ScissorsIcon />
+                                        <span>Déduire des articles ?</span>
+                                    </label>
+                                    <button
+                                        type="button"
+                                        id="edit-toggle-sub"
+                                        onClick={() => setShowSubtractions(!showSubtractions)}
+                                        className={`${showSubtractions ? 'bg-cyan-600' : 'bg-slate-300 dark:bg-slate-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800`}
+                                        role="switch"
+                                        aria-checked={showSubtractions}
+                                    >
+                                        <span className={`${showSubtractions ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                         {category === 'Courses' && showSubtractions ? (
+                            <>
                                  <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-700 space-y-4">
                                     <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                                       <ScissorsIcon />
@@ -379,7 +410,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                                      <div className="space-y-4"><div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label><SegmentedControl options={childrenOptions} value={giftPerson} onChange={setGiftPerson} className="mt-1"/></div><div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Occasion</label><SegmentedControl options={occasionOptions} value={giftOccasion} onChange={setGiftOccasion} className="mt-1"/></div></div>
                                 )}
                                 
-                                { !['Chauffage'].includes(category) && (
+                                { !['Chauffage', 'Courses'].includes(category) && (
                                     <div>
                                         {category === "Carburant" ? (
                                             <><label className="block text-sm font-medium text-slate-600 dark:text-slate-300">Véhicule</label><SegmentedControl options={carOptions} value={description} onChange={(val) => setDescription(val)} className="mt-1"/></>

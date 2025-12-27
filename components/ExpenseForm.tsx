@@ -30,7 +30,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [heatingType, setHeatingType] = useState(heatingTypes[0] || '');
   const [repairedCar, setRepairedCar] = useState(cars[0] || '');
   
-  // States for "Courses" subtractions
+  // State for "Courses" subtractions toggle
+  const [showSubtractions, setShowSubtractions] = useState(false);
   const [receiptTotal, setReceiptTotal] = useState('');
   const [subtractedItems, setSubtractedItems] = useState<SubtractedItem[]>([]);
   const [itemDescription, setItemDescription] = useState('');
@@ -95,6 +96,16 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, cars]);
+
+  // Reset subtraction fields if toggled off
+  useEffect(() => {
+    if (!showSubtractions) {
+        setSubtractedItems([]);
+        setReceiptTotal('');
+        setItemDescription('');
+        setItemAmount('');
+    }
+  }, [showSubtractions]);
 
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,6 +177,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         setClothingPerson('Nathan');
         setGiftPerson('Nathan');
         setGiftOccasion('Noël');
+        setShowSubtractions(false); // Reset toggle on successful submission
         setReceiptTotal('');
         setSubtractedItems([]);
     }
@@ -189,13 +201,16 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
     e.preventDefault();
     
     let finalAmount;
-    if (category === 'Courses') {
+    let finalSubtractedItems: SubtractedItem[] | undefined = undefined;
+
+    if (category === 'Courses' && showSubtractions) {
       finalAmount = finalCalculatedAmount;
       const parsedTotal = parseFloat(receiptTotal.replace(',', '.'));
       if (isNaN(parsedTotal) || parsedTotal <= 0) {
         setError('Le montant du ticket est requis.');
         return;
       }
+      finalSubtractedItems = subtractedItems;
     } else {
       if (!amount) {
         setError('Le montant est requis.');
@@ -211,7 +226,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
     
 
     let finalDescription = '';
-    let finalSubtractedItems: SubtractedItem[] | undefined = undefined;
 
     if (category === 'Courses') {
         const selectedStore = store === 'Autres' ? customStore.trim() : store;
@@ -220,7 +234,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             return;
         }
         finalDescription = selectedStore;
-        finalSubtractedItems = subtractedItems;
     } else if (category === 'Chauffage') {
         if (!heatingType) {
             setError('Veuillez sélectionner un type de chauffage.');
@@ -333,23 +346,44 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             </select>
             </div>
             
-            {category === 'Courses' ? (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label htmlFor="store-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Magasin</label>
-                        <select id="store-select" value={store} onChange={e => setStore(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent sm:text-sm rounded-lg">
-                            {groceryStores.map(s => <option key={s} value={s}>{s}</option>)}
-                            <option value="Autres">Autres</option>
-                        </select>
-                    </div>
-                    {store === 'Autres' && (
+            {category === 'Courses' && (
+                <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label htmlFor="custom-store" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Magasin personnalisé</label>
-                            <input type="text" id="custom-store" value={customStore} onChange={e => setCustomStore(e.target.value)} className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm" placeholder="Nom du magasin" />
+                            <label htmlFor="store-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Magasin</label>
+                            <select id="store-select" value={store} onChange={e => setStore(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent sm:text-sm rounded-lg">
+                                {groceryStores.map(s => <option key={s} value={s}>{s}</option>)}
+                                <option value="Autres">Autres</option>
+                            </select>
                         </div>
-                    )}
+                        {store === 'Autres' && (
+                            <div>
+                                <label htmlFor="custom-store" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Magasin personnalisé</label>
+                                <input type="text" id="custom-store" value={customStore} onChange={e => setCustomStore(e.target.value)} className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm" placeholder="Nom du magasin" />
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700/50 p-3 rounded-lg">
+                        <label htmlFor="toggle-subtractions" className="font-medium text-slate-700 dark:text-slate-200 cursor-pointer flex items-center gap-2">
+                            <ScissorsIcon />
+                            <span>Déduire des articles personnels ?</span>
+                        </label>
+                        <button
+                            type="button"
+                            id="toggle-subtractions"
+                            onClick={() => setShowSubtractions(!showSubtractions)}
+                            className={`${showSubtractions ? 'bg-cyan-600' : 'bg-slate-300 dark:bg-slate-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800`}
+                            role="switch"
+                            aria-checked={showSubtractions}
+                        >
+                            <span className={`${showSubtractions ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`} />
+                        </button>
+                    </div>
                 </div>
+            )}
+            
+            {category === 'Courses' && showSubtractions ? (
+              <>
                  <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-700 space-y-4">
                     <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                       <ScissorsIcon />
@@ -452,7 +486,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                       </div>
                   )}
                   
-                  { !['Chauffage'].includes(category) && (
+                  { !['Chauffage', 'Courses'].includes(category) && (
                       <div>
                       {category === "Carburant" ? (
                           <>
