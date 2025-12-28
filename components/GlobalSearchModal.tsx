@@ -1,5 +1,4 @@
 
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { type Expense, User, type Category } from '../types';
 import GroupedExpenseList from './GroupedExpenseList';
@@ -13,10 +12,11 @@ interface GlobalSearchModalProps {
   allExpenses: Expense[];
   onEditExpense: (expense: Expense) => void;
   highlightedIds: Set<string>;
+  modifiedIds?: Set<string>;
   categories: Category[];
 }
 
-const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, onClose, allExpenses, onEditExpense, highlightedIds, categories }) => {
+const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, onClose, allExpenses, onEditExpense, highlightedIds, modifiedIds = new Set(), categories }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filterUser, setFilterUser] = useState<User | 'All'>('All');
@@ -175,6 +175,7 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, onClose, 
                     expenses={searchedExpenses}
                     onExpenseClick={onEditExpense}
                     highlightedIds={highlightedIds}
+                    modifiedIds={modifiedIds}
                 />
             </div>
         ) : (

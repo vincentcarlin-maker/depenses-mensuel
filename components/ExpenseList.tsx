@@ -7,9 +7,10 @@ interface ExpenseListProps {
   expenses: Expense[];
   onExpenseClick: (expense: Expense) => void;
   highlightedIds: Set<string>;
+  modifiedIds?: Set<string>;
 }
 
-const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onExpenseClick, highlightedIds }) => {
+const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onExpenseClick, highlightedIds, modifiedIds = new Set() }) => {
   if (expenses.length === 0) {
     return (
       <div className="text-center py-10">
@@ -28,6 +29,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onExpenseClick, hig
                 expense={expense}
                 onExpenseClick={onExpenseClick}
                 isHighlighted={highlightedIds.has(expense.id)}
+                isModified={modifiedIds.has(expense.id)}
             />
         ))}
     </div>

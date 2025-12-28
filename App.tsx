@@ -86,7 +86,7 @@ const MainApp: React.FC<{
   // Persistent Activity Log states
   const [lastBellCheck, setLastBellCheck] = useLocalStorage('lastBellCheck', new Date().toISOString());
   const [activities, setActivities] = useLocalStorage<any[]>('activityLog', []);
-  const [lastSyncTimestamp, setLastSyncTimestamp] = useLocalStorage('lastSyncTimestamp', '1970-01-01T00:00:00.000Z');
+  const [lastSyncTimestamp, setLastSyncTimestamp] = useLocalStorage('lastSyncTimestamp', '1970-10-01T00:00:00.000Z');
   
   // Dynamic categories and lists
   const [categories, setCategories] = useLocalStorage<any[]>('expenseCategories', DEFAULT_CATEGORIES);
@@ -126,6 +126,15 @@ const MainApp: React.FC<{
         
     return { unreadCount: unread, activityItemsForHeader: items };
   }, [activities, lastBellCheck, user]);
+
+  // Compute IDs of expenses that have been modified (to show indicator in list)
+  const modifiedExpenseIds = useMemo(() => {
+    return new Set(
+        activities
+            .filter(a => a.type === 'update')
+            .map(a => a.expense.id)
+    );
+  }, [activities]);
 
   // Compute history for the currently viewed expense
   const expenseHistory = useMemo(() => {
@@ -1105,6 +1114,7 @@ const MainApp: React.FC<{
                         expenses={searchedExpenses} 
                         onExpenseClick={setExpenseToView} 
                         highlightedIds={highlightedExpenseIds} 
+                        modifiedIds={modifiedExpenseIds}
                       />
                     </div>
                 </div>
@@ -1168,6 +1178,7 @@ const MainApp: React.FC<{
         allExpenses={expenses}
         onEditExpense={setExpenseToView}
         highlightedIds={highlightedExpenseIds}
+        modifiedIds={modifiedExpenseIds}
         categories={categories}
       />
 

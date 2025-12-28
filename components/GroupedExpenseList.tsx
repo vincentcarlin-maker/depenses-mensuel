@@ -7,9 +7,10 @@ interface GroupedExpenseListProps {
   expenses: Expense[];
   onExpenseClick: (expense: Expense) => void;
   highlightedIds: Set<string>;
+  modifiedIds?: Set<string>;
 }
 
-const GroupedExpenseList: React.FC<GroupedExpenseListProps> = ({ expenses, onExpenseClick, highlightedIds }) => {
+const GroupedExpenseList: React.FC<GroupedExpenseListProps> = ({ expenses, onExpenseClick, highlightedIds, modifiedIds = new Set() }) => {
   const groupedExpenses = expenses.reduce((acc, expense) => {
     const date = new Date(expense.date);
     const monthYear = date.toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
@@ -42,6 +43,7 @@ const GroupedExpenseList: React.FC<GroupedExpenseListProps> = ({ expenses, onExp
                   expense={expense}
                   onExpenseClick={onExpenseClick}
                   isHighlighted={highlightedIds.has(expense.id)}
+                  isModified={modifiedIds.has(expense.id)}
                 />
               ))}
           </div>

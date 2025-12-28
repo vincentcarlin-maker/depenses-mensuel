@@ -15,6 +15,7 @@ import {
 } from './icons/CategoryIcons';
 import PiggyBankIcon from './icons/PiggyBankIcon';
 import ArrowRightIcon from './icons/ArrowRightIcon';
+import HistoryIcon from './icons/HistoryIcon';
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string } } = {
   "Dépenses obligatoires": { icon: MandatoryIcon, color: 'bg-slate-500' },
@@ -38,7 +39,8 @@ const ExpenseListItem: React.FC<{
     expense: Expense;
     onExpenseClick: (expense: Expense) => void;
     isHighlighted: boolean;
-}> = ({ expense, onExpenseClick, isHighlighted }) => {
+    isModified?: boolean;
+}> = ({ expense, onExpenseClick, isHighlighted, isModified = false }) => {
     const { description } = parseDescription(expense.description);
 
     const formattedDate = new Date(expense.date).toLocaleString('fr-FR', {
@@ -119,6 +121,11 @@ const ExpenseListItem: React.FC<{
                  <div className="flex items-center gap-1.5">
                     {isCommun && <PiggyBankIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
                     <p className="font-semibold truncate text-slate-700 dark:text-slate-200" title={description}>{description}</p>
+                    {isModified && (
+                        <span className="flex-shrink-0 text-slate-400 dark:text-slate-500" title="Cette dépense a été modifiée">
+                            <HistoryIcon />
+                        </span>
+                    )}
                  </div>
                  <p className="text-sm text-slate-500 dark:text-slate-400 truncate" title={expense.category}>{expense.category}</p>
             </div>
