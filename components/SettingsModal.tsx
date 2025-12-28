@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { type Reminder, type Category, type Expense, User } from '../types';
 import RemindersTab from './RemindersTab';
@@ -10,6 +11,8 @@ import BellIcon from './icons/BellIcon';
 import { type Profile, type LoginEvent } from '../hooks/useAuth';
 import ManagementTab from './ManagementTab';
 import WrenchScrewdriverIcon from './icons/WrenchScrewdriverIcon';
+import LogoutIcon from './icons/LogoutIcon';
+import ConfirmationModal from './ConfirmationModal';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -36,6 +39,7 @@ interface SettingsModalProps {
   setHeatingTypes: React.Dispatch<React.SetStateAction<string[]>>;
   setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
   loginHistory: LoginEvent[];
+  onLogout: () => void;
 }
 
 const SettingsMenuItem: React.FC<{
@@ -43,10 +47,11 @@ const SettingsMenuItem: React.FC<{
   title: string;
   description: string;
   onClick: () => void;
-}> = ({ icon, title, description, onClick }) => (
+  className?: string;
+}> = ({ icon, title, description, onClick, className = '' }) => (
   <button
     onClick={onClick}
-    className="w-full flex items-center p-4 rounded-xl transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+    className={`w-full flex items-center p-4 rounded-xl transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 ${className}`}
   >
     <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
       {icon}
@@ -71,8 +76,10 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     onUpdateReminder, 
     onDeleteReminder,
     categories,
+    onLogout,
   } = props;
   const [activeView, setActiveView] = useState<'main' | 'appearance' | 'reminders' | 'management'>('main');
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -146,25 +153,41 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
         </header>
         <main className="p-4 md:p-8 overflow-y-auto h-[calc(100%-64px)] container mx-auto">
             {activeView === 'main' && (
-                 <div className="space-y-2 bg-white dark:bg-slate-800 p-2 sm:p-4 rounded-2xl shadow-lg">
-                    <SettingsMenuItem
-                        icon={<PaintBrushIcon />}
-                        title="Apparence"
-                        description="Changer le thème de l'application"
-                        onClick={() => setActiveView('appearance')}
-                    />
-                    <SettingsMenuItem
-                        icon={<BellIcon />}
-                        title="Rappels"
-                        description="Gérer les dépenses mensuelles récurrentes"
-                        onClick={() => setActiveView('reminders')}
-                    />
-                    <SettingsMenuItem
-                        icon={<WrenchScrewdriverIcon />}
-                        title="Gestion"
-                        description="Utilisateurs, données et catégories"
-                        onClick={() => setActiveView('management')}
-                    />
+                 <div className="bg-white dark:bg-slate-800 p-2 sm:p-4 rounded-2xl shadow-lg">
+                    <div className="space-y-2">
+                        <SettingsMenuItem
+                            icon={<PaintBrushIcon />}
+                            title="Apparence"
+                            description="Changer le thème de l'application"
+                            onClick={() => setActiveView('appearance')}
+                        />
+                        <SettingsMenuItem
+                            icon={<BellIcon />}
+                            title="Rappels"
+                            description="Gérer les dépenses mensuelles récurrentes"
+                            onClick={() => setActiveView('reminders')}
+                        />
+                        <SettingsMenuItem
+                            icon={<WrenchScrewdriverIcon />}
+                            title="Gestion"
+                            description="Utilisateurs, données et catégories"
+                            onClick={() => setActiveView('management')}
+                        />
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                         <button
+                            onClick={() => setIsLogoutConfirmOpen(true)}
+                            className="w-full flex items-center p-4 rounded-xl transition-colors hover:bg-red-50 dark:hover:bg-red-500/10 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        >
+                            <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">
+                                <LogoutIcon />
+                            </div>
+                            <div className="flex-1 text-left ml-4">
+                            <p className="font-semibold text-red-700 dark:text-red-400">Déconnexion</p>
+                            <p className="text-sm text-red-600 dark:text-red-500">Se déconnecter de votre session</p>
+                            </div>
+                        </button>
+                    </div>
                  </div>
             )}
             {activeView === 'appearance' && (
@@ -209,6 +232,16 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                 </div>
             )}
         </main>
+        <ConfirmationModal
+            isOpen={isLogoutConfirmOpen}
+            onClose={() => setIsLogoutConfirmOpen(false)}
+            onConfirm={() => {
+                setIsLogoutConfirmOpen(false);
+                onLogout();
+            }}
+            title="Déconnexion"
+            message="Êtes-vous sûr de vouloir vous déconnecter ?"
+        />
     </div>
   );
 };

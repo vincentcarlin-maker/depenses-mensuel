@@ -4,15 +4,17 @@ import HomeIcon from './icons/HomeIcon';
 import ChartPieIcon from './icons/ChartPieIcon';
 import CalendarIcon from './icons/CalendarIcon';
 import PiggyBankIcon from './icons/PiggyBankIcon';
+import SettingsIcon from './icons/SettingsIcon';
 
 export type TabId = 'dashboard' | 'analysis' | 'yearly' | 'moneypot';
 
 interface BottomNavigationProps {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
+  onOpenSettings: () => void;
 }
 
-const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabChange }) => {
+const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabChange, onOpenSettings }) => {
   const tabs = [
     { id: 'dashboard' as TabId, label: 'Accueil', icon: HomeIcon },
     { id: 'analysis' as TabId, label: 'Analyse', icon: ChartPieIcon },
@@ -42,6 +44,13 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
             </button>
           );
         })}
+        <button
+          onClick={onOpenSettings}
+          className="flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+        >
+          <SettingsIcon />
+          <span className="text-[10px] font-medium">Réglages</span>
+        </button>
       </div>
     </nav>
   );

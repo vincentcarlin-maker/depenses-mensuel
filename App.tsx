@@ -1044,9 +1044,7 @@ const MainApp: React.FC<{
     <div className="bg-gray-50 dark:bg-slate-900 min-h-screen font-sans">
       <PullToRefresh isRefreshing={isRefreshing} onRefresh={handleRefresh}>
         <Header 
-          onOpenSettings={() => setIsSettingsOpen(true)}
           onOpenSearch={() => setIsSearchOpen(true)}
-          onLogout={onLogout}
           loggedInUser={user}
           activityItems={activityItemsForHeader}
           unreadCount={unreadCount}
@@ -1190,7 +1188,7 @@ const MainApp: React.FC<{
         </main>
       </PullToRefresh>
       
-      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} onOpenSettings={() => setIsSettingsOpen(true)} />
 
       {/* Detail Modal (View) */}
       {expenseToView && (
@@ -1264,6 +1262,7 @@ const MainApp: React.FC<{
           setHeatingTypes={setHeatingTypes}
           setToastInfo={setToastInfo}
           loginHistory={loginHistory}
+          onLogout={onLogout}
       />
       <OfflineIndicator />
     </div>

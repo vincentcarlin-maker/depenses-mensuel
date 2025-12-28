@@ -1,12 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import SettingsIcon from './icons/SettingsIcon';
-import LogoutIcon from './icons/LogoutIcon';
 import BellIcon from './icons/BellIcon';
-import { User, type Expense, type Activity } from '../types';
+import { User, type Activity } from '../types';
 import CloseIcon from './icons/CloseIcon';
 import SearchIcon from './icons/SearchIcon';
-import ConfirmationModal from './ConfirmationModal';
 import ActivityDetailModal from './ActivityDetailModal';
 
 const Logo = () => (
@@ -27,9 +24,7 @@ const Logo = () => (
 );
 
 interface HeaderProps {
-  onOpenSettings: () => void;
   onOpenSearch: () => void;
-  onLogout: () => void;
   loggedInUser: User;
   activityItems: Activity[];
   unreadCount: number;
@@ -39,17 +34,10 @@ interface HeaderProps {
   onlineUsers: User[];
 }
 
-const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout, loggedInUser, activityItems, unreadCount, onMarkAsRead, realtimeStatus, onDeleteActivity, onlineUsers }) => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityItems, unreadCount, onMarkAsRead, realtimeStatus, onDeleteActivity, onlineUsers }) => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
-  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
-
-  const userColorClass = loggedInUser === User.Sophie ? 'bg-pink-500' : 'bg-sky-500';
-  const userColorTextClass = loggedInUser === User.Sophie ? 'text-pink-500' : 'text-sky-500';
-  const userInitial = loggedInUser.charAt(0).toUpperCase();
 
   // Determine the partner (the other user)
   const partnerName = loggedInUser === User.Sophie ? User.Vincent : User.Sophie;
@@ -57,9 +45,6 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
       if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
         setIsNotificationsOpen(false);
       }
@@ -268,53 +253,8 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onOpenSearch, onLogout,
                     </div>
                 )}
             </div>
-
-            <div className="relative" ref={dropdownRef}>
-                <button
-                    onClick={() => setIsDropdownOpen(prev => !prev)}
-                    className="flex items-center space-x-2 p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800"
-                >
-                    <div className={`w-8 h-8 rounded-full ${userColorClass} flex items-center justify-center text-white font-bold text-sm`}>
-                        {userInitial}
-                    </div>
-                    <span className={`hidden sm:block font-semibold text-sm pr-2 ${userColorTextClass}`}>{loggedInUser}</span>
-                </button>
-                {isDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-xl py-2 z-30 border border-slate-200 dark:border-slate-700 animate-fade-in">
-                        <button
-                            onClick={() => {
-                                onOpenSettings();
-                                setIsDropdownOpen(false);
-                            }}
-                            className="w-full flex items-center px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
-                        >
-                            <SettingsIcon />
-                            <span className="ml-3">Réglages</span>
-                        </button>
-                        <button
-                            onClick={() => {
-                                setIsDropdownOpen(false);
-                                setIsLogoutConfirmOpen(true);
-                            }}
-                            className="w-full flex items-center px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
-                        >
-                            <LogoutIcon />
-                            <span className="ml-3">Déconnexion</span>
-                        </button>
-                    </div>
-                )}
-            </div>
         </div>
-        <ConfirmationModal
-            isOpen={isLogoutConfirmOpen}
-            onClose={() => setIsLogoutConfirmOpen(false)}
-            onConfirm={() => {
-                setIsLogoutConfirmOpen(false);
-                onLogout();
-            }}
-            title="Déconnexion"
-            message="Êtes-vous sûr de vouloir vous déconnecter ?"
-        />
+
         {selectedActivity && (
             <ActivityDetailModal
                 isOpen={!!selectedActivity}
