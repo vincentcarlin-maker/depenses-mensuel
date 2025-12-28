@@ -2,15 +2,16 @@
 import React from 'react';
 import { type Expense } from '../types';
 import ExpenseListItem from './ExpenseListItem';
+import { type ModificationType } from '../App';
 
 interface ExpenseListProps {
   expenses: Expense[];
   onExpenseClick: (expense: Expense) => void;
   highlightedIds: Set<string>;
-  modifiedIds?: Set<string>;
+  modifiedInfo?: Map<string, ModificationType[]>;
 }
 
-const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onExpenseClick, highlightedIds, modifiedIds = new Set() }) => {
+const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onExpenseClick, highlightedIds, modifiedInfo = new Map() }) => {
   if (expenses.length === 0) {
     return (
       <div className="text-center py-10">
@@ -29,7 +30,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onExpenseClick, hig
                 expense={expense}
                 onExpenseClick={onExpenseClick}
                 isHighlighted={highlightedIds.has(expense.id)}
-                isModified={modifiedIds.has(expense.id)}
+                modificationTypes={modifiedInfo.get(expense.id)}
             />
         ))}
     </div>

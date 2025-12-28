@@ -16,6 +16,9 @@ import {
 import PiggyBankIcon from './icons/PiggyBankIcon';
 import ArrowRightIcon from './icons/ArrowRightIcon';
 import HistoryIcon from './icons/HistoryIcon';
+import EditIcon from './icons/EditIcon';
+import { type ModificationType } from '../App';
+import EuroIcon from './icons/EuroIcon';
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string } } = {
   "Dépenses obligatoires": { icon: MandatoryIcon, color: 'bg-slate-500' },
@@ -39,8 +42,8 @@ const ExpenseListItem: React.FC<{
     expense: Expense;
     onExpenseClick: (expense: Expense) => void;
     isHighlighted: boolean;
-    isModified?: boolean;
-}> = ({ expense, onExpenseClick, isHighlighted, isModified = false }) => {
+    modificationTypes?: ModificationType[];
+}> = ({ expense, onExpenseClick, isHighlighted, modificationTypes }) => {
     const { description } = parseDescription(expense.description);
 
     const formattedDate = new Date(expense.date).toLocaleString('fr-FR', {
@@ -121,9 +124,11 @@ const ExpenseListItem: React.FC<{
                  <div className="flex items-center gap-1.5">
                     {isCommun && <PiggyBankIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
                     <p className="font-semibold truncate text-slate-700 dark:text-slate-200" title={description}>{description}</p>
-                    {isModified && (
-                        <span className="flex-shrink-0 text-slate-400 dark:text-slate-500" title="Cette dépense a été modifiée">
-                            <HistoryIcon />
+                    {modificationTypes && modificationTypes.length > 0 && (
+                        <span className="flex-shrink-0 flex items-center gap-1 text-slate-400 dark:text-slate-500" title="Cette dépense a été modifiée">
+                            {modificationTypes.includes('date') && <HistoryIcon />}
+                            {modificationTypes.includes('amount') && <EuroIcon />}
+                            {modificationTypes.includes('other') && <EditIcon className="h-3.5 w-3.5" />}
                         </span>
                     )}
                  </div>

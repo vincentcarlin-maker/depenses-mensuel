@@ -5,6 +5,7 @@ import GroupedExpenseList from './GroupedExpenseList';
 import CloseIcon from './icons/CloseIcon';
 import SearchIcon from './icons/SearchIcon';
 import FunnelIcon from './icons/FunnelIcon';
+import { type ModificationType } from '../App';
 
 interface GlobalSearchModalProps {
   isOpen: boolean;
@@ -12,11 +13,11 @@ interface GlobalSearchModalProps {
   allExpenses: Expense[];
   onEditExpense: (expense: Expense) => void;
   highlightedIds: Set<string>;
-  modifiedIds?: Set<string>;
+  modifiedInfo?: Map<string, ModificationType[]>;
   categories: Category[];
 }
 
-const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, onClose, allExpenses, onEditExpense, highlightedIds, modifiedIds = new Set(), categories }) => {
+const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, onClose, allExpenses, onEditExpense, highlightedIds, modifiedInfo = new Map(), categories }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filterUser, setFilterUser] = useState<User | 'All'>('All');
@@ -175,7 +176,7 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, onClose, 
                     expenses={searchedExpenses}
                     onExpenseClick={onEditExpense}
                     highlightedIds={highlightedIds}
-                    modifiedIds={modifiedIds}
+                    modifiedInfo={modifiedInfo}
                 />
             </div>
         ) : (

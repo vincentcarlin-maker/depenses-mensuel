@@ -33,6 +33,8 @@ type UndoableAction = {
     timerId: number;
 };
 
+export type ModificationType = 'date' | 'amount' | 'other';
+
 const getInitialDate = () => {
     const now = new Date();
     const limit = new Date('2025-10-01T00:00:00Z');
@@ -127,13 +129,68 @@ const MainApp: React.FC<{
     return { unreadCount: unread, activityItemsForHeader: items };
   }, [activities, lastBellCheck, user]);
 
-  // Compute IDs of expenses that have been modified (to show indicator in list)
-  const modifiedExpenseIds = useMemo(() => {
-    return new Set(
-        activities
-            .filter(a => a.type === 'update')
-            .map(a => a.expense.id)
-    );
+  // Compute detailed modification info for expenses to show the correct icon (clock or pencil)
+  const modifiedExpenseInfo = useMemo(() => {
+    const infoMap = new Map<string, ModificationType[]>();
+
+    // 1. Group activities by expense ID
+    const activitiesByExpenseId = activities.reduce((acc, act) => {
+        if (act.type === 'update' && act.expense?.id) {
+            if (!acc[act.expense.id]) {
+                acc[act.expense.id] = [];
+            }
+            acc[act.expense.id].push(act);
+        }
+        return acc;
+    }, {} as Record<string, Activity[]>);
+
+    // 2. Iterate through each group of activities
+    for (const expenseId in activitiesByExpenseId) {
+        const expenseActivities = activitiesByExpenseId[expenseId];
+        const accumulatedChanges = new Set<ModificationType>();
+
+        // 3. For each activity, detect changes and add to the set
+        for (const activity of expenseActivities) {
+            if (!activity.oldExpense) continue;
+
+            const oldExp = activity.oldExpense as Partial<Expense>;
+            const newExp = activity.expense as Partial<Expense>;
+
+            // Check for date change
+            if (oldExp.date && newExp.date) {
+                const oldDate = new Date(oldExp.date);
+                oldDate.setSeconds(0, 0);
+                const newDate = new Date(newExp.date);
+                newDate.setSeconds(0, 0);
+                if (oldDate.getTime() !== newDate.getTime()) {
+                    accumulatedChanges.add('date');
+                }
+            }
+
+            // Check for amount change
+            if (oldExp.amount !== newExp.amount) {
+                accumulatedChanges.add('amount');
+            }
+
+            // Check for other changes
+            const otherChange =
+                oldExp.description !== newExp.description ||
+                oldExp.category !== newExp.category ||
+                oldExp.user !== newExp.user ||
+                JSON.stringify(oldExp.subtracted_items || []) !== JSON.stringify(newExp.subtracted_items || []);
+            
+            if (otherChange) {
+                accumulatedChanges.add('other');
+            }
+        }
+
+        // 4. Store the accumulated changes
+        if (accumulatedChanges.size > 0) {
+            infoMap.set(expenseId, Array.from(accumulatedChanges));
+        }
+    }
+
+    return infoMap;
   }, [activities]);
 
   // Compute history for the currently viewed expense
@@ -1114,7 +1171,7 @@ const MainApp: React.FC<{
                         expenses={searchedExpenses} 
                         onExpenseClick={setExpenseToView} 
                         highlightedIds={highlightedExpenseIds} 
-                        modifiedIds={modifiedExpenseIds}
+                        modifiedInfo={modifiedExpenseInfo}
                       />
                     </div>
                 </div>
@@ -1178,7 +1235,7 @@ const MainApp: React.FC<{
         allExpenses={expenses}
         onEditExpense={setExpenseToView}
         highlightedIds={highlightedExpenseIds}
-        modifiedIds={modifiedExpenseIds}
+        modifiedInfo={modifiedExpenseInfo}
         categories={categories}
       />
 

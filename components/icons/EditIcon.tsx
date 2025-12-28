@@ -1,9 +1,10 @@
+
 import React from 'react';
 
-const EditIcon: React.FC = () => (
+const EditIcon: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    className="h-5 w-5"
+    className={className}
     fill="none"
     viewBox="0 0 24 24"
     stroke="currentColor"

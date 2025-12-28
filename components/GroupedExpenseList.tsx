@@ -2,15 +2,16 @@
 import React from 'react';
 import { type Expense } from '../types';
 import ExpenseListItem from './ExpenseListItem';
+import { type ModificationType } from '../App';
 
 interface GroupedExpenseListProps {
   expenses: Expense[];
   onExpenseClick: (expense: Expense) => void;
   highlightedIds: Set<string>;
-  modifiedIds?: Set<string>;
+  modifiedInfo?: Map<string, ModificationType[]>;
 }
 
-const GroupedExpenseList: React.FC<GroupedExpenseListProps> = ({ expenses, onExpenseClick, highlightedIds, modifiedIds = new Set() }) => {
+const GroupedExpenseList: React.FC<GroupedExpenseListProps> = ({ expenses, onExpenseClick, highlightedIds, modifiedInfo = new Map() }) => {
   const groupedExpenses = expenses.reduce((acc, expense) => {
     const date = new Date(expense.date);
     const monthYear = date.toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
@@ -43,7 +44,7 @@ const GroupedExpenseList: React.FC<GroupedExpenseListProps> = ({ expenses, onExp
                   expense={expense}
                   onExpenseClick={onExpenseClick}
                   isHighlighted={highlightedIds.has(expense.id)}
-                  isModified={modifiedIds.has(expense.id)}
+                  modificationTypes={modifiedInfo.get(expense.id)}
                 />
               ))}
           </div>
