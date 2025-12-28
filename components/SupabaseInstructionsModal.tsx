@@ -42,47 +42,56 @@ CREATE TABLE IF NOT EXISTS public.money_pot (
   id uuid default gen_random_uuid() primary key,
   amount float not null,
   description text not null,
-  user_name text not null, -- Renommé de 'user' à 'user_name' pour éviter les conflits
+  user_name text not null,
   date timestamptz default now(),
   created_at timestamptz default now()
 );
 
--- 2b. MIGRATION : Si la table existe déjà avec la colonne 'user' (ancien format), on la renomme
-DO $$ 
+-- 3. MIGRATION : Si la table 'money_pot' existe déjà avec la colonne 'user', on la renomme
+DO $migration_user_to_username$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='money_pot' AND column_name='user') THEN
     ALTER TABLE public.money_pot RENAME COLUMN "user" TO user_name;
   END IF;
-END $$;
+END $migration_user_to_username$;
 
--- 2c. AJOUT : Ajoute la colonne pour les articles déduits des courses
-DO $$
+-- 4. AJOUT : Ajoute la colonne pour les articles déduits des courses
+DO $migration_add_subtracted_items$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='expenses' AND column_name='subtracted_items') THEN
     ALTER TABLE public.expenses ADD COLUMN subtracted_items jsonb;
   END IF;
-END $$;
+END $migration_add_subtracted_items$;
 
+-- 5. NOUVEAU : Créer la table pour l'historique des modifications (activités)
+CREATE TABLE IF NOT EXISTS public.activities (
+  id uuid default gen_random_uuid() primary key,
+  type text not null,
+  expense jsonb not null,
+  "oldExpense" jsonb, -- Notez les guillemets à cause de la majuscule (camelCase)
+  "timestamp" timestamptz default now() not null
+);
 
--- 3. Activer la sécurité au niveau des lignes (RLS)
+-- 6. Activer la sécurité au niveau des lignes (RLS) pour toutes les tables
 alter table public.expenses enable row level security;
 alter table public.reminders enable row level security;
 alter table public.login_logs enable row level security;
 alter table public.money_pot enable row level security;
+alter table public.activities enable row level security;
 
--- 4. Supprimer les anciennes règles pour éviter les conflits
+-- 7. Supprimer les anciennes règles pour éviter les conflits
 DROP POLICY IF EXISTS "Allow all access" ON public.expenses;
 DROP POLICY IF EXISTS "Allow all access" ON public.reminders;
 DROP POLICY IF EXISTS "Allow all access" ON public.login_logs;
 DROP POLICY IF EXISTS "Allow all access" ON public.money_pot;
-DROP POLICY IF EXISTS "Allow all access for anonymous users on expenses" ON public.expenses;
-DROP POLICY IF EXISTS "Allow all access for anonymous users on reminders" ON public.reminders;
+DROP POLICY IF EXISTS "Allow all access" ON public.activities;
 
--- 5. Créer les nouvelles règles qui autorisent l'accès
+-- 8. Créer les nouvelles règles qui autorisent l'accès
 CREATE POLICY "Allow all access" ON public.expenses FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access" ON public.reminders FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access" ON public.login_logs FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access" ON public.money_pot FOR ALL TO anon USING (true) WITH CHECK (true);`;
+CREATE POLICY "Allow all access" ON public.money_pot FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all access" ON public.activities FOR ALL TO anon USING (true) WITH CHECK (true);`;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center" aria-modal="true" role="dialog">
@@ -99,9 +108,9 @@ CREATE POLICY "Allow all access" ON public.money_pot FOR ALL TO anon USING (true
                 </div>
             </div>
             <div className="ml-4 flex-1">
-                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Configuration de la Base de Données</h2>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Mise à Jour de la Base de Données</h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    Exécutez ce script dans Supabase pour créer la table "Cagnotte" et corriger les erreurs d'ajout.
+                    Exécutez ce script pour activer l'historique partagé des modifications.
                 </p>
             </div>
             <button
@@ -117,15 +126,15 @@ CREATE POLICY "Allow all access" ON public.money_pot FOR ALL TO anon USING (true
             <div>
                 <h3 className="font-bold text-lg text-slate-700 dark:text-slate-200 mb-2">Étape 1 : Activer la diffusion (Realtime)</h3>
                 <ol className="list-decimal list-inside space-y-1 text-sm">
-                    <li>Dans Supabase, allez dans <strong>Database → Publications</strong>.</li>
-                    <li>Cliquez sur <strong>supabase_realtime</strong>.</li>
-                    <li>Assurez-vous que les tables <strong>login_logs</strong> et <strong>money_pot</strong> sont cochées.</li>
+                    <li>Dans Supabase, allez dans <strong>Database → Replication</strong>.</li>
+                    <li>Cherchez la section <strong>Source</strong> et cliquez sur le lien (ex: "1 table").</li>
+                    <li>Cochez la nouvelle table <strong>activities</strong> pour activer la diffusion en temps réel.</li>
                     <li>Cliquez sur <strong>Save</strong>.</li>
                 </ol>
             </div>
 
             <div>
-                <h3 className="font-bold text-lg text-slate-700 dark:text-slate-200 mb-2">Étape 2 : Créer ou Mettre à jour les tables</h3>
+                <h3 className="font-bold text-lg text-slate-700 dark:text-slate-200 mb-2">Étape 2 : Mettre à jour les tables</h3>
                  <ol className="list-decimal list-inside space-y-1 mb-2 text-sm">
                     <li>Allez dans le <strong>SQL Editor</strong>.</li>
                     <li>Cliquez sur <strong>+ New query</strong>.</li>

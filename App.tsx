@@ -87,8 +87,7 @@ const MainApp: React.FC<{
 
   // Persistent Activity Log states
   const [lastBellCheck, setLastBellCheck] = useLocalStorage('lastBellCheck', new Date().toISOString());
-  const [activities, setActivities] = useLocalStorage<any[]>('activityLog', []);
-  const [lastSyncTimestamp, setLastSyncTimestamp] = useLocalStorage('lastSyncTimestamp', '1970-10-01T00:00:00.000Z');
+  const [activities, setActivities] = useState<Activity[]>([]);
   
   // Dynamic categories and lists
   const [categories, setCategories] = useLocalStorage<any[]>('expenseCategories', DEFAULT_CATEGORIES);
@@ -104,11 +103,6 @@ const MainApp: React.FC<{
   useEffect(() => {
     expensesRef.current = expenses;
   }, [expenses]);
-
-  const lastSyncTimestampRef = useRef(lastSyncTimestamp);
-  useEffect(() => {
-    lastSyncTimestampRef.current = lastSyncTimestamp;
-  }, [lastSyncTimestamp]);
 
   const { unreadCount, activityItemsForHeader } = useMemo(() => {
     if (!user) return { unreadCount: 0, activityItemsForHeader: [] };
@@ -217,15 +211,7 @@ const MainApp: React.FC<{
       const uniqueMap = new Map<string, any>();
 
       for (const act of combined) {
-          if (act.type === 'add' || act.type === 'delete') {
-              const key = `${act.type}-${act.expense.id}`;
-              if (!uniqueMap.has(key)) {
-                  uniqueMap.set(key, act);
-              }
-          } else {
-              // For updates, we keep them all but use ID to prevent exact duplicates
-              uniqueMap.set(act.id, act);
-          }
+          uniqueMap.set(act.id, act);
       }
 
       return Array.from(uniqueMap.values())
@@ -233,37 +219,19 @@ const MainApp: React.FC<{
           .slice(0, 50); // Increased limit to store more history for details
   }, []);
 
-  const syncData = useCallback(async (shouldCatchUp = false) => {
+  const syncData = useCallback(async () => {
     const expensesPromise = supabase.from('expenses').select('*').gte('date', '2025-10-01T00:00:00Z').order('date', { ascending: false });
     const remindersPromise = supabase.from('reminders').select('*').order('day_of_month', { ascending: true });
     const moneyPotPromise = supabase.from('money_pot').select('*').order('date', { ascending: false });
+    const activitiesPromise = supabase.from('activities').select('*').order('timestamp', { ascending: false }).limit(50);
 
-    const [expensesResponse, remindersResponse, moneyPotResponse] = await Promise.all([expensesPromise, remindersPromise, moneyPotPromise]);
+    const [expensesResponse, remindersResponse, moneyPotResponse, activitiesResponse] = await Promise.all([expensesPromise, remindersPromise, moneyPotPromise, activitiesPromise]);
 
     if (expensesResponse.error) {
         console.error('Error fetching expenses:', expensesResponse.error.message);
         setToastInfo({ message: "Erreur lors de la récupération des dépenses.", type: 'error' });
     } else if (expensesResponse.data) {
-        const fetchedExpenses = expensesResponse.data as Expense[];
-
-        if (shouldCatchUp) {
-            const missedAdditions = fetchedExpenses.filter(expense =>
-                new Date(expense.created_at) > new Date(lastSyncTimestampRef.current) &&
-                expense.user !== user
-            );
-            
-            if (missedAdditions.length > 0) {
-                 const newActivities: any[] = missedAdditions.map(expense => ({
-                    id: crypto.randomUUID(),
-                    type: 'add',
-                    expense: expense,
-                    timestamp: expense.created_at,
-                }));
-                
-                setActivities(prev => mergeAndDedupeActivities(prev, newActivities));
-            }
-        }
-        setExpenses(fetchedExpenses);
+        setExpenses(expensesResponse.data as Expense[]);
     }
     
     if (remindersResponse.error) {
@@ -279,13 +247,17 @@ const MainApp: React.FC<{
         setMoneyPotTransactions(moneyPotResponse.data as MoneyPotTransaction[]);
     }
     
-    setLastSyncTimestamp(new Date().toISOString());
-  }, [user, setLastSyncTimestamp, setActivities, mergeAndDedupeActivities]);
+    if (activitiesResponse.error) {
+        console.error('Error fetching activities:', activitiesResponse.error.message);
+    } else if (activitiesResponse.data) {
+        setActivities(activitiesResponse.data as Activity[]);
+    }
+  }, []);
 
   useEffect(() => {
     const performInitialSync = async () => {
         setIsLoading(true);
-        await syncData(true);
+        await syncData();
         setIsLoading(false);
     };
     performInitialSync();
@@ -319,20 +291,32 @@ const MainApp: React.FC<{
       }
   }, [user]);
 
+  // Realtime subscription for Activities
+   useEffect(() => {
+        const handleActivityInsert = (payload: any) => {
+            const newActivity = payload.new as Activity;
+            setActivities(prev => mergeAndDedupeActivities(prev, [newActivity]));
+        };
+
+        const handleActivityDelete = (payload: any) => {
+            setActivities(prev => prev.filter(a => a.id !== payload.old.id));
+        };
+
+        const activityChannel = supabase
+            .channel('public:activities')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activities' }, handleActivityInsert)
+            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'activities' }, handleActivityDelete)
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(activityChannel);
+        };
+    }, [mergeAndDedupeActivities]);
+
   useEffect(() => {
     const handleExpenseInsert = (payload: any) => {
       const newExpense = payload.new as Expense;
       if (!newExpense?.id) return;
-
-      if (newExpense.user !== user) {
-        const newActivity: any = {
-            id: crypto.randomUUID(),
-            type: 'add',
-            expense: newExpense,
-            timestamp: new Date().toISOString()
-        };
-        setActivities(prev => mergeAndDedupeActivities(prev, [newActivity]));
-      }
 
       const wasAddedLocally = recentlyAddedIds.current.has(newExpense.id);
       if (!wasAddedLocally) {
@@ -355,25 +339,8 @@ const MainApp: React.FC<{
       if (!updatedExpense?.id) return;
       
       const wasUpdatedLocally = recentlyUpdatedIds.current.has(updatedExpense.id);
-
-      // We want to capture history for ALL updates (local or remote), but we handle local ones in updateExpense
-      // so we only need to handle REMOTE updates here to avoid duplicates.
-      if (!wasUpdatedLocally) {
-        const existingExpense = expensesRef.current.find(e => e.id === updatedExpense.id);
-        const oldExpense = existingExpense ? { ...existingExpense } : undefined;
-
-        const newActivity: any = {
-           id: crypto.randomUUID(),
-           type: 'update',
-           expense: updatedExpense,
-           oldExpense: oldExpense,
-           timestamp: new Date().toISOString()
-        };
-        setActivities(prev => mergeAndDedupeActivities(prev, [newActivity]));
-        
-        if (updatedExpense.user !== user) {
-            setToastInfo({ message: `${updatedExpense.user} a modifié "${updatedExpense.description}".`, type: 'info' });
-        }
+      if (!wasUpdatedLocally && updatedExpense.user !== user) {
+          setToastInfo({ message: `${updatedExpense.user} a modifié "${updatedExpense.description}".`, type: 'info' });
       }
 
       setExpenses(prevExpenses =>
@@ -407,23 +374,6 @@ const MainApp: React.FC<{
                 message: `Dépense "${desc}" supprimée.`,
                 type: 'info'
             });
-
-            if (expenseToDelete.user !== user) {
-                const newActivity: any = {
-                    id: crypto.randomUUID(),
-                    type: 'delete',
-                    expense: {
-                        id: expenseToDelete.id,
-                        user: expenseToDelete.user,
-                        date: expenseToDelete.date,
-                        description: expenseToDelete.description,
-                        amount: expenseToDelete.amount,
-                        category: expenseToDelete.category,
-                    },
-                    timestamp: new Date().toISOString()
-                };
-                setActivities(prev => mergeAndDedupeActivities(prev, [newActivity]));
-            }
 
             return prevExpenses.filter(expense => expense.id !== deletedPayload.id);
         });
@@ -476,7 +426,7 @@ const MainApp: React.FC<{
           case 'SUBSCRIBED':
             setRealtimeStatus('SUBSCRIBED');
             console.log('Real-time channel connected. Syncing data...');
-            syncData(true);
+            syncData();
             break;
           case 'CHANNEL_ERROR':
             setRealtimeStatus('CHANNEL_ERROR');
@@ -494,7 +444,19 @@ const MainApp: React.FC<{
     return () => {
       supabase.removeChannel(allChangesChannel);
     };
-  }, [highlightExpense, user, setActivities, syncData, mergeAndDedupeActivities]);
+  }, [highlightExpense, user, syncData, mergeAndDedupeActivities]);
+
+  const logActivity = useCallback(async (activityPayload: Omit<Activity, 'id' | 'timestamp'>) => {
+    const newActivity: Activity = {
+      ...activityPayload,
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('activities').insert(newActivity);
+    if (error) {
+      console.error("Failed to log activity:", error.message);
+    }
+  }, []);
 
   // Money Pot Handlers (Moved up to be accessible by expense handlers)
   const addMoneyPotTransaction = async (transaction: Omit<MoneyPotTransaction, 'id' | 'created_at'>) => {
@@ -580,7 +542,7 @@ const MainApp: React.FC<{
     }
     // -------------------------------------
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('expenses')
       .insert(expenseData)
       .select()
@@ -593,6 +555,7 @@ const MainApp: React.FC<{
     } else {
       setFormInitialData(null);
       setToastInfo({ message: 'Dépense ajoutée avec succès !', type: 'info' });
+      await logActivity({ type: 'add', expense: data as Expense });
     }
   };
   
@@ -627,6 +590,8 @@ const MainApp: React.FC<{
 
     if (undoableAction?.timerId) clearTimeout(undoableAction.timerId);
 
+    logActivity({ type: 'delete', expense: expenseToDelete });
+
     // --- AUTOMATIC MONEY POT REFUND ---
     if (expenseToDelete.user === User.Commun) {
          // Positive amount = Refund to pot
@@ -654,6 +619,8 @@ const MainApp: React.FC<{
     if (!originalExpense) return;
 
     if (undoableAction?.timerId) clearTimeout(undoableAction.timerId);
+
+    logActivity({ type: 'update', expense: updatedExpense, oldExpense: originalExpense });
 
     // --- AUTOMATIC MONEY POT ADJUSTMENT ---
     // Case 1: Changed TO Commun (from someone else) -> Deduct
@@ -687,16 +654,6 @@ const MainApp: React.FC<{
             });
     }
     // --------------------------------------
-
-    // Create activity for local updates immediately so it appears in history
-    const newActivity: any = {
-        id: crypto.randomUUID(),
-        type: 'update',
-        expense: updatedExpense,
-        oldExpense: originalExpense,
-        timestamp: new Date().toISOString()
-    };
-    setActivities(prev => mergeAndDedupeActivities(prev, [newActivity]));
 
     setExpenses(prev => prev.map(e => e.id === updatedExpense.id ? updatedExpense : e));
     setExpenseToEdit(null);
@@ -892,7 +849,7 @@ const MainApp: React.FC<{
     if (isRefreshing) return;
     setIsRefreshing(true);
     setToastInfo({ message: 'Synchronisation en cours...', type: 'info' });
-    await syncData(true);
+    await syncData();
     setToastInfo({ message: 'Données mises à jour !', type: 'info' });
     setIsRefreshing(false);
   };
@@ -915,24 +872,26 @@ const MainApp: React.FC<{
     setLastBellCheck(new Date().toISOString());
   };
 
-  const deleteActivity = useCallback((activityId: string) => {
-    setActivities(prevActivities => prevActivities.filter(act => act.id !== activityId));
-  }, [setActivities]);
+  const deleteActivity = useCallback(async (activityId: string) => {
+    const { error } = await supabase.from('activities').delete().eq('id', activityId);
+    if (error) {
+        console.error("Failed to delete activity:", error);
+        setToastInfo({ message: "Erreur lors de la suppression de l'activité.", type: 'error' });
+    }
+  }, []);
 
-  const handleUndo = useCallback(() => {
+  const handleUndo = useCallback(async () => {
     if (!undoableAction) return;
 
     clearTimeout(undoableAction.timerId);
 
     if (undoableAction.type === 'delete') {
+        const { error } = await supabase.from('activities').delete().eq('expense->>id', undoableAction.expense.id);
+        if (error) console.error("Could not delete activity log for undone action:", error);
+        
         setExpenses(prev => [...prev, undoableAction.expense].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         highlightExpense(undoableAction.expense.id);
         
-        // Note: We performed an optimistic "Money Pot Refund" when deleting. 
-        // We should technically reverse that refund now that we are undoing the delete.
-        // However, undo logic for side-effects is complex. The user might see a refund in the pot history.
-        // For simplicity in this undo toast logic, we accept the pot might have a "Delete -> Refund" history.
-        // To be perfectly accurate, we re-deduct if it was "Commun".
         if (undoableAction.expense.user === User.Commun) {
             addMoneyPotTransaction({
                 amount: -Math.abs(undoableAction.expense.amount),
@@ -942,12 +901,11 @@ const MainApp: React.FC<{
             });
         }
     } else if (undoableAction.type === 'update' && undoableAction.originalExpense) {
+        const { error } = await supabase.from('activities').delete().eq('expense->>id', undoableAction.originalExpense.id);
+         if (error) console.error("Could not delete activity log for undone action:", error);
+
         setExpenses(prev => prev.map(e => e.id === undoableAction.originalExpense!.id ? undoableAction.originalExpense! : e));
         highlightExpense(undoableAction.originalExpense.id);
-        
-        // Revert money pot change if necessary
-        // This is tricky without knowing exact delta, but we can just calculate diff again in reverse
-        // Or simply accept that Undo on updates with side effects is a known limitation for now to avoid bugs.
     }
 
     setUndoableAction(null);
