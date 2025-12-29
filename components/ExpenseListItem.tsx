@@ -134,15 +134,25 @@ const ExpenseListItem: React.FC<{
             <div className={`w-1.5 h-10 rounded-full mr-3 ${userColorClass} shadow-sm`}></div>
             <div className="mr-3 flex-shrink-0">
                 {isDeezer ? (
-                    <MusicNoteIcon className="w-10 h-10 shadow-sm" />
+                    <div className="w-10 h-10 rounded-full shadow-sm">
+                        <MusicNoteIcon className="w-full h-full rounded-full" />
+                    </div>
                 ) : isSfr ? (
-                    <SfrIcon className="w-10 h-10 shadow-sm" />
+                    <div className="w-10 h-10 rounded-full shadow-sm">
+                        <SfrIcon className="w-full h-full rounded-full" />
+                    </div>
                 ) : isMutuelle ? (
-                    <ShieldIcon className="w-10 h-10 shadow-sm" />
+                    <div className="w-10 h-10 rounded-full shadow-sm">
+                        <ShieldIcon className="w-full h-full rounded-full" />
+                    </div>
                 ) : isCeo ? (
-                    <CeoIcon className="w-10 h-10 shadow-sm" />
+                    <div className="w-10 h-10 rounded-full shadow-sm">
+                        <CeoIcon className="w-full h-full rounded-full" />
+                    </div>
                 ) : isTotalEnergies ? (
-                    <TotalEnergiesIcon className="w-10 h-10 shadow-sm" />
+                    <div className="w-10 h-10 rounded-full shadow-sm">
+                        <TotalEnergiesIcon className="w-full h-full rounded-full" />
+                    </div>
                 ) : (
                     <div className={`w-10 h-10 flex items-center justify-center rounded-full ${iconBgClass} shadow-sm`}>
                         <IconComponent className="h-6 w-6 text-white" />
