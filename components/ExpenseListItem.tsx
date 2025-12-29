@@ -11,7 +11,12 @@ import {
     MiscIcon,
     GiftIcon,
     ClothingIcon,
-    BirthdayIcon
+    BirthdayIcon,
+    ShieldIcon,
+    WifiIcon,
+    MusicNoteIcon,
+    SfrIcon,
+    CeoIcon
 } from './icons/CategoryIcons';
 import PiggyBankIcon from './icons/PiggyBankIcon';
 import ArrowRightIcon from './icons/ArrowRightIcon';
@@ -81,6 +86,13 @@ const ExpenseListItem: React.FC<{
     const isChristmas = (expense.category === 'Divers' && /no[uëe]l/i.test(expense.description)) || (expense.category === 'Cadeau' && /no[uëe]l/i.test(expense.description));
     const isBirthday = expense.category === 'Cadeau' && /anniversaire/i.test(expense.description);
     
+    const lowerCaseDesc = expense.description.toLowerCase();
+    const isMutuelle = lowerCaseDesc.includes('mutuelle');
+    const isInternet = lowerCaseDesc.includes('internet');
+    const isDeezer = lowerCaseDesc.includes('deezer');
+    const isSfr = lowerCaseDesc.includes('sfr nathan');
+    const isCeo = lowerCaseDesc.includes('ceo');
+
     const visual = CategoryVisuals[expense.category] || CategoryVisuals["Divers"];
     let IconComponent = visual.icon;
     let iconBgClass = visual.color;
@@ -90,6 +102,9 @@ const ExpenseListItem: React.FC<{
         iconBgClass = 'bg-red-600';
     } else if (isBirthday) {
         IconComponent = BirthdayIcon;
+    } else if (isInternet) {
+        IconComponent = WifiIcon;
+        iconBgClass = 'bg-blue-500';
     }
     
     const hasSubtractions = expense.category === 'Courses' && expense.subtracted_items && expense.subtracted_items.length > 0;
@@ -116,9 +131,19 @@ const ExpenseListItem: React.FC<{
         >
             <div className={`w-1.5 h-10 rounded-full mr-3 ${userColorClass} shadow-sm`}></div>
             <div className="mr-3 flex-shrink-0">
-                <div className={`w-10 h-10 flex items-center justify-center rounded-full ${iconBgClass} shadow-sm`}>
-                    <IconComponent className="h-6 w-6 text-white" />
-                </div>
+                {isDeezer ? (
+                    <MusicNoteIcon className="w-10 h-10 shadow-sm" />
+                ) : isSfr ? (
+                    <SfrIcon className="w-10 h-10 shadow-sm" />
+                ) : isMutuelle ? (
+                    <ShieldIcon className="w-10 h-10 shadow-sm" />
+                ) : isCeo ? (
+                    <CeoIcon className="w-10 h-10 shadow-sm" />
+                ) : (
+                    <div className={`w-10 h-10 flex items-center justify-center rounded-full ${iconBgClass} shadow-sm`}>
+                        <IconComponent className="h-6 w-6 text-white" />
+                    </div>
+                )}
             </div>
             <div className="flex-1 min-w-0">
                  <div className="flex items-center gap-1.5">
