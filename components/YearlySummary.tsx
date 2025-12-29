@@ -253,6 +253,8 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                 const percentage = maxAverage > 0 ? (entry.average / maxAverage) * 100 : 0;
                 const isClickable = categoriesWithDetails.includes(entry.name);
                 const isCarRepair = entry.name === 'Réparation voitures';
+                const isClothing = entry.name === 'Vêtements';
+                const isFuel = entry.name === 'Carburant';
                 
                 return (
                     <div 
@@ -264,6 +266,14 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                             {isCarRepair ? (
                                 <div className="w-10 h-10 flex-shrink-0 rounded-full">
                                     <CarRepairsIcon className="w-full h-full rounded-full" />
+                                </div>
+                            ) : isClothing ? (
+                                <div className="w-10 h-10 flex-shrink-0 rounded-full">
+                                    <ClothingIcon className="w-full h-full rounded-full" />
+                                </div>
+                            ) : isFuel ? (
+                                <div className="w-10 h-10 flex-shrink-0 rounded-full">
+                                    <FuelIcon className="w-full h-full rounded-full" />
                                 </div>
                             ) : (
                                 <div className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full ${visual.color}`}>
@@ -340,6 +350,14 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                             {selectedCategory === 'Réparation voitures' ? (
                                 <div className="w-8 h-8 rounded-full">
                                     <CarRepairsIcon className="w-full h-full rounded-full" />
+                                </div>
+                            ) : selectedCategory === 'Vêtements' ? (
+                                <div className="w-8 h-8 rounded-full">
+                                    <ClothingIcon className="w-full h-full rounded-full" />
+                                </div>
+                            ) : selectedCategory === 'Carburant' ? (
+                                <div className="w-8 h-8 rounded-full">
+                                    <FuelIcon className="w-full h-full rounded-full" />
                                 </div>
                             ) : (
                                 <div className={`w-8 h-8 flex items-center justify-center rounded-full ${CategoryVisuals[selectedCategory]?.color || 'bg-slate-500'}`}>

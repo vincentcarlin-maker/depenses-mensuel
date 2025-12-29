@@ -108,7 +108,6 @@ const ExpenseListItem: React.FC<{
         IconComponent = BirthdayIcon;
     } else if (isInternet) {
         IconComponent = WifiIcon;
-        iconBgClass = 'bg-blue-500';
     }
     
     const hasSubtractions = expense.category === 'Courses' && expense.subtracted_items && expense.subtracted_items.length > 0;
@@ -159,9 +158,21 @@ const ExpenseListItem: React.FC<{
                     <div className="w-10 h-10 rounded-full shadow-sm">
                         <TotalEnergiesIcon className="w-full h-full rounded-full" />
                     </div>
+                ) : expense.category === "Carburant" ? (
+                    <div className="w-10 h-10 rounded-full shadow-sm">
+                        <FuelIcon className="w-full h-full rounded-full" />
+                    </div>
                 ) : expense.category === "Réparation voitures" ? (
                     <div className="w-10 h-10 rounded-full shadow-sm">
                         <CarRepairsIcon className="w-full h-full rounded-full" />
+                    </div>
+                ) : expense.category === "Vêtements" ? (
+                    <div className="w-10 h-10 rounded-full shadow-sm">
+                        <ClothingIcon className="w-full h-full rounded-full" />
+                    </div>
+                ) : isInternet ? (
+                    <div className="w-10 h-10 rounded-full shadow-sm">
+                        <WifiIcon className="w-full h-full rounded-full" />
                     </div>
                 ) : (
                     <div className={`w-10 h-10 flex items-center justify-center rounded-full ${iconBgClass} shadow-sm`}>

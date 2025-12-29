@@ -210,11 +210,22 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
             const IconComponent = visual.icon;
             const percentage = totalExpenses > 0 ? (entry.value / totalExpenses) * 100 : 0;
             const isCarRepair = entry.name === 'Réparation voitures';
+            const isClothing = entry.name === 'Vêtements';
+            const isFuel = entry.name === 'Carburant';
+
             return (
               <div key={`detail-${entry.name}`} className="flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl group">
                 {isCarRepair ? (
                     <div className="w-8 h-8 flex-shrink-0 rounded-full mr-4">
                         <CarRepairsIcon className="w-full h-full rounded-full" />
+                    </div>
+                ) : isClothing ? (
+                    <div className="w-8 h-8 flex-shrink-0 rounded-full mr-4">
+                        <ClothingIcon className="w-full h-full rounded-full" />
+                    </div>
+                ) : isFuel ? (
+                    <div className="w-8 h-8 flex-shrink-0 rounded-full mr-4">
+                        <FuelIcon className="w-full h-full rounded-full" />
                     </div>
                 ) : (
                     <div className={`w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full mr-4 ${visual.color}`}>

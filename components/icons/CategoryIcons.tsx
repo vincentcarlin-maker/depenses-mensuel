@@ -11,11 +11,12 @@ export const MandatoryIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) =>
   </svg>
 );
 
-export const FuelIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <svg viewBox="0 0 40 40" className={className}>
-    <circle cx="20" cy="20" r="20" fill="#F97316"/>
-    <path d="M10 8 h14 v24 h-14 z M27 13c1.5 0 3 1.5 3 3v9c0 1.5-1.5 3-3 3" fill="none" stroke="white" strokeWidth="2"/>
-    <path d="M10 8v24h14V8H10z m3 3h9v9h-9v-9z" fill="white"/>
+export const FuelIcon: React.FC<IconProps> = ({ className }) => (
+  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <circle cx="12" cy="12" r="12" fill="#EA580C"/>
+    <g transform="translate(12, 12) scale(0.75) translate(-12, -12)">
+      <path d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1v4.5c0 1.65 1.35 3 3 3s3-1.35 3-3V9c0-.69-.28-1.32-.73-1.77zM12 10H6V5h6v5z" fill="white"/>
+    </g>
   </svg>
 );
 
@@ -64,11 +65,12 @@ export const GiftIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   </svg>
 );
 
-// UPDATED: ClothingIcon to a clearer Hanger (Cintre)
 export const ClothingIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M16 5a2 2 0 0 0-4 0v3" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16l9-8 9 8H3z" />
+  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <circle cx="12" cy="12" r="12" fill="#9333EA"/>
+    <g transform="translate(3, 3) scale(0.75)">
+        <path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3z" fill="white"/>
+    </g>
   </svg>
 );
 
@@ -87,9 +89,13 @@ export const ShieldIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
     </svg>
 );
 
-export const WifiIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M8.288 15.038a5.25 5.25 0 017.424 0M5.136 11.886c3.87-3.87 10.124-3.87 13.994 0M12 18.375h.01" />
+export const WifiIcon: React.FC<IconProps> = ({ className }) => (
+  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <circle cx="12" cy="12" r="12" fill="#6366F1"/>
+    <path d="M5 10c3-3.5 11-3.5 14 0" stroke="white" stroke-width="2" stroke-linecap="round"/>
+    <path d="M8 13.5c2-2.5 6-2.5 8 0" stroke="white" stroke-width="2" stroke-linecap="round"/>
+    <path d="M10.5 16.5c1-1 2.5-1 3.5 0" stroke="white" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="12.2" cy="20.2" r="1.5" fill="white"/>
   </svg>
 );
 
