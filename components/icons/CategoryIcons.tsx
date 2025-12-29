@@ -155,30 +155,9 @@ export const DevicePhoneMobileIcon: React.FC<IconProps> = ({ className = "h-5 w-
 );
 
 export const CeoIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <defs>
-        <radialGradient id="ceoBlueGradient" cx="40%" cy="40%" r="60%">
-            <stop offset="0%" stopColor="#38bdf8" /> {/* sky-400 */}
-            <stop offset="100%" stopColor="#0ea5e9" /> {/* sky-500 */}
-        </radialGradient>
-        <filter id="ceoDropShadow" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="1" dy="3" stdDeviation="3" floodColor="#000000" floodOpacity="0.2"/>
-        </filter>
-    </defs>
-    {/* Background Circle */}
-    <circle cx="32" cy="32" r="30" fill="url(#ceoBlueGradient)" />
-    
-    {/* Big gloss on background */}
-    <path d="M 12 32 A 20 20 0 0 1 32 12" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.4"/>
-
-    {/* Water Drop Shape */}
-    <g filter="url(#ceoDropShadow)">
-      {/* M top-x,top-y L top-left-x,top-left-y A radius-x,radius-y rotation large-arc-flag,sweep-flag top-right-x,top-right-y Z */}
-      <path d="M32,17 L22,37 A10,10 0 1,0 42,37 Z" fill="white" />
-    </g>
-    
-    {/* Small gloss on the drop itself */}
-    <circle cx="27" cy="31" r="3.5" fill="white" opacity="0.7" />
+  <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <circle cx="20" cy="20" r="20" fill="#0EA5E9"/>
+    <path d="M20 10c-1.2 0-8 6.5-8 11.5 0 4.5 3.5 8.5 8 8.5s8-4 8-8.5c0-5-6.8-11.5-8-11.5z" fill="white"/>
   </svg>
 );
 
