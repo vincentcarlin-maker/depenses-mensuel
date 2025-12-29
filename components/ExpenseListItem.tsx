@@ -17,7 +17,8 @@ import {
     MusicNoteIcon,
     SfrIcon,
     CeoIcon,
-    TotalEnergiesIcon
+    TotalEnergiesIcon,
+    TrashBinIcon
 } from './icons/CategoryIcons';
 import PiggyBankIcon from './icons/PiggyBankIcon';
 import ArrowRightIcon from './icons/ArrowRightIcon';
@@ -32,7 +33,7 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
   "Chauffage": { icon: HeatingIcon, color: 'bg-red-500' },
   "Courses": { icon: GroceriesIcon, color: 'bg-green-500' },
   "Restaurant": { icon: RestaurantIcon, color: 'bg-purple-500' },
-  "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-yellow-500' },
+  "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-yellow-400' },
   "Vêtements": { icon: ClothingIcon, color: 'bg-indigo-500' },
   "Cadeau": { icon: GiftIcon, color: 'bg-fuchsia-500' },
   "Divers": { icon: MiscIcon, color: 'bg-cyan-500' },
@@ -94,6 +95,7 @@ const ExpenseListItem: React.FC<{
     const isSfr = lowerCaseDesc.includes('sfr nathan');
     const isCeo = lowerCaseDesc.includes('ceo');
     const isTotalEnergies = lowerCaseDesc.includes('total energies');
+    const isPoubelles = lowerCaseDesc.includes('poubelles');
 
     const visual = CategoryVisuals[expense.category] || CategoryVisuals["Divers"];
     let IconComponent = visual.icon;
@@ -133,7 +135,11 @@ const ExpenseListItem: React.FC<{
         >
             <div className={`w-1.5 h-10 rounded-full mr-3 ${userColorClass} shadow-sm`}></div>
             <div className="mr-3 flex-shrink-0">
-                {isDeezer ? (
+                {isPoubelles ? (
+                    <div className="w-10 h-10 rounded-full shadow-sm">
+                        <TrashBinIcon className="w-full h-full rounded-full" />
+                    </div>
+                ) : isDeezer ? (
                     <div className="w-10 h-10 rounded-full shadow-sm">
                         <MusicNoteIcon className="w-full h-full rounded-full" />
                     </div>
@@ -152,6 +158,10 @@ const ExpenseListItem: React.FC<{
                 ) : isTotalEnergies ? (
                     <div className="w-10 h-10 rounded-full shadow-sm">
                         <TotalEnergiesIcon className="w-full h-full rounded-full" />
+                    </div>
+                ) : expense.category === "Réparation voitures" ? (
+                    <div className="w-10 h-10 rounded-full shadow-sm">
+                        <CarRepairsIcon className="w-full h-full rounded-full" />
                     </div>
                 ) : (
                     <div className={`w-10 h-10 flex items-center justify-center rounded-full ${iconBgClass} shadow-sm`}>

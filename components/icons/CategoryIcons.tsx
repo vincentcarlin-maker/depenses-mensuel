@@ -40,9 +40,12 @@ export const RestaurantIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) =
   </svg>
 );
 
-export const CarRepairsIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19.38 8.94l-2.26-4.58A2 2 0 0015.33 3H8.67a2 2 0 00-1.79 1.36L4.62 8.94A2 2 0 004 9.86V17a1 1 0 001 1h2a1 1 0 001-1v-1h8v1a1 1 0 001 1h2a1 1 0 001-1v-7.14a2 2 0 00-.62-1.28zM8 14a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm8 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" />
+export const CarRepairsIcon: React.FC<IconProps> = ({ className }) => (
+  <svg viewBox="0 0 40 40" className={className}>
+    <circle cx="20" cy="20" r="20" fill="#FACC15"/>
+    <g transform="translate(7.25, 8.4)">
+      <path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.5 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z" fill="white"/>
+    </g>
   </svg>
 );
 
@@ -189,5 +192,12 @@ export const TotalEnergiesIcon: React.FC<IconProps> = ({ className }) => (
   <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" className={className}>
     <circle cx="20" cy="20" r="20" fill="#FACC15"/>
     <path d="M22 8L10 22h10l-1 10 12-14h-10z" fill="white"/>
+  </svg>
+);
+
+export const TrashBinIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg viewBox="0 0 40 40" className={className} xmlns="http://www.w3.org/2000/svg">
+    <circle cx="20" cy="20" r="20" fill="#EF4444"/>
+    <path d="M14 29c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V17H14v12zM27 14h-3.5l-1-1h-5l-1 1H13v2h14v-2z" fill="white"/>
   </svg>
 );

@@ -52,7 +52,7 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
   "Chauffage": { icon: HeatingIcon, color: 'bg-red-500', pieColor: '#ef4444' },
   "Courses": { icon: GroceriesIcon, color: 'bg-green-500', pieColor: '#22c55e' },
   "Restaurant": { icon: RestaurantIcon, color: 'bg-purple-500', pieColor: '#a855f7' },
-  "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-yellow-500', pieColor: '#eab308' },
+  "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-yellow-400', pieColor: '#FACC15' },
   "Vêtements": { icon: ClothingIcon, color: 'bg-indigo-500', pieColor: '#6366f1' },
   "Cadeau": { icon: GiftIcon, color: 'bg-fuchsia-500', pieColor: '#d946ef' },
   "Divers": { icon: MiscIcon, color: 'bg-cyan-500', pieColor: '#06b6d4' },
@@ -209,11 +209,18 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
             const visual = CategoryVisuals[entry.name as Category] || CategoryVisuals["Divers"];
             const IconComponent = visual.icon;
             const percentage = totalExpenses > 0 ? (entry.value / totalExpenses) * 100 : 0;
+            const isCarRepair = entry.name === 'Réparation voitures';
             return (
               <div key={`detail-${entry.name}`} className="flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl group">
-                <div className={`w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full mr-4 ${visual.color}`}>
-                  <IconComponent className="h-5 w-5 text-white" />
-                </div>
+                {isCarRepair ? (
+                    <div className="w-8 h-8 flex-shrink-0 rounded-full mr-4">
+                        <CarRepairsIcon className="w-full h-full rounded-full" />
+                    </div>
+                ) : (
+                    <div className={`w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full mr-4 ${visual.color}`}>
+                      <IconComponent className="h-5 w-5 text-white" />
+                    </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-semibold text-slate-700 dark:text-slate-200 truncate">{entry.name}</p>
