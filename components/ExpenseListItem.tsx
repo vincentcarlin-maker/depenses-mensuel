@@ -16,7 +16,8 @@ import {
     WifiIcon,
     MusicNoteIcon,
     SfrIcon,
-    CeoIcon
+    CeoIcon,
+    TotalEnergiesIcon
 } from './icons/CategoryIcons';
 import PiggyBankIcon from './icons/PiggyBankIcon';
 import ArrowRightIcon from './icons/ArrowRightIcon';
@@ -92,6 +93,7 @@ const ExpenseListItem: React.FC<{
     const isDeezer = lowerCaseDesc.includes('deezer');
     const isSfr = lowerCaseDesc.includes('sfr nathan');
     const isCeo = lowerCaseDesc.includes('ceo');
+    const isTotalEnergies = lowerCaseDesc.includes('total energies');
 
     const visual = CategoryVisuals[expense.category] || CategoryVisuals["Divers"];
     let IconComponent = visual.icon;
@@ -139,6 +141,8 @@ const ExpenseListItem: React.FC<{
                     <ShieldIcon className="w-10 h-10 shadow-sm" />
                 ) : isCeo ? (
                     <CeoIcon className="w-10 h-10 shadow-sm" />
+                ) : isTotalEnergies ? (
+                    <TotalEnergiesIcon className="w-10 h-10 shadow-sm" />
                 ) : (
                     <div className={`w-10 h-10 flex items-center justify-center rounded-full ${iconBgClass} shadow-sm`}>
                         <IconComponent className="h-6 w-6 text-white" />
