@@ -12,12 +12,10 @@ export const MandatoryIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) =>
 );
 
 export const FuelIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M6 21h8a2 2 0 002-2V5a2 2 0 00-2-2H6a2 2 0 00-2 2v14a2 2 0 002 2z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 8h2" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h2" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M16 5h1.5a2.5 2.5 0 012.5 2.5v6a2.5 2.5 0 01-2.5 2.5H16" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M18 16v2" />
+  <svg viewBox="0 0 40 40" className={className}>
+    <circle cx="20" cy="20" r="20" fill="#F97316"/>
+    <path d="M10 8 h14 v24 h-14 z M27 13c1.5 0 3 1.5 3 3v9c0 1.5-1.5 3-3 3" fill="none" stroke="white" strokeWidth="2"/>
+    <path d="M10 8v24h14V8H10z m3 3h9v9h-9v-9z" fill="white"/>
   </svg>
 );
 
@@ -80,19 +78,10 @@ export const BirthdayIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => 
 );
 
 export const ShieldIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <defs>
-      <radialGradient id="mutuelleGreenGradient" cx="40%" cy="40%" r="60%">
-        <stop offset="0%" stopColor="#4ade80" /> {/* green-400 */}
-        <stop offset="100%" stopColor="#16a34a" /> {/* green-600 */}
-      </radialGradient>
-    </defs>
-    <circle cx="32" cy="32" r="30" fill="url(#mutuelleGreenGradient)"/>
-    <g fill="white">
-        <rect x="28" y="16" width="8" height="32" rx="3"/>
-        <rect x="16" y="28" width="32" height="8" rx="3"/>
-    </g>
-  </svg>
+    <svg viewBox="0 0 40 40" className={className}>
+        <circle cx="20" cy="20" r="20" fill="#10B981"/>
+        <path d="M20 12v16M12 20h16" stroke="white" strokeWidth="4" strokeLinecap="round"/>
+    </svg>
 );
 
 export const WifiIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
@@ -219,7 +208,7 @@ export const SfrIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 
 export const TotalEnergiesIcon: React.FC<IconProps> = ({ className }) => (
   <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <circle cx="20" cy="20" r="20" fill="#FEF9C3"/>
-    <path d="M22 6L8 24h12l-1 10 13-16h-12l1-10z" fill="#EAB308" fillOpacity="0.8"/>
+    <circle cx="20" cy="20" r="20" fill="#FACC15"/>
+    <path d="M22 8L10 22h10l-1 10 12-14h-10z" fill="white"/>
   </svg>
 );
