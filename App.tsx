@@ -1,5 +1,4 @@
 
-
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase/client';
 import { type Expense, User, type Activity, type MoneyPotTransaction } from './types';
@@ -38,10 +37,14 @@ export type ModificationType = 'date' | 'amount' | 'other';
 
 const getInitialDate = () => {
     const now = new Date();
-    const limit = new Date('2025-10-01T00:00:00Z');
-    now.setUTCDate(1); // Set day to 1 to avoid month-end issues
-    limit.setUTCDate(1);
-    return now < limit ? limit : now;
+    // On construit la date en UTC basée sur le mois LOCAL de l'utilisateur.
+    // Cela évite qu'un utilisateur à GMT+1 le 1er janvier à 00h30 se retrouve le 31 décembre UTC.
+    const currentMonthUtc = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+    
+    // Date limite de début de l'application (ex: Octobre 2023)
+    const limit = new Date('2023-10-01T00:00:00Z');
+    
+    return currentMonthUtc < limit ? limit : currentMonthUtc;
 };
 
 const MainApp: React.FC<{ 
@@ -221,7 +224,7 @@ const MainApp: React.FC<{
   }, []);
 
   const syncData = useCallback(async () => {
-    const expensesPromise = supabase.from('expenses').select('*').gte('date', '2025-10-01T00:00:00Z').order('date', { ascending: false });
+    const expensesPromise = supabase.from('expenses').select('*').gte('date', '2023-10-01T00:00:00Z').order('date', { ascending: false });
     const remindersPromise = supabase.from('reminders').select('*').order('day_of_month', { ascending: true });
     const moneyPotPromise = supabase.from('money_pot').select('*').order('date', { ascending: false });
     const activitiesPromise = supabase.from('activities').select('*').order('timestamp', { ascending: false }).limit(50);
@@ -822,7 +825,7 @@ const MainApp: React.FC<{
           const newDate = new Date(prevDate);
           newDate.setUTCMonth(newDate.getUTCMonth() + (direction === 'next' ? 1 : -1));
           
-          const limit = new Date('2025-10-01T00:00:00Z');
+          const limit = new Date('2023-10-01T00:00:00Z');
           if (newDate < limit) {
               return prevDate;
           }
@@ -833,7 +836,7 @@ const MainApp: React.FC<{
   const isPrevDisabled = useMemo(() => {
       const newDate = new Date(currentDate);
       newDate.setUTCMonth(newDate.getUTCMonth() - 1);
-      const limit = new Date('2025-10-01T00:00:00Z');
+      const limit = new Date('2023-10-01T00:00:00Z');
       return newDate < limit;
   }, [currentDate]);
 
