@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase/client';
 import { type Expense, User, type Activity, type MoneyPotTransaction } from './types';
@@ -99,6 +100,15 @@ const MainApp: React.FC<{
       currentMonth: currentDate.getUTCMonth(),
       currentYear: currentDate.getUTCFullYear(),
   }), [currentDate]);
+
+  const todayString = useMemo(() => {
+    const today = new Date();
+    return today.toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+    });
+  }, []);
 
   useEffect(() => {
     expensesRef.current = expenses;
@@ -1010,6 +1020,7 @@ const MainApp: React.FC<{
           realtimeStatus={realtimeStatus}
           onDeleteActivity={deleteActivity}
           onlineUsers={onlineUsers}
+          currentDateString={todayString}
         />
 
         <main className="container mx-auto p-4 md:p-8 pb-32">

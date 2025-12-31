@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import BellIcon from './icons/BellIcon';
 import { User, type Activity } from '../types';
@@ -32,9 +33,10 @@ interface HeaderProps {
   realtimeStatus: 'SUBSCRIBED' | 'TIMED_OUT' | 'CHANNEL_ERROR' | 'CONNECTING';
   onDeleteActivity: (activityId: string) => void;
   onlineUsers: User[];
+  currentDateString: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityItems, unreadCount, onMarkAsRead, realtimeStatus, onDeleteActivity, onlineUsers }) => {
+const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityItems, unreadCount, onMarkAsRead, realtimeStatus, onDeleteActivity, onlineUsers, currentDateString }) => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
@@ -155,13 +157,17 @@ const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityIte
       <div className="container mx-auto px-4 py-4 md:px-8 flex items-center justify-between">
         <div className="flex items-center">
           <Logo />
-          {/* Title hidden on mobile to make room for status */}
-          <h1 className="hidden sm:block text-xl md:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100 mr-4">
-            Dépenses
-          </h1>
+          <div className="ml-3">
+            <h1 className="hidden sm:block text-xl md:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100 leading-tight">
+              Dépenses
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 capitalize leading-tight">
+              {currentDateString}
+            </p>
+          </div>
           
           {/* Partner Status Indicator (Now Visible on All Screens) */}
-           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-700/50 animate-fade-in transition-colors duration-300">
+           <div className="ml-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-700/50 animate-fade-in transition-colors duration-300">
                 {isPartnerOnline ? (
                     <>
                         <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
