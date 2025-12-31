@@ -101,15 +101,6 @@ const MainApp: React.FC<{
       currentYear: currentDate.getUTCFullYear(),
   }), [currentDate]);
 
-  const todayString = useMemo(() => {
-    const today = new Date();
-    return today.toLocaleDateString('fr-FR', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-    });
-  }, []);
-
   useEffect(() => {
     expensesRef.current = expenses;
   }, [expenses]);
@@ -518,7 +509,7 @@ const MainApp: React.FC<{
       }
   }
 
-  const addExpense = async (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => {
+  const addExpense = async (expense: Omit<Expense, 'id' | 'created_at'>) => {
     const newId = crypto.randomUUID();
     
     recentlyAddedIds.current.add(newId);
@@ -529,7 +520,6 @@ const MainApp: React.FC<{
     const expenseData = {
         ...expense,
         id: newId,
-        date: new Date().toISOString(),
     };
 
     const optimisticExpense: Expense = {
@@ -1019,7 +1009,6 @@ const MainApp: React.FC<{
           onMarkAsRead={markActivitiesAsRead}
           realtimeStatus={realtimeStatus}
           onDeleteActivity={deleteActivity}
-          currentDateString={todayString}
         />
 
         <main className="container mx-auto p-4 md:p-8 pb-32">

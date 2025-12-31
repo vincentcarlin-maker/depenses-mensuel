@@ -32,10 +32,9 @@ interface HeaderProps {
   onMarkAsRead: () => void;
   realtimeStatus: 'SUBSCRIBED' | 'TIMED_OUT' | 'CHANNEL_ERROR' | 'CONNECTING';
   onDeleteActivity: (activityId: string) => void;
-  currentDateString: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityItems, unreadCount, onMarkAsRead, realtimeStatus, onDeleteActivity, currentDateString }) => {
+const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityItems, unreadCount, onMarkAsRead, realtimeStatus, onDeleteActivity }) => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
@@ -153,12 +152,9 @@ const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityIte
         <div className="flex items-center">
           <Logo />
           <div className="ml-3">
-            <h1 className="hidden sm:block text-xl md:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100 leading-tight">
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
               Dépenses
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 capitalize leading-tight">
-              {currentDateString}
-            </p>
           </div>
         </div>
         

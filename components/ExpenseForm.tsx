@@ -6,9 +6,10 @@ import ConfirmationModal from './ConfirmationModal';
 import PiggyBankIcon from './icons/PiggyBankIcon';
 import ScissorsIcon from './icons/ScissorsIcon';
 import TrashIcon from './icons/TrashIcon';
+import CalendarDaysIcon from './icons/CalendarDaysIcon';
 
 interface ExpenseFormProps {
-  onAddExpense: (expense: Omit<Expense, 'id' | 'date' | 'created_at'>) => void;
+  onAddExpense: (expense: Omit<Expense, 'id' | 'created_at'>) => void;
   expenses: Expense[];
   initialData?: Omit<Expense, 'id' | 'date' | 'created_at'> | null;
   loggedInUser: User;
@@ -20,11 +21,21 @@ interface ExpenseFormProps {
   heatingTypes: string[];
 }
 
+const toDatetimeLocal = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initialData, loggedInUser, onlineUsers, disabled = false, categories, groceryStores, cars, heatingTypes }) => {
   const [description, setDescription] = useState(initialData?.description || '');
   const [amount, setAmount] = useState(initialData ? String(Math.abs(initialData.amount)) : '');
   const [category, setCategory] = useState<Category>(initialData?.category || categories[0] || '');
   const [user, setUser] = useState<User>(initialData?.user || loggedInUser);
+  const [date, setDate] = useState(toDatetimeLocal(new Date()));
   const [transactionType, setTransactionType] = useState<'expense' | 'refund'>(initialData && initialData.amount < 0 ? 'refund' : 'expense');
   const [store, setStore] = useState(groceryStores[0] || '');
   const [customStore, setCustomStore] = useState('');
@@ -47,7 +58,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [suggestions, setSuggestions] = useState<string[]>([]);
   
   const [duplicateConfirmationOpen, setDuplicateConfirmationOpen] = useState(false);
-  const [pendingExpenseData, setPendingExpenseData] = useState<Omit<Expense, 'id' | 'date' | 'created_at'> | null>(null);
+  const [pendingExpenseData, setPendingExpenseData] = useState<Omit<Expense, 'id' | 'created_at'> | null>(null);
   const [detectedDuplicates, setDetectedDuplicates] = useState<Expense[]>([]);
 
   const amountInputRef = useRef<HTMLInputElement>(null);
@@ -136,10 +147,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
     setSuggestions([]);
   };
 
-  const findPossibleDuplicates = (newExpense: Omit<Expense, 'id' | 'date' | 'created_at'>): Expense[] => {
-      const now = new Date();
-      const currentMonth = now.getMonth();
-      const currentYear = now.getFullYear();
+  const findPossibleDuplicates = (newExpense: Omit<Expense, 'id' | 'created_at'>): Expense[] => {
+      const expenseDate = new Date(newExpense.date);
+      const currentMonth = expenseDate.getMonth();
+      const currentYear = expenseDate.getFullYear();
 
       const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
       const newDescNormalized = normalize(newExpense.description);
@@ -165,7 +176,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
       }
   };
 
-  const submitExpense = (expenseData: Omit<Expense, 'id' | 'date' | 'created_at'>) => {
+  const submitExpense = (expenseData: Omit<Expense, 'id' | 'created_at'>) => {
     onAddExpense(expenseData);
     
     if (!initialData) {
@@ -182,6 +193,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         setClothingPerson('Nathan');
         setGiftPerson('Nathan');
         setGiftOccasion('Noël');
+        setDate(toDatetimeLocal(new Date()));
         setShowSubtractions(false); // Reset toggle on successful submission
         setReceiptTotal('');
         setSubtractedItems([]);
@@ -301,6 +313,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
       amount: finalAmount,
       category,
       user,
+      date: new Date(date).toISOString(),
       subtracted_items: finalSubtractedItems
     };
 
@@ -610,28 +623,48 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             )}
 
             {error && <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>}
-            <button
-            type="submit"
-            disabled={disabled}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-sky-500 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800 transition-all duration-200 ease-in-out transform hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-            {disabled ? (
-                <>
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>Synchronisation...</span>
-                </>
-            ) : (
-                <>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                    </svg>
-                    <span>Ajouter</span>
-                </>
-            )}
-            </button>
+            <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                        <CalendarDaysIcon className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                        <p className="text-sm text-slate-600 dark:text-slate-300">
+                            Date : <span className="font-semibold text-slate-800 dark:text-slate-200">{new Date(date).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                        </p>
+                    </div>
+                    <label htmlFor="expense-date" className="text-sm font-semibold text-cyan-600 dark:text-cyan-400 cursor-pointer hover:underline">
+                        Modifier
+                        <input
+                            type="datetime-local"
+                            id="expense-date"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            className="sr-only"
+                        />
+                    </label>
+                </div>
+                <button
+                type="submit"
+                disabled={disabled}
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-sky-500 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800 transition-all duration-200 ease-in-out transform hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                {disabled ? (
+                    <>
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Synchronisation...</span>
+                    </>
+                ) : (
+                    <>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                        </svg>
+                        <span>Ajouter</span>
+                    </>
+                )}
+                </button>
+            </div>
         </form>
         </div>
         <ConfirmationModal 
