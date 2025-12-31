@@ -1221,6 +1221,8 @@ const MainApp: React.FC<{
           setToastInfo={setToastInfo}
           loginHistory={loginHistory}
           onLogout={onLogout}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
       />
       <OfflineIndicator />
     </div>

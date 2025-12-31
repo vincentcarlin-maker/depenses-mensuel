@@ -13,6 +13,7 @@ import ManagementTab from './ManagementTab';
 import WrenchScrewdriverIcon from './icons/WrenchScrewdriverIcon';
 import LogoutIcon from './icons/LogoutIcon';
 import ConfirmationModal from './ConfirmationModal';
+import BottomNavigation, { TabId } from './BottomNavigation';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -40,6 +41,8 @@ interface SettingsModalProps {
   setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
   loginHistory: LoginEvent[];
   onLogout: () => void;
+  activeTab: TabId;
+  onTabChange: (tab: TabId) => void;
 }
 
 const SettingsMenuItem: React.FC<{
@@ -77,6 +80,8 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     onDeleteReminder,
     categories,
     onLogout,
+    activeTab,
+    onTabChange,
   } = props;
   const [activeView, setActiveView] = useState<'main' | 'appearance' | 'reminders' | 'management'>('main');
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
@@ -110,6 +115,11 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
       window.removeEventListener('keydown', handleEsc);
     };
   }, [isOpen, onClose, activeView]);
+  
+  const handleTabChange = (tab: TabId) => {
+    onTabChange(tab);
+    onClose();
+  };
 
   if (!isOpen) {
     return null;
@@ -151,7 +161,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
             </button>
           </div>
         </header>
-        <main className="p-4 md:p-8 overflow-y-auto h-[calc(100%-64px)] container mx-auto">
+        <main className="p-4 md:p-8 overflow-y-auto h-[calc(100%-64px)] container mx-auto pb-24">
             {activeView === 'main' && (
                  <div className="bg-white dark:bg-slate-800 p-2 sm:p-4 rounded-2xl shadow-lg">
                     <div className="space-y-2">
@@ -232,6 +242,14 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                 </div>
             )}
         </main>
+
+        <BottomNavigation
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          onOpenSettings={() => {}} // No-op as we are already in settings
+          isSettingsActive={true}
+        />
+        
         <ConfirmationModal
             isOpen={isLogoutConfirmOpen}
             onClose={() => setIsLogoutConfirmOpen(false)}

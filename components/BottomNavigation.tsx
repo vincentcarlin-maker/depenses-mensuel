@@ -12,9 +12,10 @@ interface BottomNavigationProps {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
   onOpenSettings: () => void;
+  isSettingsActive?: boolean;
 }
 
-const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabChange, onOpenSettings }) => {
+const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabChange, onOpenSettings, isSettingsActive = false }) => {
   const tabs = [
     { id: 'dashboard' as TabId, label: 'Accueil', icon: HomeIcon },
     { id: 'analysis' as TabId, label: 'Analyse', icon: ChartPieIcon },
@@ -26,7 +27,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
     <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 pb-[calc(env(safe-area-inset-bottom)+16px)] z-30 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] transition-all duration-300">
       <div className="flex justify-around items-center h-14">
         {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
+          const isActive = !isSettingsActive && activeTab === tab.id;
           const Icon = tab.icon;
           
           return (
@@ -46,9 +47,13 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
         })}
         <button
           onClick={onOpenSettings}
-          className="flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+          className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
+            isSettingsActive
+              ? 'text-cyan-600 dark:text-cyan-400'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+          }`}
         >
-          <SettingsIcon />
+          <SettingsIcon className={`h-6 w-6 ${isSettingsActive ? 'scale-110' : ''} transition-transform duration-200`} />
           <span className="text-[10px] font-medium">Réglages</span>
         </button>
       </div>
