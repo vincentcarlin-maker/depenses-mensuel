@@ -36,6 +36,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [category, setCategory] = useState<Category>(initialData?.category || categories[0] || '');
   const [user, setUser] = useState<User>(initialData?.user || loggedInUser);
   const [date, setDate] = useState(toDatetimeLocal(new Date()));
+  const [isDateManuallySet, setIsDateManuallySet] = useState(false);
   const [transactionType, setTransactionType] = useState<'expense' | 'refund'>(initialData && initialData.amount < 0 ? 'refund' : 'expense');
   const [store, setStore] = useState(groceryStores[0] || '');
   const [customStore, setCustomStore] = useState('');
@@ -71,6 +72,22 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const childrenOptions = ['Nathan', 'Chloé'];
   const occasionOptions = ['Noël', 'Anniversaire'];
 
+  useEffect(() => {
+    // If a user has manually changed the date, or if the form is pre-filled, stop the auto-update.
+    if (isDateManuallySet || initialData) {
+        return;
+    }
+
+    // Update the time every 10 seconds so the minutes advance.
+    const timer = setInterval(() => {
+      setDate(toDatetimeLocal(new Date()));
+    }, 10000);
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, [isDateManuallySet, initialData]);
+
   const uniqueDescriptions = useMemo(() => {
     const tagRegex = /(#\w+)/g;
     const storeRegex = /\s\(([^)]+)\)$/;
@@ -93,7 +110,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
       amountInputRef.current?.focus();
       amountInputRef.current?.select();
     }
-  }, []); 
+  }, [initialData]); 
 
   useEffect(() => {
     if (category === "Carburant") {
@@ -194,6 +211,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         setGiftPerson('Nathan');
         setGiftOccasion('Noël');
         setDate(toDatetimeLocal(new Date()));
+        setIsDateManuallySet(false);
         setShowSubtractions(false); // Reset toggle on successful submission
         setReceiptTotal('');
         setSubtractedItems([]);
@@ -637,7 +655,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                             type="datetime-local"
                             id="expense-date"
                             value={date}
-                            onChange={(e) => setDate(e.target.value)}
+                            onChange={(e) => {
+                                setDate(e.target.value);
+                                setIsDateManuallySet(true);
+                            }}
                             className="sr-only"
                         />
                     </label>
