@@ -32,18 +32,13 @@ interface HeaderProps {
   onMarkAsRead: () => void;
   realtimeStatus: 'SUBSCRIBED' | 'TIMED_OUT' | 'CHANNEL_ERROR' | 'CONNECTING';
   onDeleteActivity: (activityId: string) => void;
-  onlineUsers: User[];
   currentDateString: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityItems, unreadCount, onMarkAsRead, realtimeStatus, onDeleteActivity, onlineUsers, currentDateString }) => {
+const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityItems, unreadCount, onMarkAsRead, realtimeStatus, onDeleteActivity, currentDateString }) => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
-
-  // Determine the partner (the other user)
-  const partnerName = loggedInUser === User.Sophie ? User.Vincent : User.Sophie;
-  const isPartnerOnline = onlineUsers.includes(partnerName);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -165,30 +160,6 @@ const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityIte
               {currentDateString}
             </p>
           </div>
-          
-          {/* Partner Status Indicator (Now Visible on All Screens) */}
-           <div className="ml-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-700/50 animate-fade-in transition-colors duration-300">
-                {isPartnerOnline ? (
-                    <>
-                        <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-                        </span>
-                        <span className="text-xs font-semibold text-green-700 dark:text-green-400 whitespace-nowrap">
-                            {partnerName} en ligne
-                        </span>
-                    </>
-                ) : (
-                    <>
-                         <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-slate-300 dark:bg-slate-600"></span>
-                        </span>
-                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                            {partnerName} hors ligne
-                        </span>
-                    </>
-                )}
-            </div>
         </div>
         
         <div className="flex items-center space-x-1 sm:space-x-2 ml-2">

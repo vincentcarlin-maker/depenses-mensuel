@@ -1019,7 +1019,6 @@ const MainApp: React.FC<{
           onMarkAsRead={markActivitiesAsRead}
           realtimeStatus={realtimeStatus}
           onDeleteActivity={deleteActivity}
-          onlineUsers={onlineUsers}
           currentDateString={todayString}
         />
 
@@ -1057,6 +1056,7 @@ const MainApp: React.FC<{
                     expenses={expenses}
                     initialData={formInitialData}
                     loggedInUser={user}
+                    onlineUsers={onlineUsers}
                     disabled={!isConnected}
                     categories={categories}
                     groceryStores={groceryStores}
