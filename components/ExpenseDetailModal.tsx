@@ -124,8 +124,6 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
       const createdDate = new Date(expense.created_at);
       const expenseDate = new Date(expense.date);
       
-      // On compare les timestamps. Si la différence est > 60 secondes (1 minute), on affiche la date de saisie.
-      // Cela évite l'affichage pour une saisie "live" où les secondes peuvent légèrement différer.
       const timeDiff = Math.abs(createdDate.getTime() - expenseDate.getTime());
       const show = timeDiff > 60000;
 
@@ -174,14 +172,14 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 backdrop-blur-sm z-50 flex justify-center items-center" aria-modal="true" role="dialog">
+    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 backdrop-blur-sm z-[60] flex justify-center items-center" aria-modal="true" role="dialog">
       <div 
         className="fixed inset-0"
         onClick={onClose}
         aria-hidden="true"
       ></div>
       
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-2xl z-50 w-full max-w-md m-4 animate-fade-in relative overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-2xl z-[60] w-full max-w-md m-4 animate-fade-in relative overflow-hidden flex flex-col max-h-[90vh]">
          <div className={`absolute top-0 left-0 w-full h-24 ${visual.color} opacity-50`}></div>
          
          <div className="relative flex flex-col items-center text-center pt-4 overflow-y-auto">

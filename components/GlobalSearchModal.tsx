@@ -84,6 +84,11 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, onClose, 
       }
   }, [isOpen]);
 
+  const handleExpenseClick = (expense: Expense) => {
+      onEditExpense(expense);
+      // La fenêtre de recherche reste ouverte
+  };
+
   if (!isOpen) {
     return null;
   }
@@ -174,7 +179,7 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, onClose, 
                 </div>
                 <GroupedExpenseList
                     expenses={searchedExpenses}
-                    onExpenseClick={onEditExpense}
+                    onExpenseClick={handleExpenseClick}
                     highlightedIds={highlightedIds}
                     modifiedInfo={modifiedInfo}
                 />
