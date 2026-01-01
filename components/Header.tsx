@@ -180,10 +180,13 @@ const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityIte
         <div className="flex items-center">
           <Logo />
           <div className="ml-2">
-            <h1 className="text-xl md:text-2xl font-extrabold tracking-tight">
+            <h1 className="text-xl md:text-2xl font-extrabold tracking-tight leading-tight md:leading-normal">
               <span className="text-slate-900 dark:text-white">Duo</span>
               <span className="text-blue-500">Budget</span>
             </h1>
+            <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 font-bold italic -mt-0.5 md:mt-0">
+                Vos finances à deux, en toute simplicité.
+            </p>
           </div>
         </div>
         
