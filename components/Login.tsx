@@ -75,11 +75,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 px-4">
             <div className="w-full max-w-sm">
                 <Logo />
-                <h1 className="text-2xl font-bold text-center text-slate-800 dark:text-slate-100 mb-2">
-                    Suivi des Dépenses
+                <h1 className="text-4xl font-extrabold text-center mb-2">
+                    <span className="text-slate-900 dark:text-white">Duo</span>
+                    <span className="text-blue-500">Budget</span>
                 </h1>
-                <p className="text-center text-slate-500 dark:text-slate-400 mb-8">
-                    Veuillez vous connecter pour continuer.
+                <p className="text-center text-slate-500 dark:text-slate-400 mb-8 font-bold italic text-lg">
+                    Vos finances à deux, en toute simplicité.
                 </p>
                 <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-8">
                     <form onSubmit={handleSubmit} className="space-y-6">

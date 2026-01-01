@@ -179,9 +179,10 @@ const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityIte
       <div className="container mx-auto px-4 py-4 md:px-8 flex items-center justify-between">
         <div className="flex items-center">
           <Logo />
-          <div className="ml-3">
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
-              Dépenses
+          <div className="ml-2">
+            <h1 className="text-xl md:text-2xl font-extrabold tracking-tight">
+              <span className="text-slate-900 dark:text-white">Duo</span>
+              <span className="text-blue-500">Budget</span>
             </h1>
           </div>
         </div>

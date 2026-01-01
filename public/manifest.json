@@ -1,8 +1,8 @@
 
 {
-  "name": "Suivi des Dépenses Mensuelles",
-  "short_name": "Dépenses",
-  "description": "Une application web simple et élégante pour suivre vos dépenses mensuelles. Ajoutez des transactions, classez-les et visualisez la répartition de vos dépenses avec des graphiques interactifs.",
+  "name": "DuoBudget",
+  "short_name": "DuoBudget",
+  "description": "Vos finances à deux, en toute simplicité. Suivez vos dépenses mensuelles, gérez votre cagnotte et visualisez la répartition de vos dépenses.",
   "start_url": "/depenses-mensuel/",
   "scope": "/depenses-mensuel/",
   "display": "standalone",
