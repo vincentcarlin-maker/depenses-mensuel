@@ -118,6 +118,27 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
       minute: '2-digit'
   });
 
+  const { showCreatedDate, formattedCreatedDate } = useMemo(() => {
+      if (!expense.created_at) return { showCreatedDate: false, formattedCreatedDate: '' };
+      
+      const createdDate = new Date(expense.created_at);
+      const expenseDate = new Date(expense.date);
+      
+      // On compare les timestamps. Si la différence est > 60 secondes (1 minute), on affiche la date de saisie.
+      // Cela évite l'affichage pour une saisie "live" où les secondes peuvent légèrement différer.
+      const timeDiff = Math.abs(createdDate.getTime() - expenseDate.getTime());
+      const show = timeDiff > 60000;
+
+      const formatted = createdDate.toLocaleString('fr-FR', {
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit'
+      });
+
+      return { showCreatedDate: show, formattedCreatedDate: formatted };
+  }, [expense.date, expense.created_at]);
+
   let userColorClass = 'bg-slate-500';
   if (expense.user === User.Sophie) userColorClass = 'bg-pink-500';
   else if (expense.user === User.Vincent) userColorClass = 'bg-sky-500';
@@ -176,9 +197,15 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
             </p>
 
             <div className="w-full space-y-4 text-left">
-                <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+                <div className="flex justify-between items-start border-b border-slate-100 dark:border-slate-700 pb-3">
                     <div><p className="text-xs text-slate-400 dark:text-slate-500 uppercase">Catégorie</p><p className="font-medium text-slate-700 dark:text-slate-200">{expense.category}</p></div>
-                    <div className="text-right"><p className="text-xs text-slate-400 dark:text-slate-500 uppercase">Date</p><p className="font-medium text-slate-700 dark:text-slate-200 text-sm capitalize">{formattedDate}</p></div>
+                    <div className="text-right">
+                        <p className="text-xs text-slate-400 dark:text-slate-500 uppercase">Date</p>
+                        <p className="font-medium text-slate-700 dark:text-slate-200 text-sm capitalize">{formattedDate}</p>
+                        {showCreatedDate && (
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 italic mt-0.5">(Saisie le {formattedCreatedDate})</p>
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">

@@ -134,11 +134,13 @@ const MainApp: React.FC<{
 
     // 1. Group activities by expense ID
     const activitiesByExpenseId = activities.reduce((acc, act) => {
-        if (act.type === 'update' && act.expense?.id) {
-            if (!acc[act.expense.id]) {
-                acc[act.expense.id] = [];
+        // On récupère l'ID, soit directement, soit depuis l'objet expense imbriqué
+        const expenseId = act.expense?.id;
+        if (expenseId) {
+            if (!acc[expenseId]) {
+                acc[expenseId] = [];
             }
-            acc[act.expense.id].push(act);
+            acc[expenseId].push(act);
         }
         return acc;
     }, {} as Record<string, Activity[]>);
@@ -150,36 +152,50 @@ const MainApp: React.FC<{
 
         // 3. For each activity, detect changes and add to the set
         for (const activity of expenseActivities) {
-            if (!activity.oldExpense) continue;
+            
+            // --- Cas 1: Modification (Update) ---
+            if (activity.type === 'update' && activity.oldExpense) {
+                const oldExp = activity.oldExpense as Partial<Expense>;
+                const newExp = activity.expense as Partial<Expense>;
 
-            const oldExp = activity.oldExpense as Partial<Expense>;
-            const newExp = activity.expense as Partial<Expense>;
+                // Check for date change
+                if (oldExp.date && newExp.date) {
+                    const oldDate = new Date(oldExp.date);
+                    oldDate.setSeconds(0, 0);
+                    const newDate = new Date(newExp.date);
+                    newDate.setSeconds(0, 0);
+                    if (oldDate.getTime() !== newDate.getTime()) {
+                        accumulatedChanges.add('date');
+                    }
+                }
 
-            // Check for date change
-            if (oldExp.date && newExp.date) {
-                const oldDate = new Date(oldExp.date);
-                oldDate.setSeconds(0, 0);
-                const newDate = new Date(newExp.date);
-                newDate.setSeconds(0, 0);
-                if (oldDate.getTime() !== newDate.getTime()) {
-                    accumulatedChanges.add('date');
+                // Check for amount change
+                if (oldExp.amount !== newExp.amount) {
+                    accumulatedChanges.add('amount');
+                }
+
+                // Check for other changes
+                const otherChange =
+                    oldExp.description !== newExp.description ||
+                    oldExp.category !== newExp.category ||
+                    oldExp.user !== newExp.user ||
+                    JSON.stringify(oldExp.subtracted_items || []) !== JSON.stringify(newExp.subtracted_items || []);
+                
+                if (otherChange) {
+                    accumulatedChanges.add('other');
                 }
             }
-
-            // Check for amount change
-            if (oldExp.amount !== newExp.amount) {
-                accumulatedChanges.add('amount');
-            }
-
-            // Check for other changes
-            const otherChange =
-                oldExp.description !== newExp.description ||
-                oldExp.category !== newExp.category ||
-                oldExp.user !== newExp.user ||
-                JSON.stringify(oldExp.subtracted_items || []) !== JSON.stringify(newExp.subtracted_items || []);
-            
-            if (otherChange) {
-                accumulatedChanges.add('other');
+            // --- Cas 2: Ajout (Add) avec modification de date manuelle ---
+            else if (activity.type === 'add' && activity.expense.date) {
+                const creationTime = new Date(activity.timestamp).getTime();
+                const expenseTime = new Date(activity.expense.date).getTime();
+                
+                // Si la différence entre la date de la dépense et le moment de la création 
+                // est supérieure à 60 secondes (1 minute), on considère que c'est une modification de date.
+                // Cela permet d'ignorer le léger décalage naturel d'exécution.
+                if (Math.abs(expenseTime - creationTime) > 60000) {
+                    accumulatedChanges.add('date');
+                }
             }
         }
 
@@ -1056,8 +1072,21 @@ const MainApp: React.FC<{
                     value={monthInputValue}
                     min="2023-10"
                     onChange={handleDateSelect}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
                     title="Changer de mois"
+                    ref={(input) => {
+                        // Better compatibility for desktop browsers (Chrome, Edge) to open picker on click
+                        if (input) {
+                            input.onclick = (e) => {
+                                try {
+                                    // @ts-ignore - showPicker is standard but TS might not know it yet
+                                    input.showPicker();
+                                } catch (err) {
+                                    // Fallback for browsers that don't support showPicker (mobile usually handles the input type click natively)
+                                }
+                            }
+                        }
+                    }}
                 />
             </div>
 
