@@ -1,3 +1,4 @@
+
 {
   "name": "Suivi des Dépenses Mensuelles",
   "short_name": "Dépenses",
@@ -9,7 +10,7 @@
   "theme_color": "#06b6d4",
   "icons": [
     {
-      "src": "./logo.svg?v=15",
+      "src": "./logo.svg?v=16",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"

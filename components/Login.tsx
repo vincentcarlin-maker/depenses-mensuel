@@ -1,20 +1,50 @@
+
 import React, { useState } from 'react';
 import EyeIcon from './icons/EyeIcon';
 import EyeSlashIcon from './icons/EyeSlashIcon';
 
 const Logo = () => (
-    <svg width="48" height="48" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-4">
+    <svg width="120" height="120" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-4">
         <defs>
-             <linearGradient id="login-logo-gradient" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor="#06b6d4" />
+            <linearGradient id="loginPinkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#f472b6" />
+                <stop offset="100%" stopColor="#db2777" />
+            </linearGradient>
+            <linearGradient id="loginBlueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#60a5fa" />
                 <stop offset="100%" stopColor="#2563eb" />
             </linearGradient>
+            <linearGradient id="loginNoteGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#2563eb" />
+                <stop offset="100%" stopColor="#db2777" />
+            </linearGradient>
+            
+            <filter id="loginSoftGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur in="SourceAlpha" stdDeviation="8"></feGaussianBlur>
+                <feOffset dx="0" dy="8"></feOffset>
+                <feComponentTransfer>
+                    <feFuncA type="linear" slope="0.15"></feFuncA>
+                </feComponentTransfer>
+                <feMerge>
+                    <feMergeNode></feMergeNode>
+                    <feMergeNode in="SourceGraphic"></feMergeNode>
+                </feMerge>
+            </filter>
         </defs>
-        <rect width="512" height="512" rx="128" fill="url(#login-logo-gradient)"/>
-        <g fill="white">
-            <rect x="136" y="256" width="64" height="160" rx="32"/>
-            <rect x="224" y="160" width="64" height="256" rx="32"/>
-            <rect x="312" y="96" width="64" height="320" rx="32"/>
+
+        <rect x="60" y="140" width="392" height="230" rx="40" stroke="url(#loginNoteGrad)" strokeWidth="20" filter="url(#loginSoftGlow)"></rect>
+        <path d="M120 180H392M120 330H392" stroke="url(#loginNoteGrad)" strokeWidth="4" strokeOpacity="0.2" strokeLinecap="round"></path>
+        
+        <g filter="url(#loginSoftGlow)">
+            <circle cx="210" cy="280" r="90" fill="url(#loginBlueGrad)"></circle>
+            <circle cx="210" cy="280" r="70" stroke="white" strokeWidth="4" strokeOpacity="0.4" fill="none"></circle>
+            <path d="M225 255C215 250 200 250 190 260C180 270 180 290 190 300C200 310 215 310 225 305M180 275H205M180 285H205" stroke="white" strokeWidth="10" strokeLinecap="round" strokeOpacity="0.9"></path>
+        </g>
+
+        <g filter="url(#loginSoftGlow)">
+            <circle cx="310" cy="240" r="90" fill="url(#loginPinkGrad)"></circle>
+            <circle cx="310" cy="240" r="70" stroke="white" strokeWidth="4" strokeOpacity="0.4" fill="none"></circle>
+            <path d="M325 215C315 210 300 210 290 220C280 230 280 250 290 260C300 270 315 270 325 265M280 235H305M280 245H305" stroke="white" strokeWidth="10" strokeLinecap="round" strokeOpacity="0.9"></path>
         </g>
     </svg>
 );

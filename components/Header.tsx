@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useRef } from 'react';
 import BellIcon from './icons/BellIcon';
 import { User, type Activity } from '../types';
@@ -8,18 +7,47 @@ import SearchIcon from './icons/SearchIcon';
 import ActivityDetailModal from './ActivityDetailModal';
 
 const Logo = () => (
-    <svg width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3">
+    <svg width="44" height="44" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3">
         <defs>
-            <linearGradient id="header-logo-gradient" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor="#06b6d4" />
+            <linearGradient id="headerPinkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#f472b6" />
+                <stop offset="100%" stopColor="#db2777" />
+            </linearGradient>
+            <linearGradient id="headerBlueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#60a5fa" />
                 <stop offset="100%" stopColor="#2563eb" />
             </linearGradient>
+            <linearGradient id="headerNoteGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#2563eb" />
+                <stop offset="100%" stopColor="#db2777" />
+            </linearGradient>
+            
+            <filter id="headerSoftGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur in="SourceAlpha" stdDeviation="8"></feGaussianBlur>
+                <feOffset dx="0" dy="8"></feOffset>
+                <feComponentTransfer>
+                    <feFuncA type="linear" slope="0.15"></feFuncA>
+                </feComponentTransfer>
+                <feMerge>
+                    <feMergeNode></feMergeNode>
+                    <feMergeNode in="SourceGraphic"></feMergeNode>
+                </feMerge>
+            </filter>
         </defs>
-        <rect width="512" height="512" rx="128" fill="url(#header-logo-gradient)"/>
-        <g fill="white">
-            <rect x="136" y="256" width="64" height="160" rx="32"/>
-            <rect x="224" y="160" width="64" height="256" rx="32"/>
-            <rect x="312" y="96" width="64" height="320" rx="32"/>
+
+        <rect x="60" y="140" width="392" height="230" rx="40" stroke="url(#headerNoteGrad)" strokeWidth="20" filter="url(#headerSoftGlow)"></rect>
+        <path d="M120 180H392M120 330H392" stroke="url(#headerNoteGrad)" strokeWidth="4" strokeOpacity="0.2" strokeLinecap="round"></path>
+        
+        <g filter="url(#headerSoftGlow)">
+            <circle cx="210" cy="280" r="90" fill="url(#headerBlueGrad)"></circle>
+            <circle cx="210" cy="280" r="70" stroke="white" strokeWidth="4" strokeOpacity="0.4" fill="none"></circle>
+            <path d="M225 255C215 250 200 250 190 260C180 270 180 290 190 300C200 310 215 310 225 305M180 275H205M180 285H205" stroke="white" strokeWidth="10" strokeLinecap="round" strokeOpacity="0.9"></path>
+        </g>
+
+        <g filter="url(#headerSoftGlow)">
+            <circle cx="310" cy="240" r="90" fill="url(#headerPinkGrad)"></circle>
+            <circle cx="310" cy="240" r="70" stroke="white" strokeWidth="4" strokeOpacity="0.4" fill="none"></circle>
+            <path d="M325 215C315 210 300 210 290 220C280 230 280 250 290 260C300 270 315 270 325 265M280 235H305M280 245H305" stroke="white" strokeWidth="10" strokeLinecap="round" strokeOpacity="0.9"></path>
         </g>
     </svg>
 );

@@ -1,17 +1,52 @@
-<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+<svg id="logo-cash-coins" width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
-        <linearGradient id="app-logo-gradient" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#06b6d4" />
-            <stop offset="100%" stop-color="#2563eb" />
+        <!-- Dégradé Rose (Partenaire A / Pièce 1) -->
+        <linearGradient id="pinkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#f472b6"></stop>
+            <stop offset="100%" style="stop-color:#db2777"></stop>
         </linearGradient>
-        <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.15"/>
+        <!-- Dégradé Bleu (Partenaire B / Pièce 2) -->
+        <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#60a5fa"></stop>
+            <stop offset="100%" style="stop-color:#2563eb"></stop>
+        </linearGradient>
+        <!-- Dégradé pour le Billet (Union) -->
+        <linearGradient id="noteGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#2563eb"></stop>
+            <stop offset="100%" style="stop-color:#db2777"></stop>
+        </linearGradient>
+        
+        <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="8"></feGaussianBlur>
+            <feOffset dx="0" dy="8"></feOffset>
+            <feComponentTransfer>
+                <feFuncA type="linear" slope="0.15"></feFuncA>
+            </feComponentTransfer>
+            <feMerge>
+                <feMergeNode></feMergeNode>
+                <feMergeNode in="SourceGraphic"></feMergeNode>
+            </feMerge>
         </filter>
     </defs>
-    <rect width="512" height="512" rx="128" fill="url(#app-logo-gradient)"/>
-    <g filter="url(#soft-shadow)" fill="white">
-        <rect x="136" y="256" width="64" height="160" rx="32"/>
-        <rect x="224" y="160" width="64" height="256" rx="32"/>
-        <rect x="312" y="96" width="64" height="320" rx="32"/>
+
+    <!-- Le Billet (Arrière-plan structuré) -->
+    <rect x="60" y="140" width="392" height="230" rx="40" stroke="url(#noteGrad)" stroke-width="20" filter="url(#softGlow)"></rect>
+    <path d="M120 180H392M120 330H392" stroke="url(#noteGrad)" stroke-width="4" stroke-opacity="0.2" stroke-linecap="round"></path>
+    
+    <!-- Pièce Bleue (Partenaire B) -->
+    <g filter="url(#softGlow)">
+        <circle cx="210" cy="280" r="90" fill="url(#blueGrad)"></circle>
+        <circle cx="210" cy="280" r="70" stroke="white" stroke-width="4" stroke-opacity="0.4" fill="none"></circle>
+        <!-- Symbole Euro épuré -->
+        <path d="M225 255C215 250 200 250 190 260C180 270 180 290 190 300C200 310 215 310 225 305M180 275H205M180 285H205" stroke="white" stroke-width="10" stroke-linecap="round" stroke-opacity="0.9"></path>
+    </g>
+
+    <!-- Pièce Rose (Partenaire A) -->
+    <g filter="url(#softGlow)">
+        <circle cx="310" cy="240" r="90" fill="url(#pinkGrad)"></circle>
+        <circle cx="310" cy="240" r="70" stroke="white" stroke-width="4" stroke-opacity="0.4" fill="none"></circle>
+        <!-- Symbole Euro épuré -->
+        <path d="M325 215C315 210 300 210 290 220C280 230 280 250 290 260C300 270 315 270 325 265M280 235H305M280 245H305" stroke="white" stroke-width="10" stroke-linecap="round" stroke-opacity="0.9"></path>
     </g>
 </svg>
