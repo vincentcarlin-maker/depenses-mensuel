@@ -100,8 +100,9 @@ const ReminderAlerts: React.FC<ReminderAlertsProps> = ({ reminders, monthlyExpen
     <div className="bg-yellow-50 dark:bg-yellow-500/10 border-l-4 border-yellow-400 p-4 rounded-r-lg shadow-md mb-8 animate-fade-in-up">
       <div className="flex">
         <div className="flex-shrink-0">
-          <svg className="h-5 w-5 text-yellow-400 dark:text-yellow-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-            <path fillRule="evenodd" d="M8.257 3.099c.636-1.21 2.27-1.21 2.906 0l4.257 8.122c.636 1.21-.107 2.779-1.453 2.779H5.453c-1.346 0-2.089-1.569-1.453-2.779l4.257-8.122zM10 14a1 1 0 110-2 1 1 0 010 2zm-1-3a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clipRule="evenodd" />
+          {/* Icône de cloche pleine et plus contrastée */}
+          <svg className="h-6 w-6 text-yellow-600 dark:text-yellow-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path fillRule="evenodd" d="M5.25 9a6.75 6.75 0 0113.5 0v.75c0 2.123.8 4.057 2.118 5.52a.75.75 0 01-.297 1.206c-1.544.57-3.16.99-4.831 1.243a3.75 3.75 0 11-7.48 0 24.585 24.585 0 01-4.831-1.244.75.75 0 01-.298-1.205A8.217 8.217 0 005.25 9.75V9zm4.502 8.9a2.25 2.25 0 104.496 0 25.057 25.057 0 01-4.496 0z" clipRule="evenodd" />
           </svg>
         </div>
         <div className="ml-3 flex-1">
@@ -116,7 +117,7 @@ const ReminderAlerts: React.FC<ReminderAlertsProps> = ({ reminders, monthlyExpen
                     </span>
                     <button 
                       onClick={() => handlePayClick(reminder)}
-                      className="px-3 py-1 text-xs font-semibold text-white bg-cyan-600 rounded-md hover:bg-cyan-700 transition-colors whitespace-nowrap"
+                      className="px-3 py-1 text-xs font-semibold text-white bg-cyan-600 rounded-md hover:bg-cyan-700 transition-colors whitespace-nowrap shadow-sm shadow-cyan-600/20"
                     >
                       Payer
                     </button>
