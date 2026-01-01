@@ -25,6 +25,7 @@ import GlobalSearchModal from './components/GlobalSearchModal';
 import FunnelIcon from './components/icons/FunnelIcon';
 import MoneyPotTab from './components/MoneyPotTab';
 import BottomNavigation, { TabId } from './components/BottomNavigation';
+import ChevronDownIcon from './components/icons/ChevronDownIcon';
 
 type UndoableAction = {
     type: 'delete' | 'update';
@@ -833,6 +834,21 @@ const MainApp: React.FC<{
       });
   };
   
+  const handleDateSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.value) return;
+        const [year, month] = e.target.value.split('-').map(Number);
+        // Create Date in UTC to match the app's logic (Date.UTC)
+        // Month in Date.UTC is 0-11, input returns 01-12. So month - 1.
+        const newDate = new Date(Date.UTC(year, month - 1, 1));
+        
+        const limit = new Date('2023-10-01T00:00:00Z');
+        if (newDate < limit) {
+            setCurrentDate(limit);
+        } else {
+            setCurrentDate(newDate);
+        }
+  };
+
   const isPrevDisabled = useMemo(() => {
       const newDate = new Date(currentDate);
       newDate.setUTCMonth(newDate.getUTCMonth() - 1);
@@ -846,6 +862,12 @@ const MainApp: React.FC<{
       year: 'numeric',
       timeZone: 'UTC'
     });
+  }, [currentDate]);
+  
+  const monthInputValue = useMemo(() => {
+        const year = currentDate.getUTCFullYear();
+        const month = (currentDate.getUTCMonth() + 1).toString().padStart(2, '0');
+        return `${year}-${month}`;
   }, [currentDate]);
 
   const handleRefresh = async () => {
@@ -1023,7 +1045,22 @@ const MainApp: React.FC<{
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
-            <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 text-center capitalize">{currentMonthName}</h2>
+            
+            <div className="relative group cursor-pointer flex items-center justify-center gap-2 px-3 py-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+                <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 text-center capitalize">
+                    {currentMonthName}
+                </h2>
+                <ChevronDownIcon className="text-slate-400 dark:text-slate-500" />
+                <input 
+                    type="month" 
+                    value={monthInputValue}
+                    min="2023-10"
+                    onChange={handleDateSelect}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    title="Changer de mois"
+                />
+            </div>
+
             <button onClick={() => handleMonthChange('next')} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </button>
