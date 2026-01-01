@@ -247,20 +247,42 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
                              Historique des modifications
                         </h3>
                         <div className="space-y-4">
-                            {history.map(act => (
-                                <div key={act.id} className="bg-slate-50 dark:bg-slate-700/30 p-3 rounded-xl text-sm">
-                                    <div className="flex justify-between items-start mb-1 pb-2 border-b border-slate-200 dark:border-slate-600">
-                                         <span className={`font-bold ${act.expense.user === User.Sophie ? 'text-pink-600 dark:text-pink-400' : (act.expense.user === User.Vincent ? 'text-sky-600 dark:text-sky-400' : 'text-emerald-600 dark:text-emerald-400')}`}>{act.expense.user}</span>
-                                         <span className="text-xs text-slate-400">{new Date(act.timestamp).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                            {history.map(act => {
+                                if (act.type === 'add') {
+                                    return (
+                                        <div key={act.id} className="bg-emerald-50 dark:bg-emerald-900/10 p-3 rounded-xl text-sm border border-emerald-100 dark:border-emerald-800/30">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs">
+                                                        ✨
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-bold text-slate-700 dark:text-slate-200">Dépense créée</span>
+                                                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                                                            par <span className={act.expense.user === User.Sophie ? 'text-pink-600 font-semibold' : (act.expense.user === User.Vincent ? 'text-sky-600 font-semibold' : 'text-emerald-600 font-semibold')}>{act.expense.user}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <span className="text-xs text-slate-400">{new Date(act.timestamp).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                                            </div>
+                                        </div>
+                                    )
+                                }
+                                return (
+                                    <div key={act.id} className="bg-slate-50 dark:bg-slate-700/30 p-3 rounded-xl text-sm">
+                                        <div className="flex justify-between items-start mb-1 pb-2 border-b border-slate-200 dark:border-slate-600">
+                                             <span className={`font-bold ${act.expense.user === User.Sophie ? 'text-pink-600 dark:text-pink-400' : (act.expense.user === User.Vincent ? 'text-sky-600 dark:text-sky-400' : 'text-emerald-600 dark:text-emerald-400')}`}>{act.expense.user}</span>
+                                             <span className="text-xs text-slate-400">{new Date(act.timestamp).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                                        </div>
+                                        <div className="space-y-1">
+                                            {renderDiffLine(act.expense.category === 'Courses' ? 'Magasin' : 'Description', act.oldExpense?.description, act.expense.description)}
+                                            {renderDiffLine("Montant", act.oldExpense?.amount, act.expense.amount, true)}
+                                            {renderDiffLine("Catégorie", act.oldExpense?.category, act.expense.category)}
+                                            {renderDiffLine("Date", act.oldExpense?.date ? new Date(act.oldExpense.date).toLocaleDateString('fr-FR') : undefined, new Date(act.expense.date!).toLocaleDateString('fr-FR'))}
+                                        </div>
                                     </div>
-                                    <div className="space-y-1">
-                                        {renderDiffLine(act.expense.category === 'Courses' ? 'Magasin' : 'Description', act.oldExpense?.description, act.expense.description)}
-                                        {renderDiffLine("Montant", act.oldExpense?.amount, act.expense.amount, true)}
-                                        {renderDiffLine("Catégorie", act.oldExpense?.category, act.expense.category)}
-                                        {renderDiffLine("Date", act.oldExpense?.date ? new Date(act.oldExpense.date).toLocaleDateString('fr-FR') : undefined, new Date(act.expense.date!).toLocaleDateString('fr-FR'))}
-                                    </div>
-                                </div>
-                            ))}
+                                )
+                            })}
                         </div>
                     </div>
                 )}

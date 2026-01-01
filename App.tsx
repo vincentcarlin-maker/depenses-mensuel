@@ -211,8 +211,9 @@ const MainApp: React.FC<{
   // Compute history for the currently viewed expense
   const expenseHistory = useMemo(() => {
       if (!expenseToView) return [];
+      // Include both 'update' and 'add' events to show full history
       return activities
-          .filter(a => a.expense.id === expenseToView.id && a.type === 'update')
+          .filter(a => a.expense.id === expenseToView.id && (a.type === 'update' || a.type === 'add'))
           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }, [expenseToView, activities]);
 
@@ -237,14 +238,14 @@ const MainApp: React.FC<{
 
       return Array.from(uniqueMap.values())
           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-          .slice(0, 50); // Increased limit to store more history for details
+          .slice(0, 100); // Limit to last 100 activities
   }, []);
 
   const syncData = useCallback(async () => {
     const expensesPromise = supabase.from('expenses').select('*').gte('date', '2023-10-01T00:00:00Z').order('date', { ascending: false });
     const remindersPromise = supabase.from('reminders').select('*').order('day_of_month', { ascending: true });
     const moneyPotPromise = supabase.from('money_pot').select('*').order('date', { ascending: false });
-    const activitiesPromise = supabase.from('activities').select('*').order('timestamp', { ascending: false }).limit(50);
+    const activitiesPromise = supabase.from('activities').select('*').order('timestamp', { ascending: false }).limit(100);
 
     const [expensesResponse, remindersResponse, moneyPotResponse, activitiesResponse] = await Promise.all([expensesPromise, remindersPromise, moneyPotPromise, activitiesPromise]);
 
