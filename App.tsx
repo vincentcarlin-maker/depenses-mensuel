@@ -32,6 +32,7 @@ type UndoableAction = {
     expense: Expense; // For delete, this is the one deleted. For update, this is the NEW state.
     originalExpense?: Expense; // For update, this is the OLD state.
     timerId: number;
+    activityId?: string; // ID of the activity log created by this action, to be deleted on undo
 };
 
 export type ModificationType = 'date' | 'amount' | 'other';
@@ -469,15 +470,18 @@ const MainApp: React.FC<{
   }, [highlightExpense, user, syncData, mergeAndDedupeActivities]);
 
   const logActivity = useCallback(async (activityPayload: Omit<Activity, 'id' | 'timestamp'>) => {
+    const id = crypto.randomUUID();
     const newActivity: Activity = {
       ...activityPayload,
-      id: crypto.randomUUID(),
+      id: id,
       timestamp: new Date().toISOString(),
     };
     const { error } = await supabase.from('activities').insert(newActivity);
     if (error) {
       console.error("Failed to log activity:", error.message);
+      return null;
     }
+    return id;
   }, []);
 
   // Money Pot Handlers (Moved up to be accessible by expense handlers)
@@ -605,13 +609,13 @@ const MainApp: React.FC<{
       }
   };
 
-  const deleteExpense = (id: string) => {
+  const deleteExpense = async (id: string) => {
     const expenseToDelete = expenses.find(e => e.id === id);
     if (!expenseToDelete) return;
 
     if (undoableAction?.timerId) clearTimeout(undoableAction.timerId);
 
-    logActivity({ type: 'delete', expense: expenseToDelete });
+    const activityId = await logActivity({ type: 'delete', expense: expenseToDelete });
 
     // --- AUTOMATIC MONEY POT REFUND ---
     if (expenseToDelete.user === User.Commun) {
@@ -632,16 +636,16 @@ const MainApp: React.FC<{
         setUndoableAction(null);
     }, 7000);
 
-    setUndoableAction({ type: 'delete', expense: expenseToDelete, timerId });
+    setUndoableAction({ type: 'delete', expense: expenseToDelete, timerId, activityId: activityId || undefined });
   };
   
-  const updateExpense = (updatedExpense: Expense) => {
+  const updateExpense = async (updatedExpense: Expense) => {
     const originalExpense = expenses.find(e => e.id === updatedExpense.id);
     if (!originalExpense) return;
 
     if (undoableAction?.timerId) clearTimeout(undoableAction.timerId);
 
-    logActivity({ type: 'update', expense: updatedExpense, oldExpense: originalExpense });
+    const activityId = await logActivity({ type: 'update', expense: updatedExpense, oldExpense: originalExpense });
 
     // --- AUTOMATIC MONEY POT ADJUSTMENT ---
     // Case 1: Changed TO Commun (from someone else) -> Deduct
@@ -685,7 +689,7 @@ const MainApp: React.FC<{
         setUndoableAction(null);
     }, 7000);
 
-    setUndoableAction({ type: 'update', expense: updatedExpense, originalExpense, timerId });
+    setUndoableAction({ type: 'update', expense: updatedExpense, originalExpense, timerId, activityId: activityId || undefined });
   };
 
   const addReminder = async (reminder: Omit<any, 'id' | 'created_at'>) => {
@@ -928,8 +932,11 @@ const MainApp: React.FC<{
     clearTimeout(undoableAction.timerId);
 
     if (undoableAction.type === 'delete') {
-        const { error } = await supabase.from('activities').delete().eq('expense->>id', undoableAction.expense.id);
-        if (error) console.error("Could not delete activity log for undone action:", error);
+        // If undoing a delete, we only need to remove the "delete" activity log
+        if (undoableAction.activityId) {
+             const { error } = await supabase.from('activities').delete().eq('id', undoableAction.activityId);
+             if (error) console.error("Could not delete activity log for undone action:", error);
+        }
         
         setExpenses(prev => [...prev, undoableAction.expense].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         highlightExpense(undoableAction.expense.id);
@@ -943,8 +950,11 @@ const MainApp: React.FC<{
             });
         }
     } else if (undoableAction.type === 'update' && undoableAction.originalExpense) {
-        const { error } = await supabase.from('activities').delete().eq('expense->>id', undoableAction.originalExpense.id);
-         if (error) console.error("Could not delete activity log for undone action:", error);
+        // If undoing an update, we only need to remove the "update" activity log
+        if (undoableAction.activityId) {
+             const { error } = await supabase.from('activities').delete().eq('id', undoableAction.activityId);
+             if (error) console.error("Could not delete activity log for undone action:", error);
+        }
 
         setExpenses(prev => prev.map(e => e.id === undoableAction.originalExpense!.id ? undoableAction.originalExpense! : e));
         highlightExpense(undoableAction.originalExpense.id);
