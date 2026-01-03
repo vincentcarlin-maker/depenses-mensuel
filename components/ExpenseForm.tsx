@@ -326,12 +326,17 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         return;
     }
 
+    // FIX: Use the exact current time if the user hasn't manually modified the date.
+    // This prevents a 1-2 minute time gap (filling the form) from flagging the expense as "date modified"
+    // (displayed with a clock icon) in the history logic.
+    const finalDate = isDateManuallySet ? new Date(date).toISOString() : new Date().toISOString();
+
     const newExpensePayload = {
       description: finalDescription,
       amount: finalAmount,
       category,
       user,
-      date: new Date(date).toISOString(),
+      date: finalDate,
       subtracted_items: finalSubtractedItems
     };
 
