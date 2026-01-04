@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useTheme } from '../hooks/useTheme';
 import SunIcon from './icons/SunIcon';
@@ -24,14 +25,14 @@ const ThemeSelector: React.FC = () => {
           className={`relative z-10 w-1/3 p-1.5 rounded-full text-sm font-semibold transition-colors flex items-center justify-center gap-2
             ${
               themeSetting === option.id
-                ? 'text-cyan-600 dark:text-cyan-400'
+                ? 'text-brand-600 dark:text-brand-400'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-slate-100'
             }
           `}
           aria-pressed={themeSetting === option.id}
         >
           {option.icon}
-          <span>{option.label}</span>
+          <span className="hidden sm:inline">{option.label}</span>
         </button>
       ))}
       <span

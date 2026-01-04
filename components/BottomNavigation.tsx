@@ -36,7 +36,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
               onClick={() => onTabChange(tab.id)}
               className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
                 isActive 
-                  ? 'text-cyan-600 dark:text-cyan-400' 
+                  ? 'text-brand-600 dark:text-brand-400' 
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
               }`}
             >
@@ -49,7 +49,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
           onClick={onOpenSettings}
           className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
             isSettingsActive
-              ? 'text-cyan-600 dark:text-cyan-400'
+              ? 'text-brand-600 dark:text-brand-400'
               : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
           }`}
         >

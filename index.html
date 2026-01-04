@@ -7,9 +7,26 @@
     <title>DuoBudget</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-      // Configure Tailwind to use the 'class' strategy for dark mode
       tailwind.config = {
         darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: 'var(--brand-50)',
+                100: 'var(--brand-100)',
+                200: 'var(--brand-200)',
+                300: 'var(--brand-300)',
+                400: 'var(--brand-400)',
+                500: 'var(--brand-500)',
+                600: 'var(--brand-600)',
+                700: 'var(--brand-700)',
+                800: 'var(--brand-800)',
+                900: 'var(--brand-900)',
+              }
+            }
+          }
+        }
       }
     </script>
     <link rel="manifest" href="/depenses-mensuel/manifest.json" />
@@ -21,7 +38,6 @@
     <link rel="icon" type="image/svg+xml" href="logo.svg?v=16" />
     <link rel="apple-touch-icon" href="logo.svg?v=16" />
     <script>
-      // On page load or when changing themes, best to add inline in `head` to avoid FOUC
       if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
         document.documentElement.classList.add('dark')
       } else {
@@ -29,68 +45,79 @@
       }
     </script>
     <style>
-      /* Prevents horizontal scrolling for a more native app feel */
+      :root {
+        /* Default Cyan Vibe */
+        --brand-50: #ecfeff; --brand-100: #cffafe; --brand-200: #a5f3fc; --brand-300: #67e8f9; --brand-400: #22d3ee;
+        --brand-500: #06b6d4; --brand-600: #0891b2; --brand-700: #0e7490; --brand-800: #155e75; --brand-900: #164e63;
+        --app-bg: #f8fafc;
+        --app-bg-dark: #0f172a;
+      }
+
+      .vibe-rose {
+        --brand-50: #fff1f2; --brand-100: #ffe4e6; --brand-200: #fecdd3; --brand-300: #fda4af; --brand-400: #fb7185;
+        --brand-500: #f43f5e; --brand-600: #e11d48; --brand-700: #be123c; --brand-800: #9f1239; --brand-900: #881337;
+        --app-bg: #fff5f5; --app-bg-dark: #1a0b0b;
+      }
+
+      .vibe-emerald {
+        --brand-50: #ecfdf5; --brand-100: #d1fae5; --brand-200: #a7f3d0; --brand-300: #6ee7b7; --brand-400: #34d399;
+        --brand-500: #10b981; --brand-600: #059669; --brand-700: #047857; --brand-800: #065f46; --brand-900: #064e3b;
+        --app-bg: #f0fdf4; --app-bg-dark: #06100c;
+      }
+
+      .vibe-violet {
+        --brand-50: #f5f3ff; --brand-100: #ede9fe; --brand-200: #ddd6fe; --brand-300: #c4b5fd; --brand-400: #a78bfa;
+        --brand-500: #8b5cf6; --brand-600: #7c3aed; --brand-700: #6d28d9; --brand-800: #5b21b6; --brand-900: #4c1d95;
+        --app-bg: #f7f6ff; --app-bg-dark: #0d0a1a;
+      }
+
+      .vibe-amber {
+        --brand-50: #fffbeb; --brand-100: #fef3c7; --brand-200: #fde68a; --brand-300: #fcd34d; --brand-400: #fbbf24;
+        --brand-500: #f59e0b; --brand-600: #d97706; --brand-700: #b45309; --brand-800: #92400e; --brand-900: #78350f;
+        --app-bg: #fffcf0; --app-bg-dark: #120d05;
+      }
+      
+      .vibe-slate {
+        --brand-50: #f8fafc; --brand-100: #f1f5f9; --brand-200: #e2e8f0; --brand-300: #cbd5e1; --brand-400: #94a3b8;
+        --brand-500: #64748b; --brand-600: #475569; --brand-700: #334155; --brand-800: #1e293b; --brand-900: #0f172a;
+        --app-bg: #f1f5f9; --app-bg-dark: #020617;
+      }
+
       html, body {
         width: 100%;
         overflow-x: hidden;
       }
+      
+      body {
+        background-color: var(--app-bg);
+      }
+      
+      .dark body {
+        background-color: var(--app-bg-dark);
+      }
+
       @keyframes slide-in-up {
-        from {
-          transform: translateY(100%);
-          opacity: 0;
-        }
-        to {
-          transform: translateY(0);
-          opacity: 1;
-        }
+        from { transform: translateY(100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
       }
-      .animate-slide-in-up {
-        animation: slide-in-up 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) both;
-      }
+      .animate-slide-in-up { animation: slide-in-up 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) both; }
        @keyframes fade-in {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
+        from { opacity: 0; }
+        to { opacity: 1; }
       }
-      .animate-fade-in {
-        animation: fade-in 0.5s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
-      }
+      .animate-fade-in { animation: fade-in 0.5s cubic-bezier(0.250, 0.460, 0.450, 0.940) both; }
       @keyframes fade-in-up {
-        from {
-          transform: translateY(20px);
-          opacity: 0;
-        }
-        to {
-          transform: translateY(0);
-          opacity: 1;
-        }
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
       }
-      .animate-fade-in-up {
-        animation: fade-in-up 0.5s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
-      }
-      /* Added for scrollable tabs */
-      .no-scrollbar::-webkit-scrollbar {
-        display: none;
-      }
-      .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-      }
-      /* Animation for highlighting new/updated expenses */
+      .animate-fade-in-up { animation: fade-in-up 0.5s cubic-bezier(0.250, 0.460, 0.450, 0.940) both; }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       @keyframes highlight-fade {
-        0% {
-          background-color: rgba(252, 211, 77, 0.7); /* amber-300 with opacity */
-        }
-        100% {
-          background-color: transparent;
-        }
+        0% { background-color: rgba(252, 211, 77, 0.7); }
+        100% { background-color: transparent; }
       }
-      .animate-highlight {
-        animation: highlight-fade 3s ease-out both;
-      }
+      .animate-highlight { animation: highlight-fade 3s ease-out both; }
     </style>
 <script type="importmap">
 {
@@ -107,7 +134,7 @@
 }
 </script>
 </head>
-  <body class="bg-gray-50 dark:bg-slate-900 transition-colors duration-300">
+  <body class="transition-colors duration-300">
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
   </body>

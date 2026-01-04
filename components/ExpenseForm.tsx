@@ -43,7 +43,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [heatingType, setHeatingType] = useState(heatingTypes[0] || '');
   const [repairedCar, setRepairedCar] = useState(cars[0] || '');
   
-  // State for "Courses" subtractions toggle
   const [showSubtractions, setShowSubtractions] = useState(false);
   const [receiptTotal, setReceiptTotal] = useState('');
   const [subtractedItems, setSubtractedItems] = useState<SubtractedItem[]>([]);
@@ -73,19 +72,13 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const occasionOptions = ['Noël', 'Anniversaire'];
 
   useEffect(() => {
-    // If a user has manually changed the date, or if the form is pre-filled, stop the auto-update.
     if (isDateManuallySet || initialData) {
         return;
     }
-
-    // Update the time every 10 seconds so the minutes advance.
     const timer = setInterval(() => {
       setDate(toDatetimeLocal(new Date()));
     }, 10000);
-
-    return () => {
-      clearInterval(timer);
-    };
+    return () => clearInterval(timer);
   }, [isDateManuallySet, initialData]);
 
   const uniqueDescriptions = useMemo(() => {
@@ -99,7 +92,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
     const total = parseFloat(receiptTotal.replace(',', '.')) || 0;
     const subtractions = subtractedItems.reduce((sum, item) => sum + item.amount, 0);
     const currentItemAmount = parseFloat(itemAmount.replace(',', '.')) || 0;
-    // Soustraire l'article en cours de saisie uniquement si une description est également présente
     const intentionalSubtraction = itemDescription.trim() ? currentItemAmount : 0;
     return total - subtractions - intentionalSubtraction;
   }, [receiptTotal, subtractedItems, itemAmount, itemDescription]);
@@ -127,10 +119,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         setDescription(nonSpecialCategoryDescriptionRef.current);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, cars]);
 
-  // Reset subtraction fields if toggled off
   useEffect(() => {
     if (!showSubtractions) {
         setSubtractedItems([]);
@@ -168,10 +158,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
       const expenseDate = new Date(newExpense.date);
       const currentMonth = expenseDate.getMonth();
       const currentYear = expenseDate.getFullYear();
-
       const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
       const newDescNormalized = normalize(newExpense.description);
-
       return expenses.filter(e => {
           const eDate = new Date(e.date);
           if (eDate.getMonth() !== currentMonth || eDate.getFullYear() !== currentYear) return false;
@@ -179,8 +167,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
           if (e.category !== newExpense.category) return false;
           const isSameAmount = Math.abs(e.amount - newExpense.amount) < 0.01; 
           if (!isSameAmount) return false;
-          const isSameDescription = normalize(e.description) === newDescNormalized;
-          return isSameDescription;
+          return normalize(e.description) === newDescNormalized;
       });
   };
 
@@ -195,7 +182,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
 
   const submitExpense = (expenseData: Omit<Expense, 'id' | 'created_at'>) => {
     onAddExpense(expenseData);
-    
     if (!initialData) {
         setDescription(category === "Carburant" ? (cars[0] || '') : '');
         setAmount('');
@@ -212,7 +198,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         setGiftOccasion('Noël');
         setDate(toDatetimeLocal(new Date()));
         setIsDateManuallySet(false);
-        setShowSubtractions(false); // Reset toggle on successful submission
+        setShowSubtractions(false);
         setReceiptTotal('');
         setSubtractedItems([]);
     }
@@ -242,7 +228,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     let finalAmount;
     let finalSubtractedItems: SubtractedItem[] | undefined = undefined;
 
@@ -252,13 +237,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
       if (itemDescription.trim() && !isNaN(parsedPendingAmount) && parsedPendingAmount > 0) {
           currentSubtractedItems.push({ description: itemDescription.trim(), amount: parsedPendingAmount });
       }
-
       const parsedTotal = parseFloat(receiptTotal.replace(',', '.'));
       if (isNaN(parsedTotal) || parsedTotal <= 0) {
         setError('Le montant du ticket est requis.');
         return;
       }
-
       const subtractions = currentSubtractedItems.reduce((sum, item) => sum + item.amount, 0);
       finalAmount = parsedTotal - subtractions;
       finalSubtractedItems = currentSubtractedItems;
@@ -275,9 +258,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
       finalAmount = transactionType === 'expense' ? parsedAmount : -parsedAmount;
     }
     
-
     let finalDescription = '';
-
     if (category === 'Courses') {
         const selectedStore = store === 'Autres' ? customStore.trim() : store;
         if (!selectedStore) {
@@ -326,9 +307,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         return;
     }
 
-    // FIX: Use the exact current time if the user hasn't manually modified the date.
-    // This prevents a 1-2 minute time gap (filling the form) from flagging the expense as "date modified"
-    // (displayed with a clock icon) in the history logic.
     const finalDate = isDateManuallySet ? new Date(date).toISOString() : new Date().toISOString();
 
     const newExpensePayload = {
@@ -382,7 +360,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
 
   return (
     <>
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden border border-brand-100 dark:border-slate-700">
         <div className="p-6 bg-slate-50 dark:bg-slate-800/50">
             <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Ajouter une Transaction</h2>
         </div>
@@ -414,7 +392,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                 id="category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value as Category)}
-                className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent sm:text-sm rounded-lg"
+                className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent sm:text-sm rounded-lg"
             >
                 {categories.map((cat) => (
                 <option key={cat} value={cat}>
@@ -429,7 +407,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label htmlFor="store-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Magasin</label>
-                            <select id="store-select" value={store} onChange={e => setStore(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent sm:text-sm rounded-lg">
+                            <select id="store-select" value={store} onChange={e => setStore(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent sm:text-sm rounded-lg">
                                 {groceryStores.map(s => <option key={s} value={s}>{s}</option>)}
                                 <option value="Autres">Autres</option>
                             </select>
@@ -437,7 +415,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                         {store === 'Autres' && (
                             <div>
                                 <label htmlFor="custom-store" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Magasin personnalisé</label>
-                                <input type="text" id="custom-store" value={customStore} onChange={e => setCustomStore(e.target.value)} className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm" placeholder="Nom du magasin" />
+                                <input type="text" id="custom-store" value={customStore} onChange={e => setCustomStore(e.target.value)} className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 sm:text-sm" placeholder="Nom du magasin" />
                             </div>
                         )}
                     </div>
@@ -450,7 +428,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                             type="button"
                             id="toggle-subtractions"
                             onClick={() => setShowSubtractions(!showSubtractions)}
-                            className={`${showSubtractions ? 'bg-cyan-600' : 'bg-slate-300 dark:bg-slate-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800`}
+                            className={`${showSubtractions ? 'bg-brand-600' : 'bg-slate-300 dark:bg-slate-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800`}
                             role="switch"
                             aria-checked={showSubtractions}
                         >
@@ -493,7 +471,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                           <label className="text-xs font-medium text-slate-500">Montant</label>
                           <input type="text" inputMode="decimal" value={itemAmount} onChange={e => setItemAmount(e.target.value)} onKeyDown={handleItemInputKeyDown} placeholder="0.00" className="block w-full px-2 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border-slate-300 dark:border-slate-500"/>
                       </div>
-                      <button type="button" onClick={handleAddSubtractedItem} className="px-3 py-1.5 bg-cyan-500 text-white text-sm font-semibold rounded-md hover:bg-cyan-600">+</button>
+                      <button type="button" onClick={handleAddSubtractedItem} className="px-3 py-1.5 bg-brand-500 text-white text-sm font-semibold rounded-md hover:bg-brand-600">+</button>
                     </div>
                 </div>
 
@@ -504,7 +482,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                     </div>
                      <div>
                         <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Montant final (commun)</label>
-                        <input type="text" value={finalCalculatedAmount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})} readOnly className="block w-full px-3 py-2.5 bg-slate-200 dark:bg-slate-600 text-cyan-600 dark:text-cyan-400 border-transparent rounded-lg font-bold"/>
+                        <input type="text" value={finalCalculatedAmount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})} readOnly className="block w-full px-3 py-2.5 bg-slate-200 dark:bg-slate-600 text-brand-600 dark:text-brand-400 border-transparent rounded-lg font-bold"/>
                     </div>
                 </div>
               </>
@@ -517,6 +495,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                               options={heatingTypes}
                               value={heatingType}
                               onChange={setHeatingType}
+                              colorClass="text-brand-600 dark:text-brand-400"
                           />
                       </div>
                   )}
@@ -528,6 +507,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                               options={cars}
                               value={repairedCar}
                               onChange={setRepairedCar}
+                              colorClass="text-brand-600 dark:text-brand-400"
                           />
                       </div>
                   )}
@@ -539,6 +519,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                               options={childrenOptions}
                               value={clothingPerson}
                               onChange={setClothingPerson}
+                              colorClass="text-brand-600 dark:text-brand-400"
                           />
                       </div>
                   )}
@@ -551,6 +532,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                                   options={childrenOptions}
                                   value={giftPerson}
                                   onChange={setGiftPerson}
+                                  colorClass="text-brand-600 dark:text-brand-400"
                               />
                           </div>
                           <div>
@@ -559,6 +541,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                                   options={occasionOptions}
                                   value={giftOccasion}
                                   onChange={setGiftOccasion}
+                                  colorClass="text-brand-600 dark:text-brand-400"
                               />
                           </div>
                       </div>
@@ -573,6 +556,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                               options={cars}
                               value={description}
                               onChange={(val) => setDescription(val)}
+                              colorClass="text-brand-600 dark:text-brand-400"
                           />
                           </>
                       ) : (
@@ -586,7 +570,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                               onChange={handleDescriptionChange}
                               onFocus={(e) => handleDescriptionChange(e)}
                               onBlur={() => setTimeout(() => setSuggestions([]), 150)}
-                              className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
+                              className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 sm:text-sm"
                               placeholder={category === 'Vêtements' ? "Ex: Pantalon, Manteau..." : category === 'Cadeau' ? "Ex: Lego, Poupée..." : "Ex: McDo, Courses Leclerc..."}
                               autoComplete="off"
                               />
@@ -637,7 +621,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                       id="amount"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm"
+                      className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 sm:text-sm"
                       placeholder="0.00"
                       />
                   </div>
@@ -654,7 +638,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                             Date : <span className="font-semibold text-slate-800 dark:text-slate-200">{new Date(date).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                         </p>
                     </div>
-                    <label htmlFor="expense-date" className="text-sm font-semibold text-cyan-600 dark:text-cyan-400 cursor-pointer hover:underline">
+                    <label htmlFor="expense-date" className="text-sm font-semibold text-brand-600 dark:text-brand-400 cursor-pointer hover:underline">
                         Modifier
                         <input
                             type="datetime-local"
@@ -671,7 +655,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                 <button
                 type="submit"
                 disabled={disabled}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-sky-500 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800 transition-all duration-200 ease-in-out transform hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-brand-500 to-brand-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-slate-800 transition-all duration-200 ease-in-out transform hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                 {disabled ? (
                     <>

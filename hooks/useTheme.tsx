@@ -1,7 +1,9 @@
+
 import { useState, useEffect, useCallback } from 'react';
 
 export type Theme = 'light' | 'dark';
 export type ThemeSetting = Theme | 'system';
+export type Vibe = 'cyan' | 'rose' | 'emerald' | 'violet' | 'amber' | 'slate';
 
 export const useTheme = () => {
     const [themeSetting, setThemeSetting] = useState<ThemeSetting>(() => {
@@ -12,11 +14,15 @@ export const useTheme = () => {
         return 'system';
     });
 
+    const [vibe, setVibe] = useState<Vibe>(() => {
+        const storedVibe = localStorage.getItem('app-vibe');
+        return (storedVibe as Vibe) || 'cyan';
+    });
+
     const [effectiveTheme, setEffectiveTheme] = useState<Theme>(() => {
         if (themeSetting === 'light' || themeSetting === 'dark') {
             return themeSetting;
         }
-        // For 'system', determine from media query
         return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     });
 
@@ -24,17 +30,13 @@ export const useTheme = () => {
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
         
         const handleSystemThemeChange = (e: MediaQueryListEvent) => {
-            // Only update if the user has selected 'system'
             if (localStorage.getItem('theme') === null) {
                 setEffectiveTheme(e.matches ? 'dark' : 'light');
             }
         };
         
         mediaQuery.addEventListener('change', handleSystemThemeChange);
-
-        return () => {
-            mediaQuery.removeEventListener('change', handleSystemThemeChange);
-        };
+        return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
     }, []);
 
     const changeThemeSetting = useCallback((setting: ThemeSetting) => {
@@ -47,6 +49,11 @@ export const useTheme = () => {
             setEffectiveTheme(setting);
         }
     }, []);
+
+    const changeVibe = useCallback((newVibe: Vibe) => {
+        setVibe(newVibe);
+        localStorage.setItem('app-vibe', newVibe);
+    }, []);
     
     useEffect(() => {
         if (effectiveTheme === 'dark') {
@@ -56,6 +63,22 @@ export const useTheme = () => {
         }
     }, [effectiveTheme]);
 
-    // The toggleTheme function is replaced by changeThemeSetting
-    return { theme: effectiveTheme, themeSetting, changeThemeSetting };
+    useEffect(() => {
+        // Remove all previous vibe classes
+        const vibes: Vibe[] = ['cyan', 'rose', 'emerald', 'violet', 'amber', 'slate'];
+        vibes.forEach(v => document.documentElement.classList.remove(`vibe-${v}`));
+        
+        // Add current vibe class
+        if (vibe !== 'cyan') {
+            document.documentElement.classList.add(`vibe-${vibe}`);
+        }
+    }, [vibe]);
+
+    return { 
+        theme: effectiveTheme, 
+        themeSetting, 
+        vibe,
+        changeThemeSetting, 
+        changeVibe 
+    };
 };

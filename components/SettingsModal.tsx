@@ -4,6 +4,7 @@ import { type Reminder, type Category, type Expense, User } from '../types';
 import RemindersTab from './RemindersTab';
 import CloseIcon from './icons/CloseIcon';
 import ThemeSelector from './ThemeSelector';
+import VibeSelector from './VibeSelector';
 import ArrowLeftIcon from './icons/ArrowLeftIcon';
 import ChevronRightIcon from './icons/ChevronRightIcon';
 import PaintBrushIcon from './icons/PaintBrushIcon';
@@ -13,7 +14,8 @@ import ManagementTab from './ManagementTab';
 import WrenchScrewdriverIcon from './icons/WrenchScrewdriverIcon';
 import LogoutIcon from './icons/LogoutIcon';
 import ConfirmationModal from './ConfirmationModal';
-import BottomNavigation, { TabId } from './BottomNavigation';
+import { TabId } from './BottomNavigation';
+import BottomNavigation from './BottomNavigation';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -54,7 +56,7 @@ const SettingsMenuItem: React.FC<{
 }> = ({ icon, title, description, onClick, className = '' }) => (
   <button
     onClick={onClick}
-    className={`w-full flex items-center p-4 rounded-xl transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 ${className}`}
+    className={`w-full flex items-center p-4 rounded-xl transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-brand-500 ${className}`}
   >
     <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
       {icon}
@@ -168,7 +170,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         <SettingsMenuItem
                             icon={<PaintBrushIcon />}
                             title="Apparence"
-                            description="Changer le thème de l'application"
+                            description="Thème et couleurs d'ambiance"
                             onClick={() => setActiveView('appearance')}
                         />
                         <SettingsMenuItem
@@ -201,9 +203,21 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                  </div>
             )}
             {activeView === 'appearance' && (
-                <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-lg flex justify-between items-center animate-fade-in">
-                    <span className="font-medium text-slate-600 dark:text-slate-300">Thème</span>
-                    <ThemeSelector />
+                <div className="space-y-8 animate-fade-in">
+                    <section className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg space-y-4">
+                        <div className="flex justify-between items-center">
+                            <h3 className="font-bold text-slate-800 dark:text-slate-100">Mode de luminosité</h3>
+                            <ThemeSelector />
+                        </div>
+                    </section>
+
+                    <section className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg space-y-4">
+                        <div>
+                            <h3 className="font-bold text-slate-800 dark:text-slate-100">Ambiance de l'application</h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Choisissez le fond et la couleur d'accentuation</p>
+                        </div>
+                        <VibeSelector />
+                    </section>
                 </div>
             )}
             {activeView === 'reminders' && (
@@ -246,7 +260,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
         <BottomNavigation
           activeTab={activeTab}
           onTabChange={handleTabChange}
-          onOpenSettings={() => {}} // No-op as we are already in settings
+          onOpenSettings={() => {}} 
           isSettingsActive={true}
         />
         
