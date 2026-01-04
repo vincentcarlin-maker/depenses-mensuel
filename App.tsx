@@ -842,10 +842,17 @@ const MainApp: React.FC<{
     });
   }, [filteredExpenses, searchTerm, filterUser, filterCategory]);
 
-  const handleMonthChange = (direction: 'next' | 'prev') => {
+  const handleDateNavigation = (direction: 'next' | 'prev') => {
       setCurrentDate(prevDate => {
           const newDate = new Date(prevDate);
-          newDate.setUTCMonth(newDate.getUTCMonth() + (direction === 'next' ? 1 : -1));
+          
+          if (activeTab === 'yearly') {
+              // Navigate by YEAR
+              newDate.setUTCFullYear(newDate.getUTCFullYear() + (direction === 'next' ? 1 : -1));
+          } else {
+              // Navigate by MONTH
+              newDate.setUTCMonth(newDate.getUTCMonth() + (direction === 'next' ? 1 : -1));
+          }
           
           const limit = new Date('2023-10-01T00:00:00Z');
           if (newDate < limit) {
@@ -857,25 +864,31 @@ const MainApp: React.FC<{
   
   const handleDateSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.value) return;
-        const [year, month] = e.target.value.split('-').map(Number);
-        // Create Date in UTC to match the app's logic (Date.UTC)
-        // Month in Date.UTC is 0-11, input returns 01-12. So month - 1.
-        const newDate = new Date(Date.UTC(year, month - 1, 1));
         
-        const limit = new Date('2023-10-01T00:00:00Z');
-        if (newDate < limit) {
-            setCurrentDate(limit);
+        if (activeTab === 'yearly') {
+            const year = parseInt(e.target.value, 10);
+            const newDate = new Date(currentDate);
+            newDate.setUTCFullYear(year);
+            const limit = new Date('2023-10-01T00:00:00Z');
+            setCurrentDate(newDate < limit ? limit : newDate);
         } else {
-            setCurrentDate(newDate);
+            const [year, month] = e.target.value.split('-').map(Number);
+            const newDate = new Date(Date.UTC(year, month - 1, 1));
+            const limit = new Date('2023-10-01T00:00:00Z');
+            setCurrentDate(newDate < limit ? limit : newDate);
         }
   };
 
   const isPrevDisabled = useMemo(() => {
       const newDate = new Date(currentDate);
-      newDate.setUTCMonth(newDate.getUTCMonth() - 1);
+      if (activeTab === 'yearly') {
+        newDate.setUTCFullYear(newDate.getUTCFullYear() - 1);
+      } else {
+        newDate.setUTCMonth(newDate.getUTCMonth() - 1);
+      }
       const limit = new Date('2023-10-01T00:00:00Z');
       return newDate < limit;
-  }, [currentDate]);
+  }, [currentDate, activeTab]);
 
   const currentMonthName = useMemo(() => {
     return currentDate.toLocaleString('fr-FR', {
@@ -1066,7 +1079,7 @@ const MainApp: React.FC<{
         <main className="container mx-auto p-4 md:p-8 pb-32">
           <div className="flex justify-between items-center mb-6 animate-fade-in-up">
             <button 
-              onClick={() => handleMonthChange('prev')} 
+              onClick={() => handleDateNavigation('prev')} 
               disabled={isPrevDisabled}
               className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -1075,33 +1088,43 @@ const MainApp: React.FC<{
             
             <div className="relative group cursor-pointer flex items-center justify-center gap-2 px-3 py-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
                 <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 text-center capitalize">
-                    {currentMonthName}
+                    {activeTab === 'yearly' ? currentYear : currentMonthName}
                 </h2>
                 <ChevronDownIcon className="text-slate-400 dark:text-slate-500" />
-                <input 
-                    type="month" 
-                    value={monthInputValue}
-                    min="2023-10"
-                    onChange={handleDateSelect}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-                    title="Changer de mois"
-                    ref={(input) => {
-                        // Better compatibility for desktop browsers (Chrome, Edge) to open picker on click
-                        if (input) {
-                            input.onclick = (e) => {
-                                try {
-                                    // @ts-ignore - showPicker is standard but TS might not know it yet
-                                    input.showPicker();
-                                } catch (err) {
-                                    // Fallback for browsers that don't support showPicker (mobile usually handles the input type click natively)
-                                }
-                            }
-                        }
-                    }}
-                />
+                
+                {activeTab === 'yearly' ? (
+                  <input 
+                      type="number" 
+                      value={currentYear}
+                      min="2023"
+                      max="2099"
+                      onChange={handleDateSelect}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                      title="Changer d'année"
+                  />
+                ) : (
+                  <input 
+                      type="month" 
+                      value={monthInputValue}
+                      min="2023-10"
+                      onChange={handleDateSelect}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                      title="Changer de mois"
+                      ref={(input) => {
+                          if (input) {
+                              input.onclick = (e) => {
+                                  try {
+                                      // @ts-ignore - showPicker is standard
+                                      input.showPicker();
+                                  } catch (err) {}
+                              }
+                          }
+                      }}
+                  />
+                )}
             </div>
 
-            <button onClick={() => handleMonthChange('next')} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+            <button onClick={() => handleDateNavigation('next')} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </button>
           </div>
