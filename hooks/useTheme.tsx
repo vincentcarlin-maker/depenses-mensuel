@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 export type Theme = 'light' | 'dark';
 export type ThemeSetting = Theme | 'system';
-export type Vibe = 'cyan' | 'rose' | 'emerald' | 'violet' | 'amber' | 'slate';
+export type Vibe = 'cyan' | 'rose' | 'emerald' | 'violet' | 'amber' | 'slate' | 'indigo' | 'orange' | 'teal' | 'fuchsia';
 
 export const useTheme = () => {
     const [themeSetting, setThemeSetting] = useState<ThemeSetting>(() => {
@@ -65,7 +65,7 @@ export const useTheme = () => {
 
     useEffect(() => {
         // Remove all previous vibe classes
-        const vibes: Vibe[] = ['cyan', 'rose', 'emerald', 'violet', 'amber', 'slate'];
+        const vibes: Vibe[] = ['cyan', 'rose', 'emerald', 'violet', 'amber', 'slate', 'indigo', 'orange', 'teal', 'fuchsia'];
         vibes.forEach(v => document.documentElement.classList.remove(`vibe-${v}`));
         
         // Add current vibe class
