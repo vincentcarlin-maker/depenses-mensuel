@@ -1,5 +1,6 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { type Expense, type Category } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
@@ -14,6 +15,8 @@ import {
     ClothingIcon,
     GiftIcon
 } from './icons/CategoryIcons';
+import ExpenseListItem from './ExpenseListItem';
+import CloseIcon from './icons/CloseIcon';
 
 const TrendUpIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -63,12 +66,24 @@ interface CategoryTotalsProps {
   previousMonthExpenses: Expense[];
   previousYearMonthExpenses: Expense[]; // For Year-on-Year comparison
   last3MonthsExpenses: Expense[];
+  onExpenseClick: (expense: Expense) => void;
 }
 
-const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonthExpenses, previousYearMonthExpenses, last3MonthsExpenses }) => {
+const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonthExpenses, previousYearMonthExpenses, last3MonthsExpenses, onExpenseClick }) => {
   const { theme } = useTheme();
   const tickColor = theme === 'dark' ? '#94a3b8' : '#475569';
   const gridColor = theme === 'dark' ? '#334155' : '#e2e8f0';
+
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+
+  useEffect(() => {
+    if (selectedCategory) {
+        document.body.style.overflow = 'hidden';
+    } else {
+        document.body.style.overflow = 'auto';
+    }
+    return () => { document.body.style.overflow = 'auto'; };
+  }, [selectedCategory]);
 
   const { totalExpenses, trend } = useMemo(() => {
     const currentTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -125,6 +140,11 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
     return { chartData: data };
   }, [expenses, last3MonthsExpenses, previousYearMonthExpenses]);
 
+  const filteredCategoryExpenses = useMemo(() => {
+      if (!selectedCategory) return [];
+      return expenses.filter(e => e.category === selectedCategory);
+  }, [selectedCategory, expenses]);
+
   if (expenses.length === 0) {
     return (
       <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg">
@@ -138,7 +158,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
   }
 
   const trendColor = trend.percentageChange > 0 ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400';
-  const TrendIcon = trend.percentageChange > 0 ? TrendUpIcon : TrendDownIcon;
+  const ActualTrendIcon = trend.percentageChange > 0 ? TrendUpIcon : TrendDownIcon;
 
   return (
     <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg">
@@ -148,7 +168,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
         <h3 className="text-base font-semibold mb-2 text-slate-700 dark:text-slate-200">Tendance Mensuelle (M-1)</h3>
         <div className="flex items-center gap-3">
             <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${trend.percentageChange > 0 ? 'bg-red-100 dark:bg-red-500/20' : 'bg-green-100 dark:bg-green-500/20'}`}>
-                <TrendIcon className={trendColor} />
+                <ActualTrendIcon className={trendColor} />
             </div>
             <p className="text-sm text-slate-600 dark:text-slate-300">
                 {trend.previousTotal > 0.01 ? (
@@ -204,6 +224,8 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
             <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Détails par catégorie</h3>
             <span className="text-[10px] uppercase font-bold text-slate-400">Tendance (Y/Y)</span>
         </div>
+        <p className="text-[10px] text-slate-400 italic mb-4 -mt-2">Cliquez sur une catégorie pour voir le détail des dépenses.</p>
+        
         <div className="space-y-3">
           {chartData.map((entry) => {
             const visual = CategoryVisuals[entry.name as Category] || CategoryVisuals["Divers"];
@@ -214,7 +236,11 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
             const isFuel = entry.name === 'Carburant';
 
             return (
-              <div key={`detail-${entry.name}`} className="flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl group">
+              <button 
+                key={`detail-${entry.name}`} 
+                onClick={() => setSelectedCategory(entry.name)}
+                className="w-full flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl group hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors text-left focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              >
                 {isCarRepair ? (
                     <div className="w-8 h-8 flex-shrink-0 rounded-full mr-4">
                         <CarRepairsIcon className="w-full h-full rounded-full" />
@@ -247,11 +273,69 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
                   </p>
                   <p className="text-sm text-slate-500 dark:text-slate-400">{percentage.toFixed(1)}%</p>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
       </div>
+
+      {/* Détail de catégorie (Modal) */}
+      {selectedCategory && createPortal(
+          <div className="fixed inset-0 bg-black/60 z-[100] flex justify-center items-center p-4 backdrop-blur-sm" aria-modal="true" role="dialog">
+                <div 
+                    className="fixed inset-0"
+                    onClick={() => setSelectedCategory(null)}
+                ></div>
+                <div className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[85vh] animate-fade-in">
+                    <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-700/30">
+                        <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 flex items-center justify-center rounded-full ${CategoryVisuals[selectedCategory]?.color || 'bg-slate-500'}`}>
+                                {CategoryVisuals[selectedCategory]?.icon && React.createElement(CategoryVisuals[selectedCategory].icon, { className: "h-6 w-6 text-white" })}
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-slate-800 dark:text-slate-100">Dépenses : {selectedCategory}</h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Pour le mois en cours</p>
+                            </div>
+                        </div>
+                        <button onClick={() => setSelectedCategory(null)} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                            <CloseIcon />
+                        </button>
+                    </div>
+                    
+                    <div className="p-4 overflow-y-auto flex-1 custom-scrollbar">
+                        <div className="space-y-3 pb-4">
+                            {filteredCategoryExpenses.length > 0 ? (
+                                filteredCategoryExpenses
+                                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                                    .map(expense => (
+                                        <ExpenseListItem 
+                                            key={expense.id} 
+                                            expense={expense} 
+                                            onExpenseClick={(e) => {
+                                                onExpenseClick(e);
+                                                setSelectedCategory(null);
+                                            }} 
+                                            isHighlighted={false}
+                                        />
+                                    ))
+                            ) : (
+                                <p className="text-center text-slate-500 dark:text-slate-400 py-8">Aucune dépense trouvée.</p>
+                            )}
+                        </div>
+                    </div>
+                    
+                    <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/30">
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Total de la catégorie</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-100 text-xl">
+                                {filteredCategoryExpenses.reduce((acc, curr) => acc + curr.amount, 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>,
+            document.body
+      )}
     </div>
   );
 };
