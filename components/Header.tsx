@@ -88,13 +88,8 @@ const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityIte
   };
 
   const handleActivityClick = (activity: Activity) => {
-      if (activity.type === 'update') {
-          setSelectedActivity(activity);
-          setIsNotificationsOpen(false);
-      } else {
-        setSelectedActivity(activity);
-        setIsNotificationsOpen(false);
-      }
+      setSelectedActivity(activity);
+      setIsNotificationsOpen(false);
   };
   
   const realtimeStatusStyles = {
@@ -107,7 +102,9 @@ const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityIte
 
   const renderActivityContent = (activity: Activity) => {
       const isUpdate = activity.type === 'update';
-      const userColor = activity.expense.user === User.Sophie ? 'text-pink-500' : 'text-sky-500';
+      // On utilise performedBy pour savoir QUI a fait l'action
+      const actorName = activity.performedBy || activity.expense.user;
+      const userColor = actorName === User.Sophie ? 'text-pink-500' : 'text-sky-500';
       
       if (isUpdate && activity.oldExpense) {
           const changes = [];
@@ -122,49 +119,45 @@ const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityIte
           if (old.description !== curr.description) {
                const oldDesc = old.description || '';
                const newDesc = curr.description || '';
-               // Truncate if too long
                const oldD = oldDesc.length > 15 ? oldDesc.substring(0, 12) + '...' : oldDesc;
                const newD = newDesc.length > 15 ? newDesc.substring(0, 12) + '...' : newDesc;
                changes.push(`${oldD} ➔ ${newD}`);
           }
-          if (old.category !== curr.category) {
-              changes.push(`${old.category} ➔ ${curr.category}`);
-          }
           
-          if (changes.length > 0) {
-              return (
-                  <div className="flex-grow min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                           <span className={`font-bold text-sm ${userColor}`}>{activity.expense.user}</span>
-                           <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                                {new Date(activity.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                           </span>
-                      </div>
-                      
-                      <div className="space-y-1">
-                          {changes.map((c, i) => (
-                              <div key={i} className="text-sm font-medium text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-700/50 rounded px-2 py-1 border-l-2 border-cyan-500">
-                                {c}
-                              </div>
-                          ))}
-                      </div>
-                      
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 italic truncate">
-                           sur {activity.expense.description}
-                      </p>
+          return (
+              <div className="flex-grow min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                       <span className={`font-bold text-sm ${userColor}`}>{actorName}</span>
+                       <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                            {new Date(activity.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                       </span>
                   </div>
-              );
-          }
+                  
+                  <div className="space-y-1">
+                      {changes.length > 0 ? changes.map((c, i) => (
+                          <div key={i} className="text-sm font-medium text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-700/50 rounded px-2 py-1 border-l-2 border-cyan-500">
+                            {c}
+                          </div>
+                      )) : (
+                          <div className="text-sm font-medium text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-700/50 rounded px-2 py-1 border-l-2 border-cyan-500">
+                            Mise à jour
+                          </div>
+                      )}
+                  </div>
+                  
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 italic truncate">
+                       sur {activity.expense.description}
+                  </p>
+              </div>
+          );
       }
 
-      // Default for Add/Delete
       return (
           <div className="flex-grow min-w-0">
                 <p className="text-sm text-slate-700 dark:text-slate-200">
-                    <span className={`font-bold ${userColor}`}>{activity.expense.user}</span>
+                    <span className={`font-bold ${userColor}`}>{actorName}</span>
                     { activity.type === 'add' ? ` a ajouté ` : activity.type === 'update' ? ` a mis à jour ` : ' a supprimé ' }
                     <span className="font-semibold text-slate-800 dark:text-slate-100">{activity.expense.description || 'une dépense'}</span>
-                    {activity.type !== 'update' && typeof activity.expense.amount === 'number' && ` (${activity.expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})`}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     {new Date(activity.timestamp).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
@@ -193,28 +186,21 @@ const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityIte
         <div className="flex items-center space-x-1 sm:space-x-2 ml-2">
             <button
                 onClick={onOpenSearch}
-                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800"
+                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800"
                 aria-label="Rechercher"
-                title="Rechercher"
             >
                 <SearchIcon className="h-6 w-6 text-slate-500 dark:text-slate-400" />
             </button>
             <div className="relative" ref={notificationsRef}>
                 <button
                     onClick={handleNotificationsToggle}
-                    title={currentStatusStyle?.title}
-                    className="relative p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800"
-                    aria-label="Notifications"
+                    className="relative p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800"
                 >
                     <BellIcon className={`h-6 w-6 transition-colors ${currentStatusStyle?.textClass || 'text-slate-500 dark:text-slate-400'}`} />
                     {unreadCount > 0 && (
-                        unreadCount > 1 ? (
-                            <span className="absolute top-1 right-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-800">
-                                {unreadCount > 9 ? '9+' : unreadCount}
-                            </span>
-                        ) : (
-                            <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-800" />
-                        )
+                        <span className="absolute top-1 right-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-800">
+                            {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
                     )}
                 </button>
 
@@ -231,8 +217,6 @@ const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityIte
                                             key={activity.id} 
                                             onClick={() => handleActivityClick(activity)}
                                             className="flex items-center justify-between p-4 gap-2 transition-colors cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 group"
-                                            role="button"
-                                            style={{ cursor: 'pointer' }}
                                         >
                                             {renderActivityContent(activity)}
                                             <button
@@ -240,9 +224,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityIte
                                                     e.stopPropagation();
                                                     onDeleteActivity(activity.id);
                                                 }}
-                                                className="flex-shrink-0 p-1.5 rounded-full text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600 hover:text-slate-600 dark:hover:text-slate-300 transition-colors opacity-0 group-hover:opacity-100"
-                                                aria-label="Supprimer cette activité"
-                                                title="Supprimer"
+                                                className="flex-shrink-0 p-1.5 rounded-full text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600 opacity-0 group-hover:opacity-100"
                                             >
                                                 <CloseIcon />
                                             </button>
@@ -251,7 +233,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityIte
                                 </ul>
                             ) : (
                                 <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-8">
-                                    Aucune activité récente de l'autre utilisateur.
+                                    Aucune activité récente.
                                 </p>
                             )}
                         </div>

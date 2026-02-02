@@ -13,13 +13,9 @@ interface ActivityDetailModalProps {
 const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClose, activity }) => {
   useEffect(() => {
     if (!isOpen) return;
-    // Empêcher le scroll du body quand la modale est ouverte
     document.body.style.overflow = 'hidden';
-
     const handleEsc = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
+      if (event.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', handleEsc);
     return () => {
@@ -30,27 +26,21 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
 
   if (!isOpen || !activity || !activity.expense) return null;
 
-  const { type, expense, oldExpense, timestamp } = activity;
+  const { type, expense, oldExpense, timestamp, performedBy } = activity;
   
-  // Sécurisation des valeurs
   const safeCategory = expense.category || '';
   const safeDescription = expense.description || '';
-  const safeUser = expense.user || 'Inconnu';
+  const actorName = performedBy || expense.user; // Fallback
   
   const formattedDate = new Date(timestamp).toLocaleString('fr-FR', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    hour: '2-digit', minute: '2-digit'
   });
   
-  const userColorClass = safeUser === User.Sophie ? 'text-pink-600 dark:text-pink-400' : 'text-sky-600 dark:text-sky-400';
+  const actorColorClass = actorName === User.Sophie ? 'text-pink-600 dark:text-pink-400' : 'text-sky-600 dark:text-sky-400';
   const actionText = type === 'add' ? 'ajouté' : type === 'update' ? 'modifié' : 'supprimé';
   
   const renderDiff = (label: string, oldValue: string | number | undefined, newValue: string | number | undefined, isCurrency = false) => {
-      // 1. ADD / DELETE / Simple view
       if (type !== 'update') {
           if (newValue === undefined || newValue === '' || newValue === null) return null;
           return (
@@ -66,23 +56,7 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
           );
       }
 
-      // 2. UPDATE: Show only if strictly changed
-      
-      // Si les valeurs sont identiques, on n'affiche rien.
-      if (oldValue === newValue) {
-          return null;
-      }
-      
-      // STRICT : Si l'ancienne valeur est inconnue (undefined), on considère qu'on ne peut pas afficher de différence fiable.
-      // Cela évite l'affichage "Avant: Non enregistré" pour des champs qui n'ont probablement pas changé.
-      if (oldValue === undefined) {
-          return null;
-      }
-
-      // Si l'ancienne et la nouvelle valeur sont nulles/vide, rien à afficher.
-      if ((oldValue === null || oldValue === '') && (newValue === null || newValue === '')) {
-          return null;
-      }
+      if (oldValue === newValue || oldValue === undefined) return null;
 
       const formatVal = (val: any) => {
           if (val === undefined || val === null || val === '') return "Vide";
@@ -95,14 +69,9 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
              <span className="text-xs uppercase text-slate-500 dark:text-slate-400 font-bold mb-2">{label}</span>
              <div className="grid grid-cols-[min-content_1fr] gap-x-3 gap-y-1">
                  <span className="text-[10px] uppercase text-rose-500 font-bold tracking-wider self-center bg-rose-50 dark:bg-rose-900/20 px-1.5 py-0.5 rounded">AVANT</span>
-                 <span className="text-slate-500 dark:text-slate-400 line-through text-xs self-center break-all">
-                     {formatVal(oldValue)}
-                 </span>
-                 
+                 <span className="text-slate-500 dark:text-slate-400 line-through text-xs self-center break-all">{formatVal(oldValue)}</span>
                  <span className="text-[10px] uppercase text-emerald-600 dark:text-emerald-400 font-bold tracking-wider self-center bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">APRÈS</span>
-                 <span className="font-bold text-slate-800 dark:text-slate-100 text-sm self-center break-all">
-                     {formatVal(newValue)}
-                 </span>
+                 <span className="font-bold text-slate-800 dark:text-slate-100 text-sm self-center break-all">{formatVal(newValue)}</span>
              </div>
           </div>
       );
@@ -110,72 +79,40 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ isOpen, onClo
 
   return createPortal(
     <div className="fixed inset-0 bg-black/60 z-[100] flex justify-center items-start pt-20 overflow-y-auto" aria-modal="true" role="dialog">
-      <div 
-        className="fixed inset-0"
-        onClick={onClose}
-        aria-hidden="true"
-      ></div>
+      <div className="fixed inset-0" onClick={onClose}></div>
       <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-2xl z-[100] w-full max-w-md m-4 animate-fade-in relative">
         <div className="flex justify-between items-start mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
             <div>
-                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Détail de la modification</h2>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Détail de l'action</h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{formattedDate}</p>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 -mr-2 -mt-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-              aria-label="Fermer"
-            >
-              <CloseIcon />
-            </button>
+            <button onClick={onClose} className="p-2 -mr-2 -mt-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"><CloseIcon /></button>
         </div>
         
         <div className="mb-6">
             <p className="text-lg text-slate-700 dark:text-slate-300">
-                <span className={`font-bold ${userColorClass}`}>{safeUser}</span> a {actionText} : <span className="font-medium text-slate-900 dark:text-slate-100">{safeDescription}</span>
+                <span className={`font-bold ${actorColorClass}`}>{actorName}</span> a {actionText} : <span className="font-medium text-slate-900 dark:text-slate-100">{safeDescription}</span>
             </p>
         </div>
 
         <div className="space-y-1">
             {type === 'update' ? (
                 <>
-                    {renderDiff(
-                        safeCategory === 'Courses' ? 'Magasin' : 'Description', 
-                        oldExpense?.description, 
-                        safeDescription
-                    )}
+                    {renderDiff(safeCategory === 'Courses' ? 'Magasin' : 'Description', oldExpense?.description, safeDescription)}
                     {renderDiff("Montant", oldExpense?.amount, expense.amount, true)}
                     {renderDiff("Catégorie", oldExpense?.category, safeCategory)}
                 </>
             ) : (
                 <>
-                    {renderDiff(
-                        safeCategory === 'Courses' ? 'Magasin' : 'Description', 
-                        undefined, 
-                        safeDescription
-                    )}
+                    {renderDiff(safeCategory === 'Courses' ? 'Magasin' : 'Description', undefined, safeDescription)}
                     {renderDiff("Montant", undefined, expense.amount, true)}
                     {renderDiff("Catégorie", undefined, safeCategory)}
                 </>
             )}
-            
-            {/* Fallback si aucune différence n'est affichée (ex: bug ou historique manquant) */}
-            {type === 'update' && 
-             oldExpense && 
-             oldExpense.description === safeDescription && 
-             oldExpense.amount === expense.amount && 
-             oldExpense.category === safeCategory && (
-                <p className="text-sm text-slate-400 italic text-center py-4">Aucune modification visible détectée.</p>
-            )}
         </div>
         
         <div className="mt-8 flex justify-end">
-            <button
-                onClick={onClose}
-                className="w-full sm:w-auto px-6 py-2.5 text-sm font-bold text-white bg-cyan-600 rounded-xl hover:bg-cyan-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 shadow-lg shadow-cyan-500/20"
-            >
-                Fermer
-            </button>
+            <button onClick={onClose} className="w-full sm:w-auto px-6 py-2.5 text-sm font-bold text-white bg-cyan-600 rounded-xl hover:bg-cyan-700 shadow-lg shadow-cyan-500/20">Fermer</button>
         </div>
       </div>
     </div>,

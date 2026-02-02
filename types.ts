@@ -61,6 +61,7 @@ export interface MoneyPotTransaction {
 export type Activity = {
     id: string; // unique id for the activity
     type: 'add' | 'update' | 'delete';
+    performedBy: User; // The logged-in user who did the action
     expense: Partial<Expense> & { id: string, user: User, date: string };
     oldExpense?: Partial<Expense>; // Used to show diff on updates
     timestamp: string;

@@ -17,15 +17,11 @@ const CodeBlock: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 const SupabaseInstructionsModal: React.FC<SupabaseInstructionsModalProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (!isOpen) return;
-    const handleEsc = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    document.body.style.overflow = 'hidden';
+    const handleEsc = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handleEsc);
-    return () => {
-      window.removeEventListener('keydown', handleEsc);
-    };
+    return () => { document.body.style.overflow = 'auto'; window.removeEventListener('keydown', handleEsc); };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -64,29 +60,38 @@ BEGIN
 END $migration_add_subtracted_items$;
 
 -- 5. NOUVEAU : Créer la table pour l'historique des modifications (activités)
+-- On inclut explicitement 'performedBy' pour tracer qui a fait l'action.
 CREATE TABLE IF NOT EXISTS public.activities (
   id uuid default gen_random_uuid() primary key,
   type text not null,
   expense jsonb not null,
-  "oldExpense" jsonb, -- Notez les guillemets à cause de la majuscule (camelCase)
+  "oldExpense" jsonb,
+  "performedBy" text, -- Nouveau champ pour l'auteur (Sophie ou Vincent)
   "timestamp" timestamptz default now() not null
 );
 
--- 6. Activer la sécurité au niveau des lignes (RLS) pour toutes les tables
+-- MIGRATION : Ajouter performedBy si la table existe déjà sans lui
+DO $migration_add_performed_by$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='activities' AND column_name='performedBy') THEN
+    ALTER TABLE public.activities ADD COLUMN "performedBy" text;
+  END IF;
+END $migration_add_performed_by$;
+
+-- 6. Activer la sécurité (RLS)
 alter table public.expenses enable row level security;
 alter table public.reminders enable row level security;
 alter table public.login_logs enable row level security;
 alter table public.money_pot enable row level security;
 alter table public.activities enable row level security;
 
--- 7. Supprimer les anciennes règles pour éviter les conflits
+-- 7. Créer les règles d'accès public (Anonyme)
 DROP POLICY IF EXISTS "Allow all access" ON public.expenses;
 DROP POLICY IF EXISTS "Allow all access" ON public.reminders;
 DROP POLICY IF EXISTS "Allow all access" ON public.login_logs;
 DROP POLICY IF EXISTS "Allow all access" ON public.money_pot;
 DROP POLICY IF EXISTS "Allow all access" ON public.activities;
 
--- 8. Créer les nouvelles règles qui autorisent l'accès
 CREATE POLICY "Allow all access" ON public.expenses FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access" ON public.reminders FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access" ON public.login_logs FOR ALL TO anon USING (true) WITH CHECK (true);
@@ -95,63 +100,20 @@ CREATE POLICY "Allow all access" ON public.activities FOR ALL TO anon USING (tru
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center" aria-modal="true" role="dialog">
-      <div 
-        className="fixed inset-0"
-        onClick={onClose}
-        aria-hidden="true"
-      ></div>
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl z-50 w-full max-w-2xl m-4 animate-slide-in-up max-h-[90vh] overflow-y-auto">
+      <div className="fixed inset-0" onClick={onClose}></div>
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl z-50 w-full max-w-2xl m-4 animate-fade-in-up max-h-[90vh] overflow-y-auto">
         <div className="flex items-start mb-4">
-            <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-cyan-100 dark:bg-cyan-800/20 sm:mx-0 sm:h-10 sm:w-10">
-                <div className="text-cyan-600 dark:text-cyan-400">
-                    <WarningIcon />
-                </div>
-            </div>
-            <div className="ml-4 flex-1">
-                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Mise à Jour de la Base de Données</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    Exécutez ce script pour activer l'historique partagé des modifications.
-                </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 -mr-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-              aria-label="Fermer"
-            >
-              <CloseIcon />
-            </button>
+            <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-cyan-100 dark:bg-cyan-800/20"><div className="text-cyan-600 dark:text-cyan-400"><WarningIcon /></div></div>
+            <div className="ml-4 flex-1"><h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Action Requise : Base de Données</h2><p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Copiez et exécutez ce script dans l'éditeur SQL de Supabase pour activer le traçage précis des modifications.</p></div>
+            <button onClick={onClose} className="p-2 rounded-full text-slate-500 hover:bg-slate-100 transition-colors"><CloseIcon /></button>
         </div>
-        
-        <div className="space-y-6 text-slate-600 dark:text-slate-300">
-            <div>
-                <h3 className="font-bold text-lg text-slate-700 dark:text-slate-200 mb-2">Étape 1 : Activer la diffusion (Realtime)</h3>
-                <ol className="list-decimal list-inside space-y-1 text-sm">
-                    <li>Dans Supabase, allez dans <strong>Database → Replication</strong>.</li>
-                    <li>Cherchez la section <strong>Source</strong> et cliquez sur le lien (ex: "1 table").</li>
-                    <li>Cochez la nouvelle table <strong>activities</strong> pour activer la diffusion en temps réel.</li>
-                    <li>Cliquez sur <strong>Save</strong>.</li>
-                </ol>
-            </div>
-
-            <div>
-                <h3 className="font-bold text-lg text-slate-700 dark:text-slate-200 mb-2">Étape 2 : Mettre à jour les tables</h3>
-                 <ol className="list-decimal list-inside space-y-1 mb-2 text-sm">
-                    <li>Allez dans le <strong>SQL Editor</strong>.</li>
-                    <li>Cliquez sur <strong>+ New query</strong>.</li>
-                    <li>Copiez-collez le script ci-dessous et cliquez sur <strong>RUN</strong>.</li>
-                </ol>
-                <CodeBlock>{sqlScript}</CodeBlock>
-            </div>
+        <div className="space-y-4 text-slate-600 dark:text-slate-300">
+            <CodeBlock>{sqlScript}</CodeBlock>
+            <p className="text-xs bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-100 dark:border-amber-800/30 text-amber-800 dark:text-amber-200 font-medium">
+                Note : Si la table existait déjà, le script ajoutera la colonne "performedBy" automatiquement.
+            </p>
         </div>
-        
-        <div className="flex justify-end mt-6">
-            <button
-                onClick={onClose}
-                className="px-6 py-2 text-sm font-medium text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800"
-            >
-                Terminé
-            </button>
-        </div>
+        <div className="flex justify-end mt-6"><button onClick={onClose} className="px-6 py-2 text-sm font-medium text-white bg-cyan-600 rounded-lg hover:bg-cyan-700">C'est fait</button></div>
       </div>
     </div>
   );

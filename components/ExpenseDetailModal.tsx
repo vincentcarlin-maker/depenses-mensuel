@@ -14,7 +14,6 @@ import {
     MiscIcon,
     GiftIcon,
     ClothingIcon,
-    BirthdayIcon
 } from './icons/CategoryIcons';
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; textColor: string } } = {
@@ -37,265 +36,109 @@ interface ExpenseDetailModalProps {
 }
 
 const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, history = [], onClose, onEdit }) => {
-  
   useEffect(() => {
-    const handleEsc = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
+    const handleEsc = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handleEsc);
-    return () => {
-      window.removeEventListener('keydown', handleEsc);
-    };
+    return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
   const visual = CategoryVisuals[expense.category] || CategoryVisuals["Divers"];
   const IconComponent = visual.icon;
-  
   const hasSubtractions = expense.category === 'Courses' && expense.subtracted_items && expense.subtracted_items.length > 0;
   
   const { receiptTotal, totalSubtracted } = useMemo(() => {
       if (!hasSubtractions) return { receiptTotal: 0, totalSubtracted: 0 };
       const totalSub = expense.subtracted_items!.reduce((sum, item) => sum + item.amount, 0);
-      return {
-          receiptTotal: expense.amount + totalSub,
-          totalSubtracted: totalSub,
-      };
+      return { receiptTotal: expense.amount + totalSub, totalSubtracted: totalSub };
   }, [expense, hasSubtractions]);
 
   const parsedDetails = useMemo(() => {
-      let displayDescription = expense.description;
-      let store = '';
-      let person = '';
-      let occasion = '';
-      let vehicle = '';
-      let heating = '';
-
-      if (expense.category === 'Courses') {
-          store = expense.description;
-          displayDescription = ''; 
-      } else if (expense.category === 'Chauffage') {
-          const typeRegex = /\s\(([^)]+)\)$/;
-          const match = expense.description.match(typeRegex);
-          if (match) {
-              heating = match[1];
-              displayDescription = '';
-          }
-      } else if (expense.category === 'Réparation voitures') {
-          const carRegex = /\s\(([^)]+)\)$/;
-          const match = expense.description.match(carRegex);
-          if (match) {
-              vehicle = match[1];
-              displayDescription = expense.description.replace(carRegex, '').trim();
-          }
-      } else if (expense.category === 'Vêtements') {
-          const personRegex = /\s\(([^)]+)\)$/;
-          const match = expense.description.match(personRegex);
-          if (match) {
-              person = match[1];
-              displayDescription = expense.description.replace(personRegex, '').trim();
-          }
-      } else if (expense.category === 'Cadeau') {
-          const detailsRegex = /\s\(([^)]+)\s-\s([^)]+)\)$/;
-          const match = expense.description.match(detailsRegex);
-          if (match) {
-              person = match[1];
-              occasion = match[2];
-              displayDescription = expense.description.replace(detailsRegex, '').trim();
-          }
-      }
-
+      let displayDescription = expense.description, store = '', person = '', occasion = '', vehicle = '', heating = '';
+      if (expense.category === 'Courses') { store = expense.description; displayDescription = ''; }
+      else if (expense.category === 'Chauffage') { const match = expense.description.match(/\s\(([^)]+)\)$/); if (match) { heating = match[1]; displayDescription = ''; } }
+      else if (expense.category === 'Réparation voitures') { const match = expense.description.match(/\s\(([^)]+)\)$/); if (match) { vehicle = match[1]; displayDescription = expense.description.replace(/\s\(([^)]+)\)$/, '').trim(); } }
+      else if (expense.category === 'Vêtements') { const match = expense.description.match(/\s\(([^)]+)\)$/); if (match) { person = match[1]; displayDescription = expense.description.replace(/\s\(([^)]+)\)$/, '').trim(); } }
+      else if (expense.category === 'Cadeau') { const match = expense.description.match(/\s\(([^)]+)\s-\s([^)]+)\)$/); if (match) { person = match[1]; occasion = match[2]; displayDescription = expense.description.replace(/\s\(([^)]+)\s-\s([^)]+)\)$/, '').trim(); } }
       return { displayDescription, store, person, occasion, vehicle, heating };
   }, [expense]);
 
-  const formattedDate = new Date(expense.date).toLocaleString('fr-FR', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-  });
-
-  const { showCreatedDate, formattedCreatedDate } = useMemo(() => {
-      if (!expense.created_at) return { showCreatedDate: false, formattedCreatedDate: '' };
-      
-      const createdDate = new Date(expense.created_at);
-      const expenseDate = new Date(expense.date);
-      
-      const timeDiff = Math.abs(createdDate.getTime() - expenseDate.getTime());
-      const show = timeDiff > 60000;
-
-      const formatted = createdDate.toLocaleString('fr-FR', {
-          day: 'numeric',
-          month: 'short',
-          hour: '2-digit',
-          minute: '2-digit'
-      });
-
-      return { showCreatedDate: show, formattedCreatedDate: formatted };
-  }, [expense.date, expense.created_at]);
-
-  let userColorClass = 'bg-slate-500';
-  if (expense.user === User.Sophie) userColorClass = 'bg-pink-500';
-  else if (expense.user === User.Vincent) userColorClass = 'bg-sky-500';
-  else if (expense.user === User.Commun) userColorClass = 'bg-emerald-500';
-
-  const isRefund = expense.amount < 0;
+  const formattedDate = new Date(expense.date).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
   const renderDiffLine = (label: string, oldVal: any, newVal: any, isCurrency = false) => {
       if (oldVal === newVal || oldVal === undefined) return null;
-
       const formatVal = (val: any) => {
           if (val === undefined || val === null) return "Inconnu";
           if (isCurrency && typeof val === 'number') return val.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
           return String(val);
       };
-
       return (
-          <div className="flex flex-col text-sm mt-2 bg-slate-100 dark:bg-slate-700/50 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
-             <span className="text-xs uppercase text-slate-500 dark:text-slate-400 font-bold mb-2">{label}</span>
-             <div className="grid grid-cols-[min-content_1fr] gap-x-3 gap-y-1">
-                 <span className="text-[10px] uppercase text-rose-500 font-bold tracking-wider self-center bg-rose-50 dark:bg-rose-900/20 px-1.5 py-0.5 rounded">AVANT</span>
-                 <span className="text-slate-500 dark:text-slate-400 line-through text-xs self-center break-all">
-                     {formatVal(oldVal)}
-                 </span>
-                 
-                 <span className="text-[10px] uppercase text-emerald-600 dark:text-emerald-400 font-bold tracking-wider self-center bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">APRÈS</span>
-                 <span className="font-bold text-slate-800 dark:text-slate-100 text-sm self-center break-all">
-                     {formatVal(newVal)}
-                 </span>
+          <div className="flex flex-col text-[11px] mt-2 bg-slate-100 dark:bg-slate-700/50 p-2 rounded-lg border border-slate-200 dark:border-slate-600">
+             <span className="text-[9px] uppercase text-slate-500 dark:text-slate-400 font-bold mb-1">{label}</span>
+             <div className="grid grid-cols-[min-content_1fr] gap-x-2 gap-y-0.5">
+                 <span className="text-[8px] uppercase text-rose-500 font-bold self-center bg-rose-50 dark:bg-rose-900/20 px-1 py-0.5 rounded">AVANT</span>
+                 <span className="text-slate-500 dark:text-slate-400 line-through self-center break-all">{formatVal(oldVal)}</span>
+                 <span className="text-[8px] uppercase text-emerald-600 dark:text-emerald-400 font-bold self-center bg-emerald-50 dark:bg-emerald-900/20 px-1 py-0.5 rounded">APRÈS</span>
+                 <span className="font-bold text-slate-800 dark:text-slate-100 self-center break-all">{formatVal(newVal)}</span>
              </div>
           </div>
       );
   };
 
+  const getUserColor = (u: User) => u === User.Sophie ? 'text-pink-600' : (u === User.Vincent ? 'text-sky-600' : 'text-emerald-600');
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 backdrop-blur-sm z-[60] flex justify-center items-center" aria-modal="true" role="dialog">
-      <div 
-        className="fixed inset-0"
-        onClick={onClose}
-        aria-hidden="true"
-      ></div>
-      
+    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 backdrop-blur-sm z-[60] flex justify-center items-center">
+      <div className="fixed inset-0" onClick={onClose}></div>
       <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-2xl z-[60] w-full max-w-md m-4 animate-fade-in relative overflow-hidden flex flex-col max-h-[90vh]">
          <div className={`absolute top-0 left-0 w-full h-24 ${visual.color} opacity-50`}></div>
-         
          <div className="relative flex flex-col items-center text-center pt-4 overflow-y-auto">
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg bg-white dark:bg-slate-700 mb-4 flex-shrink-0`}>
-                <IconComponent className={`h-8 w-8 ${visual.textColor}`} />
-            </div>
-            
-            <h2 className={`text-3xl font-extrabold mb-1 ${isRefund ? 'text-green-600 dark:text-green-400' : 'text-slate-800 dark:text-slate-100'}`}>
-                {Math.abs(expense.amount).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-            </h2>
-             <p className={`text-xs font-semibold uppercase tracking-wider mb-6 ${isRefund ? 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded' : 'text-slate-400 dark:text-slate-500'}`}>
-                {isRefund ? 'Remboursement' : (hasSubtractions ? 'Dépense commune' : 'Dépense')}
-            </p>
-
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg bg-white dark:bg-slate-700 mb-4 flex-shrink-0`}><IconComponent className={`h-8 w-8 ${visual.textColor}`} /></div>
+            <h2 className={`text-3xl font-extrabold mb-1 ${expense.amount < 0 ? 'text-green-600' : 'text-slate-800 dark:text-slate-100'}`}>{Math.abs(expense.amount).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</h2>
+             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-6">{expense.amount < 0 ? 'Remboursement' : 'Dépense'}</p>
             <div className="w-full space-y-4 text-left">
                 <div className="flex justify-between items-start border-b border-slate-100 dark:border-slate-700 pb-3">
-                    <div><p className="text-xs text-slate-400 dark:text-slate-500 uppercase">Catégorie</p><p className="font-medium text-slate-700 dark:text-slate-200">{expense.category}</p></div>
-                    <div className="text-right">
-                        <p className="text-xs text-slate-400 dark:text-slate-500 uppercase">Date</p>
-                        <p className="font-medium text-slate-700 dark:text-slate-200 text-sm capitalize">{formattedDate}</p>
-                        {showCreatedDate && (
-                            <p className="text-[10px] text-slate-400 dark:text-slate-500 italic mt-0.5">(Saisie le {formattedCreatedDate})</p>
-                        )}
-                    </div>
+                    <div><p className="text-xs text-slate-400 uppercase">Catégorie</p><p className="font-medium text-slate-700 dark:text-slate-200">{expense.category}</p></div>
+                    <div className="text-right"><p className="text-xs text-slate-400 uppercase">Date</p><p className="font-medium text-slate-700 dark:text-slate-200 text-sm capitalize">{formattedDate}</p></div>
                 </div>
-
                 <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-                     <div className={`w-10 h-10 rounded-full ${userColorClass} flex items-center justify-center text-white font-bold shadow-sm`}>{expense.user.charAt(0)}</div>
-                     <div><p className="text-xs text-slate-400 dark:text-slate-500 uppercase">Payé par</p><p className="font-bold text-slate-800 dark:text-slate-100">{expense.user}</p></div>
+                     <div className={`w-10 h-10 rounded-full ${expense.user === User.Sophie ? 'bg-pink-500' : (expense.user === User.Vincent ? 'bg-sky-500' : 'bg-emerald-500')} flex items-center justify-center text-white font-bold shadow-sm`}>{expense.user.charAt(0)}</div>
+                     <div><p className="text-xs text-slate-400 uppercase">Payé par</p><p className="font-bold text-slate-800 dark:text-slate-100">{expense.user}</p></div>
                 </div>
-
                 <div className="space-y-3">
-                    {parsedDetails.displayDescription && (<div><p className="text-xs text-slate-400 dark:text-slate-500 uppercase">Description</p><p className="font-medium text-slate-800 dark:text-slate-100 text-lg">{parsedDetails.displayDescription}</p></div>)}
-                    {parsedDetails.store && !hasSubtractions && (<div><p className="text-xs text-slate-400 dark:text-slate-500 uppercase">Magasin</p><p className="font-medium text-slate-800 dark:text-slate-100 text-lg">{parsedDetails.store}</p></div>)}
-                    {(parsedDetails.person || parsedDetails.occasion) && (<div className="flex gap-4">{parsedDetails.person && (<div><p className="text-xs text-slate-400 dark:text-slate-500 uppercase">Pour</p><p className="font-medium text-slate-800 dark:text-slate-100">{parsedDetails.person}</p></div>)}{parsedDetails.occasion && (<div><p className="text-xs text-slate-400 dark:text-slate-500 uppercase">Occasion</p><p className="font-medium text-slate-800 dark:text-slate-100">{parsedDetails.occasion}</p></div>)}</div>)}
-                    {parsedDetails.vehicle && (<div><p className="text-xs text-slate-400 dark:text-slate-500 uppercase">Véhicule</p><p className="font-medium text-slate-800 dark:text-slate-100">{parsedDetails.vehicle}</p></div>)}
-                    {parsedDetails.heating && (<div><p className="text-xs text-slate-400 dark:text-slate-500 uppercase">Type</p><p className="font-medium text-slate-800 dark:text-slate-100">{parsedDetails.heating}</p></div>)}
+                    {parsedDetails.displayDescription && (<div><p className="text-xs text-slate-400 uppercase">Description</p><p className="font-medium text-slate-800 dark:text-slate-100 text-lg">{parsedDetails.displayDescription}</p></div>)}
+                    {parsedDetails.store && !hasSubtractions && (<div><p className="text-xs text-slate-400 uppercase">Magasin</p><p className="font-medium text-slate-800 dark:text-slate-100 text-lg">{parsedDetails.store}</p></div>)}
                 </div>
-                
-                {hasSubtractions && (
-                    <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-700 space-y-3">
-                        <div>
-                            <p className="text-xs text-slate-400 dark:text-slate-500 uppercase">Montant du ticket</p>
-                            <p className="font-semibold text-slate-700 dark:text-slate-200 text-lg">{receiptTotal.toLocaleString('fr-FR', {style:'currency', currency: 'EUR'})}</p>
-                        </div>
-                        <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 pt-2 border-t border-slate-200 dark:border-slate-600">
-                           <ScissorsIcon /><h4 className="font-semibold text-sm">Articles déduits ({totalSubtracted.toLocaleString('fr-FR', {style:'currency', currency: 'EUR'})})</h4>
-                        </div>
-                         <div className="space-y-2 max-h-24 overflow-y-auto pr-2 text-sm">
-                            {expense.subtracted_items!.map((item, index) => (
-                                <div key={index} className="flex justify-between items-center">
-                                    <span className="text-slate-600 dark:text-slate-300">{item.description}</span>
-                                    <span className="font-medium text-slate-700 dark:text-slate-200">{item.amount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})}</span>
+                {history.length > 0 && (
+                    <div className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-4">
+                        <h3 className="text-[10px] font-bold uppercase text-slate-500 mb-3 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>Historique</h3>
+                        <div className="space-y-3">
+                            {history.map(act => (
+                                <div key={act.id} className="bg-slate-50 dark:bg-slate-700/30 p-2.5 rounded-xl text-xs">
+                                    <div className="flex justify-between items-center mb-1">
+                                         <span className="font-bold">
+                                            <span className={getUserColor(act.performedBy)}>{act.performedBy}</span>
+                                            <span className="text-slate-400 font-normal"> a {act.type === 'add' ? 'ajouté' : 'modifié'}</span>
+                                         </span>
+                                         <span className="text-[10px] text-slate-400">{new Date(act.timestamp).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                                    </div>
+                                    {act.type === 'update' && (
+                                        <div className="space-y-1">
+                                            {renderDiffLine('Description', act.oldExpense?.description, act.expense.description)}
+                                            {renderDiffLine("Montant", act.oldExpense?.amount, act.expense.amount, true)}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
                     </div>
                 )}
-
-
-                {history.length > 0 && (
-                    <div className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-4">
-                        <h3 className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-2">
-                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                             Historique des modifications
-                        </h3>
-                        <div className="space-y-4">
-                            {history.map(act => {
-                                if (act.type === 'add') {
-                                    return (
-                                        <div key={act.id} className="bg-emerald-50 dark:bg-emerald-900/10 p-3 rounded-xl text-sm border border-emerald-100 dark:border-emerald-800/30">
-                                            <div className="flex justify-between items-center">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs">
-                                                        ✨
-                                                    </div>
-                                                    <div>
-                                                        <span className="font-bold text-slate-700 dark:text-slate-200">Dépense créée</span>
-                                                        <div className="text-xs text-slate-500 dark:text-slate-400">
-                                                            par <span className={act.expense.user === User.Sophie ? 'text-pink-600 font-semibold' : (act.expense.user === User.Vincent ? 'text-sky-600 font-semibold' : 'text-emerald-600 font-semibold')}>{act.expense.user}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <span className="text-xs text-slate-400">{new Date(act.timestamp).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-                                            </div>
-                                        </div>
-                                    )
-                                }
-                                return (
-                                    <div key={act.id} className="bg-slate-50 dark:bg-slate-700/30 p-3 rounded-xl text-sm">
-                                        <div className="flex justify-between items-start mb-1 pb-2 border-b border-slate-200 dark:border-slate-600">
-                                             <span className={`font-bold ${act.expense.user === User.Sophie ? 'text-pink-600 dark:text-pink-400' : (act.expense.user === User.Vincent ? 'text-sky-600 dark:text-sky-400' : 'text-emerald-600 dark:text-emerald-400')}`}>{act.expense.user}</span>
-                                             <span className="text-xs text-slate-400">{new Date(act.timestamp).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-                                        </div>
-                                        <div className="space-y-1">
-                                            {renderDiffLine(act.expense.category === 'Courses' ? 'Magasin' : 'Description', act.oldExpense?.description, act.expense.description)}
-                                            {renderDiffLine("Montant", act.oldExpense?.amount, act.expense.amount, true)}
-                                            {renderDiffLine("Catégorie", act.oldExpense?.category, act.expense.category)}
-                                            {renderDiffLine("Date", act.oldExpense?.date ? new Date(act.oldExpense.date).toLocaleDateString('fr-FR') : undefined, new Date(act.expense.date!).toLocaleDateString('fr-FR'))}
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </div>
-                )}
             </div>
-
             <div className="flex gap-3 w-full mt-8">
-                <button onClick={onClose} className="flex-1 py-3 px-4 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400">Fermer</button>
-                <button onClick={onEdit} className="flex-1 py-3 px-4 bg-cyan-500 text-white font-bold rounded-xl hover:bg-cyan-600 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/30"><EditIcon /><span>Modifier</span></button>
+                <button onClick={onClose} className="flex-1 py-3 px-4 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl">Fermer</button>
+                <button onClick={onEdit} className="flex-1 py-3 px-4 bg-cyan-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/30"><EditIcon /><span>Modifier</span></button>
             </div>
-
          </div>
-         
-         <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full bg-white/50 dark:bg-black/20 text-slate-500 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-colors"><CloseIcon /></button>
+         <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full bg-white/50 dark:bg-black/20 text-slate-500 transition-colors"><CloseIcon /></button>
       </div>
     </div>
   );

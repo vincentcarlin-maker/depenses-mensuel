@@ -113,9 +113,9 @@ const MainApp: React.FC<{
   const { unreadCount, activityItemsForHeader } = useMemo(() => {
     if (!user) return { unreadCount: 0, activityItemsForHeader: [] };
     
-    // Filter activities where the other user did something
+    // Filter activities where the other user (actor) did something
     const otherUserActivities = activities.filter(act => 
-        act.expense.user !== user
+        act.performedBy !== user
     );
     
     const unread = otherUserActivities.filter(act => 
@@ -135,7 +135,6 @@ const MainApp: React.FC<{
 
     // 1. Group activities by expense ID
     const activitiesByExpenseId = activities.reduce((acc, act) => {
-        // On récupère l'ID, soit directement, soit depuis l'objet expense imbriqué
         const expenseId = act.expense?.id;
         if (expenseId) {
             if (!acc[expenseId]) {
@@ -191,9 +190,6 @@ const MainApp: React.FC<{
                 const creationTime = new Date(activity.timestamp).getTime();
                 const expenseTime = new Date(activity.expense.date).getTime();
                 
-                // Si la différence entre la date de la dépense et le moment de la création 
-                // est supérieure à 60 secondes (1 minute), on considère que c'est une modification de date.
-                // Cela permet d'ignorer le léger décalage naturel d'exécution.
                 if (Math.abs(expenseTime - creationTime) > 60000) {
                     accumulatedChanges.add('date');
                 }
@@ -284,8 +280,7 @@ const MainApp: React.FC<{
         setIsLoading(false);
     };
     performInitialSync();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [syncData]);
 
   // Presence Effect
   useEffect(() => {
@@ -376,28 +371,15 @@ const MainApp: React.FC<{
 
     const handleExpenseDelete = (payload: any) => {
         const deletedPayload = payload.old as Partial<Expense> & { id: string };
-        if (!deletedPayload?.id) {
-            console.warn('Real-time: Received DELETE event without an ID.');
-            return;
-        }
+        if (!deletedPayload?.id) return;
 
-        if (recentlyDeletedIds.current.has(deletedPayload.id)) {
-            return;
-        }
+        if (recentlyDeletedIds.current.has(deletedPayload.id)) return;
 
         setExpenses(prevExpenses => {
             const expenseToDelete = prevExpenses.find(e => e.id === deletedPayload.id);
+            if (!expenseToDelete) return prevExpenses.filter(expense => expense.id !== deletedPayload.id);
 
-            if (!expenseToDelete) {
-                return prevExpenses.filter(expense => expense.id !== deletedPayload.id);
-            }
-
-            const desc = expenseToDelete.description || 'une dépense';
-            setToastInfo({
-                message: `Dépense "${desc}" supprimée.`,
-                type: 'info'
-            });
-
+            setToastInfo({ message: `Dépense "${expenseToDelete.description}" supprimée.`, type: 'info' });
             return prevExpenses.filter(expense => expense.id !== deletedPayload.id);
         });
     };
@@ -427,7 +409,6 @@ const MainApp: React.FC<{
         if (payload.eventType === 'INSERT') {
             const newTransaction = payload.new as MoneyPotTransaction;
             setMoneyPotTransactions(prev => {
-                // Prevent duplicate if we added it optimistically
                 if (prev.some(t => t.id === newTransaction.id)) return prev;
                 return [newTransaction, ...prev];
             });
@@ -445,21 +426,14 @@ const MainApp: React.FC<{
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reminders' }, handleReminderChange)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'money_pot' }, handleMoneyPotChange)
       .subscribe((status, err) => {
-        switch (status) {
-          case 'SUBSCRIBED':
+        if (status === 'SUBSCRIBED') {
             setRealtimeStatus('SUBSCRIBED');
-            console.log('Real-time channel connected. Syncing data...');
             syncData();
-            break;
-          case 'CHANNEL_ERROR':
+        } else if (status === 'CHANNEL_ERROR') {
             setRealtimeStatus('CHANNEL_ERROR');
-            console.error('Real-time channel error:', err);
-            break;
-          case 'TIMED_OUT':
+        } else if (status === 'TIMED_OUT') {
             setRealtimeStatus('CONNECTING');
-            console.warn('Real-time connection timed out. Attempting to reconnect...');
-            break;
-          default:
+        } else {
             setRealtimeStatus('CONNECTING');
         }
       });
@@ -484,9 +458,8 @@ const MainApp: React.FC<{
     return id;
   }, []);
 
-  // Money Pot Handlers (Moved up to be accessible by expense handlers)
+  // Money Pot Handlers
   const addMoneyPotTransaction = async (transaction: Omit<MoneyPotTransaction, 'id' | 'created_at'>) => {
-      // 1. Generate client-side ID and timestamp for optimistic UI
       const newId = crypto.randomUUID();
       const newTransaction: MoneyPotTransaction = {
           ...transaction,
@@ -494,22 +467,15 @@ const MainApp: React.FC<{
           created_at: new Date().toISOString()
       };
 
-      // 2. Optimistic Update: Show immediately
       setMoneyPotTransactions(prev => [newTransaction, ...prev]);
 
-      // 3. Send to Supabase
-      const { error } = await supabase.from('money_pot').insert({
-          ...transaction,
-          id: newId // Ensure ID matches
-      });
+      const { error } = await supabase.from('money_pot').insert({ ...transaction, id: newId });
 
       if (error) {
           console.error("Error adding money pot transaction", error);
           setToastInfo({ message: "Erreur lors de l'ajout à la cagnotte.", type: "error" });
-          // Rollback on error
           setMoneyPotTransactions(prev => prev.filter(t => t.id !== newId));
       } else {
-         // Silent success for automatic operations to avoid spamming toast
          if (transaction.user_name !== 'Commun') {
              setToastInfo({ message: "Opération enregistrée !", type: "info" });
          }
@@ -517,17 +483,14 @@ const MainApp: React.FC<{
   };
 
   const deleteMoneyPotTransaction = async (id: string) => {
-      // 1. Optimistic Update
       const previousTransactions = [...moneyPotTransactions];
       setMoneyPotTransactions(prev => prev.filter(t => t.id !== id));
 
-      // 2. Send to Supabase
       const { error } = await supabase.from('money_pot').delete().eq('id', id);
       
       if (error) {
           console.error("Error deleting money pot transaction", error);
           setToastInfo({ message: "Erreur lors de la suppression.", type: "error" });
-          // Rollback
           setMoneyPotTransactions(previousTransactions);
       } else {
           setToastInfo({ message: "Opération supprimée.", type: "info" });
@@ -538,25 +501,14 @@ const MainApp: React.FC<{
     const newId = crypto.randomUUID();
     
     recentlyAddedIds.current.add(newId);
-    setTimeout(() => {
-        recentlyAddedIds.current.delete(newId);
-    }, 5000);
+    setTimeout(() => recentlyAddedIds.current.delete(newId), 5000);
 
-    const expenseData = {
-        ...expense,
-        id: newId,
-    };
-
-    const optimisticExpense: Expense = {
-        ...expenseData,
-        created_at: new Date().toISOString(),
-    };
+    const expenseData = { ...expense, id: newId };
+    const optimisticExpense: Expense = { ...expenseData, created_at: new Date().toISOString() };
     setExpenses(prev => [optimisticExpense, ...prev]);
     highlightExpense(newId);
 
-    // --- AUTOMATIC MONEY POT DEDUCTION ---
     if (expense.user === User.Commun) {
-        // Negative amount = Withdrawal from pot
         const withdrawalAmount = -Math.abs(expense.amount);
         addMoneyPotTransaction({
             amount: withdrawalAmount,
@@ -565,13 +517,8 @@ const MainApp: React.FC<{
             date: expenseData.date
         });
     }
-    // -------------------------------------
 
-    const { data, error } = await supabase
-      .from('expenses')
-      .insert(expenseData)
-      .select()
-      .single();
+    const { data, error } = await supabase.from('expenses').insert(expenseData).select().single();
       
     if (error) {
       console.error('Error adding expense:', error.message || error);
@@ -580,7 +527,7 @@ const MainApp: React.FC<{
     } else {
       setFormInitialData(null);
       setToastInfo({ message: 'Dépense ajoutée avec succès !', type: 'info' });
-      await logActivity({ type: 'add', expense: data as Expense });
+      await logActivity({ type: 'add', expense: data as Expense, performedBy: user });
     }
   };
   
@@ -615,11 +562,9 @@ const MainApp: React.FC<{
 
     if (undoableAction?.timerId) clearTimeout(undoableAction.timerId);
 
-    const activityId = await logActivity({ type: 'delete', expense: expenseToDelete });
+    const activityId = await logActivity({ type: 'delete', expense: expenseToDelete, performedBy: user });
 
-    // --- AUTOMATIC MONEY POT REFUND ---
     if (expenseToDelete.user === User.Commun) {
-         // Positive amount = Refund to pot
          addMoneyPotTransaction({
             amount: Math.abs(expenseToDelete.amount),
             description: `Annulation : ${expenseToDelete.description}`,
@@ -627,7 +572,6 @@ const MainApp: React.FC<{
             date: new Date().toISOString()
         });
     }
-    // ----------------------------------
 
     setExpenses(prev => prev.filter(e => e.id !== id));
 
@@ -645,10 +589,13 @@ const MainApp: React.FC<{
 
     if (undoableAction?.timerId) clearTimeout(undoableAction.timerId);
 
-    const activityId = await logActivity({ type: 'update', expense: updatedExpense, oldExpense: originalExpense });
+    const activityId = await logActivity({ 
+        type: 'update', 
+        expense: updatedExpense, 
+        oldExpense: originalExpense,
+        performedBy: user 
+    });
 
-    // --- AUTOMATIC MONEY POT ADJUSTMENT ---
-    // Case 1: Changed TO Commun (from someone else) -> Deduct
     if (originalExpense.user !== User.Commun && updatedExpense.user === User.Commun) {
             addMoneyPotTransaction({
             amount: -Math.abs(updatedExpense.amount),
@@ -657,7 +604,6 @@ const MainApp: React.FC<{
             date: new Date().toISOString()
             });
     }
-    // Case 2: Changed FROM Commun (to someone else) -> Refund
     else if (originalExpense.user === User.Commun && updatedExpense.user !== User.Commun) {
             addMoneyPotTransaction({
             amount: Math.abs(originalExpense.amount),
@@ -666,10 +612,7 @@ const MainApp: React.FC<{
             date: new Date().toISOString()
             });
     }
-    // Case 3: Both Commun, amount changed -> Adjust (Refund old, deduct new via difference)
     else if (originalExpense.user === User.Commun && updatedExpense.user === User.Commun && Math.abs(originalExpense.amount - updatedExpense.amount) > 0.01) {
-        // Example: Old 50, New 60. Diff = -10. We need to take 10 more.
-        // Example: Old 50, New 40. Diff = 10. We need to give back 10.
         const diff = originalExpense.amount - updatedExpense.amount;
         addMoneyPotTransaction({
             amount: diff,
@@ -678,7 +621,6 @@ const MainApp: React.FC<{
             date: new Date().toISOString()
             });
     }
-    // --------------------------------------
 
     setExpenses(prev => prev.map(e => e.id === updatedExpense.id ? updatedExpense : e));
     setExpenseToEdit(null);
@@ -694,23 +636,11 @@ const MainApp: React.FC<{
 
   const addReminder = async (reminder: Omit<any, 'id' | 'created_at'>) => {
     const newId = crypto.randomUUID();
-    const reminderData = {
-        ...reminder,
-        id: newId,
-    };
-
-    const optimisticReminder: any = {
-        ...reminderData,
-        created_at: new Date().toISOString(),
-    };
+    const reminderData = { ...reminder, id: newId };
+    const optimisticReminder: any = { ...reminderData, created_at: new Date().toISOString() };
     setReminders(prev => [...prev, optimisticReminder].sort((a,b) => a.day_of_month - b.day_of_month));
 
-    const { error } = await supabase
-        .from('reminders')
-        .insert(reminderData)
-        .select()
-        .single();
-    
+    const { error } = await supabase.from('reminders').insert(reminderData).select().single();
     if (error) {
         console.error('Error adding reminder:', error.message || error);
         setToastInfo({ message: "Erreur lors de l'ajout du rappel.", type: 'error' });
@@ -754,19 +684,10 @@ const MainApp: React.FC<{
       return expenseDate.getUTCFullYear() === currentYear && expenseDate.getUTCMonth() === currentMonth;
     });
 
-    const sophieTotal = filtered
-      .filter(e => e.user === User.Sophie)
-      .reduce((sum, e) => sum + e.amount, 0);
-      
-    const vincentTotal = filtered
-      .filter(e => e.user === User.Vincent)
-      .reduce((sum, e) => sum + e.amount, 0);
+    const sophieTotal = filtered.filter(e => e.user === User.Sophie).reduce((sum, e) => sum + e.amount, 0);
+    const vincentTotal = filtered.filter(e => e.user === User.Vincent).reduce((sum, e) => sum + e.amount, 0);
 
-    return {
-      filteredExpenses: filtered,
-      sophieTotalMonth: sophieTotal,
-      vincentTotalMonth: vincentTotal
-    };
+    return { filteredExpenses: filtered, sophieTotalMonth: sophieTotal, vincentTotalMonth: vincentTotal };
   }, [expenses, currentMonth, currentYear]);
 
   const previousMonthExpenses = useMemo(() => {
@@ -777,13 +698,11 @@ const MainApp: React.FC<{
     
     return expenses.filter(expense => {
       const expenseDate = new Date(expense.date);
-      // IGNORED: October 2025 (Initial data) from trends
       if (expenseDate.getUTCFullYear() === 2025 && expenseDate.getUTCMonth() === 9) return false;
       return expenseDate.getUTCFullYear() === prevYear && expenseDate.getUTCMonth() === prevMonth;
     });
   }, [expenses, currentDate]);
 
-  // NEW: Same month of previous year for detailed trend comparison
   const previousYearMonthExpenses = useMemo(() => {
     const prevYear = currentYear - 1;
     return expenses.filter(expense => {
@@ -799,18 +718,15 @@ const MainApp: React.FC<{
     
     return expenses.filter(expense => {
       const expenseDate = new Date(expense.date);
-      // IGNORED: October 2025 (Initial data) from trends
       if (expenseDate.getUTCFullYear() === 2025 && expenseDate.getUTCMonth() === 9) return false;
       const expenseTime = expenseDate.getTime();
       return expenseTime >= threeMonthsAgo.getTime() && expenseTime < oneMonthAgo.getTime();
     });
   }, [expenses, currentDate]);
 
-  // Filtered expenses for the Analysis tab
   const analysisExpenses = useMemo(() => {
      return filteredExpenses.filter(expense => {
         const d = new Date(expense.date);
-        // Exclude Oct 2025
         return !(d.getUTCFullYear() === 2025 && d.getUTCMonth() === 9);
      });
   }, [filteredExpenses]);
@@ -818,7 +734,6 @@ const MainApp: React.FC<{
   const yearlyFilteredExpenses = useMemo(() => {
     return expenses.filter(expense => {
         const d = new Date(expense.date);
-        // IGNORED: October 2025 (Initial data) from yearly summary
         if (d.getUTCFullYear() === 2025 && d.getUTCMonth() === 9) return false;
         return d.getUTCFullYear() === currentYear;
     });
@@ -828,16 +743,11 @@ const MainApp: React.FC<{
     return expenses.filter(expense => new Date(expense.date).getUTCFullYear() === currentYear - 1);
   }, [expenses, currentYear]);
   
-  // Advanced Filter Logic
   const searchedExpenses = useMemo(() => {
     return filteredExpenses.filter(e => {
-        // Text Match
         const matchesSearch = !searchTerm || e.description.toLowerCase().includes(searchTerm.toLowerCase());
-        // User Match
         const matchesUser = filterUser === 'All' || e.user === filterUser;
-        // Category Match
         const matchesCategory = filterCategory === 'All' || e.category === filterCategory;
-
         return matchesSearch && matchesUser && matchesCategory;
     });
   }, [filteredExpenses, searchTerm, filterUser, filterCategory]);
@@ -845,64 +755,38 @@ const MainApp: React.FC<{
   const handleDateNavigation = (direction: 'next' | 'prev') => {
       setCurrentDate(prevDate => {
           const newDate = new Date(prevDate);
-          
-          if (activeTab === 'yearly') {
-              // Navigate by YEAR
-              newDate.setUTCFullYear(newDate.getUTCFullYear() + (direction === 'next' ? 1 : -1));
-          } else {
-              // Navigate by MONTH
-              newDate.setUTCMonth(newDate.getUTCMonth() + (direction === 'next' ? 1 : -1));
-          }
+          if (activeTab === 'yearly') newDate.setUTCFullYear(newDate.getUTCFullYear() + (direction === 'next' ? 1 : -1));
+          else newDate.setUTCMonth(newDate.getUTCMonth() + (direction === 'next' ? 1 : -1));
           
           const limit = new Date('2023-10-01T00:00:00Z');
-          if (newDate < limit) {
-              return prevDate;
-          }
-          return newDate;
+          return newDate < limit ? prevDate : newDate;
       });
   };
   
   const handleDateSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.value) return;
-        
+        const limit = new Date('2023-10-01T00:00:00Z');
         if (activeTab === 'yearly') {
             const year = parseInt(e.target.value, 10);
             const newDate = new Date(currentDate);
             newDate.setUTCFullYear(year);
-            const limit = new Date('2023-10-01T00:00:00Z');
             setCurrentDate(newDate < limit ? limit : newDate);
         } else {
             const [year, month] = e.target.value.split('-').map(Number);
             const newDate = new Date(Date.UTC(year, month - 1, 1));
-            const limit = new Date('2023-10-01T00:00:00Z');
             setCurrentDate(newDate < limit ? limit : newDate);
         }
   };
 
   const isPrevDisabled = useMemo(() => {
       const newDate = new Date(currentDate);
-      if (activeTab === 'yearly') {
-        newDate.setUTCFullYear(newDate.getUTCFullYear() - 1);
-      } else {
-        newDate.setUTCMonth(newDate.getUTCMonth() - 1);
-      }
-      const limit = new Date('2023-10-01T00:00:00Z');
-      return newDate < limit;
+      if (activeTab === 'yearly') newDate.setUTCFullYear(newDate.getUTCFullYear() - 1);
+      else newDate.setUTCMonth(newDate.getUTCMonth() - 1);
+      return newDate < new Date('2023-10-01T00:00:00Z');
   }, [currentDate, activeTab]);
 
-  const currentMonthName = useMemo(() => {
-    return currentDate.toLocaleString('fr-FR', {
-      month: 'long',
-      year: 'numeric',
-      timeZone: 'UTC'
-    });
-  }, [currentDate]);
-  
-  const monthInputValue = useMemo(() => {
-        const year = currentDate.getUTCFullYear();
-        const month = (currentDate.getUTCMonth() + 1).toString().padStart(2, '0');
-        return `${year}-${month}`;
-  }, [currentDate]);
+  const currentMonthName = useMemo(() => currentDate.toLocaleString('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' }), [currentDate]);
+  const monthInputValue = useMemo(() => `${currentDate.getUTCFullYear()}-${(currentDate.getUTCMonth() + 1).toString().padStart(2, '0')}`, [currentDate]);
 
   const handleRefresh = async () => {
     if (isRefreshing) return;
@@ -921,58 +805,32 @@ const MainApp: React.FC<{
       category: reminder.category,
       user: reminder.user,
     });
-    const formElement = document.getElementById('expense-form-container');
-    if (formElement) {
-      formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    document.getElementById('expense-form-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const markActivitiesAsRead = () => {
-    setLastBellCheck(new Date().toISOString());
-  };
+  const markActivitiesAsRead = () => setLastBellCheck(new Date().toISOString());
 
   const deleteActivity = useCallback(async (activityId: string) => {
     const { error } = await supabase.from('activities').delete().eq('id', activityId);
-    if (error) {
-        console.error("Failed to delete activity:", error);
-        setToastInfo({ message: "Erreur lors de la suppression de l'activité.", type: 'error' });
-    }
+    if (error) setToastInfo({ message: "Erreur lors de la suppression de l'activité.", type: 'error' });
   }, []);
 
   const handleUndo = useCallback(async () => {
     if (!undoableAction) return;
-
     clearTimeout(undoableAction.timerId);
 
     if (undoableAction.type === 'delete') {
-        // If undoing a delete, we only need to remove the "delete" activity log
-        if (undoableAction.activityId) {
-             const { error } = await supabase.from('activities').delete().eq('id', undoableAction.activityId);
-             if (error) console.error("Could not delete activity log for undone action:", error);
-        }
-        
+        if (undoableAction.activityId) await supabase.from('activities').delete().eq('id', undoableAction.activityId);
         setExpenses(prev => [...prev, undoableAction.expense].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         highlightExpense(undoableAction.expense.id);
-        
         if (undoableAction.expense.user === User.Commun) {
-            addMoneyPotTransaction({
-                amount: -Math.abs(undoableAction.expense.amount),
-                description: `Annulation suppression : ${undoableAction.expense.description}`,
-                user_name: 'Commun',
-                date: new Date().toISOString()
-            });
+            addMoneyPotTransaction({ amount: -Math.abs(undoableAction.expense.amount), description: `Annulation suppression : ${undoableAction.expense.description}`, user_name: 'Commun', date: new Date().toISOString() });
         }
     } else if (undoableAction.type === 'update' && undoableAction.originalExpense) {
-        // If undoing an update, we only need to remove the "update" activity log
-        if (undoableAction.activityId) {
-             const { error } = await supabase.from('activities').delete().eq('id', undoableAction.activityId);
-             if (error) console.error("Could not delete activity log for undone action:", error);
-        }
-
+        if (undoableAction.activityId) await supabase.from('activities').delete().eq('id', undoableAction.activityId);
         setExpenses(prev => prev.map(e => e.id === undoableAction.originalExpense!.id ? undoableAction.originalExpense! : e));
         highlightExpense(undoableAction.originalExpense.id);
     }
-
     setUndoableAction(null);
   }, [undoableAction, highlightExpense]);
 
@@ -997,11 +855,8 @@ const MainApp: React.FC<{
   };
 
   const deleteCategory = (name: string) => {
-    if (categories.length > 1) {
-        setCategories(prev => prev.filter(c => c !== name));
-    } else {
-        setToastInfo({ message: 'Vous devez conserver au moins une catégorie.', type: 'error' });
-    }
+    if (categories.length > 1) setCategories(prev => prev.filter(c => c !== name));
+    else setToastInfo({ message: 'Vous devez conserver au moins une catégorie.', type: 'error' });
   };
 
   const isConnected = realtimeStatus === 'SUBSCRIBED';
@@ -1009,7 +864,6 @@ const MainApp: React.FC<{
   if (isLoading) {
     return (
         <div className="bg-gray-50 dark:bg-slate-900 min-h-screen font-sans transition-colors duration-300">
-             {/* Header Skeleton */}
              <div className="bg-white dark:bg-slate-800/80 shadow-sm h-16 w-full sticky top-0 z-20 flex items-center px-4 md:px-8">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse"></div>
@@ -1017,46 +871,18 @@ const MainApp: React.FC<{
                 </div>
              </div>
              <main className="container mx-auto p-4 md:p-8 space-y-6">
-                {/* Month Nav Skeleton */}
                 <div className="flex justify-between items-center">
                     <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse"></div>
                     <div className="h-8 w-48 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
                     <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse"></div>
                 </div>
-                
-                {/* Tabs Skeleton */}
                 <div className="flex gap-6 border-b border-slate-200 dark:border-slate-700 pb-1">
                     <div className="h-6 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
                     <div className="h-6 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
-                    <div className="h-6 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
                 </div>
-
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="space-y-8">
-                        {/* Form Skeleton */}
-                         <div className="h-96 bg-white dark:bg-slate-800 rounded-2xl shadow-lg animate-pulse"></div>
-                         {/* Summary Skeleton */}
-                         <div className="h-48 bg-white dark:bg-slate-800 rounded-2xl shadow-lg animate-pulse"></div>
-                    </div>
-                    <div className="space-y-8">
-                         {/* Search Input Skeleton */}
-                         <div className="h-10 bg-white dark:bg-slate-800 rounded-md shadow-sm animate-pulse"></div>
-                         {/* List Skeleton */}
-                         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-4 space-y-4">
-                            <div className="h-6 w-40 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mb-4"></div>
-                            {[1, 2, 3, 4, 5].map(i => (
-                                <div key={i} className="flex items-center gap-3">
-                                    <div className="w-1.5 h-10 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse"></div>
-                                    <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse"></div>
-                                    <div className="flex-1 space-y-2">
-                                        <div className="h-4 w-3/4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
-                                        <div className="h-3 w-1/2 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
-                                    </div>
-                                    <div className="w-20 h-6 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
-                                </div>
-                            ))}
-                         </div>
-                    </div>
+                    <div className="space-y-8"><div className="h-96 bg-white dark:bg-slate-800 rounded-2xl shadow-lg animate-pulse"></div><div className="h-48 bg-white dark:bg-slate-800 rounded-2xl shadow-lg animate-pulse"></div></div>
+                    <div className="space-y-8"><div className="h-10 bg-white dark:bg-slate-800 rounded-md shadow-sm animate-pulse"></div><div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-4 space-y-4">{[1,2,3,4,5].map(i => (<div key={i} className="flex items-center gap-3"><div className="w-1.5 h-10 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse"></div><div className="flex-1 space-y-2"><div className="h-4 w-3/4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div><div className="h-3 w-1/2 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div></div></div>))}</div></div>
                 </div>
              </main>
         </div>
@@ -1066,301 +892,49 @@ const MainApp: React.FC<{
   return (
     <div className="bg-gray-50 dark:bg-slate-900 min-h-screen font-sans">
       <PullToRefresh isRefreshing={isRefreshing} onRefresh={handleRefresh}>
-        <Header 
-          onOpenSearch={() => setIsSearchOpen(true)}
-          loggedInUser={user}
-          activityItems={activityItemsForHeader}
-          unreadCount={unreadCount}
-          onMarkAsRead={markActivitiesAsRead}
-          realtimeStatus={realtimeStatus}
-          onDeleteActivity={deleteActivity}
-        />
-
+        <Header onOpenSearch={() => setIsSearchOpen(true)} loggedInUser={user} activityItems={activityItemsForHeader} unreadCount={unreadCount} onMarkAsRead={markActivitiesAsRead} realtimeStatus={realtimeStatus} onDeleteActivity={deleteActivity} />
         <main className="container mx-auto p-4 md:p-8 pb-32">
           <div className="flex justify-between items-center mb-6 animate-fade-in-up">
-            <button 
-              onClick={() => handleDateNavigation('prev')} 
-              disabled={isPrevDisabled}
-              className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-            </button>
-            
+            <button onClick={() => handleDateNavigation('prev')} disabled={isPrevDisabled} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg></button>
             <div className="relative group cursor-pointer flex items-center justify-center gap-2 px-3 py-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
-                <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 text-center capitalize">
-                    {activeTab === 'yearly' ? currentYear : currentMonthName}
-                </h2>
+                <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 text-center capitalize">{activeTab === 'yearly' ? currentYear : currentMonthName}</h2>
                 <ChevronDownIcon className="text-slate-400 dark:text-slate-500" />
-                
-                {activeTab === 'yearly' ? (
-                  <input 
-                      type="number" 
-                      value={currentYear}
-                      min="2023"
-                      max="2099"
-                      onChange={handleDateSelect}
-                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-                      title="Changer d'année"
-                  />
-                ) : (
-                  <input 
-                      type="month" 
-                      value={monthInputValue}
-                      min="2023-10"
-                      onChange={handleDateSelect}
-                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-                      title="Changer de mois"
-                      ref={(input) => {
-                          if (input) {
-                              input.onclick = (e) => {
-                                  try {
-                                      // @ts-ignore - showPicker is standard
-                                      input.showPicker();
-                                  } catch (err) {}
-                              }
-                          }
-                      }}
-                  />
-                )}
+                {activeTab === 'yearly' ? (<input type="number" value={currentYear} min="2023" max="2099" onChange={handleDateSelect} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" />) : (<input type="month" value={monthInputValue} min="2023-10" onChange={handleDateSelect} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" ref={(input) => { if (input) input.onclick = () => { try { input.showPicker(); } catch (err) {} } }} />)}
             </div>
-
-            <button onClick={() => handleDateNavigation('next')} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-            </button>
+            <button onClick={() => handleDateNavigation('next')} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></button>
           </div>
-          
-          <ReminderAlerts 
-            reminders={reminders}
-            monthlyExpenses={filteredExpenses}
-            onPayReminder={handlePayReminder}
-            currentMonth={currentMonth}
-            currentYear={currentYear}
-            loggedInUser={user}
-          />
-          
+          <ReminderAlerts reminders={reminders} monthlyExpenses={filteredExpenses} onPayReminder={handlePayReminder} currentMonth={currentMonth} currentYear={currentYear} loggedInUser={user} />
           <div className="animate-fade-in">
             {activeTab === 'dashboard' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div id="expense-form-container" className="space-y-8">
-                  <ExpenseForm
-                    key={formInitialData?.formKey || 'default-form'}
-                    onAddExpense={addExpense}
-                    expenses={expenses}
-                    initialData={formInitialData}
-                    loggedInUser={user}
-                    onlineUsers={onlineUsers}
-                    disabled={!isConnected}
-                    categories={categories}
-                    groceryStores={groceryStores}
-                    cars={cars}
-                    heatingTypes={heatingTypes}
-                  />
-                  <ExpenseSummary 
-                      allExpenses={expenses}
-                      currentYear={currentYear}
-                      currentMonth={currentMonth}
-                      sophieTotalMonth={sophieTotalMonth}
-                      vincentTotalMonth={vincentTotalMonth}
-                  />
-                </div>
-                <div className="space-y-8">
-                    <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg">
-                      <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Dépenses du mois</h2>
-                       
-                       {/* Filtering UI */}
-                       <div className="flex gap-2 mb-4">
-                           <input
-                              type="text"
-                              placeholder="Rechercher..."
-                              value={searchTerm}
-                              onChange={(e) => setSearchTerm(e.target.value)}
-                              className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
-                            />
-                            <button
-                                onClick={() => setShowFilters(!showFilters)}
-                                className={`flex-shrink-0 p-2 rounded-lg border transition-colors ${showFilters || filterUser !== 'All' || filterCategory !== 'All' ? 'bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800 text-cyan-600 dark:text-cyan-400' : 'bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600'}`}
-                                aria-label="Filtres"
-                            >
-                                <FunnelIcon />
-                            </button>
-                       </div>
-
-                       {showFilters && (
-                           <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700 space-y-4 animate-fade-in">
-                               <div>
-                                   <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Par personne</label>
-                                   <div className="flex gap-2">
-                                       <button 
-                                           onClick={() => setFilterUser('All')}
-                                           className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors border ${filterUser === 'All' ? 'bg-slate-200 dark:bg-slate-600 border-transparent text-slate-800 dark:text-slate-100' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
-                                       >
-                                           Tous
-                                       </button>
-                                       <button 
-                                           onClick={() => setFilterUser(User.Sophie)}
-                                           className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors border ${filterUser === User.Sophie ? 'bg-pink-500 border-pink-600 text-white' : 'bg-white dark:bg-slate-800 border-pink-200 dark:border-pink-900/30 text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-900/10'}`}
-                                       >
-                                           Sophie
-                                       </button>
-                                       <button 
-                                           onClick={() => setFilterUser(User.Vincent)}
-                                           className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors border ${filterUser === User.Vincent ? 'bg-sky-500 border-sky-600 text-white' : 'bg-white dark:bg-slate-800 border-sky-200 dark:border-sky-900/30 text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/10'}`}
-                                       >
-                                           Vincent
-                                       </button>
-                                   </div>
-                               </div>
-                               <div>
-                                   <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Par catégorie</label>
-                                   <select
-                                       value={filterCategory}
-                                       onChange={(e) => setFilterCategory(e.target.value as any | 'All')}
-                                       className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                   >
-                                       <option value="All">Toutes les catégories</option>
-                                       {categories.map(cat => (
-                                           <option key={cat} value={cat}>{cat}</option>
-                                       ))}
-                                   </select>
-                               </div>
-                           </div>
-                       )}
-
-                      <ExpenseList 
-                        expenses={searchedExpenses} 
-                        onExpenseClick={setExpenseToView} 
-                        highlightedIds={highlightedExpenseIds} 
-                        modifiedInfo={modifiedExpenseInfo}
-                      />
-                    </div>
-                </div>
+                <div id="expense-form-container" className="space-y-8"><ExpenseForm key={formInitialData?.formKey || 'default-form'} onAddExpense={addExpense} expenses={expenses} initialData={formInitialData} loggedInUser={user} onlineUsers={onlineUsers} disabled={!isConnected} categories={categories} groceryStores={groceryStores} cars={cars} heatingTypes={heatingTypes} /><ExpenseSummary allExpenses={expenses} currentYear={currentYear} currentMonth={currentMonth} sophieTotalMonth={sophieTotalMonth} vincentTotalMonth={vincentTotalMonth} /></div>
+                <div className="space-y-8"><div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg"><h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Dépenses du mois</h2><div className="flex gap-2 mb-4"><input type="text" placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm" /><button onClick={() => setShowFilters(!showFilters)} className={`flex-shrink-0 p-2 rounded-lg border transition-colors ${showFilters || filterUser !== 'All' || filterCategory !== 'All' ? 'bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800 text-cyan-600 dark:text-cyan-400' : 'bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600'}`} aria-label="Filtres"><FunnelIcon /></button></div>{showFilters && (<div className="mb-6 p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700 space-y-4 animate-fade-in"><div><label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Par personne</label><div className="flex gap-2"><button onClick={() => setFilterUser('All')} className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors border ${filterUser === 'All' ? 'bg-slate-200 dark:bg-slate-600 border-transparent text-slate-800 dark:text-slate-100' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>Tous</button><button onClick={() => setFilterUser(User.Sophie)} className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors border ${filterUser === User.Sophie ? 'bg-pink-500 border-pink-600 text-white' : 'bg-white dark:bg-slate-800 border-pink-200 dark:border-pink-900/30 text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-900/10'}`}>Sophie</button><button onClick={() => setFilterUser(User.Vincent)} className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors border ${filterUser === User.Vincent ? 'bg-sky-500 border-sky-600 text-white' : 'bg-white dark:bg-slate-800 border-sky-200 dark:border-sky-900/30 text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/10'}`}>Vincent</button></div></div><div><label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Par catégorie</label><select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value as any | 'All')} className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"><option value="All">Toutes les catégories</option>{categories.map(cat => (<option key={cat} value={cat}>{cat}</option>))}</select></div></div>)}<ExpenseList expenses={searchedExpenses} onExpenseClick={setExpenseToView} highlightedIds={highlightedExpenseIds} modifiedInfo={modifiedExpenseInfo} /></div></div>
               </div>
             )}
             {activeTab === 'analysis' && <CategoryTotals expenses={analysisExpenses} previousMonthExpenses={previousMonthExpenses} previousYearMonthExpenses={previousYearMonthExpenses} last3MonthsExpenses={last3MonthsExpenses} onExpenseClick={setExpenseToView} />}
             {activeTab === 'yearly' && <YearlySummary expenses={yearlyFilteredExpenses} previousYearExpenses={previousYearFilteredExpenses} year={currentYear} />}
-            {activeTab === 'moneypot' && (
-                <MoneyPotTab 
-                    transactions={moneyPotTransactions} 
-                    onAddTransaction={addMoneyPotTransaction} 
-                    onDeleteTransaction={deleteMoneyPotTransaction}
-                />
-            )}
+            {activeTab === 'moneypot' && (<MoneyPotTab transactions={moneyPotTransactions} onAddTransaction={addMoneyPotTransaction} onDeleteTransaction={deleteMoneyPotTransaction} />)}
           </div>
         </main>
       </PullToRefresh>
-      
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} onOpenSettings={() => setIsSettingsOpen(true)} />
-
-      {/* Detail Modal (View) */}
-      {expenseToView && (
-          <ExpenseDetailModal
-            expense={expenseToView}
-            history={expenseHistory}
-            onClose={() => setExpenseToView(null)}
-            onEdit={() => {
-                setExpenseToEdit(expenseToView);
-                setExpenseToView(null);
-            }}
-          />
-      )}
-
-      {/* Edit Modal (Action) */}
-      {expenseToEdit && (
-        <EditExpenseModal
-          expense={expenseToEdit}
-          onUpdateExpense={updateExpense}
-          onDeleteExpense={deleteExpense}
-          onClose={() => setExpenseToEdit(null)}
-          categories={categories}
-          groceryStores={groceryStores}
-          cars={cars}
-          heatingTypes={heatingTypes}
-        />
-      )}
-      
-      {toastInfo && (
-        <Toast
-          message={toastInfo.message}
-          type={toastInfo.type}
-          onClose={() => setToastInfo(null)}
-        />
-      )}
-       
+      {expenseToView && (<ExpenseDetailModal expense={expenseToView} history={expenseHistory} onClose={() => setExpenseToView(null)} onEdit={() => { setExpenseToEdit(expenseToView); setExpenseToView(null); }} />)}
+      {expenseToEdit && (<EditExpenseModal expense={expenseToEdit} onUpdateExpense={updateExpense} onDeleteExpense={deleteExpense} onClose={() => setExpenseToEdit(null)} categories={categories} groceryStores={groceryStores} cars={cars} heatingTypes={heatingTypes} />)}
+      {toastInfo && (<Toast message={toastInfo.message} type={toastInfo.type} onClose={() => setToastInfo(null)} />)}
       <UndoToast undoableAction={undoableAction} onUndo={handleUndo} />
-
-      <GlobalSearchModal
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-        allExpenses={expenses}
-        onEditExpense={setExpenseToView}
-        highlightedIds={highlightedExpenseIds}
-        modifiedInfo={modifiedExpenseInfo}
-        categories={categories}
-      />
-
-      <SettingsModal 
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          reminders={reminders}
-          expenses={expenses}
-          onAddReminder={addReminder}
-          onUpdateReminder={updateReminder}
-          onDeleteReminder={deleteReminder}
-          categories={categories}
-          onAddCategory={addCategory}
-          onUpdateCategory={updateCategory}
-          onDeleteCategory={deleteCategory}
-          profiles={profiles}
-          loggedInUser={user}
-          onAddProfile={onAddProfile}
-          onUpdateProfilePassword={onUpdateProfilePassword}
-          onDeleteProfile={onDeleteProfile}
-          groceryStores={groceryStores}
-          setGroceryStores={setGroceryStores}
-          cars={cars}
-          setCars={setCars}
-          heatingTypes={heatingTypes}
-          setHeatingTypes={setHeatingTypes}
-          setToastInfo={setToastInfo}
-          loginHistory={loginHistory}
-          onLogout={onLogout}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-      />
+      <GlobalSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} allExpenses={expenses} onEditExpense={setExpenseToView} highlightedIds={highlightedExpenseIds} modifiedInfo={modifiedExpenseInfo} categories={categories} />
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} reminders={reminders} expenses={expenses} onAddReminder={addReminder} onUpdateReminder={updateReminder} onDeleteReminder={deleteReminder} categories={categories} onAddCategory={addCategory} onUpdateCategory={updateCategory} onDeleteCategory={deleteCategory} profiles={profiles} loggedInUser={user} onAddProfile={onAddProfile} onUpdateProfilePassword={onUpdateProfilePassword} onDeleteProfile={onDeleteProfile} groceryStores={groceryStores} setGroceryStores={setGroceryStores} cars={cars} setCars={setCars} heatingTypes={heatingTypes} setHeatingTypes={setHeatingTypes} setToastInfo={setToastInfo} loginHistory={loginHistory} onLogout={onLogout} activeTab={activeTab} onTabChange={setActiveTab} />
       <OfflineIndicator />
     </div>
   );
 };
 
-
 const App: React.FC = () => {
   useTheme();
   const { user, login, logout, isLoading, profiles, addProfile, updateProfilePassword, deleteProfile, loginHistory } = useAuth();
-  
-  if (isLoading) {
-    // Auth loading skeleton - simple centered spinner or similar, keeping it minimal as it's usually fast
-    return (
-        <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-slate-900">
-            <div className="w-10 h-10 border-4 border-cyan-500/30 border-t-cyan-600 rounded-full animate-spin"></div>
-        </div>
-    );
-  }
-
-  if (!user) {
-    return <Login onLogin={login} />;
-  }
-
-  return (
-    <MainApp 
-        user={user} 
-        onLogout={logout} 
-        profiles={profiles}
-        onAddProfile={addProfile}
-        onUpdateProfilePassword={updateProfilePassword}
-        onDeleteProfile={deleteProfile}
-        loginHistory={loginHistory}
-    />
-  );
+  if (isLoading) return (<div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-slate-900"><div className="w-10 h-10 border-4 border-cyan-500/30 border-t-cyan-600 rounded-full animate-spin"></div></div>);
+  if (!user) return <Login onLogin={login} />;
+  return (<MainApp user={user} onLogout={logout} profiles={profiles} onAddProfile={addProfile} onUpdateProfilePassword={updateProfilePassword} onDeleteProfile={deleteProfile} loginHistory={loginHistory} />);
 };
 
 export default App;
