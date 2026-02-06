@@ -14,6 +14,7 @@ import {
     MiscIcon,
     GiftIcon,
     ClothingIcon,
+    PalmTreeIcon
 } from './icons/CategoryIcons';
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; textColor: string } } = {
@@ -22,8 +23,9 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
   "Chauffage": { icon: HeatingIcon, color: 'bg-red-100 dark:bg-red-500/20', textColor: 'text-red-600 dark:text-red-400' },
   "Courses": { icon: GroceriesIcon, color: 'bg-green-100 dark:bg-green-500/20', textColor: 'text-green-600 dark:text-green-400' },
   "Restaurant": { icon: RestaurantIcon, color: 'bg-purple-100 dark:bg-purple-500/20', textColor: 'text-purple-600 dark:text-purple-400' },
+  "Vacances": { icon: PalmTreeIcon, color: 'bg-teal-100 dark:bg-teal-500/20', textColor: 'text-teal-600 dark:text-teal-400' },
   "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-yellow-100 dark:bg-yellow-500/20', textColor: 'text-yellow-600 dark:text-yellow-400' },
-  "Vêtements": { icon: ClothingIcon, color: 'bg-purple-100 dark:bg-purple-500/20', textColor: 'text-purple-600 dark:text-purple-400' },
+  "Vêtements": { icon: ClothingIcon, color: 'bg-indigo-100 dark:bg-indigo-500/20', textColor: 'text-indigo-600 dark:text-indigo-400' },
   "Cadeau": { icon: GiftIcon, color: 'bg-fuchsia-100 dark:bg-fuchsia-500/20', textColor: 'text-fuchsia-600 dark:text-fuchsia-400' },
   "Divers": { icon: MiscIcon, color: 'bg-cyan-100 dark:bg-cyan-500/20', textColor: 'text-cyan-600 dark:text-cyan-400' },
 };

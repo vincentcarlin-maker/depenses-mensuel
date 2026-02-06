@@ -16,6 +16,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
   "Chauffage",
   "Courses",
   "Restaurant",
+  "Vacances",
   "Réparation voitures",
   "Vêtements",
   "Cadeau",

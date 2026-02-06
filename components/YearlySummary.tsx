@@ -14,7 +14,8 @@ import {
     CarRepairsIcon, 
     MiscIcon,
     ClothingIcon,
-    GiftIcon
+    GiftIcon,
+    PalmTreeIcon
 } from './icons/CategoryIcons';
 
 
@@ -24,6 +25,7 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
     "Chauffage": { icon: HeatingIcon, color: 'bg-red-500', pieColor: '#ef4444' },
     "Courses": { icon: GroceriesIcon, color: 'bg-green-500', pieColor: '#22c55e' },
     "Restaurant": { icon: RestaurantIcon, color: 'bg-purple-500', pieColor: '#a855f7' },
+    "Vacances": { icon: PalmTreeIcon, color: 'bg-teal-500', pieColor: '#14b8a6' },
     "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-yellow-400', pieColor: '#FACC15' },
     "Vêtements": { icon: ClothingIcon, color: 'bg-indigo-500', pieColor: '#6366f1' },
     "Cadeau": { icon: GiftIcon, color: 'bg-fuchsia-500', pieColor: '#d946ef' },
@@ -206,7 +208,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
 
   }, [selectedCategory, expenses]);
 
-  const categoriesWithDetails = ['Courses', 'Cadeau', 'Carburant', 'Vêtements', 'Réparation voitures', 'Dépenses obligatoires'];
+  const categoriesWithDetails = ['Courses', 'Cadeau', 'Carburant', 'Vêtements', 'Réparation voitures', 'Dépenses obligatoires', 'Vacances'];
 
   const handleCategoryClick = (category: Category) => {
       if (categoriesWithDetails.includes(category)) {
@@ -244,7 +246,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
         </div>
 
         <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-200">Moyenne mensuelle par catégorie</h3>
-        <p className="text-xs text-slate-400 dark:text-slate-500 mb-3 -mt-3 italic">Cliquez sur les catégories (Courses, Cadeaux, Dépenses obligatoires...) pour voir le détail.</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500 mb-3 -mt-3 italic">Cliquez sur les catégories (Courses, Cadeaux, Vacances...) pour voir le détail.</p>
         
         <div className="space-y-3">
             {categoryData.map((entry) => {

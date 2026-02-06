@@ -13,7 +13,8 @@ import {
     CarRepairsIcon, 
     MiscIcon,
     ClothingIcon,
-    GiftIcon
+    GiftIcon,
+    PalmTreeIcon
 } from './icons/CategoryIcons';
 import ExpenseListItem from './ExpenseListItem';
 import CloseIcon from './icons/CloseIcon';
@@ -55,6 +56,7 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
   "Chauffage": { icon: HeatingIcon, color: 'bg-red-500', pieColor: '#ef4444' },
   "Courses": { icon: GroceriesIcon, color: 'bg-green-500', pieColor: '#22c55e' },
   "Restaurant": { icon: RestaurantIcon, color: 'bg-purple-500', pieColor: '#a855f7' },
+  "Vacances": { icon: PalmTreeIcon, color: 'bg-teal-500', pieColor: '#14b8a6' },
   "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-yellow-400', pieColor: '#FACC15' },
   "Vêtements": { icon: ClothingIcon, color: 'bg-indigo-500', pieColor: '#6366f1' },
   "Cadeau": { icon: GiftIcon, color: 'bg-fuchsia-500', pieColor: '#d946ef' },
