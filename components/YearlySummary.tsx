@@ -252,9 +252,6 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                 const IconComponent = visual.icon;
                 const percentage = maxAverage > 0 ? (entry.average / maxAverage) * 100 : 0;
                 const isClickable = categoriesWithDetails.includes(entry.name);
-                const isCarRepair = entry.name === 'Réparation voitures';
-                const isClothing = entry.name === 'Vêtements';
-                const isFuel = entry.name === 'Carburant';
                 
                 return (
                     <div 
@@ -263,23 +260,9 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                         className={`p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl transition-all duration-200 ${isClickable ? 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 hover:shadow-sm ring-1 ring-transparent hover:ring-slate-200 dark:hover:ring-slate-600' : ''}`}
                     >
                         <div className="flex items-center gap-3">
-                            {isCarRepair ? (
-                                <div className="w-10 h-10 flex-shrink-0 rounded-full">
-                                    <CarRepairsIcon className="w-full h-full rounded-full" />
-                                </div>
-                            ) : isClothing ? (
-                                <div className="w-10 h-10 flex-shrink-0 rounded-full">
-                                    <ClothingIcon className="w-full h-full rounded-full" />
-                                </div>
-                            ) : isFuel ? (
-                                <div className="w-10 h-10 flex-shrink-0 rounded-full">
-                                    <FuelIcon className="w-full h-full rounded-full" />
-                                </div>
-                            ) : (
-                                <div className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full ${visual.color}`}>
-                                    <IconComponent className="h-6 w-6 text-white" />
-                                </div>
-                            )}
+                            <div className={`w-10 h-10 flex items-center justify-center rounded-full ${visual.color}`}>
+                                <IconComponent className="h-6 w-6 text-white" />
+                            </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex justify-between items-baseline gap-2">
                                     <div className="flex items-center gap-2 min-w-0">
@@ -347,23 +330,9 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                 <div className="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[80vh] animate-fade-in">
                     <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-700/30">
                         <div className="flex items-center gap-3">
-                            {selectedCategory === 'Réparation voitures' ? (
-                                <div className="w-8 h-8 rounded-full">
-                                    <CarRepairsIcon className="w-full h-full rounded-full" />
-                                </div>
-                            ) : selectedCategory === 'Vêtements' ? (
-                                <div className="w-8 h-8 rounded-full">
-                                    <ClothingIcon className="w-full h-full rounded-full" />
-                                </div>
-                            ) : selectedCategory === 'Carburant' ? (
-                                <div className="w-8 h-8 rounded-full">
-                                    <FuelIcon className="w-full h-full rounded-full" />
-                                </div>
-                            ) : (
-                                <div className={`w-8 h-8 flex items-center justify-center rounded-full ${CategoryVisuals[selectedCategory]?.color || 'bg-slate-500'}`}>
-                                    {CategoryVisuals[selectedCategory]?.icon && React.createElement(CategoryVisuals[selectedCategory].icon, { className: "h-5 w-5 text-white" })}
-                                </div>
-                            )}
+                            <div className={`w-8 h-8 flex items-center justify-center rounded-full ${CategoryVisuals[selectedCategory]?.color || 'bg-slate-500'}`}>
+                                {CategoryVisuals[selectedCategory]?.icon && React.createElement(CategoryVisuals[selectedCategory].icon, { className: "h-5 w-5 text-white" })}
+                            </div>
                             <div>
                                 <h3 className="font-bold text-slate-800 dark:text-slate-100">Détail : {selectedCategory}</h3>
                                 <p className="text-xs text-slate-500 dark:text-slate-400">Année {year}</p>

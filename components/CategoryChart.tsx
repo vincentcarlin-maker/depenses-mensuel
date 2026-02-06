@@ -231,9 +231,6 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
             const visual = CategoryVisuals[entry.name as Category] || CategoryVisuals["Divers"];
             const IconComponent = visual.icon;
             const percentage = totalExpenses > 0 ? (entry.value / totalExpenses) * 100 : 0;
-            const isCarRepair = entry.name === 'Réparation voitures';
-            const isClothing = entry.name === 'Vêtements';
-            const isFuel = entry.name === 'Carburant';
 
             return (
               <button 
@@ -241,23 +238,9 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
                 onClick={() => setSelectedCategory(entry.name)}
                 className="w-full flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl group hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors text-left focus:outline-none focus:ring-2 focus:ring-cyan-500"
               >
-                {isCarRepair ? (
-                    <div className="w-8 h-8 flex-shrink-0 rounded-full mr-4">
-                        <CarRepairsIcon className="w-full h-full rounded-full" />
-                    </div>
-                ) : isClothing ? (
-                    <div className="w-8 h-8 flex-shrink-0 rounded-full mr-4">
-                        <ClothingIcon className="w-full h-full rounded-full" />
-                    </div>
-                ) : isFuel ? (
-                    <div className="w-8 h-8 flex-shrink-0 rounded-full mr-4">
-                        <FuelIcon className="w-full h-full rounded-full" />
-                    </div>
-                ) : (
-                    <div className={`w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full mr-4 ${visual.color}`}>
-                      <IconComponent className="h-5 w-5 text-white" />
-                    </div>
-                )}
+                <div className={`w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full mr-4 ${visual.color}`}>
+                  <IconComponent className="h-5 w-5 text-white" />
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-semibold text-slate-700 dark:text-slate-200 truncate">{entry.name}</p>

@@ -158,18 +158,6 @@ const ExpenseListItem: React.FC<{
                     <div className="w-10 h-10 rounded-full shadow-sm">
                         <TotalEnergiesIcon className="w-full h-full rounded-full" />
                     </div>
-                ) : expense.category === "Carburant" ? (
-                    <div className="w-10 h-10 rounded-full shadow-sm">
-                        <FuelIcon className="w-full h-full rounded-full" />
-                    </div>
-                ) : expense.category === "Réparation voitures" ? (
-                    <div className="w-10 h-10 rounded-full shadow-sm">
-                        <CarRepairsIcon className="w-full h-full rounded-full" />
-                    </div>
-                ) : expense.category === "Vêtements" ? (
-                    <div className="w-10 h-10 rounded-full shadow-sm">
-                        <ClothingIcon className="w-full h-full rounded-full" />
-                    </div>
                 ) : isInternet ? (
                     <div className="w-10 h-10 rounded-full shadow-sm">
                         <WifiIcon className="w-full h-full rounded-full" />

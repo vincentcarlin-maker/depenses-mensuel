@@ -6,6 +6,29 @@ import TrashIcon from './icons/TrashIcon';
 import SegmentedControl from './SegmentedControl';
 import PiggyBankIcon from './icons/PiggyBankIcon';
 import ScissorsIcon from './icons/ScissorsIcon';
+import { 
+    MandatoryIcon, 
+    FuelIcon, 
+    HeatingIcon, 
+    GroceriesIcon, 
+    RestaurantIcon, 
+    CarRepairsIcon, 
+    MiscIcon,
+    ClothingIcon,
+    GiftIcon
+} from './icons/CategoryIcons';
+
+const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; bgColor: string; borderColor: string } } = {
+  "Dépenses obligatoires": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
+  "Carburant": { icon: FuelIcon, color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-50 dark:bg-orange-500/10', borderColor: 'border-orange-100 dark:border-orange-500/20' },
+  "Chauffage": { icon: HeatingIcon, color: 'text-red-600 dark:text-red-400', bgColor: 'bg-red-50 dark:bg-red-500/10', borderColor: 'border-red-100 dark:border-red-500/20' },
+  "Courses": { icon: GroceriesIcon, color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-50 dark:bg-green-500/10', borderColor: 'border-green-100 dark:border-green-500/20' },
+  "Restaurant": { icon: RestaurantIcon, color: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-500/10', borderColor: 'border-purple-100 dark:border-purple-500/20' },
+  "Réparation voitures": { icon: CarRepairsIcon, color: 'text-yellow-600 dark:text-yellow-400', bgColor: 'bg-yellow-50 dark:bg-yellow-500/10', borderColor: 'border-yellow-100 dark:border-yellow-500/20' },
+  "Vêtements": { icon: ClothingIcon, color: 'text-indigo-600 dark:text-indigo-400', bgColor: 'bg-indigo-50 dark:bg-indigo-500/10', borderColor: 'border-indigo-100 dark:border-indigo-500/20' },
+  "Cadeau": { icon: GiftIcon, color: 'text-fuchsia-600 dark:text-fuchsia-400', bgColor: 'bg-fuchsia-50 dark:bg-fuchsia-500/10', borderColor: 'border-fuchsia-100 dark:border-fuchsia-500/20' },
+  "Divers": { icon: MiscIcon, color: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-50 dark:bg-cyan-500/10', borderColor: 'border-cyan-100 dark:border-cyan-500/20' },
+};
 
 interface EditExpenseModalProps {
     expense: Expense;
@@ -63,7 +86,6 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
         const total = parseFloat(receiptTotal.replace(',', '.')) || 0;
         const subtractions = subtractedItems.reduce((sum, item) => sum + item.amount, 0);
         const currentItemAmount = parseFloat(itemAmount.replace(',', '.')) || 0;
-        // Soustraire l'article en cours de saisie uniquement si une description est également présente
         const intentionalSubtraction = itemDescription.trim() ? currentItemAmount : 0;
         return total - subtractions - intentionalSubtraction;
     }, [receiptTotal, subtractedItems, itemAmount, itemDescription]);
@@ -304,9 +326,9 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                     onClick={onClose}
                     aria-hidden="true"
                 ></div>
-                <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-xl z-[70] w-full max-w-md m-4 animate-fade-in">
-                    <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Détails de la Transaction</h2>
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-xl z-[70] w-full max-w-md m-4 animate-fade-in flex flex-col max-h-[90vh]">
+                    <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100 flex-shrink-0">Modifier la Transaction</h2>
+                    <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto pr-1 custom-scrollbar">
                         <div>
                           <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Qui a payé ?</label>
                            <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1">
@@ -326,12 +348,39 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                             </button>
                           </div>
                         </div>
+
                         <div>
-                          <label htmlFor="edit-category" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Catégorie</label>
-                          <select id="edit-category" value={category} onChange={(e) => setCategory(e.target.value as Category)} className={`${baseInputStyle} pl-3 pr-10`}>
-                            {categories.map((cat) => (<option key={cat} value={cat}>{cat}</option>))}
-                          </select>
+                            <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">
+                                Catégorie
+                            </label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {categories.map((cat) => {
+                                    const visual = CategoryVisuals[cat] || CategoryVisuals["Divers"];
+                                    const Icon = visual.icon;
+                                    const isSelected = category === cat;
+                                    return (
+                                        <button
+                                            key={cat}
+                                            type="button"
+                                            onClick={() => setCategory(cat)}
+                                            className={`flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all duration-200 ${
+                                                isSelected 
+                                                ? `${visual.borderColor} ${visual.bgColor} ring-2 ring-cyan-500/20 shadow-sm` 
+                                                : 'border-transparent bg-slate-50 dark:bg-slate-700/30 opacity-70'
+                                            }`}
+                                        >
+                                            <div className={`mb-1 ${isSelected ? visual.color : 'text-slate-400 dark:text-slate-500'}`}>
+                                                <Icon className="h-5 w-5" />
+                                            </div>
+                                            <span className={`text-[9px] text-center font-bold leading-tight ${isSelected ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                                                {cat}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
+
                         <div>
                             <label htmlFor="edit-date" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Date et Heure</label>
                             <input
@@ -344,7 +393,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                         </div>
 
                         {category === 'Courses' && (
-                            <div className="space-y-4">
+                            <div className="space-y-4 animate-fade-in">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label htmlFor="edit-store-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Magasin</label>
@@ -380,7 +429,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                         )}
 
                          {category === 'Courses' && showSubtractions ? (
-                            <>
+                            <div className="animate-fade-in space-y-4">
                                  <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-700 space-y-4">
                                     <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                                       <ScissorsIcon />
@@ -408,30 +457,30 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Montant du ticket (€)</label><input type="text" inputMode="decimal" value={receiptTotal} onChange={e => setReceiptTotal(e.target.value)} className={`${baseInputStyle} px-3 font-semibold`}/></div>
-                                    <div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Montant final (commun)</label><input type="text" value={finalCalculatedAmount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})} readOnly className={`${baseInputStyle} px-3 bg-slate-100 dark:bg-slate-600 text-cyan-600 dark:text-cyan-400 font-bold`}/></div>
+                                    <div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Ticket (€)</label><input type="text" inputMode="decimal" value={receiptTotal} onChange={e => setReceiptTotal(e.target.value)} className={`${baseInputStyle} px-3 font-semibold`}/></div>
+                                    <div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Montant final</label><input type="text" value={finalCalculatedAmount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})} readOnly className={`${baseInputStyle} px-3 bg-slate-100 dark:bg-slate-600 text-cyan-600 dark:text-cyan-400 font-bold`}/></div>
                                 </div>
-                            </>
+                            </div>
                         ) : (
-                            <>
+                            <div className="animate-fade-in space-y-4">
                                 {category === 'Chauffage' && (
-                                    <div>
+                                    <div className="animate-fade-in">
                                         <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">Type de Chauffage</label>
                                         <SegmentedControl options={heatingOptions} value={heatingType} onChange={setHeatingType} className="mt-1" />
                                     </div>
                                 )}
                                 {category === 'Réparation voitures' && (
-                                    <div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300">Véhicule</label><SegmentedControl options={carOptions} value={repairedCar} onChange={setRepairedCar} className="mt-1"/></div>
+                                    <div className="animate-fade-in"><label className="block text-sm font-medium text-slate-600 dark:text-slate-300">Véhicule</label><SegmentedControl options={carOptions} value={repairedCar} onChange={setRepairedCar} className="mt-1"/></div>
                                 )}
                                 {category === 'Vêtements' && (
-                                    <div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label><SegmentedControl options={childrenOptions} value={clothingPerson} onChange={setClothingPerson} className="mt-1"/></div>
+                                    <div className="animate-fade-in"><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label><SegmentedControl options={childrenOptions} value={clothingPerson} onChange={setClothingPerson} className="mt-1"/></div>
                                 )}
                                 {category === 'Cadeau' && (
-                                     <div className="space-y-4"><div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label><SegmentedControl options={childrenOptions} value={giftPerson} onChange={setGiftPerson} className="mt-1"/></div><div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Occasion</label><SegmentedControl options={occasionOptions} value={giftOccasion} onChange={setGiftOccasion} className="mt-1"/></div></div>
+                                     <div className="space-y-4 animate-fade-in"><div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label><SegmentedControl options={childrenOptions} value={giftPerson} onChange={setGiftPerson} className="mt-1"/></div><div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Occasion</label><SegmentedControl options={occasionOptions} value={giftOccasion} onChange={setGiftOccasion} className="mt-1"/></div></div>
                                 )}
                                 
                                 { !['Chauffage', 'Courses'].includes(category) && (
-                                    <div>
+                                    <div className="animate-fade-in">
                                         {category === "Carburant" ? (
                                             <><label className="block text-sm font-medium text-slate-600 dark:text-slate-300">Véhicule</label><SegmentedControl options={carOptions} value={description} onChange={(val) => setDescription(val)} className="mt-1"/></>
                                         ) : (
@@ -451,29 +500,29 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                                   <label htmlFor="edit-amount" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Montant (€)</label>
                                   <input type="text" inputMode="decimal" id="edit-amount" value={amount} onChange={(e) => setAmount(e.target.value)} className={`${baseInputStyle} px-3 ${placeholderStyle}`} />
                                 </div>
-                            </>
+                            </div>
                          )}
                         
                         {error && <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>}
-                        <div className="flex justify-between items-center pt-2">
-                            <button
-                                type="button"
-                                onClick={() => setIsConfirmOpen(true)}
-                                className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-500/10 dark:hover:text-red-400 rounded-full transition-colors"
-                                aria-label="Supprimer la dépense"
-                            >
-                                <TrashIcon />
-                            </button>
-                            <div className="flex justify-end space-x-3">
-                                <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400">
-                                    Annuler
-                                </button>
-                                <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500">
-                                    Enregistrer
-                                </button>
-                            </div>
-                        </div>
                     </form>
+                    <div className="flex justify-between items-center pt-4 mt-2 border-t border-slate-100 dark:border-slate-700 flex-shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setIsConfirmOpen(true)}
+                            className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-500/10 dark:hover:text-red-400 rounded-full transition-colors"
+                            aria-label="Supprimer la dépense"
+                        >
+                            <TrashIcon />
+                        </button>
+                        <div className="flex justify-end space-x-3">
+                            <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400">
+                                Annuler
+                            </button>
+                            <button type="button" onClick={(e) => handleSubmit(e as any)} className="px-4 py-2 text-sm font-medium text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                                Enregistrer
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <ConfirmationModal

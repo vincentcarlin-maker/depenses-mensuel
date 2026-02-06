@@ -7,6 +7,29 @@ import PiggyBankIcon from './icons/PiggyBankIcon';
 import ScissorsIcon from './icons/ScissorsIcon';
 import TrashIcon from './icons/TrashIcon';
 import CalendarDaysIcon from './icons/CalendarDaysIcon';
+import { 
+    MandatoryIcon, 
+    FuelIcon, 
+    HeatingIcon, 
+    GroceriesIcon, 
+    RestaurantIcon, 
+    CarRepairsIcon, 
+    MiscIcon,
+    ClothingIcon,
+    GiftIcon
+} from './icons/CategoryIcons';
+
+const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; bgColor: string; borderColor: string } } = {
+  "Dépenses obligatoires": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
+  "Carburant": { icon: FuelIcon, color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-50 dark:bg-orange-500/10', borderColor: 'border-orange-100 dark:border-orange-500/20' },
+  "Chauffage": { icon: HeatingIcon, color: 'text-red-600 dark:text-red-400', bgColor: 'bg-red-50 dark:bg-red-500/10', borderColor: 'border-red-100 dark:border-red-500/20' },
+  "Courses": { icon: GroceriesIcon, color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-50 dark:bg-green-500/10', borderColor: 'border-green-100 dark:border-green-500/20' },
+  "Restaurant": { icon: RestaurantIcon, color: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-500/10', borderColor: 'border-purple-100 dark:border-purple-500/20' },
+  "Réparation voitures": { icon: CarRepairsIcon, color: 'text-yellow-600 dark:text-yellow-400', bgColor: 'bg-yellow-50 dark:bg-yellow-500/10', borderColor: 'border-yellow-100 dark:border-yellow-500/20' },
+  "Vêtements": { icon: ClothingIcon, color: 'text-indigo-600 dark:text-indigo-400', bgColor: 'bg-indigo-50 dark:bg-indigo-500/10', borderColor: 'border-indigo-100 dark:border-indigo-500/20' },
+  "Cadeau": { icon: GiftIcon, color: 'text-fuchsia-600 dark:text-fuchsia-400', bgColor: 'bg-fuchsia-50 dark:bg-fuchsia-500/10', borderColor: 'border-fuchsia-100 dark:border-fuchsia-500/20' },
+  "Divers": { icon: MiscIcon, color: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-50 dark:bg-cyan-500/10', borderColor: 'border-cyan-100 dark:border-cyan-500/20' },
+};
 
 interface ExpenseFormProps {
   onAddExpense: (expense: Omit<Expense, 'id' | 'created_at'>) => void;
@@ -384,26 +407,41 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                 </button>
             </div>
             </div>
+
             <div>
-            <label htmlFor="category" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
-                Catégorie
-            </label>
-            <select
-                id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value as Category)}
-                className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent sm:text-sm rounded-lg"
-            >
-                {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                    {cat}
-                </option>
-                ))}
-            </select>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">
+                    Catégorie
+                </label>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {categories.map((cat) => {
+                        const visual = CategoryVisuals[cat] || CategoryVisuals["Divers"];
+                        const Icon = visual.icon;
+                        const isSelected = category === cat;
+                        return (
+                            <button
+                                key={cat}
+                                type="button"
+                                onClick={() => setCategory(cat)}
+                                className={`flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all duration-200 ${
+                                    isSelected 
+                                    ? `${visual.borderColor} ${visual.bgColor} ring-2 ring-brand-500/20 shadow-sm scale-105` 
+                                    : 'border-transparent bg-slate-50 dark:bg-slate-700/30 hover:bg-slate-100 dark:hover:bg-slate-700 opacity-70 hover:opacity-100'
+                                }`}
+                            >
+                                <div className={`mb-1.5 ${isSelected ? visual.color : 'text-slate-400 dark:text-slate-500'}`}>
+                                    <Icon className="h-6 w-6" />
+                                </div>
+                                <span className={`text-[10px] text-center font-bold leading-tight ${isSelected ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                                    {cat}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
             
             {category === 'Courses' && (
-                <div className="space-y-4">
+                <div className="space-y-4 animate-fade-in">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label htmlFor="store-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Magasin</label>
@@ -439,11 +477,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             )}
             
             {category === 'Courses' && showSubtractions ? (
-              <>
+              <div className="animate-fade-in space-y-4">
                  <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-700 space-y-4">
                     <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                       <ScissorsIcon />
-                      <h4 className="font-semibold">Articles à déduire (achats non communs)</h4>
+                      <h4 className="font-semibold">Articles à déduire</h4>
                     </div>
 
                      {subtractedItems.length > 0 && (
@@ -477,19 +515,19 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Montant du ticket (€)</label>
+                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Ticket (€)</label>
                         <input type="text" inputMode="decimal" value={receiptTotal} onChange={e => setReceiptTotal(e.target.value)} className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg font-semibold"/>
                     </div>
                      <div>
-                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Montant final (commun)</label>
+                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Montant final</label>
                         <input type="text" value={finalCalculatedAmount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})} readOnly className="block w-full px-3 py-2.5 bg-slate-200 dark:bg-slate-600 text-brand-600 dark:text-brand-400 border-transparent rounded-lg font-bold"/>
                     </div>
                 </div>
-              </>
+              </div>
             ) : (
-                <>
+                <div className="animate-fade-in space-y-4">
                   {category === 'Chauffage' && (
-                      <div>
+                      <div className="animate-fade-in">
                           <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type de Chauffage</label>
                           <SegmentedControl
                               options={heatingTypes}
@@ -501,7 +539,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                   )}
 
                   {category === 'Réparation voitures' && (
-                      <div>
+                      <div className="animate-fade-in">
                           <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Véhicule</label>
                           <SegmentedControl
                               options={cars}
@@ -513,7 +551,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                   )}
 
                   {category === 'Vêtements' && (
-                      <div>
+                      <div className="animate-fade-in">
                           <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label>
                           <SegmentedControl
                               options={childrenOptions}
@@ -525,7 +563,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                   )}
 
                   {category === 'Cadeau' && (
-                      <div className="space-y-4">
+                      <div className="space-y-4 animate-fade-in">
                           <div>
                               <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label>
                               <SegmentedControl
@@ -550,7 +588,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                   { !['Chauffage', 'Courses'].includes(category) && (
                       <div>
                       {category === "Carburant" ? (
-                          <>
+                          <div className="animate-fade-in">
                           <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Véhicule</label>
                           <SegmentedControl
                               options={cars}
@@ -558,7 +596,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                               onChange={(val) => setDescription(val)}
                               colorClass="text-brand-600 dark:text-brand-400"
                           />
-                          </>
+                          </div>
                       ) : (
                           <>
                           <label htmlFor="description" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Description</label>
@@ -571,7 +609,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                               onFocus={(e) => handleDescriptionChange(e)}
                               onBlur={() => setTimeout(() => setSuggestions([]), 150)}
                               className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 sm:text-sm"
-                              placeholder={category === 'Vêtements' ? "Ex: Pantalon, Manteau..." : category === 'Cadeau' ? "Ex: Lego, Poupée..." : "Ex: McDo, Courses Leclerc..."}
+                              placeholder={category === 'Vêtements' ? "Ex: Pantalon, Manteau..." : category === 'Cadeau' ? "Ex: Lego, Poupée..." : "Ex: McDo, Cinéma..."}
                               autoComplete="off"
                               />
                               {suggestions.length > 0 && (
@@ -626,7 +664,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                       />
                   </div>
                   </div>
-                </>
+                </div>
             )}
 
             {error && <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>}

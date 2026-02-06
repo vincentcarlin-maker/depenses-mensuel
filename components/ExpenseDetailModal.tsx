@@ -110,7 +110,7 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
                 </div>
                 {history.length > 0 && (
                     <div className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-4">
-                        <h3 className="text-[10px] font-bold uppercase text-slate-500 mb-3 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>Historique</h3>
+                        <h3 className="text-[10px] font-bold uppercase text-slate-500 mb-3 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0118 0z" /></svg>Historique</h3>
                         <div className="space-y-3">
                             {history.map(act => (
                                 <div key={act.id} className="bg-slate-50 dark:bg-slate-700/30 p-2.5 rounded-xl text-xs">
