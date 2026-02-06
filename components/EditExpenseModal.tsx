@@ -486,7 +486,19 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                                         {category === "Carburant" ? (
                                             <><label className="block text-sm font-medium text-slate-600 dark:text-slate-300">Véhicule</label><SegmentedControl options={carOptions} value={description} onChange={(val) => setDescription(val)} className="mt-1"/></>
                                         ) : (
-                                            <><label htmlFor="edit-description" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Description</label><input type="text" id="edit-description" value={description} onChange={(e) => setDescription(e.target.value)} className={`${baseInputStyle} px-3 ${placeholderStyle}`} /></>
+                                            <>
+                                              <label htmlFor="edit-description" className="block text-sm font-medium text-slate-600 dark:text-slate-300">
+                                                {category === 'Restaurant' ? 'Restaurant' : 'Description'}
+                                              </label>
+                                              <input 
+                                                type="text" 
+                                                id="edit-description" 
+                                                value={description} 
+                                                onChange={(e) => setDescription(e.target.value)} 
+                                                className={`${baseInputStyle} px-3 ${placeholderStyle}`} 
+                                                placeholder={category === 'Restaurant' ? "Ex: La Pizzaiola, McDo..." : "Ex: McDo, Cinéma..."}
+                                              />
+                                            </>
                                         )}
                                     </div>
                                 )}

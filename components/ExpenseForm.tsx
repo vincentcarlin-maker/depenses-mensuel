@@ -601,7 +601,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                           </div>
                       ) : (
                           <>
-                          <label htmlFor="description" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Description</label>
+                          <label htmlFor="description" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
+                            {category === 'Restaurant' ? 'Restaurant' : 'Description'}
+                          </label>
                           <div className="relative">
                               <input
                               type="text"
@@ -611,7 +613,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                               onFocus={(e) => handleDescriptionChange(e)}
                               onBlur={() => setTimeout(() => setSuggestions([]), 150)}
                               className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 sm:text-sm"
-                              placeholder={category === 'Vêtements' ? "Ex: Pantalon, Manteau..." : category === 'Cadeau' ? "Ex: Lego, Poupée..." : "Ex: McDo, Cinéma..."}
+                              placeholder={category === 'Restaurant' ? "Ex: La Pizzaiola, McDo..." : category === 'Vêtements' ? "Ex: Pantalon, Manteau..." : category === 'Cadeau' ? "Ex: Lego, Poupée..." : "Ex: McDo, Cinéma..."}
                               autoComplete="off"
                               />
                               {suggestions.length > 0 && (
