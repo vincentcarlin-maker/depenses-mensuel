@@ -14,7 +14,16 @@ import {
     MiscIcon,
     GiftIcon,
     ClothingIcon,
-    PalmTreeIcon
+    PalmTreeIcon,
+    BirthdayIcon,
+    ShieldIcon,
+    WifiIcon,
+    MusicNoteIcon,
+    SfrIcon,
+    CeoIcon,
+    TotalEnergiesIcon,
+    TrashBinIcon,
+    NetflixIcon
 } from './icons/CategoryIcons';
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; textColor: string } } = {
@@ -45,7 +54,53 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
   }, [onClose]);
 
   const visual = CategoryVisuals[expense.category] || CategoryVisuals["Divers"];
-  const IconComponent = visual.icon;
+  
+  const lowerCaseDesc = expense.description.toLowerCase();
+  const isChristmas = (expense.category === 'Divers' && /no[uëe]l/i.test(expense.description)) || (expense.category === 'Cadeau' && /no[uëe]l/i.test(expense.description));
+  const isBirthday = expense.category === 'Cadeau' && /anniversaire/i.test(expense.description);
+  const isMutuelle = lowerCaseDesc.includes('mutuelle');
+  const isInternet = lowerCaseDesc.includes('internet');
+  const isDeezer = lowerCaseDesc.includes('deezer');
+  const isSfr = lowerCaseDesc.includes('sfr nathan');
+  const isCeo = lowerCaseDesc.includes('ceo');
+  const isTotalEnergies = lowerCaseDesc.includes('total energies');
+  const isPoubelles = lowerCaseDesc.includes('poubelles');
+  const isNetflix = lowerCaseDesc.includes('netflix');
+
+  let IconComponent = visual.icon;
+  let iconColorClass = visual.textColor;
+
+  if (isChristmas) {
+    IconComponent = GiftIcon;
+    iconColorClass = 'text-red-600';
+  } else if (isBirthday) {
+    IconComponent = BirthdayIcon;
+  } else if (isInternet) {
+    IconComponent = WifiIcon;
+    iconColorClass = ''; // WifiIcon has its own colors
+  } else if (isPoubelles) {
+    IconComponent = TrashBinIcon;
+    iconColorClass = '';
+  } else if (isDeezer) {
+    IconComponent = MusicNoteIcon;
+    iconColorClass = '';
+  } else if (isSfr) {
+    IconComponent = SfrIcon;
+    iconColorClass = '';
+  } else if (isMutuelle) {
+    IconComponent = ShieldIcon;
+    iconColorClass = '';
+  } else if (isCeo) {
+    IconComponent = CeoIcon;
+    iconColorClass = '';
+  } else if (isTotalEnergies) {
+    IconComponent = TotalEnergiesIcon;
+    iconColorClass = '';
+  } else if (isNetflix) {
+    IconComponent = NetflixIcon;
+    iconColorClass = '';
+  }
+
   const hasSubtractions = expense.category === 'Courses' && expense.subtracted_items && expense.subtracted_items.length > 0;
   
   const { receiptTotal, totalSubtracted } = useMemo(() => {
@@ -94,7 +149,9 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
       <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-2xl z-[60] w-full max-w-md m-4 animate-fade-in relative overflow-hidden flex flex-col max-h-[90vh]">
          <div className={`absolute top-0 left-0 w-full h-24 ${visual.color} opacity-50`}></div>
          <div className="relative flex flex-col items-center text-center pt-4 overflow-y-auto">
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg bg-white dark:bg-slate-700 mb-4 flex-shrink-0`}><IconComponent className={`h-8 w-8 ${visual.textColor}`} /></div>
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg bg-white dark:bg-slate-700 mb-4 flex-shrink-0`}>
+                <IconComponent className={`h-8 w-8 ${iconColorClass}`} />
+            </div>
             <h2 className={`text-3xl font-extrabold mb-1 ${expense.amount < 0 ? 'text-green-600' : 'text-slate-800 dark:text-slate-100'}`}>{Math.abs(expense.amount).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</h2>
              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-6">{expense.amount < 0 ? 'Remboursement' : 'Dépense'}</p>
             <div className="w-full space-y-4 text-left">

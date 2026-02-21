@@ -208,3 +208,30 @@ export const TrashBinIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => 
     <path d="M14 29c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V17H14v12zM27 14h-3.5l-1-1h-5l-1 1H13v2h14v-2z" fill="white"/>
   </svg>
 );
+
+export const NetflixIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <defs>
+      <radialGradient id="blackGradient" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(50 50) rotate(90) scale(48)">
+        <stop offset="0%" stopColor="#1A1A1A" />
+        <stop offset="100%" stopColor="#000000" />
+      </radialGradient>
+      <linearGradient id="redSide" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#B20710" />
+        <stop offset="100%" stopColor="#E50914" />
+      </linearGradient>
+      <linearGradient id="redDiagonal" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#E50914" />
+        <stop offset="100%" stopColor="#B20710" />
+      </linearGradient>
+      <filter id="ribbonShadow" x="0" y="0" width="100%" height="100%">
+        <feDropShadow dx="-2" dy="0" stdDeviation="2" floodOpacity="0.6"/>
+      </filter>
+    </defs>
+    <circle cx="50" cy="50" r="48" fill="url(#blackGradient)" stroke="#333" strokeWidth="0.5" />
+    <path d="M30 22H41V76C38 74.5 33 74.5 30 76V22Z" fill="url(#redSide)" />
+    <path d="M59 22H70V76C67 74.5 62 74.5 59 76V22Z" fill="url(#redSide)" />
+    <path d="M30 22L70 76V62L41 22H30Z" fill="url(#redDiagonal)" filter="url(#ribbonShadow)" />
+    <circle cx="50" cy="50" r="47.5" stroke="white" strokeOpacity="0.1" fill="none" />
+  </svg>
+);

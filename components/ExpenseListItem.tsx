@@ -19,7 +19,8 @@ import {
     SfrIcon,
     CeoIcon,
     TotalEnergiesIcon,
-    TrashBinIcon
+    TrashBinIcon,
+    NetflixIcon
 } from './icons/CategoryIcons';
 import PiggyBankIcon from './icons/PiggyBankIcon';
 import ArrowRightIcon from './icons/ArrowRightIcon';
@@ -98,6 +99,7 @@ const ExpenseListItem: React.FC<{
     const isCeo = lowerCaseDesc.includes('ceo');
     const isTotalEnergies = lowerCaseDesc.includes('total energies');
     const isPoubelles = lowerCaseDesc.includes('poubelles');
+    const isNetflix = lowerCaseDesc.includes('netflix');
 
     const visual = CategoryVisuals[expense.category] || CategoryVisuals["Divers"];
     let IconComponent = visual.icon;
@@ -159,6 +161,10 @@ const ExpenseListItem: React.FC<{
                 ) : isTotalEnergies ? (
                     <div className="w-10 h-10 rounded-full shadow-sm">
                         <TotalEnergiesIcon className="w-full h-full rounded-full" />
+                    </div>
+                ) : isNetflix ? (
+                    <div className="w-10 h-10 rounded-full shadow-sm">
+                        <NetflixIcon className="w-full h-full rounded-full" />
                     </div>
                 ) : isInternet ? (
                     <div className="w-10 h-10 rounded-full shadow-sm">
