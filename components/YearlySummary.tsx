@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { type Expense, type Category } from '../types';
-import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Line, Area } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
 import CloseIcon from './icons/CloseIcon';
 import { 
@@ -43,6 +43,31 @@ interface YearlySummaryProps {
     previousYearExpenses: Expense[];
     year: number;
 }
+
+const CustomTooltip = ({ active, payload, label, year }: any) => {
+    if (active && payload && payload.length) {
+        const currentYearVal = payload.find((p: any) => p.name === year.toString())?.value || 0;
+        const prevYearVal = payload.find((p: any) => p.name === (year - 1).toString())?.value || 0;
+        const delta = currentYearVal - prevYearVal;
+        
+        return (
+            <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+                <p className="font-bold text-slate-800 dark:text-slate-100 mb-1">{label}</p>
+                {payload.map((p: any, index: number) => (
+                    <p key={index} style={{ color: p.stroke }} className="text-sm">
+                        {p.name}: {p.value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                    </p>
+                ))}
+                {prevYearVal > 0 && (
+                    <p className={`text-xs mt-1 ${delta >= 0 ? 'text-red-500' : 'text-green-500'}`}>
+                        {delta >= 0 ? '+' : ''}{delta.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} vs {year - 1}
+                    </p>
+                )}
+            </div>
+        );
+    }
+    return null;
+};
 
 const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExpenses, year }) => {
   const { theme } = useTheme();
@@ -298,26 +323,18 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
             <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-200">Évolution des dépenses mensuelles</h3>
              <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
-                    <LineChart data={monthlyTrendData} margin={{ top: 5, right: 20, left: 40, bottom: 5 }}>
+                    <ComposedChart data={monthlyTrendData} margin={{ top: 5, right: 20, left: 40, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
                         <XAxis dataKey="month" stroke={tickColor} tick={{ fill: tickColor }} />
                         <YAxis stroke={tickColor} tickFormatter={(value) => `${value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`} tick={{ fill: tickColor }} />
-                        <Tooltip
-                            formatter={(value: number, name: string) => [`${value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`, `Année ${name}`]}
-                            contentStyle={{
-                                backgroundColor: theme === 'dark' ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-                                color: theme === 'dark' ? '#f1f5f9' : '#1e293b',
-                                backdropFilter: 'blur(4px)',
-                                border: `1px solid ${theme === 'dark' ? '#475569' : '#e2e8f0'}`,
-                                borderRadius: '0.75rem',
-                            }}
-                        />
+                        <Tooltip content={<CustomTooltip year={year} />} />
                         <Legend wrapperStyle={{ color: tickColor }} />
-                        <Line type="monotone" dataKey={year.toString()} stroke="#06b6d4" strokeWidth={2} name={`${year}`} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                        <Area type="monotone" dataKey={year.toString()} fill="#06b6d4" stroke="none" fillOpacity={0.1} name={`${year}`} />
+                        <Line type="monotone" dataKey={year.toString()} stroke="#06b6d4" strokeWidth={3} name={`${year}`} dot={{ r: 5 }} activeDot={{ r: 8 }} />
                         {previousYearExpenses.length > 0 && (
-                            <Line type="monotone" dataKey={(year - 1).toString()} stroke="#f97316" strokeWidth={2} name={`${year - 1}`} strokeDasharray="5 5" />
+                            <Line type="monotone" dataKey={(year - 1).toString()} stroke="#f97316" strokeWidth={2} name={`${year - 1}`} strokeDasharray="5 5" dot={{ r: 3 }} />
                         )}
-                    </LineChart>
+                    </ComposedChart>
                 </ResponsiveContainer>
             </div>
         </div>
