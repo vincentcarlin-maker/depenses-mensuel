@@ -414,7 +414,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                 <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">
                     Catégorie
                 </label>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
                     {categories.map((cat) => {
                         const visual = CategoryVisuals[cat] || CategoryVisuals["Divers"];
                         const Icon = visual.icon;
@@ -424,16 +424,16 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                                 key={cat}
                                 type="button"
                                 onClick={() => setCategory(cat)}
-                                className={`flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all duration-200 ${
+                                className={`flex flex-col items-center justify-center p-1.5 rounded-lg border transition-all duration-200 ${
                                     isSelected 
-                                    ? `${visual.borderColor} ${visual.bgColor} ring-2 ring-brand-500/20 shadow-sm scale-105` 
+                                    ? `${visual.borderColor} ${visual.bgColor} ring-1 ring-brand-500/20 shadow-sm scale-105` 
                                     : 'border-transparent bg-slate-50 dark:bg-slate-700/30 hover:bg-slate-100 dark:hover:bg-slate-700 opacity-70 hover:opacity-100'
                                 }`}
                             >
-                                <div className={`mb-1.5 ${isSelected ? visual.color : 'text-slate-400 dark:text-slate-500'}`}>
-                                    <Icon className="h-6 w-6" />
+                                <div className={`mb-1 ${isSelected ? visual.color : 'text-slate-400 dark:text-slate-500'}`}>
+                                    <Icon className="h-5 w-5" />
                                 </div>
-                                <span className={`text-[10px] text-center font-bold leading-tight ${isSelected ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                                <span className={`text-[9px] text-center font-bold leading-tight ${isSelected ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
                                     {cat}
                                 </span>
                             </button>
