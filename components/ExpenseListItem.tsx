@@ -89,7 +89,7 @@ const ExpenseListItem: React.FC<{
 
     // Logique spéciale pour Noël
     const isChristmas = (expense.category === 'Divers' && /no[uëe]l/i.test(expense.description)) || (expense.category === 'Cadeau' && /no[uëe]l/i.test(expense.description));
-    const isBirthday = expense.category === 'Cadeau' && /anniversaire/i.test(expense.description);
+    const isBirthday = /anniversaire/i.test(expense.description);
     
     const lowerCaseDesc = expense.description.toLowerCase();
     const isMutuelle = lowerCaseDesc.includes('mutuelle');
@@ -108,8 +108,6 @@ const ExpenseListItem: React.FC<{
     if (isChristmas) {
         IconComponent = GiftIcon;
         iconBgClass = 'bg-red-600';
-    } else if (isBirthday) {
-        IconComponent = BirthdayIcon;
     } else if (isInternet) {
         IconComponent = WifiIcon;
     }
@@ -141,6 +139,10 @@ const ExpenseListItem: React.FC<{
                 {isPoubelles ? (
                     <div className="w-10 h-10 rounded-full shadow-sm">
                         <TrashBinIcon className="w-full h-full rounded-full" />
+                    </div>
+                ) : isBirthday ? (
+                    <div className="w-10 h-10 rounded-full shadow-sm">
+                        <BirthdayIcon className="w-full h-full rounded-full" />
                     </div>
                 ) : isDeezer ? (
                     <div className="w-10 h-10 rounded-full shadow-sm">

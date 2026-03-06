@@ -57,7 +57,7 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
   
   const lowerCaseDesc = expense.description.toLowerCase();
   const isChristmas = (expense.category === 'Divers' && /no[uëe]l/i.test(expense.description)) || (expense.category === 'Cadeau' && /no[uëe]l/i.test(expense.description));
-  const isBirthday = expense.category === 'Cadeau' && /anniversaire/i.test(expense.description);
+  const isBirthday = /anniversaire/i.test(expense.description);
   const isMutuelle = lowerCaseDesc.includes('mutuelle');
   const isInternet = lowerCaseDesc.includes('internet');
   const isDeezer = lowerCaseDesc.includes('deezer');

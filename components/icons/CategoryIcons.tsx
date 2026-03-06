@@ -76,10 +76,20 @@ export const PalmTreeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => 
 );
 
 export const BirthdayIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M5 15h14v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15V8" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5a1.5 1.5 0 0 1 1.5 1.5c0 .83-.67 1.5-1.5 1.5S10.5 6.83 10.5 6c0-.83.67-1.5 1.5-1.5z" />
+  <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <circle cx="100" cy="100" r="90" fill="#5cb85c" />
+    <g stroke="white" strokeWidth="6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="55" y="90" width="90" height="65" rx="4" />
+      <rect x="50" y="75" width="100" height="20" rx="2" />
+      <line x1="100" y1="75" x2="100" y2="155" />
+      <path d="M100 75 C85 45 60 55 80 75 C100 75 100 75 100 75" />
+      <path d="M100 75 C115 45 140 55 120 75 C100 75 100 75 100 75" />
+      <line x1="45" y1="60" x2="35" y2="55" strokeWidth="4" />
+      <line x1="155" y1="60" x2="165" y2="55" strokeWidth="4" />
+      <circle cx="160" cy="95" r="2.5" fill="white" stroke="none" />
+      <circle cx="40" cy="115" r="2.5" fill="white" stroke="none" />
+      <line x1="100" y1="35" x2="100" y2="45" strokeWidth="4" />
+    </g>
   </svg>
 );
 
