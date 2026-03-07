@@ -1,6 +1,8 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { type Expense, User } from '../types';
+import ExpenseList from './ExpenseList';
+import CloseIcon from './icons/CloseIcon';
 
 interface BalanceReportProps {
   allExpenses: Expense[];
@@ -11,7 +13,9 @@ interface BalanceReportProps {
 }
 
 const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear, currentMonth, sophieTotalMonth, vincentTotalMonth }) => {
-  const { historicDifference, cumulativeDifference, message, communTotalMonth } = useMemo(() => {
+  const [userExpensesModal, setUserExpensesModal] = useState<{ user: User, expenses: Expense[] } | null>(null);
+
+  const { historicDifference, cumulativeDifference, message, communTotalMonth, sophieExpenses, vincentExpenses } = useMemo(() => {
     const firstDayOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1));
     
     // Expenses for the current month paid by "Commun" (Cagnotte)
@@ -24,12 +28,15 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
         .filter(e => e.user === User.Commun)
         .reduce((sum, e) => sum + e.amount, 0);
 
+    const sophieExpenses = currentMonthExpenses.filter(e => e.user === User.Sophie);
+    const vincentExpenses = currentMonthExpenses.filter(e => e.user === User.Vincent);
+
     const historicExpenses = allExpenses.filter(exp => new Date(exp.date) < firstDayOfMonth);
     
     const sophieHistoric = historicExpenses
       .filter(e => e.user === User.Sophie)
       .reduce((sum, e) => sum + e.amount, 0);
-      
+    
     const vincentHistoric = historicExpenses
       .filter(e => e.user === User.Vincent)
       .reduce((sum, e) => sum + e.amount, 0);
@@ -48,7 +55,7 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
       message = `Vincent a dépensé ${(-cumulativeDifference).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} de plus.`;
     }
     
-    return { historicDifference, cumulativeDifference, message, communTotalMonth };
+    return { historicDifference, cumulativeDifference, message, communTotalMonth, sophieExpenses, vincentExpenses };
   }, [allExpenses, currentYear, currentMonth, sophieTotalMonth, vincentTotalMonth]);
   
   // Total including individual spending AND common spending
@@ -83,13 +90,19 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                     </div>
                 )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="flex justify-between items-center bg-pink-50 dark:bg-pink-500/10 p-4 rounded-xl">
+                    <div 
+                        className="flex justify-between items-center bg-pink-50 dark:bg-pink-500/10 p-4 rounded-xl cursor-pointer hover:bg-pink-100 dark:hover:bg-pink-500/20 transition-colors"
+                        onClick={() => setUserExpensesModal({ user: User.Sophie, expenses: sophieExpenses })}
+                    >
                         <span className="font-semibold text-pink-800 dark:text-pink-300">Total Sophie</span>
                         <span className="font-bold text-lg text-pink-600 dark:text-pink-400">
                             {sophieTotalMonth.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                         </span>
                     </div>
-                    <div className="flex justify-between items-center bg-sky-50 dark:bg-sky-500/10 p-4 rounded-xl">
+                    <div 
+                        className="flex justify-between items-center bg-sky-50 dark:bg-sky-500/10 p-4 rounded-xl cursor-pointer hover:bg-sky-100 dark:hover:bg-sky-500/20 transition-colors"
+                        onClick={() => setUserExpensesModal({ user: User.Vincent, expenses: vincentExpenses })}
+                    >
                         <span className="font-semibold text-sky-800 dark:text-sky-300">Total Vincent</span>
                         <span className="font-bold text-lg text-sky-600 dark:text-sky-400">
                             {vincentTotalMonth.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
@@ -98,6 +111,23 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                 </div>
             </div>
         </div>
+
+        {userExpensesModal && (
+            <div className="fixed inset-0 bg-black/60 z-[100] flex justify-center items-center p-4 backdrop-blur-sm">
+                <div className="fixed inset-0" onClick={() => setUserExpensesModal(null)}></div>
+                <div className="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[80vh]">
+                    <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                        <h3 className="font-bold text-slate-800 dark:text-slate-100">Dépenses de {userExpensesModal.user}</h3>
+                        <button onClick={() => setUserExpensesModal(null)} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                            <CloseIcon />
+                        </button>
+                    </div>
+                    <div className="p-4 overflow-y-auto">
+                        <ExpenseList expenses={userExpensesModal.expenses} onExpenseClick={() => {}} highlightedIds={new Set()} />
+                    </div>
+                </div>
+            </div>
+        )}
     </div>
   );
 };
