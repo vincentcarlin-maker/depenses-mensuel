@@ -24,7 +24,12 @@ export const DEFAULT_CATEGORIES: Category[] = [
 ];
 
 export const PRODUCT_CATEGORIES = [
-  "Alimentation",
+  "Fruits & Légumes",
+  "Crémerie",
+  "Charcuterie",
+  "Épicerie",
+  "Boissons",
+  "Surgelés",
   "Hygiène",
   "Entretien",
   "Bricolage",

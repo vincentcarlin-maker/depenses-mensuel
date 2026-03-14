@@ -40,6 +40,7 @@ const TICKET_RESTAURANT_KEYWORDS = [
 
 interface EditExpenseModalProps {
     expense: Expense;
+    expenses: Expense[];
     onUpdateExpense: (expense: Expense) => void;
     onDeleteExpense: (id: string) => void;
     onClose: () => void;
@@ -60,7 +61,7 @@ const toDatetimeLocal = (isoString: string): string => {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
-const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateExpense, onDeleteExpense, onClose, categories, groceryStores, cars, heatingTypes }) => {
+const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, onUpdateExpense, onDeleteExpense, onClose, categories, groceryStores, cars, heatingTypes }) => {
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState(Math.abs(expense.amount).toString());
     const [category, setCategory] = useState<Category>(expense.category);
@@ -77,6 +78,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
     const [receiptTotal, setReceiptTotal] = useState(initialReceiptTotal);
     
     const [subtractedItems, setSubtractedItems] = useState<SubtractedItem[]>(initialShowSubtractions ? (expense.subtracted_items || []) : []);
+    const [selectedItems, setSelectedItems] = useState<number[]>([]);
     const [itemDescription, setItemDescription] = useState('');
     const [itemAmount, setItemAmount] = useState('');
     const [itemCategory, setItemCategory] = useState(PRODUCT_CATEGORIES[0]);
@@ -98,6 +100,18 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
     
     const childrenOptions = ['Nathan', 'Chloé'];
     const occasionOptions = ['Noël', 'Anniversaire'];
+
+    const knownProducts = useMemo(() => {
+        const products = new Set<string>();
+        expenses.forEach(e => {
+            if (e.subtracted_items) {
+                e.subtracted_items.forEach(item => {
+                    products.add(item.description.trim());
+                });
+            }
+        });
+        return Array.from(products);
+    }, [expenses]);
     
     const finalCalculatedAmount = useMemo(() => {
         const total = parseFloat(receiptTotal.replace(',', '.')) || 0;
@@ -182,8 +196,10 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
         if (category === 'Courses' && !showSubtractions) {
             setSubtractedItems([]);
             setReceiptTotal('');
+        } else if (category === 'Courses' && showSubtractions && receiptTotal === '') {
+            setReceiptTotal(amount);
         }
-    }, [showSubtractions, category]);
+    }, [showSubtractions, category, amount]);
 
     useEffect(() => {
         const handleEsc = (event: KeyboardEvent) => {
@@ -201,7 +217,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
         e.preventDefault();
         
         let finalAmount;
-        let finalSubtractedItems: SubtractedItem[] | undefined = undefined;
+        let finalSubtractedItems: SubtractedItem[] = [];
 
         if (category === 'Courses' && showSubtractions) {
           const currentSubtractedItems = [...subtractedItems];
@@ -217,7 +233,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
           }
 
           const subtractions = currentSubtractedItems.filter(i => i.is_subtracted !== false).reduce((sum, item) => sum + item.amount, 0);
-          const calculatedAmount = parsedTotal - subtractions;
+          const calculatedAmount = Math.max(0, parsedTotal - subtractions);
           finalAmount = transactionType === 'expense' ? calculatedAmount : -calculatedAmount;
           finalSubtractedItems = currentSubtractedItems;
         } else {
@@ -339,7 +355,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
             reader.onloadend = async () => {
                 const base64String = (reader.result as string).split(',')[1];
                 try {
-                    const parsed = await parseReceiptImage(base64String, file.type);
+                    const parsed = await parseReceiptImage(base64String, file.type, knownProducts);
                     
                     if (parsed.total) {
                         setReceiptTotal(parsed.total.toString());
@@ -379,13 +395,20 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                             // Si c'est Sophie qui paye et que c'est un ticket resto, on le soustrait par défaut
                             const shouldSubtract = isTicketResto && user === User.Sophie;
 
+                            const itemCategory = (item as any).category;
+                            const validCategory = PRODUCT_CATEGORIES.includes(itemCategory) ? itemCategory : PRODUCT_CATEGORIES[0];
+
                             return {
                                 description: item.description,
                                 amount: item.amount,
                                 is_subtracted: shouldSubtract,
-                                category: isTicketResto ? 'Autre' : PRODUCT_CATEGORIES[0]
+                                category: isTicketResto ? 'Autre' : validCategory
                             };
                         });
+
+                        // Trier les articles par catégorie
+                        newItems.sort((a, b) => (a.category || '').localeCompare(b.category || ''));
+
                         setSubtractedItems(newItems);
                         setShowSubtractions(true);
                     }
@@ -584,20 +607,35 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                                     </div>
                                      {subtractedItems.length > 0 && (
                                       <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                        <div className="flex justify-between items-center text-xs text-slate-500">
+                                          <button type="button" onClick={() => setSelectedItems(selectedItems.length === subtractedItems.length ? [] : subtractedItems.map((_, i) => i))} className="hover:text-brand-500">
+                                            {selectedItems.length === subtractedItems.length ? 'Désélectionner tout' : 'Tout sélectionner'}
+                                          </button>
+                                          {selectedItems.length > 0 && (
+                                            <button type="button" onClick={() => {
+                                              setSubtractedItems(subtractedItems.filter((_, i) => !selectedItems.includes(i)));
+                                              setSelectedItems([]);
+                                            }} className="text-red-500 hover:text-red-700">
+                                              Supprimer la sélection ({selectedItems.length})
+                                            </button>
+                                          )}
+                                        </div>
                                         {subtractedItems.map((item, index) => (
                                           <div key={index} 
-                                               onClick={() => handleToggleSubtractedItem(index)}
-                                               className={`flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors border ${item.is_subtracted !== false ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-600 border-slate-200 dark:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-500'}`}>
+                                               className={`flex items-center justify-between p-2 rounded-md transition-colors border ${item.is_subtracted !== false ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-600 border-slate-200 dark:border-slate-500'}`}>
                                             <div className="flex items-center gap-2">
-                                                <input type="checkbox" checked={item.is_subtracted !== false} readOnly className="rounded text-brand-500 focus:ring-brand-500" />
-                                                <div className="flex flex-col">
+                                                <input type="checkbox" checked={selectedItems.includes(index)} onChange={(e) => {
+                                                  if (e.target.checked) setSelectedItems([...selectedItems, index]);
+                                                  else setSelectedItems(selectedItems.filter(i => i !== index));
+                                                }} className="rounded text-brand-500 focus:ring-brand-500" />
+                                                <div className="flex flex-col cursor-pointer" onClick={() => handleToggleSubtractedItem(index)}>
                                                     <span className={`text-sm ${item.is_subtracted !== false ? 'text-red-700 dark:text-red-300 font-medium line-through opacity-70' : 'text-slate-700 dark:text-slate-200'}`}>{item.description}</span>
                                                     {item.category && <span className="text-[10px] text-slate-400 dark:text-slate-500">{item.category}</span>}
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
                                               <span className={`text-sm font-medium ${item.is_subtracted !== false ? 'text-red-700 dark:text-red-300' : 'text-slate-800 dark:text-slate-100'}`}>{item.amount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})}</span>
-                                              <button type="button" onClick={(e) => { e.stopPropagation(); handleRemoveSubtractedItem(index); }} className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full">
+                                              <button type="button" onClick={() => handleRemoveSubtractedItem(index)} className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full">
                                                 <TrashIcon />
                                               </button>
                                             </div>
@@ -714,14 +752,29 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                         {error && <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>}
                     </form>
                     <div className="flex justify-between items-center pt-4 mt-2 border-t border-slate-100 dark:border-slate-700 flex-shrink-0">
-                        <button
-                            type="button"
-                            onClick={() => setIsConfirmOpen(true)}
-                            className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-500/10 dark:hover:text-red-400 rounded-full transition-colors"
-                            aria-label="Supprimer la dépense"
-                        >
-                            <TrashIcon />
-                        </button>
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsConfirmOpen(true)}
+                                className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-500/10 dark:hover:text-red-400 rounded-full transition-colors"
+                                aria-label="Supprimer la dépense"
+                            >
+                                <TrashIcon />
+                            </button>
+                            {category === 'Courses' && showSubtractions && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSubtractedItems([]);
+                                        setShowSubtractions(false);
+                                        setReceiptTotal('');
+                                    }}
+                                    className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                                >
+                                    Supprimer le ticket
+                                </button>
+                            )}
+                        </div>
                         <div className="flex justify-end space-x-3">
                             <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400">
                                 Annuler

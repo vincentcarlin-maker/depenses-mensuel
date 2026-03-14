@@ -96,6 +96,18 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [pendingExpenseData, setPendingExpenseData] = useState<Omit<Expense, 'id' | 'created_at'> | null>(null);
   const [detectedDuplicates, setDetectedDuplicates] = useState<Expense[]>([]);
 
+  const knownProducts = useMemo(() => {
+    const products = new Set<string>();
+    expenses.forEach(e => {
+      if (e.subtracted_items) {
+        e.subtracted_items.forEach(item => {
+          products.add(item.description.trim());
+        });
+      }
+    });
+    return Array.from(products);
+  }, [expenses]);
+
   const amountInputRef = useRef<HTMLInputElement>(null);
   const nonSpecialCategoryDescriptionRef = useRef(
       (initialData && !['Carburant', 'Courses'].includes(initialData.category))
@@ -162,6 +174,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         setReceiptTotal('');
         setItemDescription('');
         setItemAmount('');
+    } else if (receiptTotal === '') {
+        setReceiptTotal(amount);
     }
   }, [showSubtractions]);
 
@@ -277,7 +291,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
       reader.onloadend = async () => {
         const base64String = (reader.result as string).split(',')[1];
         try {
-          const parsed = await parseReceiptImage(base64String, file.type);
+          const parsed = await parseReceiptImage(base64String, file.type, knownProducts);
           
           if (parsed.total) {
             setReceiptTotal(parsed.total.toString());
@@ -317,13 +331,20 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
               // Si c'est Sophie qui paye et que c'est un ticket resto, on le soustrait par défaut
               const shouldSubtract = isTicketResto && user === User.Sophie;
 
+              const itemCategory = (item as any).category;
+              const validCategory = PRODUCT_CATEGORIES.includes(itemCategory) ? itemCategory : PRODUCT_CATEGORIES[0];
+
               return {
                 description: item.description,
                 amount: item.amount,
                 is_subtracted: shouldSubtract,
-                category: isTicketResto ? 'Autre' : PRODUCT_CATEGORIES[0]
+                category: isTicketResto ? 'Autre' : validCategory
               };
             });
+
+            // Trier les articles par catégorie
+            newItems.sort((a, b) => (a.category || '').localeCompare(b.category || ''));
+
             setSubtractedItems(newItems);
             setShowSubtractions(true);
           }
@@ -352,7 +373,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     let finalAmount;
-    let finalSubtractedItems: SubtractedItem[] | undefined = undefined;
+    let finalSubtractedItems: SubtractedItem[] = [];
 
     if (category === 'Courses' && showSubtractions) {
       const currentSubtractedItems = [...subtractedItems];
@@ -366,7 +387,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         return;
       }
       const subtractions = currentSubtractedItems.filter(i => i.is_subtracted !== false).reduce((sum, item) => sum + item.amount, 0);
-      const calculatedAmount = parsedTotal - subtractions;
+      const calculatedAmount = Math.max(0, parsedTotal - subtractions);
       finalAmount = transactionType === 'expense' ? calculatedAmount : -calculatedAmount;
       finalSubtractedItems = currentSubtractedItems;
     } else {

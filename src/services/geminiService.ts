@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-export async function parseReceiptImage(base64Image: string, mimeType: string) {
+export async function parseReceiptImage(base64Image: string, mimeType: string, knownProducts: string[] = []) {
   const apiKey = process.env.GEMINI_API_KEY;
   
   if (!apiKey) {
@@ -11,6 +11,11 @@ export async function parseReceiptImage(base64Image: string, mimeType: string) {
   try {
     const ai = new GoogleGenAI({ apiKey });
     
+    const knownProductsContext = knownProducts.length > 0 
+      ? `Voici une liste de produits déjà connus dans la base de données : [${knownProducts.join(', ')}]. 
+         Si un article scanné correspond à l'un de ces produits (même avec une orthographe légèrement différente ou des abréviations), utilise IMPÉRATIVEMENT le nom exact de la liste pour le champ 'description'.`
+      : "";
+
     const response = await ai.models.generateContent({
       model: "gemini-3.1-pro-preview",
       contents: {
@@ -34,6 +39,8 @@ export async function parseReceiptImage(base64Image: string, mimeType: string) {
             - ARTICLES : Ne garde que les produits réels. Ignore les lignes de taxes (TVA), les sous-totaux, les informations de paiement, ou les messages promotionnels.
             - REMISES : Ignore impérativement les bons de réduction globaux, les remises fidélité différées, ou les bons d'achat. Si un article a une remise immédiate (ex: -30% sur le produit), utilise le prix final après remise pour cet article.
             - NETTOYAGE : Nettoie les noms d'articles des abréviations cryptiques (ex: 'LARD.FUM.X3' -> 'Lardons fumés x3') pour les rendre lisibles.
+            - CATÉGORIES : Assigne à chaque article l'une des catégories suivantes : Fruits & Légumes, Crémerie, Charcuterie, Épicerie, Boissons, Surgelés, Hygiène, Entretien, Bricolage, Loisirs, ou Autre.
+            ${knownProductsContext}
             - TOTAL : Le 'total' doit être le montant net à payer (après toutes les remises immédiates).
 
             Format de sortie : JSON pur respectant le schéma fourni.`,
@@ -52,8 +59,12 @@ export async function parseReceiptImage(base64Image: string, mimeType: string) {
                 properties: {
                   description: { type: Type.STRING, description: "Nom lisible de l'article" },
                   amount: { type: Type.NUMBER, description: "Prix unitaire final de l'article" },
+                  category: { 
+                    type: Type.STRING, 
+                    description: "Catégorie de l'article (ex: Alimentation, Hygiène, Entretien, Boissons, etc.)" 
+                  },
                 },
-                required: ["description", "amount"],
+                required: ["description", "amount", "category"],
               },
             },
             total: { type: Type.NUMBER, description: "Montant total net payé" },
