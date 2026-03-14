@@ -351,8 +351,8 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                         setSubtractedItems(newItems);
                         setShowSubtractions(true);
                     }
-                } catch (err) {
-                    setError('Erreur lors de l\'analyse du ticket. Veuillez réessayer.');
+                } catch (err: any) {
+                    setError(err.message || 'Erreur lors de l\'analyse du ticket. Veuillez réessayer.');
                     console.error(err);
                 } finally {
                     setIsScanning(false);

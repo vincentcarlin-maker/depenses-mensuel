@@ -289,8 +289,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             setSubtractedItems(newItems);
             setShowSubtractions(true);
           }
-        } catch (err) {
-          setError('Erreur lors de l\'analyse du ticket. Veuillez réessayer.');
+        } catch (err: any) {
+          setError(err.message || 'Erreur lors de l\'analyse du ticket. Veuillez réessayer.');
           console.error(err);
         } finally {
           setIsScanning(false);

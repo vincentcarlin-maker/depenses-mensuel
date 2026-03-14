@@ -1,8 +1,15 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 export async function parseReceiptImage(base64Image: string, mimeType: string) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  
+  if (!apiKey) {
+    console.error("GEMINI_API_KEY is not defined. Please check your environment variables.");
+    throw new Error("La clé API Gemini est manquante. Le scan ne peut pas fonctionner en dehors de l'environnement de développement sans configuration.");
+  }
+
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
     
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
