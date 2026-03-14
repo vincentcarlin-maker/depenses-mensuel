@@ -321,7 +321,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         return;
       }
       const subtractions = currentSubtractedItems.filter(i => i.is_subtracted !== false).reduce((sum, item) => sum + item.amount, 0);
-      finalAmount = parsedTotal - subtractions;
+      const calculatedAmount = parsedTotal - subtractions;
+      finalAmount = transactionType === 'expense' ? calculatedAmount : -calculatedAmount;
       finalSubtractedItems = currentSubtractedItems;
     } else {
       if (!amount) {

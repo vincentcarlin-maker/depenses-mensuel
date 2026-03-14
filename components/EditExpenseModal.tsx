@@ -65,9 +65,13 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
     const [isScanning, setIsScanning] = useState(false);
     
     // State for "Courses" subtractions toggle
-    const [showSubtractions, setShowSubtractions] = useState(expense.category === 'Courses' && Array.isArray(expense.subtracted_items) && expense.subtracted_items.length > 0);
-    const [receiptTotal, setReceiptTotal] = useState('');
-    const [subtractedItems, setSubtractedItems] = useState<SubtractedItem[]>([]);
+    const initialShowSubtractions = expense.category === 'Courses' && Array.isArray(expense.subtracted_items) && expense.subtracted_items.length > 0;
+    const [showSubtractions, setShowSubtractions] = useState(initialShowSubtractions);
+    
+    const initialReceiptTotal = initialShowSubtractions ? (expense.amount + (expense.subtracted_items || []).filter(i => i.is_subtracted !== false).reduce((sum, item) => sum + item.amount, 0)).toString() : '';
+    const [receiptTotal, setReceiptTotal] = useState(initialReceiptTotal);
+    
+    const [subtractedItems, setSubtractedItems] = useState<SubtractedItem[]>(initialShowSubtractions ? (expense.subtracted_items || []) : []);
     const [itemDescription, setItemDescription] = useState('');
     const [itemAmount, setItemAmount] = useState('');
     const itemDescriptionInputRef = useRef<HTMLInputElement>(null);
@@ -100,13 +104,6 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
 
     useEffect(() => {
         if (expense.category === 'Courses') {
-            if (showSubtractions) {
-                const totalSubtracted = (expense.subtracted_items || []).filter(i => i.is_subtracted !== false).reduce((sum, item) => sum + item.amount, 0);
-                const originalTotal = expense.amount + totalSubtracted;
-                setReceiptTotal(originalTotal.toString());
-                setSubtractedItems(expense.subtracted_items || []);
-            }
-
             const storeName = expense.description;
             if (groceryStores.includes(storeName)) {
                 setStore(storeName);
@@ -173,7 +170,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
         else {
             setDescription(expense.description);
         }
-    }, [expense, groceryStores, heatingTypes, cars, showSubtractions]);
+    }, [expense, groceryStores, heatingTypes, cars]);
 
     useEffect(() => {
         if (category === 'Courses' && !showSubtractions) {
@@ -214,7 +211,8 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
           }
 
           const subtractions = currentSubtractedItems.filter(i => i.is_subtracted !== false).reduce((sum, item) => sum + item.amount, 0);
-          finalAmount = parsedTotal - subtractions;
+          const calculatedAmount = parsedTotal - subtractions;
+          finalAmount = transactionType === 'expense' ? calculatedAmount : -calculatedAmount;
           finalSubtractedItems = currentSubtractedItems;
         } else {
           if (!amount) {
@@ -334,6 +332,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                     
                     if (parsed.total) {
                         setReceiptTotal(parsed.total.toString());
+                        setShowSubtractions(true);
                     }
                     
                     if (parsed.items && parsed.items.length > 0) {
