@@ -3,6 +3,7 @@ import { type Expense, PRODUCT_CATEGORIES } from '../types';
 import SearchIcon from './icons/SearchIcon';
 import TrendingUpIcon from './icons/TrendingUpIcon';
 import TrashIcon from './icons/TrashIcon';
+import ConfirmationModal from './ConfirmationModal';
 
 interface PriceTrackerTabProps {
   expenses: Expense[];
@@ -32,11 +33,12 @@ interface CategoryData {
   products: ProductData[];
 }
 
-const PriceTrackerTab: React.FC<PriceTrackerTabProps> = ({ expenses }) => {
+const PriceTrackerTab: React.FC<PriceTrackerTabProps> = ({ expenses, onUpdateExpense }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | 'All'>('All');
   const [selectedProduct, setSelectedProduct] = useState<ProductData | null>(null);
   const [editingEntry, setEditingEntry] = useState<{ idx: number, amount: string, description: string, category: string } | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<ItemPriceHistory | null>(null);
 
   const handleDeleteHistoryItem = async (entry: ItemPriceHistory) => {
     const expense = expenses.find(e => e.id === entry.expenseId);
@@ -390,11 +392,7 @@ const PriceTrackerTab: React.FC<PriceTrackerTabProps> = ({ expenses }) => {
                                 </svg>
                               </button>
                               <button 
-                                onClick={() => {
-                                  if (window.confirm('Supprimer cet article de l\'historique ?')) {
-                                    handleDeleteHistoryItem(entry);
-                                  }
-                                }}
+                                onClick={() => setItemToDelete(entry)}
                                 className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
                               >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -421,6 +419,18 @@ const PriceTrackerTab: React.FC<PriceTrackerTabProps> = ({ expenses }) => {
             </div>
           </div>
         </div>
+      )}
+      {itemToDelete && (
+        <ConfirmationModal 
+          isOpen={!!itemToDelete}
+          onClose={() => setItemToDelete(null)}
+          onConfirm={() => {
+            handleDeleteHistoryItem(itemToDelete);
+            setItemToDelete(null);
+          }}
+          title="Supprimer l'article"
+          message={`Êtes-vous sûr de vouloir supprimer "${itemToDelete.originalName.split(' (')[0]}" de l'historique ? Cela modifiera la dépense d'origine.`}
+        />
       )}
     </div>
   );

@@ -289,8 +289,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                 item.description.toLowerCase().includes(kw)
               );
               
-              // Si c'est Sophie (pas Vincent) et que c'est un ticket resto, on le soustrait par défaut
-              const shouldSubtract = isTicketResto && loggedInUser !== User.Vincent;
+              // Si c'est Sophie qui paye et que c'est un ticket resto, on le soustrait par défaut
+              const shouldSubtract = isTicketResto && user === User.Sophie;
 
               return {
                 description: item.description,
