@@ -106,6 +106,7 @@ const PriceTrackerTab: React.FC<PriceTrackerTabProps> = ({ expenses, onUpdateExp
         const storeName = expense.description.trim();
         
         expense.subtracted_items.forEach(item => {
+          if (item.is_subtracted === true) return;
           const categoryName = item.category || 'Autre';
           if (!categoryMap.has(categoryName)) {
             categoryMap.set(categoryName, new Map());
