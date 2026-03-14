@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 export async function parseReceiptImage(base64Image: string, mimeType: string, knownProducts: string[] = []) {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
   
   if (!apiKey) {
     console.error("GEMINI_API_KEY is not defined. Please check your environment variables.");
