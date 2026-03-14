@@ -116,7 +116,7 @@ const ExpenseListItem: React.FC<{
 
     let originalAmount = 0;
     if (hasSubtractions) {
-        const totalSubtracted = expense.subtracted_items!.reduce((sum, item) => sum + item.amount, 0);
+        const totalSubtracted = expense.subtracted_items!.filter(i => i.is_subtracted !== false).reduce((sum, item) => sum + item.amount, 0);
         originalAmount = expense.amount + totalSubtracted;
     }
 

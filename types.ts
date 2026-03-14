@@ -26,6 +26,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
 export interface SubtractedItem {
   description: string;
   amount: number;
+  is_subtracted?: boolean;
 }
 
 export interface Expense {

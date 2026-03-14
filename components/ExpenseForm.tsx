@@ -6,7 +6,9 @@ import ConfirmationModal from './ConfirmationModal';
 import PiggyBankIcon from './icons/PiggyBankIcon';
 import ScissorsIcon from './icons/ScissorsIcon';
 import TrashIcon from './icons/TrashIcon';
+import CameraIcon from './icons/CameraIcon';
 import CalendarDaysIcon from './icons/CalendarDaysIcon';
+import { parseReceiptImage } from '../src/services/geminiService';
 import { 
     MandatoryIcon, 
     FuelIcon, 
@@ -62,6 +64,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [user, setUser] = useState<User>(initialData?.user || loggedInUser);
   const [date, setDate] = useState(toDatetimeLocal(new Date()));
   const [isDateManuallySet, setIsDateManuallySet] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
   const [transactionType, setTransactionType] = useState<'expense' | 'refund'>(initialData && initialData.amount < 0 ? 'refund' : 'expense');
   const [store, setStore] = useState(groceryStores[0] || '');
   const [customStore, setCustomStore] = useState('');
@@ -117,7 +120,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   
   const finalCalculatedAmount = useMemo(() => {
     const total = parseFloat(receiptTotal.replace(',', '.')) || 0;
-    const subtractions = subtractedItems.reduce((sum, item) => sum + item.amount, 0);
+    const subtractions = subtractedItems.filter(i => i.is_subtracted !== false).reduce((sum, item) => sum + item.amount, 0);
     const currentItemAmount = parseFloat(itemAmount.replace(',', '.')) || 0;
     const intentionalSubtraction = itemDescription.trim() ? currentItemAmount : 0;
     return total - subtractions - intentionalSubtraction;
@@ -236,7 +239,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
    const handleAddSubtractedItem = () => {
     const parsedAmount = parseFloat(itemAmount.replace(',', '.'));
     if (itemDescription.trim() && !isNaN(parsedAmount) && parsedAmount > 0) {
-        setSubtractedItems([...subtractedItems, { description: itemDescription.trim(), amount: parsedAmount }]);
+        setSubtractedItems([...subtractedItems, { description: itemDescription.trim(), amount: parsedAmount, is_subtracted: true }]);
         setItemDescription('');
         setItemAmount('');
         itemDescriptionInputRef.current?.focus();
@@ -245,6 +248,52 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
 
   const handleRemoveSubtractedItem = (index: number) => {
     setSubtractedItems(subtractedItems.filter((_, i) => i !== index));
+  };
+
+  const handleToggleSubtractedItem = (index: number) => {
+    const newItems = [...subtractedItems];
+    newItems[index].is_subtracted = newItems[index].is_subtracted === false ? true : false;
+    setSubtractedItems(newItems);
+  };
+
+  const handleReceiptScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsScanning(true);
+    setError('');
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = (reader.result as string).split(',')[1];
+        try {
+          const parsed = await parseReceiptImage(base64String, file.type);
+          
+          if (parsed.total) {
+            setReceiptTotal(parsed.total.toString());
+          }
+          
+          if (parsed.items && parsed.items.length > 0) {
+            const newItems = parsed.items.map(item => ({
+              description: item.description,
+              amount: item.amount,
+              is_subtracted: false
+            }));
+            setSubtractedItems(newItems);
+            setShowSubtractions(true);
+          }
+        } catch (err) {
+          setError('Erreur lors de l\'analyse du ticket. Veuillez réessayer.');
+          console.error(err);
+        } finally {
+          setIsScanning(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      setIsScanning(false);
+      setError('Erreur lors de la lecture du fichier.');
+    }
   };
   
   const handleItemInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -264,14 +313,14 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
       const currentSubtractedItems = [...subtractedItems];
       const parsedPendingAmount = parseFloat(itemAmount.replace(',', '.'));
       if (itemDescription.trim() && !isNaN(parsedPendingAmount) && parsedPendingAmount > 0) {
-          currentSubtractedItems.push({ description: itemDescription.trim(), amount: parsedPendingAmount });
+          currentSubtractedItems.push({ description: itemDescription.trim(), amount: parsedPendingAmount, is_subtracted: true });
       }
       const parsedTotal = parseFloat(receiptTotal.replace(',', '.'));
       if (isNaN(parsedTotal) || parsedTotal <= 0) {
         setError('Le montant du ticket est requis.');
         return;
       }
-      const subtractions = currentSubtractedItems.reduce((sum, item) => sum + item.amount, 0);
+      const subtractions = currentSubtractedItems.filter(i => i.is_subtracted !== false).reduce((sum, item) => sum + item.amount, 0);
       finalAmount = parsedTotal - subtractions;
       finalSubtractedItems = currentSubtractedItems;
     } else {
@@ -472,6 +521,27 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                             </div>
                         )}
                     </div>
+                    
+                    <div className="flex justify-center mt-2">
+                        <label className={`cursor-pointer ${isScanning ? 'bg-slate-200 dark:bg-slate-700 text-slate-500' : 'bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40'} px-4 py-2 rounded-lg border border-brand-200 dark:border-brand-800 transition-colors flex items-center gap-2 font-medium w-full justify-center`}>
+                            {isScanning ? (
+                                <>
+                                    <svg className="animate-spin h-5 w-5 text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>Analyse du ticket en cours...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <CameraIcon className="w-5 h-5" />
+                                    <span>Scanner un ticket (Photo, Galerie ou PDF)</span>
+                                    <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleReceiptScan} disabled={isScanning} />
+                                </>
+                            )}
+                        </label>
+                    </div>
+
                     <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700/50 p-3 rounded-lg">
                         <label htmlFor="toggle-subtractions" className="font-medium text-slate-700 dark:text-slate-200 cursor-pointer flex items-center gap-2">
                             <ScissorsIcon />
@@ -500,13 +570,18 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                     </div>
 
                      {subtractedItems.length > 0 && (
-                      <div className="space-y-2 max-h-28 overflow-y-auto pr-2">
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                         {subtractedItems.map((item, index) => (
-                          <div key={index} className="flex items-center justify-between bg-white dark:bg-slate-600 p-2 rounded-md">
-                            <span className="text-sm text-slate-700 dark:text-slate-200">{item.description}</span>
+                          <div key={index} 
+                               onClick={() => handleToggleSubtractedItem(index)}
+                               className={`flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors border ${item.is_subtracted !== false ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-600 border-slate-200 dark:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-500'}`}>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-slate-800 dark:text-slate-100">{item.amount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})}</span>
-                              <button type="button" onClick={() => handleRemoveSubtractedItem(index)} className="p-1 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full">
+                                <input type="checkbox" checked={item.is_subtracted !== false} readOnly className="rounded text-brand-500 focus:ring-brand-500" />
+                                <span className={`text-sm ${item.is_subtracted !== false ? 'text-red-700 dark:text-red-300 font-medium line-through opacity-70' : 'text-slate-700 dark:text-slate-200'}`}>{item.description}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-sm font-medium ${item.is_subtracted !== false ? 'text-red-700 dark:text-red-300' : 'text-slate-800 dark:text-slate-100'}`}>{item.amount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})}</span>
+                              <button type="button" onClick={(e) => { e.stopPropagation(); handleRemoveSubtractedItem(index); }} className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full">
                                 <TrashIcon />
                               </button>
                             </div>

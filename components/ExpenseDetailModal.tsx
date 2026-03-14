@@ -105,38 +105,18 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
   
   const { receiptTotal, totalSubtracted } = useMemo(() => {
       if (!hasSubtractions) return { receiptTotal: 0, totalSubtracted: 0 };
-      const totalSub = expense.subtracted_items!.reduce((sum, item) => sum + item.amount, 0);
+      const totalSub = expense.subtracted_items!.filter(i => i.is_subtracted !== false).reduce((sum, item) => sum + item.amount, 0);
       return { receiptTotal: expense.amount + totalSub, totalSubtracted: totalSub };
   }, [expense, hasSubtractions]);
 
   const parsedDetails = useMemo(() => {
-      let displayDescription = expense.description, store = '', person = '', occasion = '', vehicle = '', heating = '', garage = '', mileage = '';
+      let displayDescription = expense.description, store = '', person = '', occasion = '', vehicle = '', heating = '';
       if (expense.category === 'Courses') { store = expense.description; displayDescription = ''; }
       else if (expense.category === 'Chauffage') { const match = expense.description.match(/\s\(([^)]+)\)$/); if (match) { heating = match[1]; displayDescription = ''; } }
-      else if (expense.category === 'Réparation voitures') { 
-          const match = expense.description.match(/\s\(([^)]+)\)$/); 
-          if (match) { 
-              vehicle = match[1]; 
-              let baseDesc = expense.description.replace(/\s\(([^)]+)\)$/, '').trim(); 
-              
-              const kmMatch = baseDesc.match(/\s-\sKm:\s(.*?)$/);
-              if (kmMatch) {
-                  mileage = kmMatch[1];
-                  baseDesc = baseDesc.replace(/\s-\sKm:\s(.*?)$/, '').trim();
-              }
-              
-              const garageMatch = baseDesc.match(/\s-\sGarage:\s(.*?)$/);
-              if (garageMatch) {
-                  garage = garageMatch[1];
-                  baseDesc = baseDesc.replace(/\s-\sGarage:\s(.*?)$/, '').trim();
-              }
-              
-              displayDescription = baseDesc;
-          } 
-      }
+      else if (expense.category === 'Réparation voitures') { const match = expense.description.match(/\s\(([^)]+)\)$/); if (match) { vehicle = match[1]; displayDescription = expense.description.replace(/\s\(([^)]+)\)$/, '').trim(); } }
       else if (expense.category === 'Vêtements') { const match = expense.description.match(/\s\(([^)]+)\)$/); if (match) { person = match[1]; displayDescription = expense.description.replace(/\s\(([^)]+)\)$/, '').trim(); } }
       else if (expense.category === 'Cadeau') { const match = expense.description.match(/\s\(([^)]+)\s-\s([^)]+)\)$/); if (match) { person = match[1]; occasion = match[2]; displayDescription = expense.description.replace(/\s\(([^)]+)\s-\s([^)]+)\)$/, '').trim(); } }
-      return { displayDescription, store, person, occasion, vehicle, heating, garage, mileage };
+      return { displayDescription, store, person, occasion, vehicle, heating };
   }, [expense]);
 
   const formattedDate = new Date(expense.date).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -186,8 +166,36 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
                 <div className="space-y-3">
                     {parsedDetails.displayDescription && (<div><p className="text-xs text-slate-400 uppercase">Description</p><p className="font-medium text-slate-800 dark:text-slate-100 text-lg">{parsedDetails.displayDescription}</p></div>)}
                     {parsedDetails.store && !hasSubtractions && (<div><p className="text-xs text-slate-400 uppercase">Magasin</p><p className="font-medium text-slate-800 dark:text-slate-100 text-lg">{parsedDetails.store}</p></div>)}
-                    {parsedDetails.garage && (<div><p className="text-xs text-slate-400 uppercase">Garage</p><p className="font-medium text-slate-800 dark:text-slate-100 text-lg">{parsedDetails.garage}</p></div>)}
-                    {parsedDetails.mileage && (<div><p className="text-xs text-slate-400 uppercase">Kilométrage</p><p className="font-medium text-slate-800 dark:text-slate-100 text-lg">{parsedDetails.mileage} km</p></div>)}
+                    {hasSubtractions && (
+                        <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-200 dark:border-slate-600">
+                            <div className="flex items-center gap-2 mb-3 text-slate-600 dark:text-slate-300">
+                                <ScissorsIcon />
+                                <h4 className="font-bold text-sm uppercase tracking-wider">Détail du ticket</h4>
+                            </div>
+                            <div className="space-y-2 mb-3">
+                                {expense.subtracted_items!.map((item, idx) => (
+                                    <div key={idx} className={`flex justify-between text-sm ${item.is_subtracted !== false ? 'text-red-600 dark:text-red-400 font-medium' : 'text-slate-600 dark:text-slate-400'}`}>
+                                        <span className={item.is_subtracted !== false ? 'line-through opacity-70' : ''}>{item.description}</span>
+                                        <span>{item.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="border-t border-slate-200 dark:border-slate-600 pt-3 space-y-1">
+                                <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
+                                    <span>Total ticket</span>
+                                    <span>{receiptTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+                                </div>
+                                <div className="flex justify-between text-sm text-red-500 dark:text-red-400 font-medium">
+                                    <span>Articles déduits</span>
+                                    <span>-{totalSubtracted.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+                                </div>
+                                <div className="flex justify-between text-base font-bold text-slate-800 dark:text-slate-100 pt-1">
+                                    <span>Montant final</span>
+                                    <span>{expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
                 {history.length > 0 && (
                     <div className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-4">
