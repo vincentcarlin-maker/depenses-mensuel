@@ -7,7 +7,6 @@ import CameraIcon from './icons/CameraIcon';
 import SegmentedControl from './SegmentedControl';
 import PiggyBankIcon from './icons/PiggyBankIcon';
 import ScissorsIcon from './icons/ScissorsIcon';
-import { parseReceiptImage } from '../src/services/geminiService';
 import { 
     MandatoryIcon, 
     FuelIcon, 
@@ -68,7 +67,6 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
     const [user, setUser] = useState<User>(expense.user);
     const [date, setDate] = useState(toDatetimeLocal(expense.date));
     const [transactionType, setTransactionType] = useState<'expense' | 'refund'>(expense.amount >= 0 ? 'expense' : 'refund');
-    const [isScanning, setIsScanning] = useState(false);
     
     // State for "Courses" subtractions toggle
     const initialShowSubtractions = expense.category === 'Courses' && Array.isArray(expense.subtracted_items) && expense.subtracted_items.length > 0;
@@ -344,88 +342,6 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
         setSubtractedItems(newItems);
     };
 
-    const handleReceiptScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setIsScanning(true);
-        setError('');
-        try {
-            const reader = new FileReader();
-            reader.onloadend = async () => {
-                const base64String = (reader.result as string).split(',')[1];
-                try {
-                    const parsed = await parseReceiptImage(base64String, file.type, knownProducts);
-                    
-                    if (parsed.total) {
-                        setReceiptTotal(parsed.total.toString());
-                        setShowSubtractions(true);
-                    }
-
-                    if (parsed.store) {
-                        const matchedStore = groceryStores.find(s => 
-                            parsed.store!.toLowerCase().includes(s.toLowerCase())
-                        );
-                        if (matchedStore) {
-                            setStore(matchedStore);
-                            setCustomStore('');
-                        } else {
-                            setStore('Autres');
-                            setCustomStore(parsed.store);
-                        }
-                    }
-
-                    if (parsed.date) {
-                        try {
-                            const parsedDate = new Date(parsed.date);
-                            if (!isNaN(parsedDate.getTime())) {
-                                setDate(toDatetimeLocal(parsedDate.toISOString()));
-                            }
-                        } catch (e) {
-                            console.error("Error parsing date from receipt:", e);
-                        }
-                    }
-                    
-                    if (parsed.items && parsed.items.length > 0) {
-                        const newItems = parsed.items.map(item => {
-                            const isTicketResto = TICKET_RESTAURANT_KEYWORDS.some(kw => 
-                                item.description.toLowerCase().includes(kw)
-                            );
-                            
-                            // Si c'est Sophie qui paye et que c'est un ticket resto, on le soustrait par défaut
-                            const shouldSubtract = isTicketResto && user === User.Sophie;
-
-                            const itemCategory = (item as any).category;
-                            const validCategory = PRODUCT_CATEGORIES.includes(itemCategory) ? itemCategory : PRODUCT_CATEGORIES[0];
-
-                            return {
-                                description: item.description,
-                                amount: item.amount,
-                                is_subtracted: shouldSubtract,
-                                category: isTicketResto ? 'Autre' : validCategory
-                            };
-                        });
-
-                        // Trier les articles par catégorie
-                        newItems.sort((a, b) => (a.category || '').localeCompare(b.category || ''));
-
-                        setSubtractedItems(newItems);
-                        setShowSubtractions(true);
-                    }
-                } catch (err: any) {
-                    setError(err.message || 'Erreur lors de l\'analyse du ticket. Veuillez réessayer.');
-                    console.error(err);
-                } finally {
-                    setIsScanning(false);
-                }
-            };
-            reader.readAsDataURL(file);
-        } catch (err) {
-            setIsScanning(false);
-            setError('Erreur lors de la lecture du fichier.');
-        }
-    };
-
     const handleItemInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -550,19 +466,6 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                     <div>
                                         <div className="flex justify-between items-center mb-2">
                                             <label htmlFor="edit-store-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Magasin</label>
-                                            <label className={`cursor-pointer ${isScanning ? 'text-slate-400' : 'text-brand-500 hover:text-brand-600 dark:text-brand-400 dark:hover:text-brand-300'} flex items-center justify-center p-1.5 rounded-full hover:bg-brand-50 dark:hover:bg-brand-900/30 transition-colors bg-brand-50/50 dark:bg-brand-900/10`} title="Scanner un ticket">
-                                                {isScanning ? (
-                                                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                    </svg>
-                                                ) : (
-                                                    <>
-                                                        <CameraIcon className="w-5 h-5" />
-                                                        <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleReceiptScan} disabled={isScanning} />
-                                                    </>
-                                                )}
-                                            </label>
                                         </div>
                                         <select id="edit-store-select" value={store} onChange={e => setStore(e.target.value)} className={`${baseInputStyle} pl-3 pr-10`}>
                                             {groceryStores.map(s => <option key={s} value={s}>{s}</option>)}

@@ -8,7 +8,6 @@ import ScissorsIcon from './icons/ScissorsIcon';
 import TrashIcon from './icons/TrashIcon';
 import CameraIcon from './icons/CameraIcon';
 import CalendarDaysIcon from './icons/CalendarDaysIcon';
-import { parseReceiptImage } from '../src/services/geminiService';
 import { 
     MandatoryIcon, 
     FuelIcon, 
@@ -68,7 +67,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [user, setUser] = useState<User>(initialData?.user || loggedInUser);
   const [date, setDate] = useState(toDatetimeLocal(new Date()));
   const [isDateManuallySet, setIsDateManuallySet] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
   const [transactionType, setTransactionType] = useState<'expense' | 'refund'>(initialData && initialData.amount < 0 ? 'refund' : 'expense');
   const [store, setStore] = useState(groceryStores[0] || '');
   const [customStore, setCustomStore] = useState('');
@@ -280,88 +278,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
     setSubtractedItems(newItems);
   };
 
-  const handleReceiptScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsScanning(true);
-    setError('');
-    try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64String = (reader.result as string).split(',')[1];
-        try {
-          const parsed = await parseReceiptImage(base64String, file.type, knownProducts);
-          
-          if (parsed.total) {
-            setReceiptTotal(parsed.total.toString());
-          }
-
-          if (parsed.store) {
-            const matchedStore = groceryStores.find(s => 
-              parsed.store!.toLowerCase().includes(s.toLowerCase())
-            );
-            if (matchedStore) {
-              setStore(matchedStore);
-              setCustomStore('');
-            } else {
-              setStore('Autres');
-              setCustomStore(parsed.store);
-            }
-          }
-
-          if (parsed.date) {
-            try {
-              const parsedDate = new Date(parsed.date);
-              if (!isNaN(parsedDate.getTime())) {
-                setDate(toDatetimeLocal(parsedDate));
-                setIsDateManuallySet(true);
-              }
-            } catch (e) {
-              console.error("Error parsing date from receipt:", e);
-            }
-          }
-          
-          if (parsed.items && parsed.items.length > 0) {
-            const newItems = parsed.items.map(item => {
-              const isTicketResto = TICKET_RESTAURANT_KEYWORDS.some(kw => 
-                item.description.toLowerCase().includes(kw)
-              );
-              
-              // Si c'est Sophie qui paye et que c'est un ticket resto, on le soustrait par défaut
-              const shouldSubtract = isTicketResto && user === User.Sophie;
-
-              const itemCategory = (item as any).category;
-              const validCategory = PRODUCT_CATEGORIES.includes(itemCategory) ? itemCategory : PRODUCT_CATEGORIES[0];
-
-              return {
-                description: item.description,
-                amount: item.amount,
-                is_subtracted: shouldSubtract,
-                category: isTicketResto ? 'Autre' : validCategory
-              };
-            });
-
-            // Trier les articles par catégorie
-            newItems.sort((a, b) => (a.category || '').localeCompare(b.category || ''));
-
-            setSubtractedItems(newItems);
-            setShowSubtractions(true);
-          }
-        } catch (err: any) {
-          setError(err.message || 'Erreur lors de l\'analyse du ticket. Veuillez réessayer.');
-          console.error(err);
-        } finally {
-          setIsScanning(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      setIsScanning(false);
-      setError('Erreur lors de la lecture du fichier.');
-    }
-  };
-  
   const handleItemInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -577,19 +493,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                         <div>
                             <div className="flex justify-between items-center mb-2">
                                 <label htmlFor="store-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Magasin</label>
-                                <label className={`cursor-pointer ${isScanning ? 'text-slate-400' : 'text-brand-500 hover:text-brand-600 dark:text-brand-400 dark:hover:text-brand-300'} flex items-center justify-center p-1.5 rounded-full hover:bg-brand-50 dark:hover:bg-brand-900/30 transition-colors bg-brand-50/50 dark:bg-brand-900/10`} title="Scanner un ticket">
-                                    {isScanning ? (
-                                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                    ) : (
-                                        <>
-                                            <CameraIcon className="w-5 h-5" />
-                                            <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleReceiptScan} disabled={isScanning} />
-                                        </>
-                                    )}
-                                </label>
                             </div>
                             <select id="store-select" value={store} onChange={e => setStore(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent sm:text-sm rounded-lg">
                                 {groceryStores.map(s => <option key={s} value={s}>{s}</option>)}

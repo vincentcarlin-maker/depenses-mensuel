@@ -11,9 +11,7 @@ import PaintBrushIcon from './icons/PaintBrushIcon';
 import BellIcon from './icons/BellIcon';
 import { type Profile, type LoginEvent } from '../hooks/useAuth';
 import ManagementTab from './ManagementTab';
-import PriceTrackerTab from './PriceTrackerTab';
 import WrenchScrewdriverIcon from './icons/WrenchScrewdriverIcon';
-import TrendingUpIcon from './icons/TrendingUpIcon';
 import LogoutIcon from './icons/LogoutIcon';
 import ConfirmationModal from './ConfirmationModal';
 import { TabId } from './BottomNavigation';
@@ -88,7 +86,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     activeTab,
     onTabChange,
   } = props;
-  const [activeView, setActiveView] = useState<'main' | 'appearance' | 'reminders' | 'management' | 'priceTracker'>('main');
+  const [activeView, setActiveView] = useState<'main' | 'appearance' | 'reminders' | 'management'>('main');
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
   useEffect(() => {
@@ -134,8 +132,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
       main: 'Réglages',
       appearance: 'Apparence',
       reminders: 'Gestion des rappels',
-      management: 'Gestion de l\'application',
-      priceTracker: 'Suivi des prix'
+      management: 'Gestion de l\'application'
   }
 
   return (
@@ -182,12 +179,6 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                             title="Rappels"
                             description="Gérer les dépenses mensuelles récurrentes"
                             onClick={() => setActiveView('reminders')}
-                        />
-                        <SettingsMenuItem
-                            icon={<TrendingUpIcon />}
-                            title="Suivi des prix"
-                            description="Évolution des prix des articles scannés"
-                            onClick={() => setActiveView('priceTracker')}
                         />
                         <SettingsMenuItem
                             icon={<WrenchScrewdriverIcon />}
@@ -262,14 +253,6 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         setHeatingTypes={props.setHeatingTypes}
                         setToastInfo={props.setToastInfo}
                         loginHistory={props.loginHistory}
-                    />
-                </div>
-            )}
-            {activeView === 'priceTracker' && (
-                <div className="animate-fade-in">
-                    <PriceTrackerTab 
-                      expenses={props.expenses} 
-                      onUpdateExpense={props.onUpdateExpense}
                     />
                 </div>
             )}
