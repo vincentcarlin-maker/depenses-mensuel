@@ -345,6 +345,30 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                         setReceiptTotal(parsed.total.toString());
                         setShowSubtractions(true);
                     }
+
+                    if (parsed.store) {
+                        const matchedStore = groceryStores.find(s => 
+                            parsed.store!.toLowerCase().includes(s.toLowerCase())
+                        );
+                        if (matchedStore) {
+                            setStore(matchedStore);
+                            setCustomStore('');
+                        } else {
+                            setStore('Autres');
+                            setCustomStore(parsed.store);
+                        }
+                    }
+
+                    if (parsed.date) {
+                        try {
+                            const parsedDate = new Date(parsed.date);
+                            if (!isNaN(parsedDate.getTime())) {
+                                setDate(toDatetimeLocal(parsedDate.toISOString()));
+                            }
+                        } catch (e) {
+                            console.error("Error parsing date from receipt:", e);
+                        }
+                    }
                     
                     if (parsed.items && parsed.items.length > 0) {
                         const newItems = parsed.items.map(item => {
