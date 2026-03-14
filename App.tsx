@@ -919,11 +919,40 @@ const MainApp: React.FC<{
       </PullToRefresh>
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} onOpenSettings={() => setIsSettingsOpen(true)} />
       {expenseToView && (<ExpenseDetailModal expense={expenseToView} history={expenseHistory} onClose={() => setExpenseToView(null)} onEdit={() => { setExpenseToEdit(expenseToView); setExpenseToView(null); }} />)}
-      {expenseToEdit && (<EditExpenseModal expense={expenseToEdit} onUpdateExpense={updateExpense} onDeleteExpense={deleteExpense} onClose={() => setExpenseToEdit(null)} categories={categories} groceryStores={groceryStores} cars={cars} heatingTypes={heatingTypes} />)}
+      {expenseToEdit && (<EditExpenseModal expense={expenseToEdit} onUpdateExpense={updateExpense} onDeleteExpense={deleteExpense} onClose={() => setExpenseToEdit(null)} categories={categories} groceryStores={groceryStores} cars={cars} heatingTypes={heatingTypes} loggedInUser={user} />)}
       {toastInfo && (<Toast message={toastInfo.message} type={toastInfo.type} onClose={() => setToastInfo(null)} />)}
       <UndoToast undoableAction={undoableAction} onUndo={handleUndo} />
       <GlobalSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} allExpenses={expenses} onEditExpense={setExpenseToView} highlightedIds={highlightedExpenseIds} modifiedInfo={modifiedExpenseInfo} categories={categories} />
-      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} reminders={reminders} expenses={expenses} onAddReminder={addReminder} onUpdateReminder={updateReminder} onDeleteReminder={deleteReminder} categories={categories} onAddCategory={addCategory} onUpdateCategory={updateCategory} onDeleteCategory={deleteCategory} profiles={profiles} loggedInUser={user} onAddProfile={onAddProfile} onUpdateProfilePassword={onUpdateProfilePassword} onDeleteProfile={onDeleteProfile} groceryStores={groceryStores} setGroceryStores={setGroceryStores} cars={cars} setCars={setCars} heatingTypes={heatingTypes} setHeatingTypes={setHeatingTypes} setToastInfo={setToastInfo} loginHistory={loginHistory} onLogout={onLogout} activeTab={activeTab} onTabChange={setActiveTab} />
+      <SettingsModal 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
+        reminders={reminders} 
+        expenses={expenses} 
+        onAddReminder={addReminder} 
+        onUpdateReminder={updateReminder} 
+        onDeleteReminder={deleteReminder} 
+        categories={categories} 
+        onAddCategory={addCategory} 
+        onUpdateCategory={updateCategory} 
+        onDeleteCategory={deleteCategory} 
+        profiles={profiles} 
+        loggedInUser={user} 
+        onAddProfile={onAddProfile} 
+        onUpdateProfilePassword={onUpdateProfilePassword} 
+        onDeleteProfile={onDeleteProfile} 
+        onUpdateExpense={updateExpense}
+        groceryStores={groceryStores} 
+        setGroceryStores={setGroceryStores} 
+        cars={cars} 
+        setCars={setCars} 
+        heatingTypes={heatingTypes} 
+        setHeatingTypes={setHeatingTypes} 
+        setToastInfo={setToastInfo} 
+        loginHistory={loginHistory} 
+        onLogout={onLogout} 
+        activeTab={activeTab} 
+        onTabChange={setActiveTab} 
+      />
       <OfflineIndicator />
     </div>
   );

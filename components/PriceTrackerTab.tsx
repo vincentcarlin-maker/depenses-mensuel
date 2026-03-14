@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { type Expense } from '../types';
+import { type Expense, PRODUCT_CATEGORIES } from '../types';
 import SearchIcon from './icons/SearchIcon';
 import TrendingUpIcon from './icons/TrendingUpIcon';
+import TrashIcon from './icons/TrashIcon';
 
 interface PriceTrackerTabProps {
   expenses: Expense[];
+  onUpdateExpense: (expense: Expense) => Promise<void>;
 }
 
 interface ItemPriceHistory {
@@ -34,6 +36,65 @@ const PriceTrackerTab: React.FC<PriceTrackerTabProps> = ({ expenses }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | 'All'>('All');
   const [selectedProduct, setSelectedProduct] = useState<ProductData | null>(null);
+  const [editingEntry, setEditingEntry] = useState<{ idx: number, amount: string, description: string, category: string } | null>(null);
+
+  const handleDeleteHistoryItem = async (entry: ItemPriceHistory) => {
+    const expense = expenses.find(e => e.id === entry.expenseId);
+    if (!expense || !expense.subtracted_items) return;
+
+    const newSubtractedItems = expense.subtracted_items.filter(item => 
+      !(item.description.trim() === entry.originalName.split(' (')[0].trim() && item.amount === entry.amount)
+    );
+
+    const updatedExpense = {
+      ...expense,
+      subtracted_items: newSubtractedItems
+    };
+
+    await onUpdateExpense(updatedExpense);
+    
+    // Update local state if needed or let parent refresh
+    if (selectedProduct) {
+      const newHistory = selectedProduct.history.filter(h => h !== entry);
+      if (newHistory.length === 0) {
+        setSelectedProduct(null);
+      } else {
+        setSelectedProduct({
+          ...selectedProduct,
+          history: newHistory
+        });
+      }
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedProduct || !editingEntry) return;
+    
+    const entry = selectedProduct.history[editingEntry.idx];
+    const expense = expenses.find(e => e.id === entry.expenseId);
+    if (!expense || !expense.subtracted_items) return;
+
+    const newSubtractedItems = expense.subtracted_items.map(item => {
+      if (item.description.trim() === entry.originalName.split(' (')[0].trim() && item.amount === entry.amount) {
+        return {
+          ...item,
+          description: editingEntry.description,
+          amount: parseFloat(editingEntry.amount) || item.amount,
+          category: editingEntry.category
+        };
+      }
+      return item;
+    });
+
+    const updatedExpense = {
+      ...expense,
+      subtracted_items: newSubtractedItems
+    };
+
+    await onUpdateExpense(updatedExpense);
+    setEditingEntry(null);
+    setSelectedProduct(null); // Close modal to refresh data
+  };
 
   const categoryData = useMemo(() => {
     const categoryMap = new Map<string, Map<string, ItemPriceHistory[]>>();
@@ -243,26 +304,105 @@ const PriceTrackerTab: React.FC<PriceTrackerTabProps> = ({ expenses }) => {
                 {selectedProduct.history.map((entry, idx) => {
                   const prevEntry = selectedProduct.history[idx + 1];
                   const diff = prevEntry ? entry.amount - prevEntry.amount : null;
+                  const isEditing = editingEntry?.idx === idx;
                   
                   return (
-                    <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-slate-800 dark:text-slate-100">
-                          {entry.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                        </span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">
-                          {new Date(entry.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                        </span>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500 italic">
-                          {entry.originalName.split(' (')[1]?.replace(')', '') || 'Magasin inconnu'}
-                        </span>
-                      </div>
-                      
-                      {diff !== null && (
-                        <div className={`flex items-center gap-1 text-sm font-bold ${
-                          diff > 0 ? 'text-red-500' : diff < 0 ? 'text-emerald-500' : 'text-slate-400'
-                        }`}>
-                          {diff > 0 ? '+' : ''}{diff.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                    <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                      {isEditing ? (
+                        <div className="space-y-3">
+                          <input 
+                            type="text" 
+                            value={editingEntry.description}
+                            onChange={(e) => setEditingEntry({...editingEntry, description: e.target.value})}
+                            className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                            placeholder="Description"
+                          />
+                          <div className="flex gap-2">
+                            <input 
+                              type="number" 
+                              step="0.01"
+                              value={editingEntry.amount}
+                              onChange={(e) => setEditingEntry({...editingEntry, amount: e.target.value})}
+                              className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                              placeholder="Prix"
+                            />
+                            <select
+                              value={editingEntry.category}
+                              onChange={(e) => setEditingEntry({ ...editingEntry, category: e.target.value })}
+                              className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                            >
+                              {PRODUCT_CATEGORIES.map(cat => (
+                                <option key={cat} value={cat}>{cat}</option>
+                              ))}
+                              <option value="Autre">Autre</option>
+                            </select>
+                          </div>
+                          <div className="flex gap-2 justify-end">
+                            <button 
+                              onClick={() => setEditingEntry(null)}
+                              className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-sm"
+                            >
+                              Annuler
+                            </button>
+                            <button 
+                              onClick={handleSaveEdit}
+                              className="px-4 py-2 bg-brand-500 text-white rounded-lg text-sm font-bold"
+                            >
+                              Enregistrer
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-800 dark:text-slate-100">
+                              {entry.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                            </span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                              {new Date(entry.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                            </span>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 italic">
+                              {entry.originalName.split(' (')[1]?.replace(')', '') || 'Magasin inconnu'}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-3">
+                            {diff !== null && (
+                              <div className={`flex items-center gap-1 text-sm font-bold ${
+                                diff > 0 ? 'text-red-500' : diff < 0 ? 'text-emerald-500' : 'text-slate-400'
+                              }`}>
+                                {diff > 0 ? '+' : ''}{diff.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                              </div>
+                            )}
+                            
+                            <div className="flex items-center gap-1 ml-2">
+                              <button 
+                                onClick={() => setEditingEntry({
+                                  idx, 
+                                  amount: entry.amount.toString(), 
+                                  description: entry.originalName.split(' (')[0],
+                                  category: selectedProduct.category
+                                })}
+                                className="p-1.5 text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 rounded-lg transition-colors"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  if (window.confirm('Supprimer cet article de l\'historique ?')) {
+                                    handleDeleteHistoryItem(entry);
+                                  }
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>

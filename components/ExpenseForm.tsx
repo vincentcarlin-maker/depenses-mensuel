@@ -35,6 +35,10 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
   "Divers": { icon: MiscIcon, color: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-50 dark:bg-cyan-500/10', borderColor: 'border-cyan-100 dark:border-cyan-500/20' },
 };
 
+const TICKET_RESTAURANT_KEYWORDS = [
+  't restaurant', 't restau', 't.rest', 'cb rest', 'ticket rest', 't. restaurant', 'restau'
+];
+
 interface ExpenseFormProps {
   onAddExpense: (expense: Omit<Expense, 'id' | 'created_at'>) => void;
   expenses: Expense[];
@@ -280,12 +284,21 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
           }
           
           if (parsed.items && parsed.items.length > 0) {
-            const newItems = parsed.items.map(item => ({
-              description: item.description,
-              amount: item.amount,
-              is_subtracted: false,
-              category: PRODUCT_CATEGORIES[0]
-            }));
+            const newItems = parsed.items.map(item => {
+              const isTicketResto = TICKET_RESTAURANT_KEYWORDS.some(kw => 
+                item.description.toLowerCase().includes(kw)
+              );
+              
+              // Si c'est Sophie (pas Vincent) et que c'est un ticket resto, on le soustrait par défaut
+              const shouldSubtract = isTicketResto && loggedInUser !== User.Vincent;
+
+              return {
+                description: item.description,
+                amount: item.amount,
+                is_subtracted: shouldSubtract,
+                category: isTicketResto ? 'Autre' : PRODUCT_CATEGORIES[0]
+              };
+            });
             setSubtractedItems(newItems);
             setShowSubtractions(true);
           }

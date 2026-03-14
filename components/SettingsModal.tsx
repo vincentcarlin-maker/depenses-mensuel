@@ -36,6 +36,7 @@ interface SettingsModalProps {
   onAddProfile: (profile: Profile) => boolean;
   onUpdateProfilePassword: (username: string, newPassword: string) => boolean;
   onDeleteProfile: (username: string) => boolean;
+  onUpdateExpense: (expense: Expense) => Promise<void>;
   groceryStores: string[];
   setGroceryStores: React.Dispatch<React.SetStateAction<string[]>>;
   cars: string[];
@@ -266,7 +267,10 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
             )}
             {activeView === 'priceTracker' && (
                 <div className="animate-fade-in">
-                    <PriceTrackerTab expenses={props.expenses} />
+                    <PriceTrackerTab 
+                      expenses={props.expenses} 
+                      onUpdateExpense={props.onUpdateExpense}
+                    />
                 </div>
             )}
         </main>
