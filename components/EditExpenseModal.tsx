@@ -73,6 +73,8 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
     const [customStore, setCustomStore] = useState('');
     const [heatingType, setHeatingType] = useState('');
     const [repairedCar, setRepairedCar] = useState('');
+    const [garage, setGarage] = useState('');
+    const [mileage, setMileage] = useState('');
     
     const [clothingPerson, setClothingPerson] = useState('Nathan');
     const [giftPerson, setGiftPerson] = useState('Nathan');
@@ -118,9 +120,31 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
             const match = expense.description.match(carRegex);
             if (match && cars.includes(match[1])) {
                 setRepairedCar(match[1]);
-                setDescription(expense.description.replace(carRegex, '').trim());
+                let baseDesc = expense.description.replace(carRegex, '').trim();
+                
+                const kmRegex = /\s-\sKm:\s(.*?)$/;
+                const kmMatch = baseDesc.match(kmRegex);
+                if (kmMatch) {
+                    setMileage(kmMatch[1]);
+                    baseDesc = baseDesc.replace(kmRegex, '').trim();
+                } else {
+                    setMileage('');
+                }
+                
+                const garageRegex = /\s-\sGarage:\s(.*?)$/;
+                const garageMatch = baseDesc.match(garageRegex);
+                if (garageMatch) {
+                    setGarage(garageMatch[1]);
+                    baseDesc = baseDesc.replace(garageRegex, '').trim();
+                } else {
+                    setGarage('');
+                }
+                
+                setDescription(baseDesc);
             } else {
                 setDescription(expense.description);
+                setMileage('');
+                setGarage('');
             }
         } else if (expense.category === 'Vêtements') {
             const personRegex = /\s\(([^)]+)\)$/;
@@ -226,7 +250,16 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                 setError('Veuillez sélectionner un véhicule.');
                 return;
             }
-            finalDescription = `${trimmedDescription} (${repairedCar})`;
+            
+            let repairDesc = trimmedDescription;
+            if (garage.trim()) {
+                repairDesc += ` - Garage: ${garage.trim()}`;
+            }
+            if (mileage.trim()) {
+                repairDesc += ` - Km: ${mileage.trim()}`;
+            }
+            
+            finalDescription = `${repairDesc} (${repairedCar})`;
         } else if (category === 'Vêtements') {
             const trimmedDescription = description.trim();
             if (!trimmedDescription) {
@@ -472,7 +505,34 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                                     </div>
                                 )}
                                 {category === 'Réparation voitures' && (
-                                    <div className="animate-fade-in"><label className="block text-sm font-medium text-slate-600 dark:text-slate-300">Véhicule</label><SegmentedControl options={carOptions} value={repairedCar} onChange={setRepairedCar} className="mt-1"/></div>
+                                    <div className="animate-fade-in space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">Véhicule</label>
+                                            <SegmentedControl options={carOptions} value={repairedCar} onChange={setRepairedCar} className="mt-1"/>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Garage</label>
+                                                <input
+                                                    type="text"
+                                                    value={garage}
+                                                    onChange={(e) => setGarage(e.target.value)}
+                                                    placeholder="Ex: Norauto"
+                                                    className={`${baseInputStyle} px-3`}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Kilométrage</label>
+                                                <input
+                                                    type="number"
+                                                    value={mileage}
+                                                    onChange={(e) => setMileage(e.target.value)}
+                                                    placeholder="Ex: 120000"
+                                                    className={`${baseInputStyle} px-3`}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
                                 )}
                                 {category === 'Vêtements' && (
                                     <div className="animate-fade-in"><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label><SegmentedControl options={childrenOptions} value={clothingPerson} onChange={setClothingPerson} className="mt-1"/></div>

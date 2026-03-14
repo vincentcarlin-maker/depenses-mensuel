@@ -67,6 +67,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [customStore, setCustomStore] = useState('');
   const [heatingType, setHeatingType] = useState(heatingTypes[0] || '');
   const [repairedCar, setRepairedCar] = useState(cars[0] || '');
+  const [garage, setGarage] = useState('');
+  const [mileage, setMileage] = useState('');
   
   const [showSubtractions, setShowSubtractions] = useState(false);
   const [receiptTotal, setReceiptTotal] = useState('');
@@ -307,7 +309,16 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             setError('Veuillez sélectionner un véhicule.');
             return;
         }
-        finalDescription = `${trimmedDescription} (${repairedCar})`;
+        
+        let repairDesc = trimmedDescription;
+        if (garage.trim()) {
+            repairDesc += ` - Garage: ${garage.trim()}`;
+        }
+        if (mileage.trim()) {
+            repairDesc += ` - Km: ${mileage.trim()}`;
+        }
+        
+        finalDescription = `${repairDesc} (${repairedCar})`;
     } else if (category === 'Vêtements') {
         const trimmedDescription = description.trim();
         if (!trimmedDescription) {
@@ -541,14 +552,38 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                   )}
 
                   {category === 'Réparation voitures' && (
-                      <div className="animate-fade-in">
-                          <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Véhicule</label>
-                          <SegmentedControl
-                              options={cars}
-                              value={repairedCar}
-                              onChange={setRepairedCar}
-                              colorClass="text-brand-600 dark:text-brand-400"
-                          />
+                      <div className="animate-fade-in space-y-4">
+                          <div>
+                              <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Véhicule</label>
+                              <SegmentedControl
+                                  options={cars}
+                                  value={repairedCar}
+                                  onChange={setRepairedCar}
+                                  colorClass="text-brand-600 dark:text-brand-400"
+                              />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Garage</label>
+                                  <input
+                                      type="text"
+                                      value={garage}
+                                      onChange={(e) => setGarage(e.target.value)}
+                                      placeholder="Ex: Norauto"
+                                      className="block w-full px-4 py-3 bg-slate-100 dark:bg-slate-700 border-transparent rounded-xl focus:ring-2 focus:ring-brand-500 focus:bg-white dark:focus:bg-slate-600 transition-all text-slate-800 dark:text-slate-100"
+                                  />
+                              </div>
+                              <div>
+                                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Kilométrage</label>
+                                  <input
+                                      type="number"
+                                      value={mileage}
+                                      onChange={(e) => setMileage(e.target.value)}
+                                      placeholder="Ex: 120000"
+                                      className="block w-full px-4 py-3 bg-slate-100 dark:bg-slate-700 border-transparent rounded-xl focus:ring-2 focus:ring-brand-500 focus:bg-white dark:focus:bg-slate-600 transition-all text-slate-800 dark:text-slate-100"
+                                  />
+                              </div>
+                          </div>
                       </div>
                   )}
 

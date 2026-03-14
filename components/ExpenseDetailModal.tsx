@@ -110,13 +110,33 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
   }, [expense, hasSubtractions]);
 
   const parsedDetails = useMemo(() => {
-      let displayDescription = expense.description, store = '', person = '', occasion = '', vehicle = '', heating = '';
+      let displayDescription = expense.description, store = '', person = '', occasion = '', vehicle = '', heating = '', garage = '', mileage = '';
       if (expense.category === 'Courses') { store = expense.description; displayDescription = ''; }
       else if (expense.category === 'Chauffage') { const match = expense.description.match(/\s\(([^)]+)\)$/); if (match) { heating = match[1]; displayDescription = ''; } }
-      else if (expense.category === 'Réparation voitures') { const match = expense.description.match(/\s\(([^)]+)\)$/); if (match) { vehicle = match[1]; displayDescription = expense.description.replace(/\s\(([^)]+)\)$/, '').trim(); } }
+      else if (expense.category === 'Réparation voitures') { 
+          const match = expense.description.match(/\s\(([^)]+)\)$/); 
+          if (match) { 
+              vehicle = match[1]; 
+              let baseDesc = expense.description.replace(/\s\(([^)]+)\)$/, '').trim(); 
+              
+              const kmMatch = baseDesc.match(/\s-\sKm:\s(.*?)$/);
+              if (kmMatch) {
+                  mileage = kmMatch[1];
+                  baseDesc = baseDesc.replace(/\s-\sKm:\s(.*?)$/, '').trim();
+              }
+              
+              const garageMatch = baseDesc.match(/\s-\sGarage:\s(.*?)$/);
+              if (garageMatch) {
+                  garage = garageMatch[1];
+                  baseDesc = baseDesc.replace(/\s-\sGarage:\s(.*?)$/, '').trim();
+              }
+              
+              displayDescription = baseDesc;
+          } 
+      }
       else if (expense.category === 'Vêtements') { const match = expense.description.match(/\s\(([^)]+)\)$/); if (match) { person = match[1]; displayDescription = expense.description.replace(/\s\(([^)]+)\)$/, '').trim(); } }
       else if (expense.category === 'Cadeau') { const match = expense.description.match(/\s\(([^)]+)\s-\s([^)]+)\)$/); if (match) { person = match[1]; occasion = match[2]; displayDescription = expense.description.replace(/\s\(([^)]+)\s-\s([^)]+)\)$/, '').trim(); } }
-      return { displayDescription, store, person, occasion, vehicle, heating };
+      return { displayDescription, store, person, occasion, vehicle, heating, garage, mileage };
   }, [expense]);
 
   const formattedDate = new Date(expense.date).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -166,6 +186,8 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
                 <div className="space-y-3">
                     {parsedDetails.displayDescription && (<div><p className="text-xs text-slate-400 uppercase">Description</p><p className="font-medium text-slate-800 dark:text-slate-100 text-lg">{parsedDetails.displayDescription}</p></div>)}
                     {parsedDetails.store && !hasSubtractions && (<div><p className="text-xs text-slate-400 uppercase">Magasin</p><p className="font-medium text-slate-800 dark:text-slate-100 text-lg">{parsedDetails.store}</p></div>)}
+                    {parsedDetails.garage && (<div><p className="text-xs text-slate-400 uppercase">Garage</p><p className="font-medium text-slate-800 dark:text-slate-100 text-lg">{parsedDetails.garage}</p></div>)}
+                    {parsedDetails.mileage && (<div><p className="text-xs text-slate-400 uppercase">Kilométrage</p><p className="font-medium text-slate-800 dark:text-slate-100 text-lg">{parsedDetails.mileage} km</p></div>)}
                 </div>
                 {history.length > 0 && (
                     <div className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-4">
