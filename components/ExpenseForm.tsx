@@ -67,8 +67,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [customStore, setCustomStore] = useState('');
   const [heatingType, setHeatingType] = useState(heatingTypes[0] || '');
   const [repairedCar, setRepairedCar] = useState(cars[0] || '');
-  const [garage, setGarage] = useState('');
-  const [mileage, setMileage] = useState('');
+  const [carMileage, setCarMileage] = useState('');
+  const [carGarage, setCarGarage] = useState('');
   
   const [showSubtractions, setShowSubtractions] = useState(false);
   const [receiptTotal, setReceiptTotal] = useState('');
@@ -220,6 +220,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         setError('');
         setSuggestions([]);
         setRepairedCar(cars[0] || '');
+        setCarMileage('');
+        setCarGarage('');
         setClothingPerson('Nathan');
         setGiftPerson('Nathan');
         setGiftOccasion('Noël');
@@ -310,15 +312,15 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             return;
         }
         
-        let repairDesc = trimmedDescription;
-        if (garage.trim()) {
-            repairDesc += ` - Garage: ${garage.trim()}`;
+        let repairDetails = trimmedDescription;
+        if (carGarage.trim()) {
+            repairDetails += ` chez ${carGarage.trim()}`;
         }
-        if (mileage.trim()) {
-            repairDesc += ` - Km: ${mileage.trim()}`;
+        if (carMileage.trim()) {
+            repairDetails += ` à ${carMileage.trim()} km`;
         }
         
-        finalDescription = `${repairDesc} (${repairedCar})`;
+        finalDescription = `${repairDetails} (${repairedCar})`;
     } else if (category === 'Vêtements') {
         const trimmedDescription = description.trim();
         if (!trimmedDescription) {
@@ -562,26 +564,32 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                                   colorClass="text-brand-600 dark:text-brand-400"
                               />
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Garage</label>
+                          <div>
+                              <label htmlFor="car-garage" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Garage</label>
+                              <input
+                                  type="text"
+                                  id="car-garage"
+                                  value={carGarage}
+                                  onChange={(e) => setCarGarage(e.target.value)}
+                                  className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 sm:text-sm"
+                                  placeholder="Ex: Renault, Norauto..."
+                              />
+                          </div>
+                          <div>
+                              <label htmlFor="car-mileage" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Kilométrage</label>
+                              <div className="relative">
                                   <input
                                       type="text"
-                                      value={garage}
-                                      onChange={(e) => setGarage(e.target.value)}
-                                      placeholder="Ex: Norauto"
-                                      className="block w-full px-4 py-3 bg-slate-100 dark:bg-slate-700 border-transparent rounded-xl focus:ring-2 focus:ring-brand-500 focus:bg-white dark:focus:bg-slate-600 transition-all text-slate-800 dark:text-slate-100"
-                                  />
-                              </div>
-                              <div>
-                                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Kilométrage</label>
-                                  <input
-                                      type="number"
-                                      value={mileage}
-                                      onChange={(e) => setMileage(e.target.value)}
+                                      inputMode="numeric"
+                                      id="car-mileage"
+                                      value={carMileage}
+                                      onChange={(e) => setCarMileage(e.target.value)}
+                                      className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 sm:text-sm pr-10"
                                       placeholder="Ex: 120000"
-                                      className="block w-full px-4 py-3 bg-slate-100 dark:bg-slate-700 border-transparent rounded-xl focus:ring-2 focus:ring-brand-500 focus:bg-white dark:focus:bg-slate-600 transition-all text-slate-800 dark:text-slate-100"
                                   />
+                                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                      <span className="text-slate-500 sm:text-sm">km</span>
+                                  </div>
                               </div>
                           </div>
                       </div>
@@ -637,7 +645,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                       ) : (
                           <>
                           <label htmlFor="description" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
-                            {category === 'Restaurant' ? 'Restaurant' : 'Description'}
+                            {category === 'Restaurant' ? 'Restaurant' : category === 'Réparation voitures' ? 'Réparation effectuée' : 'Description'}
                           </label>
                           <div className="relative">
                               <input
@@ -648,7 +656,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                               onFocus={(e) => handleDescriptionChange(e)}
                               onBlur={() => setTimeout(() => setSuggestions([]), 150)}
                               className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 sm:text-sm"
-                              placeholder={category === 'Restaurant' ? "Ex: La Pizzaiola, McDo..." : category === 'Vêtements' ? "Ex: Pantalon, Manteau..." : category === 'Cadeau' ? "Ex: Lego, Poupée..." : "Ex: McDo, Cinéma..."}
+                              placeholder={category === 'Restaurant' ? "Ex: La Pizzaiola, McDo..." : category === 'Vêtements' ? "Ex: Pantalon, Manteau..." : category === 'Cadeau' ? "Ex: Lego, Poupée..." : category === 'Réparation voitures' ? "Ex: Vidange, Pneus..." : "Ex: McDo, Cinéma..."}
                               autoComplete="off"
                               />
                               {suggestions.length > 0 && (

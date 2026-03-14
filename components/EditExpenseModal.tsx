@@ -73,8 +73,8 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
     const [customStore, setCustomStore] = useState('');
     const [heatingType, setHeatingType] = useState('');
     const [repairedCar, setRepairedCar] = useState('');
-    const [garage, setGarage] = useState('');
-    const [mileage, setMileage] = useState('');
+    const [carMileage, setCarMileage] = useState('');
+    const [carGarage, setCarGarage] = useState('');
     
     const [clothingPerson, setClothingPerson] = useState('Nathan');
     const [giftPerson, setGiftPerson] = useState('Nathan');
@@ -120,31 +120,31 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
             const match = expense.description.match(carRegex);
             if (match && cars.includes(match[1])) {
                 setRepairedCar(match[1]);
-                let baseDesc = expense.description.replace(carRegex, '').trim();
+                let remaining = expense.description.replace(carRegex, '').trim();
                 
-                const kmRegex = /\s-\sKm:\s(.*?)$/;
-                const kmMatch = baseDesc.match(kmRegex);
-                if (kmMatch) {
-                    setMileage(kmMatch[1]);
-                    baseDesc = baseDesc.replace(kmRegex, '').trim();
+                const mileageRegex = /\sà\s(\d+)\skm$/;
+                const mileageMatch = remaining.match(mileageRegex);
+                if (mileageMatch) {
+                    setCarMileage(mileageMatch[1]);
+                    remaining = remaining.replace(mileageRegex, '').trim();
                 } else {
-                    setMileage('');
+                    setCarMileage('');
                 }
-                
-                const garageRegex = /\s-\sGarage:\s(.*?)$/;
-                const garageMatch = baseDesc.match(garageRegex);
+
+                const garageRegex = /\schez\s(.+)$/;
+                const garageMatch = remaining.match(garageRegex);
                 if (garageMatch) {
-                    setGarage(garageMatch[1]);
-                    baseDesc = baseDesc.replace(garageRegex, '').trim();
+                    setCarGarage(garageMatch[1]);
+                    remaining = remaining.replace(garageRegex, '').trim();
                 } else {
-                    setGarage('');
+                    setCarGarage('');
                 }
-                
-                setDescription(baseDesc);
+
+                setDescription(remaining);
             } else {
                 setDescription(expense.description);
-                setMileage('');
-                setGarage('');
+                setCarMileage('');
+                setCarGarage('');
             }
         } else if (expense.category === 'Vêtements') {
             const personRegex = /\s\(([^)]+)\)$/;
@@ -251,15 +251,15 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                 return;
             }
             
-            let repairDesc = trimmedDescription;
-            if (garage.trim()) {
-                repairDesc += ` - Garage: ${garage.trim()}`;
+            let repairDetails = trimmedDescription;
+            if (carGarage.trim()) {
+                repairDetails += ` chez ${carGarage.trim()}`;
             }
-            if (mileage.trim()) {
-                repairDesc += ` - Km: ${mileage.trim()}`;
+            if (carMileage.trim()) {
+                repairDetails += ` à ${carMileage.trim()} km`;
             }
             
-            finalDescription = `${repairDesc} (${repairedCar})`;
+            finalDescription = `${repairDetails} (${repairedCar})`;
         } else if (category === 'Vêtements') {
             const trimmedDescription = description.trim();
             if (!trimmedDescription) {
@@ -510,26 +510,32 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                                             <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">Véhicule</label>
                                             <SegmentedControl options={carOptions} value={repairedCar} onChange={setRepairedCar} className="mt-1"/>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Garage</label>
+                                        <div>
+                                            <label htmlFor="edit-car-garage" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Garage</label>
+                                            <input
+                                                type="text"
+                                                id="edit-car-garage"
+                                                value={carGarage}
+                                                onChange={(e) => setCarGarage(e.target.value)}
+                                                className={`${baseInputStyle} px-3 ${placeholderStyle}`}
+                                                placeholder="Ex: Renault, Norauto..."
+                                            />
+                                        </div>
+                                        <div>
+                                            <label htmlFor="edit-car-mileage" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Kilométrage</label>
+                                            <div className="relative">
                                                 <input
                                                     type="text"
-                                                    value={garage}
-                                                    onChange={(e) => setGarage(e.target.value)}
-                                                    placeholder="Ex: Norauto"
-                                                    className={`${baseInputStyle} px-3`}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Kilométrage</label>
-                                                <input
-                                                    type="number"
-                                                    value={mileage}
-                                                    onChange={(e) => setMileage(e.target.value)}
+                                                    inputMode="numeric"
+                                                    id="edit-car-mileage"
+                                                    value={carMileage}
+                                                    onChange={(e) => setCarMileage(e.target.value)}
+                                                    className={`${baseInputStyle} px-3 pr-10 ${placeholderStyle}`}
                                                     placeholder="Ex: 120000"
-                                                    className={`${baseInputStyle} px-3`}
                                                 />
+                                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <span className="text-slate-500 sm:text-sm">km</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -548,7 +554,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                                         ) : (
                                             <>
                                               <label htmlFor="edit-description" className="block text-sm font-medium text-slate-600 dark:text-slate-300">
-                                                {category === 'Restaurant' ? 'Restaurant' : 'Description'}
+                                                {category === 'Restaurant' ? 'Restaurant' : category === 'Réparation voitures' ? 'Réparation effectuée' : 'Description'}
                                               </label>
                                               <input 
                                                 type="text" 
@@ -556,7 +562,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                                                 value={description} 
                                                 onChange={(e) => setDescription(e.target.value)} 
                                                 className={`${baseInputStyle} px-3 ${placeholderStyle}`} 
-                                                placeholder={category === 'Restaurant' ? "Ex: La Pizzaiola, McDo..." : "Ex: McDo, Cinéma..."}
+                                                placeholder={category === 'Restaurant' ? "Ex: La Pizzaiola, McDo..." : category === 'Réparation voitures' ? "Ex: Vidange, Pneus..." : "Ex: McDo, Cinéma..."}
                                               />
                                             </>
                                         )}
