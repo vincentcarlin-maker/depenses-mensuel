@@ -23,10 +23,20 @@ export const DEFAULT_CATEGORIES: Category[] = [
   "Divers",
 ];
 
+export const PRODUCT_CATEGORIES = [
+  "Alimentation",
+  "Hygiène",
+  "Entretien",
+  "Bricolage",
+  "Loisirs",
+  "Autre"
+];
+
 export interface SubtractedItem {
   description: string;
   amount: number;
   is_subtracted?: boolean;
+  category?: string;
 }
 
 export interface Expense {

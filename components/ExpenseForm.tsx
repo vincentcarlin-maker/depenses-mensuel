@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { type Expense, type Category, User, type SubtractedItem } from '../types';
+import { type Expense, type Category, User, type SubtractedItem, PRODUCT_CATEGORIES } from '../types';
 import SegmentedControl from './SegmentedControl';
 import ConfirmationModal from './ConfirmationModal';
 import PiggyBankIcon from './icons/PiggyBankIcon';
@@ -78,6 +78,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [subtractedItems, setSubtractedItems] = useState<SubtractedItem[]>([]);
   const [itemDescription, setItemDescription] = useState('');
   const [itemAmount, setItemAmount] = useState('');
+  const [itemCategory, setItemCategory] = useState(PRODUCT_CATEGORIES[0]);
   const itemDescriptionInputRef = useRef<HTMLInputElement>(null);
 
   const [clothingPerson, setClothingPerson] = useState('Nathan');
@@ -239,7 +240,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
    const handleAddSubtractedItem = () => {
     const parsedAmount = parseFloat(itemAmount.replace(',', '.'));
     if (itemDescription.trim() && !isNaN(parsedAmount) && parsedAmount > 0) {
-        setSubtractedItems([...subtractedItems, { description: itemDescription.trim(), amount: parsedAmount, is_subtracted: true }]);
+        setSubtractedItems([...subtractedItems, { 
+            description: itemDescription.trim(), 
+            amount: parsedAmount, 
+            is_subtracted: true,
+            category: itemCategory
+        }]);
         setItemDescription('');
         setItemAmount('');
         itemDescriptionInputRef.current?.focus();
@@ -277,7 +283,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             const newItems = parsed.items.map(item => ({
               description: item.description,
               amount: item.amount,
-              is_subtracted: false
+              is_subtracted: false,
+              category: PRODUCT_CATEGORIES[0]
             }));
             setSubtractedItems(newItems);
             setShowSubtractions(true);
@@ -575,7 +582,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                                className={`flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors border ${item.is_subtracted !== false ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-600 border-slate-200 dark:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-500'}`}>
                             <div className="flex items-center gap-2">
                                 <input type="checkbox" checked={item.is_subtracted !== false} readOnly className="rounded text-brand-500 focus:ring-brand-500" />
-                                <span className={`text-sm ${item.is_subtracted !== false ? 'text-red-700 dark:text-red-300 font-medium line-through opacity-70' : 'text-slate-700 dark:text-slate-200'}`}>{item.description}</span>
+                                <div className="flex flex-col">
+                                    <span className={`text-sm ${item.is_subtracted !== false ? 'text-red-700 dark:text-red-300 font-medium line-through opacity-70' : 'text-slate-700 dark:text-slate-200'}`}>{item.description}</span>
+                                    {item.category && <span className="text-[10px] text-slate-400 dark:text-slate-500">{item.category}</span>}
+                                </div>
                             </div>
                             <div className="flex items-center gap-2">
                               <span className={`text-sm font-medium ${item.is_subtracted !== false ? 'text-red-700 dark:text-red-300' : 'text-slate-800 dark:text-slate-100'}`}>{item.amount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})}</span>
@@ -588,14 +598,22 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                       </div>
                     )}
 
-                    <div className="flex gap-2 items-end">
-                      <div className="flex-1">
+                    <div className="flex flex-wrap gap-2 items-end">
+                      <div className="flex-1 min-w-[120px]">
                           <label className="text-xs font-medium text-slate-500">Article</label>
                           <input ref={itemDescriptionInputRef} type="text" value={itemDescription} onChange={e => setItemDescription(e.target.value)} onKeyDown={handleItemInputKeyDown} placeholder="Ex: Shampoing" className="block w-full px-2 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border-slate-300 dark:border-slate-500"/>
                       </div>
                       <div className="w-24">
                           <label className="text-xs font-medium text-slate-500">Montant</label>
                           <input type="text" inputMode="decimal" value={itemAmount} onChange={e => setItemAmount(e.target.value)} onKeyDown={handleItemInputKeyDown} placeholder="0.00" className="block w-full px-2 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border-slate-300 dark:border-slate-500"/>
+                      </div>
+                      <div className="w-32">
+                          <label className="text-xs font-medium text-slate-500">Catégorie</label>
+                          <select value={itemCategory} onChange={e => setItemCategory(e.target.value)} className="block w-full px-2 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border-slate-300 dark:border-slate-500">
+                              {PRODUCT_CATEGORIES.map(cat => (
+                                  <option key={cat} value={cat}>{cat}</option>
+                              ))}
+                          </select>
                       </div>
                       <button type="button" onClick={handleAddSubtractedItem} className="px-3 py-1.5 bg-brand-500 text-white text-sm font-semibold rounded-md hover:bg-brand-600">+</button>
                     </div>
