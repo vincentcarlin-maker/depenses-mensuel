@@ -481,7 +481,22 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                             <div className="space-y-4 animate-fade-in">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
-                                        <label htmlFor="edit-store-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Magasin</label>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <label htmlFor="edit-store-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Magasin</label>
+                                            <label className={`cursor-pointer ${isScanning ? 'text-slate-400' : 'text-brand-500 hover:text-brand-600 dark:text-brand-400 dark:hover:text-brand-300'} flex items-center justify-center p-1.5 rounded-full hover:bg-brand-50 dark:hover:bg-brand-900/30 transition-colors bg-brand-50/50 dark:bg-brand-900/10`} title="Scanner un ticket">
+                                                {isScanning ? (
+                                                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                ) : (
+                                                    <>
+                                                        <CameraIcon className="w-5 h-5" />
+                                                        <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleReceiptScan} disabled={isScanning} />
+                                                    </>
+                                                )}
+                                            </label>
+                                        </div>
                                         <select id="edit-store-select" value={store} onChange={e => setStore(e.target.value)} className={`${baseInputStyle} pl-3 pr-10`}>
                                             {groceryStores.map(s => <option key={s} value={s}>{s}</option>)}
                                             <option value="Autres">Autres</option>
@@ -495,25 +510,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, onUpdateEx
                                     )}
                                 </div>
                                 
-                                <div className="flex justify-center mt-2">
-                                    <label className={`cursor-pointer ${isScanning ? 'bg-slate-200 dark:bg-slate-700 text-slate-500' : 'bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 hover:bg-brand-100 dark:hover:bg-brand-900/40'} px-4 py-2 rounded-lg border border-brand-200 dark:border-brand-800 transition-colors flex items-center gap-2 font-medium w-full justify-center`}>
-                                        {isScanning ? (
-                                            <>
-                                                <svg className="animate-spin h-5 w-5 text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                                <span>Analyse du ticket en cours...</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <CameraIcon className="w-5 h-5" />
-                                                <span>Scanner un ticket (Photo, Galerie ou PDF)</span>
-                                                <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleReceiptScan} disabled={isScanning} />
-                                            </>
-                                        )}
-                                    </label>
-                                </div>
+
 
                                 <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700/50 p-3 rounded-lg">
                                     <label htmlFor="edit-toggle-sub" className="font-medium text-slate-700 dark:text-slate-200 cursor-pointer flex items-center gap-2">
