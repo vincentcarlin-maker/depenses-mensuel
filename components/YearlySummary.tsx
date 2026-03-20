@@ -92,11 +92,18 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
 
     let total = 0;
     const monthsWithData = new Set<number>();
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
 
     for (const expense of expenses) {
       categoryTotals.set(expense.category, (categoryTotals.get(expense.category) || 0) + expense.amount);
       total += expense.amount;
-      monthsWithData.add(new Date(expense.date).getMonth());
+      
+      const expenseMonth = new Date(expense.date).getMonth();
+      // Pour le calcul de la moyenne, on ne compte pas les mois futurs
+      if (year < currentYear || (year === currentYear && expenseMonth <= currentMonth)) {
+        monthsWithData.add(expenseMonth);
+      }
     }
 
     const numMonths = monthsWithData.size > 0 ? monthsWithData.size : 1;
