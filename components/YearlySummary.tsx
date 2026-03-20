@@ -50,11 +50,14 @@ const CustomTooltip = ({ active, payload, label, year }: any) => {
         const prevYearVal = payload.find((p: any) => p.name === (year - 1).toString())?.value || 0;
         const delta = currentYearVal - prevYearVal;
         
+        // Filter out duplicate payloads by name
+        const uniquePayloads = payload.filter((v: any, i: number, a: any[]) => a.findIndex(t => (t.name === v.name)) === i);
+
         return (
             <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
                 <p className="font-bold text-slate-800 dark:text-slate-100 mb-1">{label}</p>
-                {payload.map((p: any, index: number) => (
-                    <p key={index} style={{ color: p.stroke }} className="text-sm">
+                {uniquePayloads.map((p: any, index: number) => (
+                    <p key={index} style={{ color: p.stroke || p.fill }} className="text-sm">
                         {p.name}: {p.value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                     </p>
                 ))}
@@ -336,7 +339,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                         <YAxis stroke={tickColor} tickFormatter={(value) => `${value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`} tick={{ fill: tickColor }} />
                         <Tooltip content={<CustomTooltip year={year} />} />
                         <Legend wrapperStyle={{ color: tickColor }} />
-                        <Area type="monotone" dataKey={year.toString()} fill="#06b6d4" stroke="none" fillOpacity={0.1} name={`${year}`} />
+                        <Area type="monotone" dataKey={year.toString()} fill="#06b6d4" stroke="none" fillOpacity={0.1} name={`${year}`} legendType="none" />
                         <Line type="monotone" dataKey={year.toString()} stroke="#06b6d4" strokeWidth={3} name={`${year}`} dot={{ r: 5 }} activeDot={{ r: 8 }} />
                         {previousYearExpenses.length > 0 && (
                             <Line type="monotone" dataKey={(year - 1).toString()} stroke="#f97316" strokeWidth={2} name={`${year - 1}`} strokeDasharray="5 5" dot={{ r: 3 }} />
