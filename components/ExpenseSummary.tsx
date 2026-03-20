@@ -16,7 +16,7 @@ interface BalanceReportProps {
 const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear, currentMonth, sophieTotalMonth, vincentTotalMonth, loggedInUser }) => {
   const [userExpensesModal, setUserExpensesModal] = useState<{ user: User, expenses: Expense[] } | null>(null);
 
-  const { historicDifference, cumulativeDifference, message, messageColor, communTotalMonth, sophieExpenses, vincentExpenses } = useMemo(() => {
+  const { historicDifference, cumulativeDifference, message, messageColor, containerClass, secondaryTextColor, communTotalMonth, sophieExpenses, vincentExpenses } = useMemo(() => {
     const firstDayOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1));
     
     // Expenses for the current month paid by "Commun" (Cagnotte)
@@ -49,6 +49,8 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
 
     let message;
     let messageColor = "text-slate-700 dark:text-slate-200";
+    let containerClass = "bg-slate-100 dark:bg-slate-700/50 border border-transparent";
+    let secondaryTextColor = "text-slate-500 dark:text-slate-400";
 
     if (Math.abs(cumulativeDifference) < 0.01) {
       message = "Les comptes sont parfaitement équilibrés.";
@@ -63,9 +65,13 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
         if (isAhead) {
           message = `Tu as une avance de ${amount} par rapport à ${otherUser}.`;
           messageColor = "text-emerald-600 dark:text-emerald-400";
+          containerClass = "bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-800/30";
+          secondaryTextColor = "text-emerald-500/80 dark:text-emerald-400/70";
         } else {
           message = `Tu as un retard de ${amount} par rapport à ${otherUser}.`;
           messageColor = "text-red-500 dark:text-red-400";
+          containerClass = "bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-800/30";
+          secondaryTextColor = "text-red-400/80 dark:text-red-400/70";
         }
       } else {
         if (sophieAhead) {
@@ -76,7 +82,7 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
       }
     }
     
-    return { historicDifference, cumulativeDifference, message, messageColor, communTotalMonth, sophieExpenses, vincentExpenses };
+    return { historicDifference, cumulativeDifference, message, messageColor, containerClass, secondaryTextColor, communTotalMonth, sophieExpenses, vincentExpenses };
   }, [allExpenses, currentYear, currentMonth, sophieTotalMonth, vincentTotalMonth, loggedInUser]);
   
   // Total including individual spending AND common spending
@@ -86,9 +92,9 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
     <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg space-y-6">
         <div>
             <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Balance des comptes</h2>
-            <div className="bg-slate-100 dark:bg-slate-700/50 p-4 rounded-xl text-center">
+            <div className={`${containerClass} p-4 rounded-xl text-center transition-all duration-300`}>
                 <p className={`text-lg font-semibold ${messageColor}`}>{message}</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                <p className={`text-sm ${secondaryTextColor} mt-1`}>
                   Report des mois précédents : {historicDifference.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                 </p>
             </div>
