@@ -10,12 +10,13 @@ interface BalanceReportProps {
   currentMonth: number;
   sophieTotalMonth: number;
   vincentTotalMonth: number;
+  loggedInUser?: User | null;
 }
 
-const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear, currentMonth, sophieTotalMonth, vincentTotalMonth }) => {
+const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear, currentMonth, sophieTotalMonth, vincentTotalMonth, loggedInUser }) => {
   const [userExpensesModal, setUserExpensesModal] = useState<{ user: User, expenses: Expense[] } | null>(null);
 
-  const { historicDifference, cumulativeDifference, message, communTotalMonth, sophieExpenses, vincentExpenses } = useMemo(() => {
+  const { historicDifference, cumulativeDifference, message, messageColor, communTotalMonth, sophieExpenses, vincentExpenses } = useMemo(() => {
     const firstDayOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1));
     
     // Expenses for the current month paid by "Commun" (Cagnotte)
@@ -47,16 +48,36 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
     const cumulativeDifference = historicDifference + currentMonthDifference;
 
     let message;
+    let messageColor = "text-slate-700 dark:text-slate-200";
+
     if (Math.abs(cumulativeDifference) < 0.01) {
       message = "Les comptes sont parfaitement équilibrés.";
-    } else if (cumulativeDifference > 0) {
-      message = `Sophie a dépensé ${cumulativeDifference.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} de plus.`;
     } else {
-      message = `Vincent a dépensé ${(-cumulativeDifference).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} de plus.`;
+      const sophieAhead = cumulativeDifference > 0;
+      const amount = Math.abs(cumulativeDifference).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+      
+      if (loggedInUser === User.Sophie || loggedInUser === User.Vincent) {
+        const isAhead = (loggedInUser === User.Sophie && sophieAhead) || (loggedInUser === User.Vincent && !sophieAhead);
+        const otherUser = loggedInUser === User.Sophie ? "Vincent" : "Sophie";
+        
+        if (isAhead) {
+          message = `Tu as une avance de ${amount} par rapport à ${otherUser}.`;
+          messageColor = "text-emerald-600 dark:text-emerald-400";
+        } else {
+          message = `Tu as un retard de ${amount} par rapport à ${otherUser}.`;
+          messageColor = "text-red-500 dark:text-red-400";
+        }
+      } else {
+        if (sophieAhead) {
+          message = `Sophie a dépensé ${amount} de plus.`;
+        } else {
+          message = `Vincent a dépensé ${amount} de plus.`;
+        }
+      }
     }
     
-    return { historicDifference, cumulativeDifference, message, communTotalMonth, sophieExpenses, vincentExpenses };
-  }, [allExpenses, currentYear, currentMonth, sophieTotalMonth, vincentTotalMonth]);
+    return { historicDifference, cumulativeDifference, message, messageColor, communTotalMonth, sophieExpenses, vincentExpenses };
+  }, [allExpenses, currentYear, currentMonth, sophieTotalMonth, vincentTotalMonth, loggedInUser]);
   
   // Total including individual spending AND common spending
   const totalExpenses = sophieTotalMonth + vincentTotalMonth + communTotalMonth;
@@ -66,7 +87,7 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
         <div>
             <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Balance des comptes</h2>
             <div className="bg-slate-100 dark:bg-slate-700/50 p-4 rounded-xl text-center">
-                <p className="text-lg font-semibold text-slate-700 dark:text-slate-200">{message}</p>
+                <p className={`text-lg font-semibold ${messageColor}`}>{message}</p>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                   Report des mois précédents : {historicDifference.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                 </p>
