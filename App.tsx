@@ -97,6 +97,13 @@ const MainApp: React.FC<{
   
   // Dynamic categories and lists
   const [categories, setCategories] = useLocalStorage<any[]>('expenseCategories', DEFAULT_CATEGORIES);
+  
+  useEffect(() => {
+      if (!categories.includes("Complément alimentaire")) {
+          setCategories([...categories, "Complément alimentaire"]);
+      }
+  }, [categories, setCategories]);
+
   const [groceryStores, setGroceryStores] = useLocalStorage<string[]>('groceryStores', ['Leclerc', 'Leclerc Drive', 'Intermarché', 'Intermarché Drive', 'Carrefour', 'Boulangerie']);
   const [cars, setCars] = useLocalStorage<string[]>('cars', ['Peugeot 5008', 'Peugeot 207']);
   const [heatingTypes, setHeatingTypes] = useLocalStorage<string[]>('heatingTypes', ['Bois', 'Fioul']);
