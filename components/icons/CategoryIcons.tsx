@@ -247,8 +247,13 @@ export const NetflixIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 );
 
 export const PillIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 4.5a4.5 4.5 0 00-6.364 0L4.5 13.136a4.5 4.5 0 006.364 6.364L19.5 10.864a4.5 4.5 0 000-6.364z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 15l6-6" />
+  <svg viewBox="55 53 110 100" xmlns="http://www.w3.org/2000/svg" className={className} fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="60" y="75" width="45" height="65" rx="8" />
+    <rect x="65" y="63" width="35" height="12" rx="4" />
+    <rect x="70" y="95" width="25" height="15" rx="2" />
+    <g transform="translate(135 115) rotate(30)">
+      <rect x="-12" y="-25" width="24" height="50" rx="12" />
+      <line x1="-12" y1="0" x2="12" y2="0" />
+    </g>
   </svg>
 );
