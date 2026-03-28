@@ -247,15 +247,13 @@ export const NetflixIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 );
 
 export const PillIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <svg viewBox="10 10 180 180" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <g transform="translate(100 100) scale(1.6) translate(-109 -100)" fill="none" stroke="currentColor" strokeWidth="6">
-      <rect x="60" y="75" width="45" height="65" rx="8" />
-      <rect x="65" y="58" width="35" height="12" rx="4" />
-      <rect x="70" y="95" width="25" height="15" rx="2" fill="currentColor" stroke="none" />
-      <g transform="translate(135 115) rotate(30)">
-        <rect x="-12" y="-25" width="24" height="50" rx="12" />
-        <line x1="-12" y1="0" x2="12" y2="0" />
-      </g>
+  <svg viewBox="44 40 120 120" xmlns="http://www.w3.org/2000/svg" className={className} fill="none" stroke="currentColor" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="60" y="75" width="45" height="65" rx="8" />
+    <rect x="65" y="58" width="35" height="12" rx="4" />
+    <rect x="70" y="95" width="25" height="15" rx="2" fill="currentColor" stroke="none" />
+    <g transform="translate(135 115) rotate(30)">
+      <rect x="-12" y="-25" width="24" height="50" rx="12" />
+      <line x1="-12" y1="0" x2="12" y2="0" />
     </g>
   </svg>
 );
