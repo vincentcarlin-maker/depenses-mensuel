@@ -23,7 +23,8 @@ import {
     CeoIcon,
     TotalEnergiesIcon,
     TrashBinIcon,
-    NetflixIcon
+    NetflixIcon,
+    PillIcon
 } from './icons/CategoryIcons';
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; textColor: string } } = {
@@ -36,6 +37,7 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
   "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-yellow-100 dark:bg-yellow-500/20', textColor: 'text-yellow-600 dark:text-yellow-400' },
   "Vêtements": { icon: ClothingIcon, color: 'bg-indigo-100 dark:bg-indigo-500/20', textColor: 'text-indigo-600 dark:text-indigo-400' },
   "Cadeau": { icon: GiftIcon, color: 'bg-fuchsia-100 dark:bg-fuchsia-500/20', textColor: 'text-fuchsia-600 dark:text-fuchsia-400' },
+  "Complément alimentaire": { icon: PillIcon, color: 'bg-emerald-100 dark:bg-emerald-500/20', textColor: 'text-emerald-600 dark:text-emerald-400' },
   "Divers": { icon: MiscIcon, color: 'bg-cyan-100 dark:bg-cyan-500/20', textColor: 'text-cyan-600 dark:text-cyan-400' },
 };
 

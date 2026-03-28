@@ -20,7 +20,8 @@ import {
     CeoIcon,
     TotalEnergiesIcon,
     TrashBinIcon,
-    NetflixIcon
+    NetflixIcon,
+    PillIcon
 } from './icons/CategoryIcons';
 import PiggyBankIcon from './icons/PiggyBankIcon';
 import ArrowRightIcon from './icons/ArrowRightIcon';
@@ -39,6 +40,7 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
   "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-yellow-400' },
   "Vêtements": { icon: ClothingIcon, color: 'bg-indigo-500' },
   "Cadeau": { icon: GiftIcon, color: 'bg-fuchsia-500' },
+  "Complément alimentaire": { icon: PillIcon, color: 'bg-emerald-500' },
   "Divers": { icon: MiscIcon, color: 'bg-cyan-500' },
 };
 

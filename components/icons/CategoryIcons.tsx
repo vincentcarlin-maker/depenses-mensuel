@@ -245,3 +245,10 @@ export const NetflixIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
     <circle cx="50" cy="50" r="47.5" stroke="white" strokeOpacity="0.1" fill="none" />
   </svg>
 );
+
+export const PillIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 4.5a4.5 4.5 0 00-6.364 0L4.5 13.136a4.5 4.5 0 006.364 6.364L19.5 10.864a4.5 4.5 0 000-6.364z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 15l6-6" />
+  </svg>
+);

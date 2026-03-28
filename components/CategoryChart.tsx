@@ -14,7 +14,8 @@ import {
     MiscIcon,
     ClothingIcon,
     GiftIcon,
-    PalmTreeIcon
+    PalmTreeIcon,
+    PillIcon
 } from './icons/CategoryIcons';
 import ExpenseListItem from './ExpenseListItem';
 import CloseIcon from './icons/CloseIcon';
@@ -60,6 +61,7 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
   "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-yellow-400', pieColor: '#FACC15' },
   "Vêtements": { icon: ClothingIcon, color: 'bg-indigo-500', pieColor: '#6366f1' },
   "Cadeau": { icon: GiftIcon, color: 'bg-fuchsia-500', pieColor: '#d946ef' },
+  "Complément alimentaire": { icon: PillIcon, color: 'bg-emerald-500', pieColor: '#10b981' },
   "Divers": { icon: MiscIcon, color: 'bg-cyan-500', pieColor: '#06b6d4' },
 };
 

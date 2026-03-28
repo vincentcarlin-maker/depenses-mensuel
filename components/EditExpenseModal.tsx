@@ -17,7 +17,8 @@ import {
     MiscIcon,
     ClothingIcon,
     GiftIcon,
-    PalmTreeIcon
+    PalmTreeIcon,
+    PillIcon
 } from './icons/CategoryIcons';
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; bgColor: string; borderColor: string } } = {
@@ -30,12 +31,16 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
   "Réparation voitures": { icon: CarRepairsIcon, color: 'text-yellow-600 dark:text-yellow-400', bgColor: 'bg-yellow-50 dark:bg-yellow-500/10', borderColor: 'border-yellow-100 dark:border-yellow-500/20' },
   "Vêtements": { icon: ClothingIcon, color: 'text-indigo-600 dark:text-indigo-400', bgColor: 'bg-indigo-50 dark:bg-indigo-500/10', borderColor: 'border-indigo-100 dark:border-indigo-500/20' },
   "Cadeau": { icon: GiftIcon, color: 'text-fuchsia-600 dark:text-fuchsia-400', bgColor: 'bg-fuchsia-50 dark:bg-fuchsia-500/10', borderColor: 'border-fuchsia-100 dark:border-fuchsia-500/20' },
+  "Complément alimentaire": { icon: PillIcon, color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-500/10', borderColor: 'border-emerald-100 dark:border-emerald-500/20' },
   "Divers": { icon: MiscIcon, color: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-50 dark:bg-cyan-500/10', borderColor: 'border-cyan-100 dark:border-cyan-500/20' },
 };
 
 const TICKET_RESTAURANT_KEYWORDS = [
   't restaurant', 't restau', 't.rest', 'cb rest', 'ticket rest', 't. restaurant', 'restau'
 ];
+
+const SUPPLEMENT_STORES = ['Nutripure', 'GreenWhey', 'Nutri&co', 'Autres'];
+const SUPPLEMENT_TYPES = ['Oméga 3', 'Vitamine D', 'Vitamine C', 'Magnésium', 'Autres'];
 
 interface EditExpenseModalProps {
     expense: Expense;
@@ -92,6 +97,11 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
     const [clothingPerson, setClothingPerson] = useState('Nathan');
     const [giftPerson, setGiftPerson] = useState('Nathan');
     const [giftOccasion, setGiftOccasion] = useState('Noël');
+    
+    const [supplementStore, setSupplementStore] = useState('Nutripure');
+    const [customSupplementStore, setCustomSupplementStore] = useState('');
+    const [supplementTypes, setSupplementTypes] = useState<string[]>([]);
+    const [customSupplementType, setCustomSupplementType] = useState('');
 
     const [error, setError] = useState('');
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -181,6 +191,39 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                 setGiftPerson(match[1]);
                 setGiftOccasion(match[2]);
                 setDescription(expense.description.replace(detailsRegex, '').trim());
+            } else {
+                setDescription(expense.description);
+            }
+        } else if (expense.category === 'Complément alimentaire') {
+            const storeRegex = /\s\(([^)]+)\)$/;
+            const match = expense.description.match(storeRegex);
+            if (match) {
+                const storeName = match[1];
+                if (SUPPLEMENT_STORES.includes(storeName)) {
+                    setSupplementStore(storeName);
+                    setCustomSupplementStore('');
+                } else {
+                    setSupplementStore('Autres');
+                    setCustomSupplementStore(storeName);
+                }
+                
+                const typesStr = expense.description.replace(storeRegex, '').trim();
+                const typesArr = typesStr.split(',').map(t => t.trim());
+                
+                const standardTypes: string[] = [];
+                let customType = '';
+                
+                typesArr.forEach(t => {
+                    if (SUPPLEMENT_TYPES.includes(t)) {
+                        standardTypes.push(t);
+                    } else {
+                        standardTypes.push('Autres');
+                        customType = t;
+                    }
+                });
+                
+                setSupplementTypes(standardTypes);
+                setCustomSupplementType(customType);
             } else {
                 setDescription(expense.description);
             }
@@ -296,8 +339,29 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                 return;
             }
             finalDescription = `${trimmedDescription} (${giftPerson} - ${giftOccasion})`;
-        }
-        else {
+        } else if (category === 'Complément alimentaire') {
+            const selectedStore = supplementStore === 'Autres' ? customSupplementStore.trim() : supplementStore;
+            if (!selectedStore) {
+                setError('Veuillez sélectionner une boutique ou en spécifier une.');
+                return;
+            }
+            
+            if (supplementTypes.length === 0) {
+                setError('Veuillez sélectionner au moins un complément.');
+                return;
+            }
+            
+            let types = [...supplementTypes];
+            if (types.includes('Autres')) {
+                if (!customSupplementType.trim()) {
+                    setError('Veuillez spécifier le complément "Autres".');
+                    return;
+                }
+                types = types.map(t => t === 'Autres' ? customSupplementType.trim() : t);
+            }
+            
+            finalDescription = `${types.join(', ')} (${selectedStore})`;
+        } else {
             finalDescription = description.trim();
         }
         
@@ -616,7 +680,54 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                      <div className="space-y-4 animate-fade-in"><div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label><SegmentedControl options={childrenOptions} value={giftPerson} onChange={setGiftPerson} className="mt-1"/></div><div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Occasion</label><SegmentedControl options={occasionOptions} value={giftOccasion} onChange={setGiftOccasion} className="mt-1"/></div></div>
                                 )}
                                 
-                                { !['Chauffage', 'Courses'].includes(category) && (
+                                {category === 'Complément alimentaire' && (
+                                    <div className="space-y-4 animate-fade-in">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Boutique</label>
+                                                <select value={supplementStore} onChange={e => setSupplementStore(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent sm:text-sm rounded-lg">
+                                                    {SUPPLEMENT_STORES.map(s => <option key={s} value={s}>{s}</option>)}
+                                                </select>
+                                            </div>
+                                            {supplementStore === 'Autres' && (
+                                                <div>
+                                                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Boutique personnalisée</label>
+                                                    <input type="text" value={customSupplementStore} onChange={e => setCustomSupplementStore(e.target.value)} className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 sm:text-sm" placeholder="Nom de la boutique" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Compléments achetés</label>
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                                {SUPPLEMENT_TYPES.map(type => (
+                                                    <label key={type} className="flex items-center space-x-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={supplementTypes.includes(type)}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setSupplementTypes([...supplementTypes, type]);
+                                                                } else {
+                                                                    setSupplementTypes(supplementTypes.filter(t => t !== type));
+                                                                }
+                                                            }}
+                                                            className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                                                        />
+                                                        <span className="text-sm text-slate-700 dark:text-slate-200">{type}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        {supplementTypes.includes('Autres') && (
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Complément personnalisé</label>
+                                                <input type="text" value={customSupplementType} onChange={e => setCustomSupplementType(e.target.value)} className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 sm:text-sm" placeholder="Nom du complément" />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                
+                                { !['Chauffage', 'Courses', 'Complément alimentaire'].includes(category) && (
                                     <div className="animate-fade-in">
                                         {category === "Carburant" ? (
                                             <><label className="block text-sm font-medium text-slate-600 dark:text-slate-300">Véhicule</label><SegmentedControl options={carOptions} value={description} onChange={(val) => setDescription(val)} className="mt-1"/></>

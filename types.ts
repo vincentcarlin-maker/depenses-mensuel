@@ -20,6 +20,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
   "Réparation voitures",
   "Vêtements",
   "Cadeau",
+  "Complément alimentaire",
   "Divers",
 ];
 
