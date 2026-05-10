@@ -74,7 +74,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
     const [transactionType, setTransactionType] = useState<'expense' | 'refund'>(expense.amount >= 0 ? 'expense' : 'refund');
     
     // State for "Courses" subtractions toggle
-    const initialShowSubtractions = expense.category === 'Courses' && Array.isArray(expense.subtracted_items) && expense.subtracted_items.length > 0;
+    const initialShowSubtractions = ['Courses', 'Divers'].includes(expense.category) && Array.isArray(expense.subtracted_items) && expense.subtracted_items.length > 0;
     const [showSubtractions, setShowSubtractions] = useState(initialShowSubtractions);
     
     const initialReceiptTotal = initialShowSubtractions ? (expense.amount + (expense.subtracted_items || []).filter(i => i.is_subtracted !== false).reduce((sum, item) => sum + item.amount, 0)).toString() : '';
@@ -234,10 +234,10 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
     }, [expense, groceryStores, heatingTypes, cars]);
 
     useEffect(() => {
-        if (category === 'Courses' && !showSubtractions) {
+        if (['Courses', 'Divers'].includes(category) && !showSubtractions) {
             setSubtractedItems([]);
             setReceiptTotal('');
-        } else if (category === 'Courses' && showSubtractions && receiptTotal === '') {
+        } else if (['Courses', 'Divers'].includes(category) && showSubtractions && receiptTotal === '') {
             setReceiptTotal(amount);
         }
     }, [showSubtractions, category, amount]);
@@ -260,7 +260,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
         let finalAmount;
         let finalSubtractedItems: SubtractedItem[] = [];
 
-        if (category === 'Courses' && showSubtractions) {
+        if (['Courses', 'Divers'].includes(category) && showSubtractions) {
           const currentSubtractedItems = [...subtractedItems];
           const parsedPendingAmount = parseFloat(itemAmount.replace(',', '.'));
           if (itemDescription.trim() && !isNaN(parsedPendingAmount) && parsedPendingAmount > 0) {
@@ -543,10 +543,12 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                         </div>
                                     )}
                                 </div>
-                                
+                            </div>
+                        )}
 
-
-                                <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700/50 p-3 rounded-lg">
+                        {['Courses', 'Divers'].includes(category) && (
+                            <div className="animate-fade-in mt-4">
+                                <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
                                     <label htmlFor="edit-toggle-sub" className="font-medium text-slate-700 dark:text-slate-200 cursor-pointer flex items-center gap-2">
                                         <ScissorsIcon />
                                         <span>Déduire des articles ?</span>
@@ -565,7 +567,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                             </div>
                         )}
 
-                         {category === 'Courses' && showSubtractions ? (
+                         {['Courses', 'Divers'].includes(category) && showSubtractions ? (
                             <div className="animate-fade-in space-y-4">
                                  <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-700 space-y-4">
                                     <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
@@ -628,6 +630,19 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                     <div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Ticket (€)</label><input type="text" inputMode="decimal" value={receiptTotal} onChange={e => setReceiptTotal(e.target.value)} className={`${baseInputStyle} px-3 font-semibold`}/></div>
                                     <div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Montant final</label><input type="text" value={finalCalculatedAmount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})} readOnly className={`${baseInputStyle} px-3 bg-slate-100 dark:bg-slate-600 text-cyan-600 dark:text-cyan-400 font-bold`}/></div>
                                 </div>
+                                {category === 'Divers' && (
+                                    <div>
+                                        <label htmlFor="edit-divers-subtraction-description" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Description de la dépense</label>
+                                        <input
+                                            type="text"
+                                            id="edit-divers-subtraction-description"
+                                            value={description}
+                                            onChange={(e) => setDescription(e.target.value)}
+                                            className={`${baseInputStyle} px-3`}
+                                            placeholder="Ex: Action, Leroy Merlin..."
+                                        />
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="animate-fade-in space-y-4">
@@ -775,7 +790,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                             >
                                 <TrashIcon />
                             </button>
-                            {category === 'Courses' && showSubtractions && (
+                            {['Courses', 'Divers'].includes(category) && showSubtractions && (
                                 <button
                                     type="button"
                                     onClick={() => {

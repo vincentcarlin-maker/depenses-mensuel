@@ -305,7 +305,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
     let finalAmount;
     let finalSubtractedItems: SubtractedItem[] = [];
 
-    if (category === 'Courses' && showSubtractions) {
+    if (['Courses', 'Divers'].includes(category) && showSubtractions) {
       const currentSubtractedItems = [...subtractedItems];
       const parsedPendingAmount = parseFloat(itemAmount.replace(',', '.'));
       if (itemDescription.trim() && !isNaN(parsedPendingAmount) && parsedPendingAmount > 0) {
@@ -541,10 +541,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                             </div>
                         )}
                     </div>
-                    
+                </div>
+            )}
 
-
-                    <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700/50 p-3 rounded-lg">
+            {['Courses', 'Divers'].includes(category) && (
+                <div className="animate-fade-in mt-4">
+                    <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
                         <label htmlFor="toggle-subtractions" className="font-medium text-slate-700 dark:text-slate-200 cursor-pointer flex items-center gap-2">
                             <ScissorsIcon />
                             <span>Déduire des articles personnels ?</span>
@@ -563,7 +565,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                 </div>
             )}
             
-            {category === 'Courses' && showSubtractions ? (
+            {['Courses', 'Divers'].includes(category) && showSubtractions ? (
               <div className="animate-fade-in space-y-4">
                  <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-700 space-y-4">
                     <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
