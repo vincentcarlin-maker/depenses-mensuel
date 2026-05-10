@@ -245,12 +245,8 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
 
   }, [selectedCategory, expenses]);
 
-  const categoriesWithDetails = ['Courses', 'Cadeau', 'Carburant', 'Vêtements', 'Réparation voitures', 'Dépenses obligatoires', 'Vacances'];
-
   const handleCategoryClick = (category: Category) => {
-      if (categoriesWithDetails.includes(category)) {
-          setSelectedCategory(category);
-      }
+      setSelectedCategory(category);
   };
 
   if (expenses.length === 0) {
@@ -283,20 +279,19 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
         </div>
 
         <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-200">Moyenne mensuelle par catégorie</h3>
-        <p className="text-xs text-slate-400 dark:text-slate-500 mb-3 -mt-3 italic">Cliquez sur les catégories (Courses, Cadeaux, Vacances...) pour voir le détail.</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500 mb-3 -mt-3 italic">Cliquez sur une catégorie pour voir le détail.</p>
         
         <div className="space-y-3">
             {categoryData.map((entry) => {
                 const visual = CategoryVisuals[entry.name as Category] || CategoryVisuals["Divers"];
                 const IconComponent = visual.icon;
                 const percentage = maxAverage > 0 ? (entry.average / maxAverage) * 100 : 0;
-                const isClickable = categoriesWithDetails.includes(entry.name);
                 
                 return (
                     <div 
                         key={entry.name} 
                         onClick={() => handleCategoryClick(entry.name)}
-                        className={`p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl transition-all duration-200 ${isClickable ? 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 hover:shadow-sm ring-1 ring-transparent hover:ring-slate-200 dark:hover:ring-slate-600' : ''}`}
+                        className={`p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl transition-all duration-200 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 hover:shadow-sm ring-1 ring-transparent hover:ring-slate-200 dark:hover:ring-slate-600`}
                     >
                         <div className="flex items-center gap-3">
                             <div className={`w-10 h-10 flex items-center justify-center rounded-full ${visual.color}`}>
@@ -306,9 +301,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                                 <div className="flex justify-between items-baseline gap-2">
                                     <div className="flex items-center gap-2 min-w-0">
                                         <p className="font-semibold text-slate-700 dark:text-slate-200 truncate" title={entry.name}>{entry.name}</p>
-                                        {isClickable && (
-                                            <span className="text-[10px] bg-slate-200 dark:bg-slate-600 text-slate-500 dark:text-slate-300 px-1.5 py-0.5 rounded-full">Détails</span>
-                                        )}
+                                        <span className="text-[10px] bg-slate-200 dark:bg-slate-600 text-slate-500 dark:text-slate-300 px-1.5 py-0.5 rounded-full">Détails</span>
                                     </div>
                                     <p className="font-bold text-lg text-slate-800 dark:text-slate-100 whitespace-nowrap">
                                         {entry.average.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
