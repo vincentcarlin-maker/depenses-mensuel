@@ -42,16 +42,19 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                 // Ensure it's in Supabase by inserting if needed
                 // Using a try-catch for the insert just in case
                 try {
-                    // Start by checking if we have it
                     const { data } = await supabase.from('push_subscriptions')
                         .select('id')
                         .eq('user_id', loggedInUser === 'Duo' ? 'Commun' : loggedInUser);
                         
                     if (!data || data.length === 0) {
-                        await supabase.from('push_subscriptions').insert({
+                        const { error } = await supabase.from('push_subscriptions').insert({
                             user_id: loggedInUser === 'Duo' ? 'Commun' : loggedInUser,
                             subscription: subscription.toJSON()
                         });
+                        if (error) {
+                            console.error("Supabase insert error", error);
+                            alert("Erreur de synchronisation DB : " + error.message);
+                        }
                     }
                 } catch (e) {
                     console.error("DB error syncing subscription", e);
@@ -75,17 +78,21 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                 applicationServerKey
             });
 
-            // Sauvegarder dans Supabase
-            const { error } = await supabase.from('push_subscriptions').insert({
-                user_id: loggedInUser === 'Duo' ? 'Commun' : loggedInUser,
+            // Sauvegarder dans Supabase (on efface l'ancien s'il existe pour éviter le doublon d'ID)
+            const userId = loggedInUser === 'Duo' ? 'Commun' : loggedInUser;
+            await supabase.from('push_subscriptions').delete().eq('user_id', userId);
+            
+            const { error: insertError } = await supabase.from('push_subscriptions').insert({
+                user_id: userId,
                 subscription: subscription.toJSON()
             });
 
-            if (error) {
-                console.error("Erreur lors de l'enregistrement de l'abonnement :", error);
-                alert("Erreur DB (" + error.code + ") : " + error.message);
+            if (insertError) {
+                console.error("Erreur lors de l'enregistrement de l'abonnement :", insertError);
+                alert("Erreur DB (" + insertError.code + ") : " + insertError.message);
             } else {
                 setIsSubscribed(true);
+                alert("Synchronisation réussie !");
             }
         } catch (error: any) {
             console.error('Erreur lors de la souscription aux notifications push', error);
@@ -163,7 +170,15 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                             </button>
                         )}
                         {permission === 'granted' && isSubscribed && (
-                            <div className="px-3 py-1 bg-green-100 text-green-600 rounded-lg text-sm font-medium">Connectées</div>
+                            <div className="flex gap-2 items-center">
+                                <div className="px-3 py-1 bg-green-100 text-green-600 rounded-lg text-sm font-medium">Connectées</div>
+                                <button
+                                    onClick={subscribeUser}
+                                    className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors"
+                                >
+                                    Forcer la synchronisation
+                                </button>
+                            </div>
                         )}
                     </div>
 
