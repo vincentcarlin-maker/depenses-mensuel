@@ -83,12 +83,13 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
 
             if (error) {
                 console.error("Erreur lors de l'enregistrement de l'abonnement :", error);
-                alert("Erreur lors de l'enregistrement. Veuillez réessayer.");
+                alert("Erreur DB (" + error.code + ") : " + error.message);
             } else {
                 setIsSubscribed(true);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erreur lors de la souscription aux notifications push', error);
+            alert("Erreur de souscription: " + (error.message || "Inconnue"));
         }
     };
 
