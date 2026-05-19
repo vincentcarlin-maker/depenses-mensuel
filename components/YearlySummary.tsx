@@ -78,15 +78,16 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
   const { theme } = useTheme();
   const tickColor = theme === 'dark' ? '#94a3b8' : '#64748b';
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [isChartExpanded, setIsChartExpanded] = useState(false);
 
   useEffect(() => {
-    if (selectedCategory) {
+    if (selectedCategory || isChartExpanded) {
         document.body.style.overflow = 'hidden';
     } else {
         document.body.style.overflow = 'auto';
     }
     return () => { document.body.style.overflow = 'auto'; };
-  }, [selectedCategory]);
+  }, [selectedCategory, isChartExpanded]);
 
   const { categoryData, totalYearlyExpense, monthlyAverage, numberOfMonthsWithData } = useMemo(() => {
     if (expenses.length === 0) {
@@ -325,7 +326,18 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
         </div>
         
         <div className="mt-12">
-            <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-200">Évolution des dépenses mensuelles</h3>
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Évolution des dépenses mensuelles</h3>
+                <button 
+                    onClick={() => setIsChartExpanded(true)}
+                    className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
+                    title="Agrandir le graphique"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                </button>
+            </div>
              <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
                     <ComposedChart data={monthlyTrendData} margin={{ top: 5, right: 20, left: 40, bottom: 5 }}>
@@ -343,6 +355,48 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                 </ResponsiveContainer>
             </div>
         </div>
+
+        {/* Expanded Chart Modal */}
+        {isChartExpanded && createPortal(
+            <div className="fixed inset-0 bg-black/80 z-[100] flex flex-col p-4 backdrop-blur-sm" aria-modal="true" role="dialog">
+                <div 
+                    className="absolute inset-0"
+                    onClick={() => setIsChartExpanded(false)}
+                />
+                
+                <div className="relative flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-xl flex flex-col p-4 animate-scale-up max-h-[90vh]">
+                    <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-white">
+                            Évolution des dépenses mensuelles
+                        </h2>
+                        <button 
+                            onClick={() => setIsChartExpanded(false)}
+                            className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-full transition-colors"
+                        >
+                            <CloseIcon />
+                        </button>
+                    </div>
+
+                    <div className="flex-1 w-full min-h-0">
+                         <ResponsiveContainer width="100%" height="100%">
+                            <ComposedChart data={monthlyTrendData} margin={{ top: 20, right: 30, left: 40, bottom: 20 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
+                                <XAxis dataKey="month" stroke={tickColor} tick={{ fill: tickColor, fontSize: 14 }} />
+                                <YAxis stroke={tickColor} tickFormatter={(value) => `${value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`} tick={{ fill: tickColor, fontSize: 14 }} width={80} />
+                                <Tooltip content={<CustomTooltip year={year} />} />
+                                <Legend wrapperStyle={{ color: tickColor, paddingTop: '20px' }} iconSize={14} />
+                                <Area type="monotone" dataKey={year.toString()} fill="#06b6d4" stroke="none" fillOpacity={0.1} name={`${year}`} legendType="none" />
+                                <Line type="monotone" dataKey={year.toString()} stroke="#06b6d4" strokeWidth={4} name={`${year}`} dot={{ r: 6 }} activeDot={{ r: 10 }} />
+                                {previousYearExpenses.length > 0 && (
+                                    <Line type="monotone" dataKey={(year - 1).toString()} stroke="#f97316" strokeWidth={3} name={`${year - 1}`} strokeDasharray="5 5" dot={{ r: 4 }} />
+                                )}
+                            </ComposedChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            </div>,
+            document.body
+        )}
 
         {/* Breakdown Modal */}
         {selectedCategory && createPortal(
