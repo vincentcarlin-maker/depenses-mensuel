@@ -65,10 +65,10 @@ serve(async (req: any) => {
     // 2. Extrait les données de la nouvelle dépense du corps de la requête
     const { record: newExpense } = await req.json();
 
-    // 3. Récupère tous les abonnements aux notifications depuis la table 'subscriptions'
+    // 3. Récupère tous les abonnements aux notifications depuis la table 'push_subscriptions'
     const { data: subscriptions, error: subsError } = await supabaseAdmin
-      .from('subscriptions')
-      .select('subscription_data');
+      .from('push_subscriptions')
+      .select('subscription');
 
     if (subsError) throw subsError;
     if (!subscriptions || subscriptions.length === 0) {
@@ -87,18 +87,17 @@ serve(async (req: any) => {
 
     // 5. Envoie une notification à chaque abonné
     const sendPromises = subscriptions.map(async (s: any) => {
-      const subscription = s.subscription_data;
+      const subscription = typeof s.subscription === 'string' ? JSON.parse(s.subscription) : s.subscription;
       try {
         await webpush.sendNotification(subscription, payload);
       } catch (error) {
         console.error('Échec de l\'envoi de la notification à :', subscription.endpoint, error);
-        // Si l'abonnement est expiré ou invalide (ex: code 410 ou 404), on le supprime de la BDD
         if (error.statusCode === 410 || error.statusCode === 404) {
           console.log('Suppression de l\'abonnement obsolète :', subscription.endpoint);
           await supabaseAdmin
-            .from('subscriptions')
+            .from('push_subscriptions')
             .delete()
-            .eq('subscription_data->>endpoint', subscription.endpoint);
+            .eq('subscription->>endpoint', subscription.endpoint);
         }
       }
     });
