@@ -26,15 +26,14 @@ async function startServer() {
     app.use(cors());
     app.use(express.json());
 
-    // Notre endpoint utilisé comme Webhook par Supabase
     app.post("/api/send-notification", async (req, res) => {
         try {
-            console.log("Webhook reçu de Supabase:", req.body);
+            console.log("Requête de notification reçue:", req.body);
             
-            // Le webhook Supabase (Database Trigger) envoie les données dans req.body.record
-            const newExpense = req.body?.record;
-            if (!newExpense || req.body?.type !== 'INSERT') {
-                return res.status(200).json({ message: "Ignoré : Pas un INSERT ou aucune donnée reçue" });
+            // Supporte à la fois le format direct (frontend) et le format Webhook (Supabase)
+            const newExpense = req.body?.expense || req.body?.record;
+            if (!newExpense) {
+                return res.status(200).json({ message: "Ignoré : Aucune donnée reçue" });
             }
 
             const { data: subscriptions, error: subsError } = await supabase
@@ -47,7 +46,7 @@ async function startServer() {
             }
 
             if (!subscriptions || subscriptions.length === 0) {
-                return res.status(200).json({ message: "Aucun abonné." });
+                return res.status(200).json({ message: "Aucun abonné enregistré." });
             }
 
             // Préparation de la notification
@@ -55,35 +54,36 @@ async function startServer() {
             const payload = JSON.stringify({
                 title: 'DuoBudget - Nouvelle dépense',
                 body: `${author} a ajouté une dépense de ${newExpense.amount}€ (${newExpense.description || newExpense.category})`,
-                icon: '/logo.svg',
-                badge: '/logo.svg'
+                icon: '/icon-192x192.png',
+                badge: '/icon-192x192.png',
+                data: { url: '/' }
             });
 
-            // Envoi aux abonnés (on évite d'envoyer à l'auteur si possible, mais comme Supabase ne stocke que user_name = user_id dans notre app, on filtre)
+            // Envoi aux abonnés (on n'envoie pas à l'auteur de la dépense)
             const sendPromises = subscriptions
-                .filter((sub) => sub.user_id !== author) // Ne pas envoyer la notif à celui qui crée la dépense !
+                .filter((sub) => sub.user_id !== author)
                 .map(async (s: any) => {
                 const subscription = typeof s.subscription === 'string' ? JSON.parse(s.subscription) : s.subscription;
                 try {
                     await webpush.sendNotification(subscription, payload);
-                    console.log('Notification envoyée à', s.user_id);
+                    console.log('Notification envoyée avec succès à', s.user_id);
                 } catch (error: any) {
-                    // Suppression si l'abonnement est expiré
+                    // Suppression si l'abonnement est expiré ou invalide
                     if (error.statusCode === 410 || error.statusCode === 404) {
-                        console.log('Abonnement invalide, suppression pour', s.user_id);
+                        console.log('Abonnement expiré, suppression pour', s.user_id);
                         await supabase
                             .from('push_subscriptions')
                             .delete()
                             .eq('user_id', s.user_id);
                     } else {
-                        console.error('Erreur envoi notification:', error);
+                        console.error('Erreur lors de l\'envoi de la notification:', error);
                     }
                 }
             });
 
             await Promise.all(sendPromises);
 
-            res.status(200).json({ success: true, message: "Notifications envoyées" });
+            res.status(200).json({ success: true, message: "Processus de notification terminé" });
 
         } catch (err: any) {
             console.error("Erreur serveur lors de la notification:", err);

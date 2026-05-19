@@ -16,8 +16,8 @@ self.addEventListener('push', function (event) {
         const title = data.title || 'Nouvelle notification';
         const options = {
             body: data.body || 'Vous avez reçu une nouvelle mise à jour.',
-            icon: data.icon || '/logo.svg',
-            badge: data.badge || '/logo.svg',
+            icon: data.icon || '/icon-192x192.png',
+            badge: data.badge || '/icon-192x192.png',
             data: data.data || { url: '/' },
             vibrate: [200, 100, 200]
         };

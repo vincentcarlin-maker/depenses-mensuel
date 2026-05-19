@@ -553,6 +553,15 @@ const MainApp: React.FC<{
       setToastInfo({ message: "Erreur lors de l'ajout de la dépense.", type: 'error' });
       setExpenses(prev => prev.filter(e => e.id !== newId));
     } else {
+      // Notification Push via notre backend express (pas besoin de webhook Supabase)
+      try {
+        fetch('/api/send-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ expense: data })
+        }).catch(err => console.error("Erreur lors de l'appel notification backend:", err));
+      } catch(e) {}
+      
       setFormInitialData(null);
       setToastInfo({ message: 'Dépense ajoutée avec succès !', type: 'info' });
       await logActivity({ type: 'add', expense: data as Expense, performedBy: user });
