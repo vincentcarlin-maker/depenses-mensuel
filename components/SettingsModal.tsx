@@ -11,6 +11,7 @@ import PaintBrushIcon from './icons/PaintBrushIcon';
 import BellIcon from './icons/BellIcon';
 import { type Profile, type LoginEvent } from '../hooks/useAuth';
 import ManagementTab from './ManagementTab';
+import NotificationsTab from './NotificationsTab';
 import WrenchScrewdriverIcon from './icons/WrenchScrewdriverIcon';
 import LogoutIcon from './icons/LogoutIcon';
 import ConfirmationModal from './ConfirmationModal';
@@ -86,7 +87,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     activeTab,
     onTabChange,
   } = props;
-  const [activeView, setActiveView] = useState<'main' | 'appearance' | 'reminders' | 'management'>('main');
+  const [activeView, setActiveView] = useState<'main' | 'appearance' | 'reminders' | 'management' | 'notifications'>('main');
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
   useEffect(() => {
@@ -132,7 +133,8 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
       main: 'Réglages',
       appearance: 'Apparence',
       reminders: 'Gestion des rappels',
-      management: 'Gestion de l\'application'
+      management: 'Gestion de l\'application',
+      notifications: 'Notifications'
   }
 
   return (
@@ -179,6 +181,12 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                             title="Rappels"
                             description="Gérer les dépenses mensuelles récurrentes"
                             onClick={() => setActiveView('reminders')}
+                        />
+                        <SettingsMenuItem
+                            icon={<BellIcon />}
+                            title="Notifications Push"
+                            description="Gérer les alertes sur cet appareil"
+                            onClick={() => setActiveView('notifications')}
                         />
                         <SettingsMenuItem
                             icon={<WrenchScrewdriverIcon />}
@@ -255,6 +263,9 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         loginHistory={props.loginHistory}
                     />
                 </div>
+            )}
+            {activeView === 'notifications' && (
+                <NotificationsTab />
             )}
         </main>
 
