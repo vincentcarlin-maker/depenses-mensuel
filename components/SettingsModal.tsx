@@ -265,7 +265,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                 </div>
             )}
             {activeView === 'notifications' && (
-                <NotificationsTab />
+                <NotificationsTab loggedInUser={props.loggedInUser} />
             )}
         </main>
 

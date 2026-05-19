@@ -1,13 +1,74 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabase/client';
+import { type User } from '../types';
 
-const NotificationsTab: React.FC = () => {
+const VAPID_PUBLIC_KEY = 'BN0Z3nqz3OLK1q2RuvukfLMAffOncCrBsvMw7GncY_9EK8u6-W0OzfIsRElejTlC-TM2uNDXCZkicnJX47pNGdc';
+
+const urlB64ToUint8Array = (base64String: string) => {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+};
+
+interface NotificationsTabProps {
+    loggedInUser: User;
+}
+
+const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => {
     const [permission, setPermission] = useState<NotificationPermission>('default');
+    const [isSubscribed, setIsSubscribed] = useState(false);
 
     useEffect(() => {
         if ('Notification' in window) {
             setPermission(Notification.permission);
+            checkSubscription();
         }
     }, []);
+
+    const checkSubscription = async () => {
+        try {
+            const registration = await navigator.serviceWorker.ready;
+            const subscription = await registration.pushManager.getSubscription();
+            setIsSubscribed(!!subscription);
+        } catch (error) {
+            console.error("Erreur lors de la vérification de l'abonnement :", error);
+        }
+    };
+
+    const subscribeUser = async () => {
+        try {
+            const registration = await navigator.serviceWorker.ready;
+            const applicationServerKey = urlB64ToUint8Array(VAPID_PUBLIC_KEY);
+            const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey
+            });
+
+            // Sauvegarder dans Supabase
+            const { error } = await supabase.from('push_subscriptions').insert({
+                user_id: loggedInUser === 'Duo' ? 'Commun' : loggedInUser,
+                subscription: subscription.toJSON()
+            });
+
+            if (error) {
+                console.error("Erreur lors de l'enregistrement de l'abonnement :", error);
+                alert("Erreur lors de l'enregistrement. Veuillez réessayer.");
+            } else {
+                setIsSubscribed(true);
+            }
+        } catch (error) {
+            console.error('Erreur lors de la souscription aux notifications push', error);
+        }
+    };
 
     const requestPermission = async () => {
         if (!('Notification' in window)) {
@@ -17,6 +78,10 @@ const NotificationsTab: React.FC = () => {
 
         const perm = await Notification.requestPermission();
         setPermission(perm);
+        
+        if (perm === 'granted') {
+            await subscribeUser();
+        }
     };
 
     const sendTestNotification = async () => {

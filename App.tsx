@@ -346,6 +346,27 @@ const MainApp: React.FC<{
       const wasAddedLocally = recentlyAddedIds.current.has(newExpense.id);
       if (!wasAddedLocally) {
         setToastInfo({ message: `${newExpense.user} a ajouté "${newExpense.description}".`, type: 'info' });
+        
+        // Envoi d'une notification push si autorisé
+        if ('Notification' in window && Notification.permission === 'granted' && newExpense.user !== user) {
+            const title = "Nouvelle dépense";
+            const options = {
+                body: `${newExpense.user} a ajouté ${newExpense.amount}€ pour ${newExpense.description || newExpense.category}`,
+                icon: "/logo.svg",
+                badge: "/logo.svg",
+                vibrate: [200, 100, 200]
+            };
+            
+            if (navigator.serviceWorker) {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification(title, options);
+                }).catch(() => {
+                    new Notification(title, options);
+                });
+            } else {
+                new Notification(title, options);
+            }
+        }
       }
 
       setExpenses(prevExpenses => {
