@@ -38,7 +38,29 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
         try {
             const registration = await navigator.serviceWorker.ready;
             const subscription = await registration.pushManager.getSubscription();
-            setIsSubscribed(!!subscription);
+            if (subscription) {
+                // Ensure it's in Supabase by inserting if needed
+                // Using a try-catch for the insert just in case
+                try {
+                    // Start by checking if we have it
+                    const { data } = await supabase.from('push_subscriptions')
+                        .select('id')
+                        .eq('user_id', loggedInUser === 'Duo' ? 'Commun' : loggedInUser);
+                        
+                    if (!data || data.length === 0) {
+                        await supabase.from('push_subscriptions').insert({
+                            user_id: loggedInUser === 'Duo' ? 'Commun' : loggedInUser,
+                            subscription: subscription.toJSON()
+                        });
+                    }
+                } catch (e) {
+                    console.error("DB error syncing subscription", e);
+                }
+                
+                setIsSubscribed(true);
+            } else {
+                setIsSubscribed(false);
+            }
         } catch (error) {
             console.error("Erreur lors de la vérification de l'abonnement :", error);
         }
@@ -131,8 +153,16 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                         {permission === 'denied' && (
                             <div className="px-3 py-1 bg-red-100 text-red-600 rounded-lg text-sm font-medium">Bloquées</div>
                         )}
-                        {permission === 'granted' && (
-                            <div className="px-3 py-1 bg-green-100 text-green-600 rounded-lg text-sm font-medium">Autorisées</div>
+                        {permission === 'granted' && !isSubscribed && (
+                            <button
+                                onClick={subscribeUser}
+                                className="px-4 py-2 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-colors font-medium shadow-sm hover:shadow"
+                            >
+                                S'abonner aux serveurs
+                            </button>
+                        )}
+                        {permission === 'granted' && isSubscribed && (
+                            <div className="px-3 py-1 bg-green-100 text-green-600 rounded-lg text-sm font-medium">Connectées</div>
                         )}
                     </div>
 
