@@ -78,39 +78,34 @@ async function startServer() {
 
             // Préparation de la notification
             const author = newExpense.user || "Quelqu'un";
+            // Ensure no potentially problematic fields for push API (like relative 'badge' sometimes dropping payload on iOS Safari)
             const payload = JSON.stringify({
-                title: 'DuoBudget - Nouvelle dépense',
-                body: `${author} a ajouté une dépense de ${newExpense.amount}€ (${newExpense.description || newExpense.category})`,
+                title: 'Nouvelle dépense: ' + author,
+                body: `${author} a ajouté une dépense de ${newExpense.amount}€ (${newExpense.description || newExpense.category || 'Sans catégorie'})`,
                 icon: '/icon-192x192.png',
-                badge: '/icon-192x192.png',
                 data: { url: '/' }
             });
 
             // Envoi aux abonnés (on n'envoie pas à l'auteur de la dépense)
+            const results: any[] = [];
             const sendPromises = subscriptions
                 .filter((sub) => sub.user_id !== author)
                 .map(async (s: any) => {
                 const subscription = typeof s.subscription === 'string' ? JSON.parse(s.subscription) : s.subscription;
                 try {
                     await webpush.sendNotification(subscription, payload);
-                    console.log('Notification envoyée avec succès à', s.user_id);
+                    results.push({ user: s.user_id, status: 'success' });
                 } catch (error: any) {
-                    // Suppression si l'abonnement est expiré ou invalide
+                    results.push({ user: s.user_id, status: 'error', code: error.statusCode, msg: error.message });
                     if (error.statusCode === 410 || error.statusCode === 404) {
-                        console.log('Abonnement expiré, suppression pour', s.user_id);
-                        await supabase
-                            .from('push_subscriptions')
-                            .delete()
-                            .eq('user_id', s.user_id);
-                    } else {
-                        console.error('Erreur lors de l\'envoi de la notification:', error);
+                        await supabase.from('push_subscriptions').delete().eq('user_id', s.user_id);
                     }
                 }
             });
 
             await Promise.all(sendPromises);
 
-            res.status(200).json({ success: true, message: "Processus de notification terminé" });
+            res.status(200).json({ success: true, message: "Notifications traitées", details: results, authorCible: author, filteredCount: subscriptions.length });
 
         } catch (err: any) {
             console.error("Erreur serveur lors de la notification:", err);
