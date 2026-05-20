@@ -26,6 +26,33 @@ async function startServer() {
     app.use(cors());
     app.use(express.json());
 
+    // Notre endpoint de test
+    app.post("/api/test-notification", async (req, res) => {
+        try {
+            const { data: subscriptions, error: subsError } = await supabase.from('push_subscriptions').select('subscription, user_id');
+            if (subsError) return res.status(500).json({ message: "Erreur DB" });
+            if (!subscriptions || subscriptions.length === 0) return res.status(200).json({ message: "Aucun abonné" });
+            
+            const payload = JSON.stringify({
+                title: 'Test de Push backend',
+                body: "Ceci est un test direct du serveur vers votre appareil.",
+                icon: '/icon-192x192.png',
+                data: { url: '/' }
+            });
+
+            const sendPromises = subscriptions.map(async (s: any) => {
+                const sub = typeof s.subscription === 'string' ? JSON.parse(s.subscription) : s.subscription;
+                try {
+                    await webpush.sendNotification(sub, payload);
+                } catch(e) {}
+            });
+            await Promise.all(sendPromises);
+            res.status(200).json({ message: "Push envoyé à tous les abonnés " + subscriptions.length });
+        } catch (err) {
+            res.status(500).json({ message: "Erreur" });
+        }
+    });
+
     app.post("/api/send-notification", async (req, res) => {
         try {
             console.log("Requête de notification reçue:", req.body);

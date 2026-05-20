@@ -178,6 +178,14 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                                 >
                                     Forcer la synchronisation
                                 </button>
+                                <button
+                                    onClick={() => {
+                                        fetch('/api/test-notification', { method: 'POST' }).then(r => r.json()).then(d => alert(d.message || 'Succès')).catch(() => alert('Erreur'));
+                                    }}
+                                    className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200 transition-colors"
+                                >
+                                    Tester le Push Serveur
+                                </button>
                             </div>
                         )}
                     </div>
