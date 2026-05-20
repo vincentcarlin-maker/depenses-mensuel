@@ -72,7 +72,14 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
     const subscribeUser = async () => {
         try {
             const registration = await navigator.serviceWorker.ready;
-            const applicationServerKey = urlB64ToUint8Array(VAPID_PUBLIC_KEY);
+            
+            let applicationServerKey;
+            try {
+                applicationServerKey = urlB64ToUint8Array(VAPID_PUBLIC_KEY);
+            } catch (b64Err: any) {
+                throw new Error("Base64 decode failed: " + b64Err.message);
+            }
+            
             const subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey
@@ -185,20 +192,40 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                     <div className="flex gap-2 flex-wrap items-center mt-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
                         <h4 className="w-full text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Outils de test (Debug)</h4>
                         <button
-                            onClick={() => {
-                                fetch(window.location.origin + '/api/send-notification', { 
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ expense: { user: loggedInUser === 'Duo' ? 'Commun' : (loggedInUser === 'Vincent' ? 'Sophie' : 'Vincent'), amount: 99.99, description: 'Test depuis frontend', category: 'Test' } })
-                                }).then(r => r.json()).then(d => alert(JSON.stringify(d, null, 2))).catch(e => alert('Erreur API: ' + e.message));
+                            onClick={async () => {
+                                try {
+                                    const r = await fetch('/api/send-notification', { 
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ expense: { user: loggedInUser === 'Duo' ? 'Commun' : (loggedInUser === 'Vincent' ? 'Sophie' : 'Vincent'), amount: 99.99, description: 'Test depuis frontend', category: 'Test' } })
+                                    });
+                                    if (!r.ok) {
+                                        const errText = await r.text();
+                                        throw new Error(`HTTP ${r.status}: ${errText.substring(0, 50)}`);
+                                    }
+                                    const d = await r.json();
+                                    alert(JSON.stringify(d, null, 2));
+                                } catch (e: any) {
+                                    alert('Erreur API: ' + e.message);
+                                }
                             }}
                             className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
                         >
                             Simuler Dépense
                         </button>
                         <button
-                            onClick={() => {
-                                fetch('/api/test-notification', { method: 'POST' }).then(r => r.json()).then(d => alert(JSON.stringify(d, null, 2))).catch(() => alert('Erreur API'));
+                            onClick={async () => {
+                                try {
+                                    const r = await fetch('/api/test-notification', { method: 'POST' });
+                                    if (!r.ok) {
+                                        const errText = await r.text();
+                                        throw new Error(`HTTP ${r.status}: ${errText.substring(0, 50)}`);
+                                    }
+                                    const d = await r.json();
+                                    alert(JSON.stringify(d, null, 2));
+                                } catch (e: any) {
+                                    alert('Erreur API: ' + e.message);
+                                }
                             }}
                             className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200 transition-colors"
                         >
