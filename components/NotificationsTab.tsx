@@ -180,6 +180,18 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                                 </button>
                                 <button
                                     onClick={() => {
+                                        fetch(window.location.origin + '/api/send-notification', { 
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ expense: { user: loggedInUser === 'Duo' ? 'Commun' : (loggedInUser === 'Vincent' ? 'Sophie' : 'Vincent'), amount: 99.99, description: 'Test depuis frontend', category: 'Test' } })
+                                        }).then(r => r.json()).then(d => alert(d.message || 'Succès')).catch(e => alert('Erreur: ' + e.message));
+                                    }}
+                                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
+                                >
+                                    Simuler Dépense
+                                </button>
+                                <button
+                                    onClick={() => {
                                         fetch('/api/test-notification', { method: 'POST' }).then(r => r.json()).then(d => alert(d.message || 'Succès')).catch(() => alert('Erreur'));
                                     }}
                                     className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200 transition-colors"

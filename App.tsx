@@ -555,7 +555,7 @@ const MainApp: React.FC<{
     } else {
       // Notification Push via notre backend express (pas besoin de webhook Supabase)
       try {
-        fetch('/api/send-notification', {
+        fetch(window.location.origin + '/api/send-notification', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ expense: data })
