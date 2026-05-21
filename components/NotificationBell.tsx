@@ -128,7 +128,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
                 const { error } = await supabase
                     .from('subscriptions')
                     .delete()
-                    .eq('subscription_data->>endpoint', subJSON.endpoint);
+                    .eq('subscription_data->>endpoint', subJSON.endpoint || '');
 
                 if (error) {
                     console.error('Erreur lors de la suppression de l\'abonnement:', error);

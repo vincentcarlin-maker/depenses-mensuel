@@ -44,11 +44,11 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                 try {
                     const { data } = await supabase.from('push_subscriptions')
                         .select('id')
-                        .eq('user_id', loggedInUser === 'Duo' ? 'Commun' : loggedInUser);
+                        .eq('user_id', (loggedInUser as any) === 'Duo' ? 'Commun' : loggedInUser);
                         
                     if (!data || data.length === 0) {
                         const { error } = await supabase.from('push_subscriptions').insert({
-                            user_id: loggedInUser === 'Duo' ? 'Commun' : loggedInUser,
+                            user_id: (loggedInUser as any) === 'Duo' ? 'Commun' : loggedInUser,
                             subscription: subscription.toJSON()
                         });
                         if (error) {
@@ -86,7 +86,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
             });
 
             // Sauvegarder dans Supabase (on efface l'ancien s'il existe pour éviter le doublon d'ID)
-            const userId = loggedInUser === 'Duo' ? 'Commun' : loggedInUser;
+            const userId = (loggedInUser as any) === 'Duo' ? 'Commun' : loggedInUser;
             await supabase.from('push_subscriptions').delete().eq('user_id', userId);
             
             const { error: insertError } = await supabase.from('push_subscriptions').insert({
@@ -130,7 +130,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                     icon: "/logo.svg",
                     badge: "/logo.svg",
                     vibrate: [200, 100, 200]
-                });
+                } as any);
             } catch (error) {
                 // Fallback si le SW n'est pas prêt
                 new Notification("DuoBudget", {
@@ -197,7 +197,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                                     const r = await fetch('/api/send-notification', { 
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ expense: { user: loggedInUser === 'Duo' ? 'Commun' : (loggedInUser === 'Vincent' ? 'Sophie' : 'Vincent'), amount: 99.99, description: 'Test depuis frontend', category: 'Test' } })
+                                        body: JSON.stringify({ expense: { user: (loggedInUser as any) === 'Duo' ? 'Commun' : (loggedInUser === 'Vincent' ? 'Sophie' : 'Vincent'), amount: 99.99, description: 'Test depuis frontend', category: 'Test' } })
                                     });
                                     if (!r.ok) {
                                         const errText = await r.text();

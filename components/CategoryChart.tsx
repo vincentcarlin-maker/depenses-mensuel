@@ -204,7 +204,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
             />
             <Tooltip 
               cursor={{ fill: theme === 'dark' ? '#334155' : '#f1f5f9', opacity: 0.4 }}
-              formatter={(value: number) => [`${value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`, 'Montant']}
+              formatter={(value: any) => [`${parseFloat(value).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`, 'Montant']}
               contentStyle={{
                 backgroundColor: theme === 'dark' ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
                 color: theme === 'dark' ? '#f1f5f9' : '#1e293b',

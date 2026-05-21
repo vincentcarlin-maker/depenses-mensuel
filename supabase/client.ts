@@ -30,4 +30,4 @@ export type Database = {
   };
 };
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey) as any;
