@@ -143,7 +143,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                 </p>
 
                 <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl gap-4">
                         <div>
                             <p className="font-semibold">Statut des notifications</p>
                             <p className="text-sm text-slate-500">
@@ -153,24 +153,24 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                         {permission !== 'granted' && permission !== 'denied' && (
                             <button
                                 onClick={requestPermission}
-                                className="px-4 py-2 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-colors font-medium shadow-sm hover:shadow"
+                                className="px-4 py-2 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-colors font-medium shadow-sm hover:shadow self-start sm:self-auto"
                             >
                                 Autoriser
                             </button>
                         )}
                         {permission === 'denied' && (
-                            <div className="px-3 py-1 bg-red-100 text-red-600 rounded-lg text-sm font-medium">Bloquées</div>
+                            <div className="px-3 py-1 bg-red-100 text-red-600 rounded-lg text-sm font-medium self-start sm:self-auto">Bloquées</div>
                         )}
                         {permission === 'granted' && !isSubscribed && (
                             <button
                                 onClick={subscribeUser}
-                                className="px-4 py-2 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-colors font-medium shadow-sm hover:shadow"
+                                className="px-4 py-2 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-colors font-medium shadow-sm hover:shadow self-start sm:self-auto"
                             >
                                 S'abonner aux serveurs
                             </button>
                         )}
                         {permission === 'granted' && isSubscribed && (
-                            <div className="flex gap-2 items-center">
+                            <div className="flex flex-wrap gap-2 items-center justify-start sm:justify-end">
                                 <div className="px-3 py-1 bg-green-100 text-green-600 rounded-lg text-sm font-medium">Connectées</div>
                                 <button
                                     onClick={subscribeUser}
