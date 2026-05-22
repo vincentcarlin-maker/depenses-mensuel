@@ -65,9 +65,12 @@ async function startServer() {
         try {
             console.log("Requête de notification reçue:", req.body);
             
-            // Supporte à la fois le format direct (frontend) et le format Webhook (Supabase)
-            const newExpense = req.body?.expense || req.body?.record;
-            if (!newExpense) {
+            // Normalize inputs
+            let type: 'add' | 'delete' | 'update' | 'moneypot' = req.body?.type || 'add';
+            const expense = req.body?.expense || req.body?.record;
+            const moneyPotTransaction = req.body?.moneyPotTransaction;
+
+            if (!expense && !moneyPotTransaction) {
                 return res.status(200).json({ message: "Ignoré : Aucune donnée reçue" });
             }
 
@@ -84,47 +87,137 @@ async function startServer() {
                 return res.status(200).json({ message: "Aucun abonné enregistré." });
             }
 
-            // Préparation de la notification
-            const author = newExpense.user || "Quelqu'un";
-            const payload = JSON.stringify({
-                title: 'DuoBudget - Nouvelle dépense',
-                body: `${author} a ajouté une dépense de ${newExpense.amount}€ (${newExpense.description || newExpense.category})`,
-                icon: '/icon-192x192.png',
-                badge: '/icon-192x192.png',
-                data: { url: '/' }
-            });
+            // Déduire l'auteur de l'événement
+            const author = expense 
+                ? (expense.user || "Quelqu'un") 
+                : (moneyPotTransaction ? (moneyPotTransaction.user_name || "Quelqu'un") : "Quelqu'un");
 
-            // Envoi aux abonnés (on n'envoie pas à l'auteur de la dépense)
-            const sendPromises = subscriptions
-                .filter((sub) => sub.user_id !== author)
-                .map(async (s: any) => {
+            // Filtrer les abonnements pour ne pas envoyer à l'auteur lui-même
+            const targetSubs = subscriptions.filter((sub) => sub.user_id !== author);
+
+            if (targetSubs.length === 0) {
+                return res.status(200).json({ message: "Aucun autre utilisateur à notifier." });
+            }
+
+            const sendPromises = targetSubs.map(async (s: any) => {
                 const subscription = typeof s.subscription === 'string' ? JSON.parse(s.subscription) : s.subscription;
                 
-                // Vérifier les préférences de l'abonné
-                if (subscription && subscription.preferences) {
+                if (!subscription) return;
+
+                // 1. Appliquer les filtres par préférence de l'abonné
+                if (subscription.preferences) {
                     const prefs = subscription.preferences;
-                    // 1. Filtrer par auteur
-                    if (prefs.authors && Array.isArray(prefs.authors)) {
-                        if (!prefs.authors.includes(newExpense.user)) {
-                            console.log(`Notification ignorée pour ${s.user_id} : auteur ${newExpense.user} filtré.`);
+
+                    // A. Plage horaire de silence (Ne pas déranger)
+                    if (prefs.quietHoursActive && prefs.quietHoursStart && prefs.quietHoursEnd) {
+                        const now = new Date();
+                        const currentHours = now.getHours();
+                        const currentMinutes = now.getMinutes();
+                        const currentTotalMinutes = currentHours * 60 + currentMinutes;
+
+                        const [startH, startM] = prefs.quietHoursStart.split(':').map(Number);
+                        const [endH, endM] = prefs.quietHoursEnd.split(':').map(Number);
+                        const startTotalMinutes = startH * 60 + startM;
+                        const endTotalMinutes = endH * 60 + endM;
+
+                        let isInQuietHours = false;
+                        if (startTotalMinutes <= endTotalMinutes) {
+                            isInQuietHours = currentTotalMinutes >= startTotalMinutes && currentTotalMinutes <= endTotalMinutes;
+                        } else {
+                            isInQuietHours = currentTotalMinutes >= startTotalMinutes || currentTotalMinutes <= endTotalMinutes;
+                        }
+
+                        if (isInQuietHours) {
+                            console.log(`Notification ignorée pour ${s.user_id} : Plage horaire silencieuse active.`);
                             return;
                         }
                     }
-                    // 2. Filtrer par montant minimum
-                    if (typeof prefs.minAmount === 'number') {
-                        if (newExpense.amount < prefs.minAmount) {
-                            console.log(`Notification ignorée pour ${s.user_id} : montant ${newExpense.amount}€ inférieur au min.`);
-                            return;
+
+                    // B. Filtre Suppressions
+                    if (type === 'delete' && prefs.includeDeletes === false) {
+                        console.log(`Notification ignorée pour ${s.user_id} : Alerte de suppression désactivée.`);
+                        return;
+                    }
+
+                    // C. Filtre Cagnotte
+                    const isCategoryCagnotte = expense && (expense.category === 'Cagnotte' || expense.category === 'Cagnotte commune');
+                    if ((type === 'moneypot' || isCategoryCagnotte) && prefs.includeMoneyPot === false) {
+                        console.log(`Notification ignorée pour ${s.user_id} : Alerte de cagnotte désactivée.`);
+                        return;
+                    }
+
+                    // D. Filtrer les dépenses par auteur
+                    if (expense && (type === 'add' || type === 'update' || type === 'delete')) {
+                        if (prefs.authors && Array.isArray(prefs.authors)) {
+                            if (!prefs.authors.includes(expense.user)) {
+                                console.log(`Notification ignorée pour ${s.user_id} : auteur ${expense.user} filtré.`);
+                                return;
+                            }
                         }
                     }
-                    // 3. Filtrer par catégories
-                    if (prefs.categories && Array.isArray(prefs.categories)) {
-                        if (!prefs.categories.includes(newExpense.category)) {
-                            console.log(`Notification ignorée pour ${s.user_id} : catégorie ${newExpense.category} filtrée.`);
-                            return;
+
+                    // E. Filtrer par montant minimum
+                    if (expense && (type === 'add' || type === 'update')) {
+                        if (typeof prefs.minAmount === 'number') {
+                            if (expense.amount < prefs.minAmount) {
+                                console.log(`Notification ignorée pour ${s.user_id} : montant ${expense.amount}€ inférieur au min.`);
+                                return;
+                            }
+                        }
+                    }
+
+                    // F. Filtrer par catégories
+                    if (expense && (type === 'add' || type === 'update')) {
+                        if (prefs.categories && Array.isArray(prefs.categories)) {
+                            if (!prefs.categories.includes(expense.category)) {
+                                console.log(`Notification ignorée pour ${s.user_id} : catégorie ${expense.category} filtrée.`);
+                                return;
+                            }
                         }
                     }
                 }
+
+                // 2. Conception personnalisée du payload de notification (Confidentialité)
+                const isPrivacy = subscription.preferences?.privacyMode === true;
+                
+                let title = 'DuoBudget';
+                let body = '';
+
+                if (isPrivacy) {
+                    title = 'DuoBudget 🔒';
+                    if (type === 'delete') {
+                        body = 'Une dépense a été retirée par votre partenaire.';
+                    } else if (type === 'moneypot') {
+                        body = 'Une opération sur la cagnotte a été enregistrée.';
+                    } else if (type === 'update') {
+                        body = 'Une dépense a été mise à jour par votre partenaire.';
+                    } else {
+                        body = 'Votre partenaire a ajouté une nouvelle activité.';
+                    }
+                } else {
+                    if (type === 'delete') {
+                        title = 'DuoBudget - Dépense supprimée';
+                        body = `${author} a supprimé la dépense de ${expense.amount}€ (${expense.description || expense.category})`;
+                    } else if (type === 'update') {
+                        title = 'DuoBudget - Dépense modifiée';
+                        body = `${author} a modifié la dépense : ${expense.description || expense.category} (${expense.amount}€)`;
+                    } else if (type === 'moneypot') {
+                        title = 'DuoBudget - Cagnotte commune';
+                        const symbol = moneyPotTransaction.amount >= 0 ? '+' : '';
+                        body = `${author} a enregistré une transaction de ${symbol}${moneyPotTransaction.amount}€ dans la cagnotte : ${moneyPotTransaction.description || ''}`;
+                    } else {
+                        title = 'DuoBudget - Nouvelle dépense';
+                        body = `${author} a ajouté une dépense de ${expense.amount}€ (${expense.description || expense.category})`;
+                    }
+                }
+
+                const payload = JSON.stringify({
+                    title,
+                    body,
+                    icon: '/icon-192x192.png',
+                    badge: '/icon-192x192.png',
+                    data: { url: '/' }
+                });
 
                 try {
                     await webpush.sendNotification(subscription, payload);
@@ -144,7 +237,6 @@ async function startServer() {
             });
 
             await Promise.all(sendPromises);
-
             res.status(200).json({ success: true, message: "Processus de notification terminé" });
 
         } catch (err: any) {

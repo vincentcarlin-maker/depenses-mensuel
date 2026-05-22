@@ -487,6 +487,38 @@ const MainApp: React.FC<{
     return id;
   }, []);
 
+  // Multi-route Unified Push Notification Dispatcher
+  const dispatchPushNotification = useCallback(async (payload: { type: 'add' | 'delete' | 'update' | 'moneypot'; expense?: any; moneyPotTransaction?: any }) => {
+    try {
+      const author = user === 'Duo' ? 'Commun' : user;
+      supabase.functions.invoke('send-notification', {
+        body: payload
+      }).then(({ error: funcError }) => {
+        if (funcError) {
+          console.warn("L'Edge Function a échoué, tentative d'envoi Push direct...");
+          notifySubscriptionsDirectly(author, payload).catch(err => {
+            console.error("Erreur d'envoi Push direct:", err);
+            fetch(window.location.origin + '/api/send-notification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(err => console.error("Erreur d'appel notification locale:", err));
+          });
+        }
+      }).catch(() => {
+        notifySubscriptionsDirectly(author, payload).catch(() => {
+          fetch(window.location.origin + '/api/send-notification', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+          }).catch(() => {});
+        });
+      });
+    } catch(e) {
+      console.error("Erreur d'émission d'avis push:", e);
+    }
+  }, [user]);
+
   // Money Pot Handlers
   const addMoneyPotTransaction = async (transaction: Omit<MoneyPotTransaction, 'id' | 'created_at'>) => {
       const newId = crypto.randomUUID();
@@ -508,6 +540,11 @@ const MainApp: React.FC<{
          if (transaction.user_name !== 'Commun') {
              setToastInfo({ message: "Opération enregistrée !", type: "info" });
          }
+         // Déclencher une notification push pour l'activité cagnotte
+         dispatchPushNotification({
+             type: 'moneypot',
+             moneyPotTransaction: newTransaction
+         });
       }
   };
 
@@ -554,35 +591,11 @@ const MainApp: React.FC<{
       setToastInfo({ message: "Erreur lors de l'ajout de la dépense.", type: 'error' });
       setExpenses(prev => prev.filter(e => e.id !== newId));
     } else {
-      // Notification Push : On appelle d'abord l'Edge Function Supabase (idéal pour GitHub Pages)
-      // sinon on tente l'envoi direct depuis le navigateur client sans passer par un serveur (idéal si pas d'ordinateurs/CLI)
-      // et en ultime secours on tente l'API locale.
-      try {
-        supabase.functions.invoke('send-notification', {
-          body: { expense: data }
-        }).then(({ error: funcError }) => {
-          if (funcError) {
-            console.warn("L'Edge Function a échoué (sûrement non déployée), tentative d'envoi Push direct client à client...");
-            notifySubscriptionsDirectly(user === 'Duo' ? 'Commun' : user, data).catch(err => {
-              console.error("Erreur d'envoi Push direct:", err);
-              fetch(window.location.origin + '/api/send-notification', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ expense: data })
-              }).catch(err => console.error("Erreur d'appel notification locale:", err));
-            });
-          }
-        }).catch(() => {
-          // Fallback direct en cas d'erreur réseau / échec d'Edge Function
-          notifySubscriptionsDirectly(user === 'Duo' ? 'Commun' : user, data).catch(() => {
-            fetch(window.location.origin + '/api/send-notification', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ expense: data })
-            }).catch(() => {});
-          });
-        });
-      } catch(e) {}
+      // Notification Push unifiée et hautement configurée
+      dispatchPushNotification({
+          type: 'add',
+          expense: data
+      });
       
       setFormInitialData(null);
       setToastInfo({ message: 'Dépense ajoutée avec succès !', type: 'info' });
@@ -634,6 +647,12 @@ const MainApp: React.FC<{
 
     setExpenses(prev => prev.filter(e => e.id !== id));
 
+    // Envoyer une notification push pour alerter de la suppression
+    dispatchPushNotification({
+        type: 'delete',
+        expense: expenseToDelete
+    });
+
     const timerId = window.setTimeout(() => {
         _performDelete(id);
         setUndoableAction(null);
@@ -684,6 +703,12 @@ const MainApp: React.FC<{
     setExpenses(prev => prev.map(e => e.id === updatedExpense.id ? updatedExpense : e));
     setExpenseToEdit(null);
     highlightExpense(updatedExpense.id);
+
+    // Déclencher un avis push de modification de dépense
+    dispatchPushNotification({
+        type: 'update',
+        expense: updatedExpense
+    });
 
     const timerId = window.setTimeout(() => {
         _performUpdate(updatedExpense);

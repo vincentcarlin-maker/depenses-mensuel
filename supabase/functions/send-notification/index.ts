@@ -17,7 +17,9 @@ Deno.serve(async (req) => {
     console.log("Requête de notification reçue par l'Edge Function Supabase:", body);
 
     const isTest = body.isTest === true;
+    let type: 'add' | 'delete' | 'update' | 'moneypot' = body.type || 'add';
     const expense = body.expense || body.record;
+    const moneyPotTransaction = body.moneyPotTransaction;
 
     // Récupérer l'URL et la clé d'API Supabase de l'environnement de l'Edge Function
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || "https://xcdyshzyxpngbpceilym.supabase.co"
@@ -54,30 +56,21 @@ Deno.serve(async (req) => {
       VAPID_PRIVATE_KEY
     );
 
-    let payload: string;
     let targetSubscriptions = subscriptions;
 
-    if (isTest) {
-      payload = JSON.stringify({
-        title: 'Test de Push backend (Supabase Edge Function)',
-        body: "Ceci est un test direct de l'Edge Function Supabase vers votre appareil.",
-        icon: '/icon-192x192.png',
-        data: { url: '/' }
-      });
-    } else if (expense) {
-      const author = expense.user || "Quelqu'un";
-      payload = JSON.stringify({
-        title: 'DuoBudget - Nouvelle dépense',
-        body: `${author} a ajouté une dépense de ${expense.amount}€ (${expense.description || expense.category})`,
-        icon: '/icon-192x192.png',
-        badge: '/icon-192x192.png',
-        data: { url: '/' }
-      });
+    // Déduire l'auteur de l'événement
+    const author = expense 
+      ? (expense.user || "Quelqu'un") 
+      : (moneyPotTransaction ? (moneyPotTransaction.user_name || "Quelqu'un") : "Quelqu'un");
 
-      // On n'envoie pas à l'auteur de la dépense
+    if (isTest) {
+      // Pour les tests, on envoie à tout le monde
+      targetSubscriptions = subscriptions;
+    } else if (expense || moneyPotTransaction) {
+      // On n'envoie pas à l'auteur de l'activité
       targetSubscriptions = subscriptions.filter((sub) => sub.user_id !== author);
     } else {
-      return new Response(JSON.stringify({ error: "Aucune donnée de test ou dépense fournie." }), {
+      return new Response(JSON.stringify({ error: "Aucune donnée de test, dépense ou transaction fournie." }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -95,36 +88,129 @@ Deno.serve(async (req) => {
       try {
         const sub = typeof s.subscription === 'string' ? JSON.parse(s.subscription) : s.subscription;
         
-        // Vérifier les préférences de l'abonné si c'est une dépense
-        if (expense && sub && sub.preferences) {
+        if (!sub) return;
+
+        // A. Vérifier les préférences de l'abonné si non test
+        if (!isTest && sub.preferences) {
           const prefs = sub.preferences;
-          // 1. Auteur
-          if (prefs.authors && Array.isArray(prefs.authors)) {
-            if (!prefs.authors.includes(expense.user)) {
-              console.log(`Notification ignorée pour ${s.user_id} : auteur ${expense.user} filtré.`);
+
+          // 1. Heures de silence silencieuses (Ne Pas Déranger)
+          if (prefs.quietHoursActive && prefs.quietHoursStart && prefs.quietHoursEnd) {
+            const now = new Date();
+            const currentHours = now.getHours();
+            const currentMinutes = now.getMinutes();
+            const currentTotalMinutes = currentHours * 60 + currentMinutes;
+
+            const [startH, startM] = prefs.quietHoursStart.split(':').map(Number);
+            const [endH, endM] = prefs.quietHoursEnd.split(':').map(Number);
+            const startTotalMinutes = startH * 60 + startM;
+            const endTotalMinutes = endH * 60 + endM;
+
+            let isInQuietHours = false;
+            if (startTotalMinutes <= endTotalMinutes) {
+              isInQuietHours = currentTotalMinutes >= startTotalMinutes && currentTotalMinutes <= endTotalMinutes;
+            } else {
+              isInQuietHours = currentTotalMinutes >= startTotalMinutes || currentTotalMinutes <= endTotalMinutes;
+            }
+
+            if (isInQuietHours) {
+              console.log(`Notification ignorée pour ${s.user_id} : Mode Ne Pas Déranger actif.`);
               return;
             }
           }
-          // 2. Montant minimum
-          if (typeof prefs.minAmount === 'number') {
-            if (expense.amount < prefs.minAmount) {
-              console.log(`Notification ignorée pour ${s.user_id} : montant ${expense.amount}€ inférieur au minimum.`);
-              return;
+
+          // 2. Filtre Suppressions
+          if (type === 'delete' && prefs.includeDeletes === false) {
+            console.log(`Notification ignorée pour ${s.user_id} : Suppression désactivée.`);
+            return;
+          }
+
+          // 3. Filtre Cagnotte
+          const isCategoryCagnotte = expense && (expense.category === 'Cagnotte' || expense.category === 'Cagnotte commune');
+          if ((type === 'moneypot' || isCategoryCagnotte) && prefs.includeMoneyPot === false) {
+            console.log(`Notification ignorée pour ${s.user_id} : Cagnotte désactivée.`);
+            return;
+          }
+
+          // 4. Auteur
+          if (expense && (type === 'add' || type === 'update' || type === 'delete')) {
+            if (prefs.authors && Array.isArray(prefs.authors)) {
+              if (!prefs.authors.includes(expense.user)) {
+                console.log(`Notification ignorée pour ${s.user_id} : auteur ${expense.user} filtré.`);
+                return;
+              }
             }
           }
-          // 3. Catégorie
-          if (prefs.categories && Array.isArray(prefs.categories)) {
-            if (!prefs.categories.includes(expense.category)) {
-              console.log(`Notification ignorée pour ${s.user_id} : catégorie ${expense.category} filtrée.`);
-              return;
+
+          // 5. Montant minimum
+          if (expense && (type === 'add' || type === 'update')) {
+            if (typeof prefs.minAmount === 'number') {
+              if (expense.amount < prefs.minAmount) {
+                console.log(`Notification ignorée pour ${s.user_id} : montant ${expense.amount}€ inférieur au minimum.`);
+                return;
+              }
+            }
+          }
+
+          // 6. Catégorie
+          if (expense && (type === 'add' || type === 'update')) {
+            if (prefs.categories && Array.isArray(prefs.categories)) {
+              if (!prefs.categories.includes(expense.category)) {
+                console.log(`Notification ignorée pour ${s.user_id} : catégorie ${expense.category} filtrée.`);
+                return;
+              }
             }
           }
         }
 
-        if (sub) {
-          await webpush.sendNotification(sub, payload);
-          console.log(`Notification envoyée avec succès à ${s.user_id}`);
+        // B. Composer le message selon le mode Confidentiel (Privacy Mode)
+        const isPrivacy = sub.preferences?.privacyMode === true;
+        let title = 'DuoBudget';
+        let bodyPayload = '';
+
+        if (isPrivacy) {
+          title = 'DuoBudget 🔒';
+          if (isTest) {
+            bodyPayload = 'Ceci est une alerte de test confidentielle.';
+          } else if (type === 'delete') {
+            bodyPayload = 'Une dépense a été retirée par votre partenaire.';
+          } else if (type === 'moneypot') {
+            bodyPayload = 'Une opération sur la cagnotte a été enregistrée.';
+          } else if (type === 'update') {
+            bodyPayload = 'Une dépense a été mise à jour par votre partenaire.';
+          } else {
+            bodyPayload = 'Votre partenaire a ajouté une nouvelle activité.';
+          }
+        } else {
+          if (isTest) {
+            title = 'Test de Push (Supabase)';
+            bodyPayload = "Ceci est un test direct de l'Edge Function Supabase vers votre appareil.";
+          } else if (type === 'delete') {
+            title = 'DuoBudget - Dépense supprimée';
+            bodyPayload = `${author} a supprimé la dépense de ${expense.amount}€ (${expense.description || expense.category})`;
+          } else if (type === 'update') {
+            title = 'DuoBudget - Dépense modifiée';
+            bodyPayload = `${author} a modifié la dépense : ${expense.description || expense.category} (${expense.amount}€)`;
+          } else if (type === 'moneypot') {
+            title = 'DuoBudget - Cagnotte commune';
+            const symbol = moneyPotTransaction.amount >= 0 ? '+' : '';
+            bodyPayload = `${author} a enregistré une transaction de ${symbol}${moneyPotTransaction.amount}€ dans la cagnotte : ${moneyPotTransaction.description || ''}`;
+          } else {
+            title = 'DuoBudget - Nouvelle dépense';
+            bodyPayload = `${author} a ajouté une dépense de ${expense.amount}€ (${expense.description || expense.category})`;
+          }
         }
+
+        const payload = JSON.stringify({
+          title,
+          body: bodyPayload,
+          icon: '/icon-192x192.png',
+          badge: '/icon-192x192.png',
+          data: { url: '/' }
+        });
+
+        await webpush.sendNotification(sub, payload);
+        console.log(`Notification envoyée avec succès à ${s.user_id}`);
       } catch (error: any) {
         // Supprimer l'abonnement s'il est expiré (410) ou introuvable (404)
         if (error.statusCode === 410 || error.statusCode === 404) {
@@ -146,7 +232,7 @@ Deno.serve(async (req) => {
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    });
 
   } catch (error: any) {
     console.error("Erreur globale dans l'Edge Function:", error);

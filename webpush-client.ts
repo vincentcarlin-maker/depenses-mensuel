@@ -105,10 +105,30 @@ async function generateVapidHeader(endpoint: string): Promise<string> {
  * Since encrypting payloads client-side in JS requires complex cryptography, we send an empty body.
  * The Service Worker picks it up, fetches the latest transaction details directly from Supabase, and presents it.
  */
-export async function notifySubscriptionsDirectly(currentUser: string, expense?: any): Promise<{ success: boolean; count: number }> {
+export async function notifySubscriptionsDirectly(
+  currentUser: string, 
+  notificationData?: any
+): Promise<{ success: boolean; count: number }> {
   try {
+    // Normalize notificationData (can be a standard expense object or structured notification payload)
+    let type: 'add' | 'delete' | 'update' | 'moneypot' = 'add';
+    let expense: any = null;
+    let _moneyPotTransaction: any = null;
+
+    if (notificationData) {
+      if (notificationData.type && ['add', 'delete', 'update', 'moneypot'].includes(notificationData.type)) {
+        type = notificationData.type;
+        expense = notificationData.expense;
+        _moneyPotTransaction = notificationData.moneyPotTransaction;
+      } else {
+        // Simple fallback
+        expense = notificationData;
+        type = 'add';
+      }
+    }
+
     // 1. Get subscriptions from Supabase
-    const { data: subscriptions, error } = await supabase
+    const { data, error } = await supabase
       .from('push_subscriptions')
       .select('*');
 
@@ -117,13 +137,15 @@ export async function notifySubscriptionsDirectly(currentUser: string, expense?:
       throw error;
     }
 
-    if (!subscriptions || subscriptions.length === 0) {
+    const subscriptionsList = (data as any[]) || [];
+
+    if (subscriptionsList.length === 0) {
       console.log("No registered subscriptions to notify.");
       return { success: true, count: 0 };
     }
 
     // 2. Filter out current user's own subscription so they don't notify themselves
-    const otherSubscriptions = subscriptions.filter(sub => sub.user_id !== currentUser);
+    const otherSubscriptions = subscriptionsList.filter(sub => sub.user_id !== currentUser);
 
     if (otherSubscriptions.length === 0) {
       console.log("No subscriptions for other users found to notify.");
@@ -142,27 +164,74 @@ export async function notifySubscriptionsDirectly(currentUser: string, expense?:
         if (!sub || !sub.endpoint) continue;
 
         // Apply notification preference filters if specified
-        if (expense && sub.preferences) {
+        if (sub.preferences) {
           const prefs = sub.preferences;
-          // 1. Author filter
-          if (prefs.authors && Array.isArray(prefs.authors)) {
-            if (!prefs.authors.includes(expense.user)) {
-              console.log(`Notification filtered for user ${subItem.user_id} based on author preference.`);
+
+          // A. Quiet Hours Filter (Heures de Silence)
+          if (prefs.quietHoursActive && prefs.quietHoursStart && prefs.quietHoursEnd) {
+            const now = new Date();
+            const currentHours = now.getHours();
+            const currentMinutes = now.getMinutes();
+            const currentTotalMinutes = currentHours * 60 + currentMinutes;
+
+            const [startH, startM] = prefs.quietHoursStart.split(':').map(Number);
+            const [endH, endM] = prefs.quietHoursEnd.split(':').map(Number);
+            const startTotalMinutes = startH * 60 + startM;
+            const endTotalMinutes = endH * 60 + endM;
+
+            let isInQuietHours = false;
+            if (startTotalMinutes <= endTotalMinutes) {
+              isInQuietHours = currentTotalMinutes >= startTotalMinutes && currentTotalMinutes <= endTotalMinutes;
+            } else {
+              isInQuietHours = currentTotalMinutes >= startTotalMinutes || currentTotalMinutes <= endTotalMinutes;
+            }
+
+            if (isInQuietHours) {
+              console.log(`Direct push ignored for ${subItem.user_id}: Quiet hours are active (${prefs.quietHoursStart} - ${prefs.quietHoursEnd})`);
               continue;
             }
           }
-          // 2. Amount filter
-          if (typeof prefs.minAmount === 'number') {
-            if (expense.amount < prefs.minAmount) {
-              console.log(`Notification filtered for user ${subItem.user_id} because expense amount is smaller than min amount.`);
-              continue;
+
+          // B. Suppressions Filter
+          if (type === 'delete' && prefs.includeDeletes === false) {
+            console.log(`Direct push ignored for ${subItem.user_id}: deletion alerts disabled.`);
+            continue;
+          }
+
+          // C. Money Pot Filter
+          const isCategoryCagnotte = expense && (expense.category === 'Cagnotte' || expense.category === 'Cagnotte commune');
+          if ((type === 'moneypot' || isCategoryCagnotte) && prefs.includeMoneyPot === false) {
+            console.log(`Direct push ignored for ${subItem.user_id}: money pot alerts disabled.`);
+            continue;
+          }
+
+          // D. Author filter (only for expenses)
+          if (expense && (type === 'add' || type === 'update' || type === 'delete')) {
+            if (prefs.authors && Array.isArray(prefs.authors)) {
+              if (!prefs.authors.includes(expense.user)) {
+                console.log(`Direct push filtered for user ${subItem.user_id} based on author preference.`);
+                continue;
+              }
             }
           }
-          // 3. Category/motive filters
-          if (prefs.categories && Array.isArray(prefs.categories)) {
-            if (!prefs.categories.includes(expense.category)) {
-              console.log(`Notification filtered for user ${subItem.user_id} because ${expense.category} is deselected.`);
-              continue;
+
+          // E. Amount filter (only for creation / updates of expenses)
+          if (expense && (type === 'add' || type === 'update')) {
+            if (typeof prefs.minAmount === 'number') {
+              if (expense.amount < prefs.minAmount) {
+                console.log(`Direct push filtered for user ${subItem.user_id} because expense amount is smaller than min amount.`);
+                continue;
+              }
+            }
+          }
+
+          // F. Category/motive filters
+          if (expense && (type === 'add' || type === 'update')) {
+            if (prefs.categories && Array.isArray(prefs.categories)) {
+              if (!prefs.categories.includes(expense.category)) {
+                console.log(`Direct push filtered for user ${subItem.user_id} because ${expense.category} is deselected.`);
+                continue;
+              }
             }
           }
         }

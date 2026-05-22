@@ -33,6 +33,13 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
     const [prefMinAmount, setPrefMinAmount] = useState<number>(0);
     const [prefCategories, setPrefCategories] = useState<string[]>([]);
     const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+    const [prefIncludeMoneyPot, setPrefIncludeMoneyPot] = useState<boolean>(true);
+    const [prefIncludeDeletes, setPrefIncludeDeletes] = useState<boolean>(true);
+    const [prefQuietHoursActive, setPrefQuietHoursActive] = useState<boolean>(false);
+    const [prefQuietHoursStart, setPrefQuietHoursStart] = useState<string>('22:00');
+    const [prefQuietHoursEnd, setPrefQuietHoursEnd] = useState<string>('08:00');
+    const [prefPrivacyMode, setPrefPrivacyMode] = useState<boolean>(false);
+
     const [isSyncingPrefs, setIsSyncingPrefs] = useState(false);
 
     useEffect(() => {
@@ -65,6 +72,13 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                 const parsed = JSON.parse(savedPrefs);
                 if (parsed.authors) setPrefAuthors(parsed.authors);
                 if (typeof parsed.minAmount === 'number') setPrefMinAmount(parsed.minAmount);
+                if (typeof parsed.includeMoneyPot === 'boolean') setPrefIncludeMoneyPot(parsed.includeMoneyPot);
+                if (typeof parsed.includeDeletes === 'boolean') setPrefIncludeDeletes(parsed.includeDeletes);
+                if (typeof parsed.quietHoursActive === 'boolean') setPrefQuietHoursActive(parsed.quietHoursActive);
+                if (parsed.quietHoursStart) setPrefQuietHoursStart(parsed.quietHoursStart);
+                if (parsed.quietHoursEnd) setPrefQuietHoursEnd(parsed.quietHoursEnd);
+                if (typeof parsed.privacyMode === 'boolean') setPrefPrivacyMode(parsed.privacyMode);
+                
                 if (parsed.categories) {
                     // Filtrer pour éliminer d'anciennes catégories si supprimées
                     setPrefCategories(parsed.categories.filter((c: string) => cats.includes(c)));
@@ -94,7 +108,13 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                         const localPrefs = {
                             authors: prefAuthors,
                             minAmount: prefMinAmount,
-                            categories: prefCategories.length > 0 ? prefCategories : availableCategories
+                            categories: prefCategories.length > 0 ? prefCategories : availableCategories,
+                            includeMoneyPot: prefIncludeMoneyPot,
+                            includeDeletes: prefIncludeDeletes,
+                            quietHoursActive: prefQuietHoursActive,
+                            quietHoursStart: prefQuietHoursStart,
+                            quietHoursEnd: prefQuietHoursEnd,
+                            privacyMode: prefPrivacyMode
                         };
                         const subscriptionJSON = subscription.toJSON() as any;
                         subscriptionJSON.preferences = localPrefs;
@@ -114,6 +134,12 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                             if (prefs.authors) setPrefAuthors(prefs.authors);
                             if (typeof prefs.minAmount === 'number') setPrefMinAmount(prefs.minAmount);
                             if (prefs.categories) setPrefCategories(prefs.categories);
+                            if (typeof prefs.includeMoneyPot === 'boolean') setPrefIncludeMoneyPot(prefs.includeMoneyPot);
+                            if (typeof prefs.includeDeletes === 'boolean') setPrefIncludeDeletes(prefs.includeDeletes);
+                            if (typeof prefs.quietHoursActive === 'boolean') setPrefQuietHoursActive(prefs.quietHoursActive);
+                            if (prefs.quietHoursStart) setPrefQuietHoursStart(prefs.quietHoursStart);
+                            if (prefs.quietHoursEnd) setPrefQuietHoursEnd(prefs.quietHoursEnd);
+                            if (typeof prefs.privacyMode === 'boolean') setPrefPrivacyMode(prefs.privacyMode);
                             
                             localStorage.setItem('notificationPreferences', JSON.stringify(prefs));
                         }
@@ -131,7 +157,17 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
         }
     };
 
-    const syncPrefsToSupabase = async (authors: string[], minAmount: number, categories: string[]) => {
+    const syncPrefsToSupabase = async (updatedPrefs: {
+        authors: string[];
+        minAmount: number;
+        categories: string[];
+        includeMoneyPot: boolean;
+        includeDeletes: boolean;
+        quietHoursActive: boolean;
+        quietHoursStart: string;
+        quietHoursEnd: string;
+        privacyMode: boolean;
+    }) => {
         setIsSyncingPrefs(true);
         try {
             const registration = await navigator.serviceWorker.ready;
@@ -139,11 +175,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
             if (subscription) {
                 const userId = loggedInUser === 'Duo' ? 'Commun' : loggedInUser;
                 const subscriptionJSON = subscription.toJSON() as any;
-                subscriptionJSON.preferences = {
-                    authors,
-                    minAmount,
-                    categories
-                };
+                subscriptionJSON.preferences = updatedPrefs;
                 
                 // Mettre à jour dans Supabase
                 await supabase.from('push_subscriptions').delete().eq('user_id', userId);
@@ -163,31 +195,63 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
         }
     };
 
+    const handleUpdatePreference = (newFields: Partial<{
+        authors: string[];
+        minAmount: number;
+        categories: string[];
+        includeMoneyPot: boolean;
+        includeDeletes: boolean;
+        quietHoursActive: boolean;
+        quietHoursStart: string;
+        quietHoursEnd: string;
+        privacyMode: boolean;
+    }>) => {
+        const fullPrefs = {
+            authors: newFields.authors !== undefined ? newFields.authors : prefAuthors,
+            minAmount: newFields.minAmount !== undefined ? newFields.minAmount : prefMinAmount,
+            categories: newFields.categories !== undefined ? newFields.categories : prefCategories,
+            includeMoneyPot: newFields.includeMoneyPot !== undefined ? newFields.includeMoneyPot : prefIncludeMoneyPot,
+            includeDeletes: newFields.includeDeletes !== undefined ? newFields.includeDeletes : prefIncludeDeletes,
+            quietHoursActive: newFields.quietHoursActive !== undefined ? newFields.quietHoursActive : prefQuietHoursActive,
+            quietHoursStart: newFields.quietHoursStart !== undefined ? newFields.quietHoursStart : prefQuietHoursStart,
+            quietHoursEnd: newFields.quietHoursEnd !== undefined ? newFields.quietHoursEnd : prefQuietHoursEnd,
+            privacyMode: newFields.privacyMode !== undefined ? newFields.privacyMode : prefPrivacyMode
+        };
+
+        // Update local React states
+        if (newFields.authors !== undefined) setPrefAuthors(newFields.authors);
+        if (newFields.minAmount !== undefined) setPrefMinAmount(newFields.minAmount);
+        if (newFields.categories !== undefined) setPrefCategories(newFields.categories);
+        if (newFields.includeMoneyPot !== undefined) setPrefIncludeMoneyPot(newFields.includeMoneyPot);
+        if (newFields.includeDeletes !== undefined) setPrefIncludeDeletes(newFields.includeDeletes);
+        if (newFields.quietHoursActive !== undefined) setPrefQuietHoursActive(newFields.quietHoursActive);
+        if (newFields.quietHoursStart !== undefined) setPrefQuietHoursStart(newFields.quietHoursStart);
+        if (newFields.quietHoursEnd !== undefined) setPrefQuietHoursEnd(newFields.quietHoursEnd);
+        if (newFields.privacyMode !== undefined) setPrefPrivacyMode(newFields.privacyMode);
+
+        // Persist local storage
+        localStorage.setItem('notificationPreferences', JSON.stringify(fullPrefs));
+
+        // Sync to cloud
+        syncPrefsToSupabase(fullPrefs);
+    };
+
     const handleAuthorToggle = (author: string) => {
         const nextAuthors = prefAuthors.includes(author)
             ? prefAuthors.filter(a => a !== author)
             : [...prefAuthors, author];
-        setPrefAuthors(nextAuthors);
-        const nextPrefs = { authors: nextAuthors, minAmount: prefMinAmount, categories: prefCategories };
-        localStorage.setItem('notificationPreferences', JSON.stringify(nextPrefs));
-        syncPrefsToSupabase(nextAuthors, prefMinAmount, prefCategories);
+        handleUpdatePreference({ authors: nextAuthors });
     };
 
     const handleMinAmountChange = (val: number) => {
-        setPrefMinAmount(val);
-        const nextPrefs = { authors: prefAuthors, minAmount: val, categories: prefCategories };
-        localStorage.setItem('notificationPreferences', JSON.stringify(nextPrefs));
-        syncPrefsToSupabase(prefAuthors, val, prefCategories);
+        handleUpdatePreference({ minAmount: val });
     };
 
     const handleCategoryToggle = (cat: string) => {
         const nextCats = prefCategories.includes(cat)
             ? prefCategories.filter(c => c !== cat)
             : [...prefCategories, cat];
-        setPrefCategories(nextCats);
-        const nextPrefs = { authors: prefAuthors, minAmount: prefMinAmount, categories: nextCats };
-        localStorage.setItem('notificationPreferences', JSON.stringify(nextPrefs));
-        syncPrefsToSupabase(prefAuthors, prefMinAmount, nextCats);
+        handleUpdatePreference({ categories: nextCats });
     };
 
     const handleSelectAllCategories = () => {
@@ -195,17 +259,11 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
             "Dépenses obligatoires", "Carburant", "Chauffage", "Courses", "Restaurant",
             "Vacances", "Réparation voitures", "Vêtements", "Cadeau", "Complément alimentaire", "Divers"
         ];
-        setPrefCategories(catsToSet);
-        const nextPrefs = { authors: prefAuthors, minAmount: prefMinAmount, categories: catsToSet };
-        localStorage.setItem('notificationPreferences', JSON.stringify(nextPrefs));
-        syncPrefsToSupabase(prefAuthors, prefMinAmount, catsToSet);
+        handleUpdatePreference({ categories: catsToSet });
     };
 
     const handleSelectNoneCategories = () => {
-        setPrefCategories([]);
-        const nextPrefs = { authors: prefAuthors, minAmount: prefMinAmount, categories: [] };
-        localStorage.setItem('notificationPreferences', JSON.stringify(nextPrefs));
-        syncPrefsToSupabase(prefAuthors, prefMinAmount, []);
+        handleUpdatePreference({ categories: [] });
     };
 
     const subscribeUser = async () => {
@@ -225,7 +283,13 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
             subJSON.preferences = {
                 authors: prefAuthors,
                 minAmount: prefMinAmount,
-                categories: prefCategories.length > 0 ? prefCategories : availableCategories
+                categories: prefCategories.length > 0 ? prefCategories : availableCategories,
+                includeMoneyPot: prefIncludeMoneyPot,
+                includeDeletes: prefIncludeDeletes,
+                quietHoursActive: prefQuietHoursActive,
+                quietHoursStart: prefQuietHoursStart,
+                quietHoursEnd: prefQuietHoursEnd,
+                privacyMode: prefPrivacyMode
             };
 
             const { error: insertError } = await supabase.from('push_subscriptions').insert({
@@ -546,6 +610,102 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                                             </label>
                                         );
                                     })}
+                                </div>
+                            </div>
+
+                            {/* Options additionnelles de filtrage */}
+                            <div className="border-t border-slate-100 dark:border-slate-700 pt-5 space-y-4">
+                                <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">Types d'activités à suivre :</span>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <label className="flex items-start gap-3 cursor-pointer p-3 rounded-xl border border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={prefIncludeMoneyPot}
+                                            onChange={(e) => handleUpdatePreference({ includeMoneyPot: e.target.checked })}
+                                            className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 h-4.5 w-4.5 mt-0.5"
+                                        />
+                                        <div>
+                                            <span className="block font-bold text-sm text-slate-700 dark:text-slate-200">💰 Cagnotte & Commun</span>
+                                            <span className="block text-xs text-slate-500 dark:text-slate-400">Recevoir les mouvements de fonds ou versements de la cagnotte</span>
+                                        </div>
+                                    </label>
+
+                                    <label className="flex items-start gap-3 cursor-pointer p-3 rounded-xl border border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={prefIncludeDeletes}
+                                            onChange={(e) => handleUpdatePreference({ includeDeletes: e.target.checked })}
+                                            className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 h-4.5 w-4.5 mt-0.5"
+                                        />
+                                        <div>
+                                            <span className="block font-bold text-sm text-slate-700 dark:text-slate-200">❌ Suppressions de dépenses</span>
+                                            <span className="block text-xs text-slate-500 dark:text-slate-400">Recevoir une alerte quand une dépense est retirée ou annulée</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Mode Ne Pas Déranger (Heures de Silence) */}
+                            <div className="border-t border-slate-100 dark:border-slate-700 pt-5 space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">Mode "Ne Pas Déranger" (Sommeil silencieux) :</span>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={prefQuietHoursActive}
+                                            onChange={(e) => handleUpdatePreference({ quietHoursActive: e.target.checked })}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-brand-500"></div>
+                                    </label>
+                                </div>
+
+                                {prefQuietHoursActive && (
+                                    <div className="p-4 bg-yellow-50/50 dark:bg-yellow-950/10 border border-yellow-100/30 dark:border-yellow-900/20 rounded-xl flex flex-wrap gap-4 items-center animate-fade-in text-sm">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-slate-500 dark:text-slate-400 font-medium">De</span>
+                                            <input
+                                                type="time"
+                                                value={prefQuietHoursStart}
+                                                onChange={(e) => handleUpdatePreference({ quietHoursStart: e.target.value })}
+                                                className="px-2.5 py-1.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-750 font-semibold"
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-slate-500 dark:text-slate-400 font-medium">jusqu'à</span>
+                                            <input
+                                                type="time"
+                                                value={prefQuietHoursEnd}
+                                                onChange={(e) => handleUpdatePreference({ quietHoursEnd: e.target.value })}
+                                                className="px-2.5 py-1.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-750 font-semibold"
+                                            />
+                                        </div>
+                                        <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 sm:mt-0 flex items-center gap-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                            </svg>
+                                            Pendant cette plage, les alertes de votre partenaire seront silencieuses pour préserver votre repos.
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Mode d'affichage confidentiel */}
+                            <div className="border-t border-slate-100 dark:border-slate-700 pt-5 space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <span className="block text-sm font-semibold text-slate-600 dark:text-slate-300">🔒 Mode Confidentiel</span>
+                                        <span className="block text-xs text-slate-500 dark:text-slate-400">Masquer l'auteur et le montant sur votre écran verrouillé</span>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={prefPrivacyMode}
+                                            onChange={(e) => handleUpdatePreference({ privacyMode: e.target.checked })}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-brand-500"></div>
+                                    </label>
                                 </div>
                             </div>
                         </div>
