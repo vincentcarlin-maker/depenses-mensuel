@@ -559,17 +559,8 @@ const MainApp: React.FC<{
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ expense: data })
-        })
-        .then(async r => {
-            if (!r.ok) {
-               const text = await r.text();
-               alert("Erreur Serveur Push: " + r.status + " " + text);
-            }
-        })
-        .catch(err => alert("Erreur fetch push: " + err.message));
-      } catch(e: any) {
-         alert("Erreur sync push: " + e.message);
-      }
+        }).catch(err => console.error("Erreur lors de l'appel notification backend:", err));
+      } catch(e) {}
       
       setFormInitialData(null);
       setToastInfo({ message: 'Dépense ajoutée avec succès !', type: 'info' });
