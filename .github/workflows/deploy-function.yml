@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Déployer la fonction Edge sur Supabase
-        uses: supabase/cli@v1
+        uses: supabase/setup-cli@v1
         with:
           # La fonction 'send-notification' est déployée.
           # Le --no-verify-jwt est requis lors de l'utilisation d'un SUPABASE_ACCESS_TOKEN.
