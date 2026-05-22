@@ -30,8 +30,11 @@ async function startServer() {
     app.post("/api/test-notification", async (req, res) => {
         try {
             const { data: subscriptions, error: subsError } = await supabase.from('push_subscriptions').select('subscription, user_id');
-            if (subsError) return res.status(500).json({ message: "Erreur DB" });
-            if (!subscriptions || subscriptions.length === 0) return res.status(200).json({ message: "Aucun abonné" });
+            if (subsError) {
+                console.error("Erreur DB lors de la récupération des souscriptions:", subsError);
+                return res.status(500).json({ message: "Erreur DB: " + subsError.message });
+            }
+            if (!subscriptions || subscriptions.length === 0) return res.status(200).json({ message: "Aucun abonné enregistré" });
             
             const payload = JSON.stringify({
                 title: 'Test de Push backend',
@@ -41,15 +44,20 @@ async function startServer() {
             });
 
             const sendPromises = subscriptions.map(async (s: any) => {
-                const sub = typeof s.subscription === 'string' ? JSON.parse(s.subscription) : s.subscription;
                 try {
-                    await webpush.sendNotification(sub, payload);
-                } catch(e) {}
+                    const sub = typeof s.subscription === 'string' ? JSON.parse(s.subscription) : s.subscription;
+                    if (sub) {
+                        await webpush.sendNotification(sub, payload);
+                    }
+                } catch(e: any) {
+                    console.error("Erreur d'envoi à une souscription:", e.message || e);
+                }
             });
             await Promise.all(sendPromises);
-            res.status(200).json({ message: "Push envoyé à tous les abonnés " + subscriptions.length });
-        } catch (err) {
-            res.status(500).json({ message: "Erreur" });
+            res.status(200).json({ message: "Test de notification push envoyé à tous les " + subscriptions.length + " abonné(s) !" });
+        } catch (err: any) {
+            console.error("Erreur d'exécution du test-notification:", err);
+            res.status(500).json({ message: "Erreur serveur : " + (err.message || String(err)) });
         }
     });
 

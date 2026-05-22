@@ -201,7 +201,22 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                                 </button>
                                 <button
                                     onClick={() => {
-                                        fetch('/api/test-notification', { method: 'POST' }).then(r => r.json()).then(d => alert(d.message || 'Succès')).catch(() => alert('Erreur'));
+                                        fetch('/api/test-notification', { method: 'POST' })
+                                        .then(async r => {
+                                            const contentType = r.headers.get('content-type');
+                                            if (contentType && contentType.includes('application/json')) {
+                                                const data = await r.json();
+                                                if (!r.ok) {
+                                                    throw new Error(data.message || data.error || `Erreur serveur (${r.status})`);
+                                                }
+                                                return data;
+                                            } else {
+                                                const text = await r.text();
+                                                throw new Error(text || `Erreur http ${r.status}`);
+                                            }
+                                        })
+                                        .then(d => alert(d.message || 'Succès'))
+                                        .catch(e => alert('Erreur : ' + e.message));
                                     }}
                                     className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200 transition-colors"
                                 >
