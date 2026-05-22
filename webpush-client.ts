@@ -105,7 +105,7 @@ async function generateVapidHeader(endpoint: string): Promise<string> {
  * Since encrypting payloads client-side in JS requires complex cryptography, we send an empty body.
  * The Service Worker picks it up, fetches the latest transaction details directly from Supabase, and presents it.
  */
-export async function notifySubscriptionsDirectly(currentUser: string): Promise<{ success: boolean; count: number }> {
+export async function notifySubscriptionsDirectly(currentUser: string, expense?: any): Promise<{ success: boolean; count: number }> {
   try {
     // 1. Get subscriptions from Supabase
     const { data: subscriptions, error } = await supabase
@@ -140,6 +140,32 @@ export async function notifySubscriptionsDirectly(currentUser: string): Promise<
           : subItem.subscription;
 
         if (!sub || !sub.endpoint) continue;
+
+        // Apply notification preference filters if specified
+        if (expense && sub.preferences) {
+          const prefs = sub.preferences;
+          // 1. Author filter
+          if (prefs.authors && Array.isArray(prefs.authors)) {
+            if (!prefs.authors.includes(expense.user)) {
+              console.log(`Notification filtered for user ${subItem.user_id} based on author preference.`);
+              continue;
+            }
+          }
+          // 2. Amount filter
+          if (typeof prefs.minAmount === 'number') {
+            if (expense.amount < prefs.minAmount) {
+              console.log(`Notification filtered for user ${subItem.user_id} because expense amount is smaller than min amount.`);
+              continue;
+            }
+          }
+          // 3. Category/motive filters
+          if (prefs.categories && Array.isArray(prefs.categories)) {
+            if (!prefs.categories.includes(expense.category)) {
+              console.log(`Notification filtered for user ${subItem.user_id} because ${expense.category} is deselected.`);
+              continue;
+            }
+          }
+        }
 
         const token = await generateVapidHeader(sub.endpoint);
 

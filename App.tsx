@@ -563,7 +563,7 @@ const MainApp: React.FC<{
         }).then(({ error: funcError }) => {
           if (funcError) {
             console.warn("L'Edge Function a échoué (sûrement non déployée), tentative d'envoi Push direct client à client...");
-            notifySubscriptionsDirectly(user === 'Duo' ? 'Commun' : user).catch(err => {
+            notifySubscriptionsDirectly(user === 'Duo' ? 'Commun' : user, data).catch(err => {
               console.error("Erreur d'envoi Push direct:", err);
               fetch(window.location.origin + '/api/send-notification', {
                   method: 'POST',
@@ -574,7 +574,7 @@ const MainApp: React.FC<{
           }
         }).catch(() => {
           // Fallback direct en cas d'erreur réseau / échec d'Edge Function
-          notifySubscriptionsDirectly(user === 'Duo' ? 'Commun' : user).catch(() => {
+          notifySubscriptionsDirectly(user === 'Duo' ? 'Commun' : user, data).catch(() => {
             fetch(window.location.origin + '/api/send-notification', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

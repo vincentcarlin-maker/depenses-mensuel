@@ -94,6 +94,33 @@ Deno.serve(async (req) => {
     const sendPromises = targetSubscriptions.map(async (s: any) => {
       try {
         const sub = typeof s.subscription === 'string' ? JSON.parse(s.subscription) : s.subscription;
+        
+        // Vérifier les préférences de l'abonné si c'est une dépense
+        if (expense && sub && sub.preferences) {
+          const prefs = sub.preferences;
+          // 1. Auteur
+          if (prefs.authors && Array.isArray(prefs.authors)) {
+            if (!prefs.authors.includes(expense.user)) {
+              console.log(`Notification ignorée pour ${s.user_id} : auteur ${expense.user} filtré.`);
+              return;
+            }
+          }
+          // 2. Montant minimum
+          if (typeof prefs.minAmount === 'number') {
+            if (expense.amount < prefs.minAmount) {
+              console.log(`Notification ignorée pour ${s.user_id} : montant ${expense.amount}€ inférieur au minimum.`);
+              return;
+            }
+          }
+          // 3. Catégorie
+          if (prefs.categories && Array.isArray(prefs.categories)) {
+            if (!prefs.categories.includes(expense.category)) {
+              console.log(`Notification ignorée pour ${s.user_id} : catégorie ${expense.category} filtrée.`);
+              return;
+            }
+          }
+        }
+
         if (sub) {
           await webpush.sendNotification(sub, payload);
           console.log(`Notification envoyée avec succès à ${s.user_id}`);

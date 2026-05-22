@@ -99,6 +99,33 @@ async function startServer() {
                 .filter((sub) => sub.user_id !== author)
                 .map(async (s: any) => {
                 const subscription = typeof s.subscription === 'string' ? JSON.parse(s.subscription) : s.subscription;
+                
+                // Vérifier les préférences de l'abonné
+                if (subscription && subscription.preferences) {
+                    const prefs = subscription.preferences;
+                    // 1. Filtrer par auteur
+                    if (prefs.authors && Array.isArray(prefs.authors)) {
+                        if (!prefs.authors.includes(newExpense.user)) {
+                            console.log(`Notification ignorée pour ${s.user_id} : auteur ${newExpense.user} filtré.`);
+                            return;
+                        }
+                    }
+                    // 2. Filtrer par montant minimum
+                    if (typeof prefs.minAmount === 'number') {
+                        if (newExpense.amount < prefs.minAmount) {
+                            console.log(`Notification ignorée pour ${s.user_id} : montant ${newExpense.amount}€ inférieur au min.`);
+                            return;
+                        }
+                    }
+                    // 3. Filtrer par catégories
+                    if (prefs.categories && Array.isArray(prefs.categories)) {
+                        if (!prefs.categories.includes(newExpense.category)) {
+                            console.log(`Notification ignorée pour ${s.user_id} : catégorie ${newExpense.category} filtrée.`);
+                            return;
+                        }
+                    }
+                }
+
                 try {
                     await webpush.sendNotification(subscription, payload);
                     console.log('Notification envoyée avec succès à', s.user_id);
