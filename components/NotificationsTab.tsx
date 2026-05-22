@@ -184,7 +184,16 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({ expense: { user: loggedInUser === 'Duo' ? 'Commun' : (loggedInUser === 'Vincent' ? 'Sophie' : 'Vincent'), amount: 99.99, description: 'Test depuis frontend', category: 'Test' } })
-                                        }).then(r => r.json()).then(d => alert(d.message || 'Succès')).catch(e => alert('Erreur: ' + e.message));
+                                        })
+                                        .then(async r => {
+                                            const data = await r.json();
+                                            if (!r.ok || data.error) {
+                                                throw new Error(data.error || 'Erreur serveur');
+                                            }
+                                            return data;
+                                        })
+                                        .then(d => alert(d.message || 'Succès'))
+                                        .catch(e => alert('Erreur: ' + e.message));
                                     }}
                                     className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
                                 >

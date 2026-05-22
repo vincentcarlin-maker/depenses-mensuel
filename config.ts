@@ -18,7 +18,7 @@
 // =============================================================================
 
 // Clé publique VAPID fonctionnelle pour l'application.
-export const VAPID_PUBLIC_KEY = "BPDL_V-eB4kM3Q-bJ4sR8tN6lC1gH7kM9pS5vA3fW2oZ0xY7uI1jE3bV5cR6gH9kM1pS4vA2fW1oZ0xY7uI";
+export const VAPID_PUBLIC_KEY = "BN0Z3nqz3OLK1q2RuvukfLMAffOncCrBsvMw7GncY_9EK8u6-W0OzfIsRElejTlC-TM2uNDXCZkicnJX47pNGdc";
 
 // Ce booléen permet de vérifier si la clé VAPID est toujours la clé d'exemple.
 // Il deviendra 'false' automatiquement avec la nouvelle clé.
