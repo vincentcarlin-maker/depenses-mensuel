@@ -1,6 +1,5 @@
 {
   "name": "DuoBudget",
   "description": "Une application web simple et élégante pour suivre vos dépenses mensuelles. Ajoutez des transactions, classez-les et visualisez la répartition de vos dépenses avec des graphiques interactifs.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "requestFramePermissions": []
 }

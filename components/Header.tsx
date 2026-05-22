@@ -107,7 +107,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityIte
       const userColor = actorName === User.Sophie ? 'text-pink-500' : 'text-sky-500';
       
       if (isUpdate && activity.oldExpense) {
-          const changes: string[] = [];
+          const changes = [];
           const old = activity.oldExpense;
           const curr = activity.expense;
           

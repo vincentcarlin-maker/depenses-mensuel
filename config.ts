@@ -24,15 +24,3 @@ export const VAPID_PUBLIC_KEY = "BPDL_V-eB4kM3Q-bJ4sR8tN6lC1gH7kM9pS5vA3fW2oZ0xY
 // Il deviendra 'false' automatiquement avec la nouvelle clé.
 // FIX: Set `IS_VAPID_KEY_SAMPLE` to `false` to resolve a TypeScript error. The original code compared two different string constants, which TypeScript correctly identified as always being false. Since the VAPID key is no longer the sample key, setting this to `false` directly is the correct and clean solution.
 export const IS_VAPID_KEY_SAMPLE = false;
-
-// Récupère l'URL du serveur backend Express
-export const getBackendUrl = (): string => {
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('custom_backend_url');
-    if (saved) {
-      return saved.trim().replace(/\/$/, ''); // Supprime le slash final s'il existe
-    }
-    return window.location.origin;
-  }
-  return '';
-};

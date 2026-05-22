@@ -26,7 +26,6 @@ import FunnelIcon from './components/icons/FunnelIcon';
 import MoneyPotTab from './components/MoneyPotTab';
 import BottomNavigation, { TabId } from './components/BottomNavigation';
 import ChevronDownIcon from './components/icons/ChevronDownIcon';
-import { getBackendUrl } from './config';
 
 type UndoableAction = {
     type: 'delete' | 'update';
@@ -556,7 +555,7 @@ const MainApp: React.FC<{
     } else {
       // Notification Push via notre backend express (pas besoin de webhook Supabase)
       try {
-        fetch(getBackendUrl() + '/api/send-notification', {
+        fetch(window.location.origin + '/api/send-notification', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ expense: data })
