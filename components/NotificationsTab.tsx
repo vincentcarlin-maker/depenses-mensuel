@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase/client';
 import { type User } from '../types';
+import { getBackendUrl } from '../config';
 
 const VAPID_PUBLIC_KEY = 'BN0Z3nqz3OLK1q2RuvukfLMAffOncCrBsvMw7GncY_9EK8u6-W0OzfIsRElejTlC-TM2uNDXCZkicnJX47pNGdc';
 
@@ -26,6 +27,7 @@ interface NotificationsTabProps {
 const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => {
     const [permission, setPermission] = useState<NotificationPermission>('default');
     const [isSubscribed, setIsSubscribed] = useState(false);
+    const [customUrl, setCustomUrl] = useState(() => localStorage.getItem('custom_backend_url') || '');
 
     useEffect(() => {
         if ('Notification' in window) {
@@ -189,12 +191,72 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                         )}
                     </div>
                     
-                    <div className="flex gap-2 flex-wrap items-center mt-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                        <h4 className="w-full text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Outils de test (Debug)</h4>
+                    {/* Configuration de l'API Backend */}
+                    <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700/60 shadow-sm">
+                        <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                            Configuration de l'API Backend (Express)
+                        </h4>
+                        
+                        {typeof window !== 'undefined' && window.location.hostname.includes('github.io') && (
+                            <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 rounded-lg text-xs leading-normal border border-amber-100 dark:border-amber-900/30">
+                                <strong>⚠️ Hébergement GitHub Pages détecté :</strong> Les fonctionnalités de notifications nécessitent de communiquer avec le backend Express. Veuillez renseigner l'URL de votre application déployée sur Google Cloud Run ci-dessous.
+                            </div>
+                        )}
+                        
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
+                            Par défaut, l'application utilise sa propre URL ({typeof window !== 'undefined' ? window.location.origin : 'localhost'}). En cas d'hébergement statique, renseignez l'URL de votre serveur actif :
+                        </p>
+
+                        <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                            <input
+                                type="text"
+                                value={customUrl}
+                                onChange={(e) => setCustomUrl(e.target.value)}
+                                placeholder="https://votre-app-express.run.app"
+                                className="flex-1 px-3 py-1.5 text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-sm dark:text-white"
+                            />
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => {
+                                        const trimmed = customUrl.trim();
+                                        if (trimmed) {
+                                            localStorage.setItem('custom_backend_url', trimmed);
+                                            alert("L'URL du backend a été enregistrée : " + trimmed);
+                                        } else {
+                                            localStorage.removeItem('custom_backend_url');
+                                            alert("L'URL par défaut sera utilisée.");
+                                        }
+                                    }}
+                                    className="px-3 py-1.5 bg-brand-500 text-white rounded-lg text-sm font-medium hover:bg-brand-600 transition-colors shadow-sm"
+                                >
+                                    Enregistrer
+                                </button>
+                                {customUrl && (
+                                    <button
+                                        onClick={() => {
+                                            setCustomUrl('');
+                                            localStorage.removeItem('custom_backend_url');
+                                            alert("Configuration réinitialisée à l'adresse par défaut !");
+                                        }}
+                                        className="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                                    >
+                                        Réinitialiser
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                        
+                        <div className="text-[11px] font-mono text-slate-400 dark:text-slate-500">
+                            URL cible active : <span className="text-brand-500 dark:text-brand-400 font-medium">{getBackendUrl() || 'Non configuré'}</span>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-2 flex-wrap items-center mt-4 p-4 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
+                        <h4 className="w-full text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Outils de test (Debug)</h4>
                         <button
                             onClick={async () => {
                                 try {
-                                    const r = await fetch('/api/send-notification', { 
+                                    const r = await fetch(getBackendUrl() + '/api/send-notification', { 
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ expense: { user: (loggedInUser as any) === 'Duo' ? 'Commun' : (loggedInUser === 'Vincent' ? 'Sophie' : 'Vincent'), amount: 99.99, description: 'Test depuis frontend', category: 'Test' } })
@@ -209,14 +271,14 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                                     alert('Erreur API: ' + e.message);
                                 }
                             }}
-                            className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
+                            className="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
                         >
                             Simuler Dépense
                         </button>
                         <button
                             onClick={async () => {
                                 try {
-                                    const r = await fetch('/api/test-notification', { method: 'POST' });
+                                    const r = await fetch(getBackendUrl() + '/api/test-notification', { method: 'POST' });
                                     if (!r.ok) {
                                         const errText = await r.text();
                                         throw new Error(`HTTP ${r.status}: ${errText.substring(0, 50)}`);
@@ -227,7 +289,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                                     alert('Erreur API: ' + e.message);
                                 }
                             }}
-                            className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200 transition-colors"
+                            className="px-3 py-1.5 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 rounded-lg text-sm font-medium hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors"
                         >
                             Push Test Serveur
                         </button>
