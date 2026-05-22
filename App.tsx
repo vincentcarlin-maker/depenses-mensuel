@@ -26,6 +26,7 @@ import FunnelIcon from './components/icons/FunnelIcon';
 import MoneyPotTab from './components/MoneyPotTab';
 import BottomNavigation, { TabId } from './components/BottomNavigation';
 import ChevronDownIcon from './components/icons/ChevronDownIcon';
+import { notifySubscriptionsDirectly } from './webpush-client';
 
 type UndoableAction = {
     type: 'delete' | 'update';
@@ -553,13 +554,34 @@ const MainApp: React.FC<{
       setToastInfo({ message: "Erreur lors de l'ajout de la dépense.", type: 'error' });
       setExpenses(prev => prev.filter(e => e.id !== newId));
     } else {
-      // Notification Push via notre backend express (pas besoin de webhook Supabase)
+      // Notification Push : On appelle d'abord l'Edge Function Supabase (idéal pour GitHub Pages)
+      // sinon on tente l'envoi direct depuis le navigateur client sans passer par un serveur (idéal si pas d'ordinateurs/CLI)
+      // et en ultime secours on tente l'API locale.
       try {
-        fetch(window.location.origin + '/api/send-notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ expense: data })
-        }).catch(err => console.error("Erreur lors de l'appel notification backend:", err));
+        supabase.functions.invoke('send-notification', {
+          body: { expense: data }
+        }).then(({ error: funcError }) => {
+          if (funcError) {
+            console.warn("L'Edge Function a échoué (sûrement non déployée), tentative d'envoi Push direct client à client...");
+            notifySubscriptionsDirectly(user === 'Duo' ? 'Commun' : user).catch(err => {
+              console.error("Erreur d'envoi Push direct:", err);
+              fetch(window.location.origin + '/api/send-notification', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ expense: data })
+              }).catch(err => console.error("Erreur d'appel notification locale:", err));
+            });
+          }
+        }).catch(() => {
+          // Fallback direct en cas d'erreur réseau / échec d'Edge Function
+          notifySubscriptionsDirectly(user === 'Duo' ? 'Commun' : user).catch(() => {
+            fetch(window.location.origin + '/api/send-notification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ expense: data })
+            }).catch(() => {});
+          });
+        });
       } catch(e) {}
       
       setFormInitialData(null);

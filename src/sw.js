@@ -5,7 +5,9 @@ precacheAndRoute(self.__WB_MANIFEST || []);
 
 // Listen to push events
 self.addEventListener('push', function (event) {
-    if (event.data) {
+    let promise;
+    
+    if (event.data && event.data.text() && event.data.text().trim() !== '') {
         let data = {};
         try {
             data = event.data.json();
@@ -21,11 +23,60 @@ self.addEventListener('push', function (event) {
             data: data.data || { url: '/' },
             vibrate: [200, 100, 200]
         };
-
-        event.waitUntil(
-            self.registration.showNotification(title, options)
-        );
+        
+        promise = self.registration.showNotification(title, options);
+    } else {
+        // Envoi en mode direct client à client (sans payload).
+        // Le Service Worker va chercher lui-même la dernière dépense directement sur Supabase !
+        const supabaseUrl = 'https://xcdyshzyxpngbpceilym.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjZHlzaHp5eHBuZ2JwY2VpbHltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3NDI4NDYsImV4cCI6MjA3NzMxODg0Nn0.woxCgIKTPvEy7s2ePIJIAIflwal8dG5ApTfpyWy9feQ';
+        
+        promise = fetch(`${supabaseUrl}/rest/v1/expenses?select=*&order=created_at.desc&limit=1`, {
+            headers: {
+                'apikey': supabaseAnonKey,
+                'Authorization': `Bearer ${supabaseAnonKey}`,
+                'Range-Unit': 'items',
+                'Range': '0-0' // Ne lire que l'enregistrement le plus récent (index 0)
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Supabase responded with status ' + response.status);
+            }
+            return response.json();
+        })
+        .then(expenses => {
+            if (expenses && expenses.length > 0) {
+                const expense = expenses[0];
+                const author = expense.user || "Quelqu'un";
+                return self.registration.showNotification('DuoBudget - Nouvelle dépense', {
+                    body: `${author} a ajouté une dépense de ${expense.amount}€ (${expense.description || expense.category})`,
+                    icon: '/icon-192x192.png',
+                    badge: '/icon-192x192.png',
+                    data: { url: '/' },
+                    vibrate: [200, 100, 200]
+                });
+            } else {
+                return self.registration.showNotification('DuoBudget', {
+                    body: 'Une mise à jour de vos dépenses est disponible !',
+                    icon: '/icon-192x192.png',
+                    badge: '/icon-192x192.png',
+                    data: { url: '/' }
+                });
+            }
+        })
+        .catch(err => {
+            console.error("Erreur de récupération de la dépense dans le SW:", err);
+            return self.registration.showNotification('DuoBudget', {
+                body: 'Une mise à jour de vos dépenses est disponible !',
+                icon: '/icon-192x192.png',
+                badge: '/icon-192x192.png',
+                data: { url: '/' }
+            });
+        });
     }
+
+    event.waitUntil(promise);
 });
 
 // Listen to notification clicks

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase/client';
 import { type User } from '../types';
+import { notifySubscriptionsDirectly } from '../webpush-client';
 
 const VAPID_PUBLIC_KEY = 'BN0Z3nqz3OLK1q2RuvukfLMAffOncCrBsvMw7GncY_9EK8u6-W0OzfIsRElejTlC-TM2uNDXCZkicnJX47pNGdc';
 
@@ -179,44 +180,93 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                                     Forcer la synchronisation
                                 </button>
                                 <button
-                                    onClick={() => {
-                                        fetch(window.location.origin + '/api/send-notification', { 
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ expense: { user: loggedInUser === 'Duo' ? 'Commun' : (loggedInUser === 'Vincent' ? 'Sophie' : 'Vincent'), amount: 99.99, description: 'Test depuis frontend', category: 'Test' } })
-                                        })
-                                        .then(async r => {
-                                            const data = await r.json();
-                                            if (!r.ok || data.error) {
-                                                throw new Error(data.error || 'Erreur serveur');
+                                    onClick={async () => {
+                                        try {
+                                            const payload = { 
+                                                expense: { 
+                                                    user: loggedInUser === 'Duo' ? 'Commun' : (loggedInUser === 'Vincent' ? 'Sophie' : 'Vincent'), 
+                                                    amount: 99.99, 
+                                                    description: 'Test depuis frontend', 
+                                                    category: 'Test' 
+                                                } 
+                                            };
+                                            
+                                            // Essayer d'abord d'appeler l'Edge Function Supabase (nécessaire sur GitHub Pages)
+                                            const { data, error } = await supabase.functions.invoke('send-notification', {
+                                                body: payload
+                                            });
+
+                                            if (error) {
+                                                console.warn("L'Edge Function a retourné une erreur, tentative d'envoi Push direct client-side...", error);
+                                                
+                                                // Tentative d'envoi direct depuis le navigateur client
+                                                const directRes = await notifySubscriptionsDirectly(loggedInUser === 'Duo' ? 'Commun' : loggedInUser);
+                                                if (directRes.success) {
+                                                    alert(`Succès ! Notification envoyée directement depuis votre navigateur à ${directRes.count} appareil(s).`);
+                                                } else {
+                                                    // Si l'envoi direct échoue aussi, on tente l'API locale en ultime secours
+                                                    console.warn("L'envoi direct client-side a échoué, tentative via API locale...");
+                                                    const r = await fetch(window.location.origin + '/api/send-notification', { 
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify(payload)
+                                                    });
+                                                    const localData = await r.json();
+                                                    if (!r.ok || localData.error) {
+                                                        throw new Error(localData.error || 'Erreur serveur local');
+                                                    }
+                                                    alert(localData.message || 'Succès (via serveur Express local)');
+                                                }
+                                            } else {
+                                                alert(data.message || 'Succès ! Notification envoyée via Supabase Edge Function.');
                                             }
-                                            return data;
-                                        })
-                                        .then(d => alert(d.message || 'Succès'))
-                                        .catch(e => alert('Erreur: ' + e.message));
+                                        } catch (e: any) {
+                                            alert(
+                                                "Erreur d'envoi. Veuillez réessayer ou vérifier que des abonnements sont actifs dans l'onglet.\n\nDétails de l'erreur : " + (e.message || e)
+                                            );
+                                        }
                                     }}
                                     className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
                                 >
                                     Simuler Dépense
                                 </button>
                                 <button
-                                    onClick={() => {
-                                        fetch('/api/test-notification', { method: 'POST' })
-                                        .then(async r => {
-                                            const contentType = r.headers.get('content-type');
-                                            if (contentType && contentType.includes('application/json')) {
-                                                const data = await r.json();
-                                                if (!r.ok) {
-                                                    throw new Error(data.message || data.error || `Erreur serveur (${r.status})`);
+                                    onClick={async () => {
+                                        try {
+                                            // Appel de l'Edge Function Supabase en mode Test
+                                            const { data, error } = await supabase.functions.invoke('send-notification', {
+                                                body: { isTest: true }
+                                            });
+
+                                            if (error) {
+                                                console.warn("L'Edge Function de test a échoué. Envoi direct d'un signal Push client-side...", error);
+                                                
+                                                const directRes = await notifySubscriptionsDirectly(loggedInUser === 'Duo' ? 'Commun' : loggedInUser);
+                                                if (directRes.success) {
+                                                    alert(`Succès ! Signal Push émis en direct depuis le navigateur à ${directRes.count} appareil(s).`);
+                                                } else {
+                                                    console.warn("Le push direct a échoué, tentative locale...");
+                                                    const r = await fetch('/api/test-notification', { method: 'POST' });
+                                                    const contentType = r.headers.get('content-type');
+                                                    if (contentType && contentType.includes('application/json')) {
+                                                        const localData = await r.json();
+                                                        if (!r.ok) {
+                                                            throw new Error(localData.message || localData.error || `Erreur serveur (${r.status})`);
+                                                        }
+                                                        alert(localData.message || 'Succès de test (Local)');
+                                                    } else {
+                                                        const text = await r.text();
+                                                        throw new Error(text || `Erreur http ${r.status}`);
+                                                    }
                                                 }
-                                                return data;
                                             } else {
-                                                const text = await r.text();
-                                                throw new Error(text || `Erreur http ${r.status}`);
+                                                alert(data.message || 'Succès ! Test de Push envoyé via Supabase Edge Function.');
                                             }
-                                        })
-                                        .then(d => alert(d.message || 'Succès'))
-                                        .catch(e => alert('Erreur : ' + e.message));
+                                        } catch (e: any) {
+                                            alert(
+                                                "Erreur lors du test de Push.\n\nDétails : " + (e.message || e)
+                                            );
+                                        }
                                     }}
                                     className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200 transition-colors"
                                 >
