@@ -34,11 +34,6 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
     "Divers": { icon: MiscIcon, color: 'bg-cyan-500', pieColor: '#06b6d4' },
 };
 
-interface BreakdownItem {
-    label: string;
-    total: number;
-    count: number;
-}
 
 interface YearlySummaryProps {
     expenses: Expense[];
@@ -79,6 +74,22 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
   const tickColor = theme === 'dark' ? '#94a3b8' : '#64748b';
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [isChartExpanded, setIsChartExpanded] = useState(false);
+  const [chartCategoryFilter, setChartCategoryFilter] = useState<Category | 'all'>('all');
+
+  const filteredCurrentExpenses = useMemo(() => {
+    if (chartCategoryFilter === 'all') return expenses;
+    return expenses.filter(e => e.category === chartCategoryFilter);
+  }, [expenses, chartCategoryFilter]);
+
+  const filteredPreviousExpenses = useMemo(() => {
+    if (chartCategoryFilter === 'all') return previousYearExpenses;
+    return previousYearExpenses.filter(e => e.category === chartCategoryFilter);
+  }, [previousYearExpenses, chartCategoryFilter]);
+
+  const activeColor = useMemo(() => {
+    if (chartCategoryFilter === 'all') return '#06b6d4';
+    return CategoryVisuals[chartCategoryFilter]?.pieColor || '#06b6d4';
+  }, [chartCategoryFilter]);
 
   useEffect(() => {
     if (selectedCategory || isChartExpanded) {
@@ -144,18 +155,18 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
       [year - 1]: 0,
     }));
 
-    for (const expense of expenses) {
+    for (const expense of filteredCurrentExpenses) {
       const monthIndex = new Date(expense.date).getMonth();
       data[monthIndex][year] += expense.amount;
     }
 
-    for (const expense of previousYearExpenses) {
+    for (const expense of filteredPreviousExpenses) {
       const monthIndex = new Date(expense.date).getMonth();
       data[monthIndex][year - 1] += expense.amount;
     }
     
-    const hasCurrentYearData = expenses.length > 0;
-    const hasPreviousYearData = previousYearExpenses.length > 0;
+    const hasCurrentYearData = filteredCurrentExpenses.length > 0;
+    const hasPreviousYearData = filteredPreviousExpenses.length > 0;
 
     if (!hasCurrentYearData && !hasPreviousYearData) {
         return [];
@@ -166,7 +177,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
         [year]: parseFloat(monthData[year].toFixed(2)),
         [year - 1]: parseFloat(monthData[year - 1].toFixed(2)),
     }));
-  }, [expenses, previousYearExpenses, year]);
+  }, [filteredCurrentExpenses, filteredPreviousExpenses, year]);
 
   // --- Breakdown Logic ---
   const breakdownData = useMemo(() => {
@@ -325,12 +336,23 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
             })}
         </div>
         
-        <div className="mt-12">
-            <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Évolution des dépenses mensuelles</h3>
+        <div id="yearly-trend-chart-section" className="mt-12 scroll-mt-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                <div>
+                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200">
+                        {chartCategoryFilter === 'all' 
+                            ? 'Évolution des dépenses mensuelles' 
+                            : `Évolution : ${chartCategoryFilter}`}
+                    </h3>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
+                        {chartCategoryFilter === 'all' 
+                            ? 'Toutes catégories confondues' 
+                            : `Suivi temporel de la catégorie ${chartCategoryFilter}`}
+                    </p>
+                </div>
                 <button 
                     onClick={() => setIsChartExpanded(true)}
-                    className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
+                    className="self-end sm:self-center p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
                     title="Agrandir le graphique"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -338,6 +360,49 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                     </svg>
                 </button>
             </div>
+
+            {/* Filtre de catégorie pour le graphique */}
+            <div className="mb-6">
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+                    <button
+                        onClick={() => setChartCategoryFilter('all')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 border ${
+                            chartCategoryFilter === 'all'
+                                ? 'bg-slate-800 text-white border-transparent shadow-sm dark:bg-slate-100 dark:text-slate-800'
+                                : 'bg-slate-50 text-slate-600 dark:bg-slate-800/40 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                        }`}
+                    >
+                        📊 Toutes
+                    </button>
+                    {Object.entries(CategoryVisuals).map(([catName, visual]) => {
+                        const IconComponent = visual.icon;
+                        const hasExpenses = expenses.some(e => e.category === catName) || previousYearExpenses.some(e => e.category === catName);
+                        if (!hasExpenses) return null;
+                        
+                        const isSelected = chartCategoryFilter === catName;
+                        return (
+                            <button
+                                key={catName}
+                                onClick={() => setChartCategoryFilter(catName as Category)}
+                                style={isSelected ? {
+                                    backgroundColor: visual.pieColor,
+                                    color: '#ffffff',
+                                    borderColor: 'transparent',
+                                } : {}}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 border ${
+                                    isSelected 
+                                        ? 'shadow-sm' 
+                                        : 'bg-slate-50 text-slate-600 dark:bg-slate-800/40 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                                }`}
+                            >
+                                <IconComponent className={`h-3.5 w-3.5 ${isSelected ? 'text-white' : 'text-slate-500'}`} />
+                                {catName}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
              <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
                     <ComposedChart data={monthlyTrendData} margin={{ top: 5, right: 20, left: 40, bottom: 5 }}>
@@ -346,8 +411,8 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                         <YAxis stroke={tickColor} tickFormatter={(value) => `${value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`} tick={{ fill: tickColor }} />
                         <Tooltip content={<CustomTooltip year={year} />} />
                         <Legend wrapperStyle={{ color: tickColor }} />
-                        <Area type="monotone" dataKey={year.toString()} fill="#06b6d4" stroke="none" fillOpacity={0.1} name={`${year}`} legendType="none" />
-                        <Line type="monotone" dataKey={year.toString()} stroke="#06b6d4" strokeWidth={3} name={`${year}`} dot={{ r: 5 }} activeDot={{ r: 8 }} />
+                        <Area type="monotone" dataKey={year.toString()} fill={activeColor} stroke="none" fillOpacity={0.1} name={`${year}`} legendType="none" />
+                        <Line type="monotone" dataKey={year.toString()} stroke={activeColor} strokeWidth={3} name={`${year}`} dot={{ r: 5 }} activeDot={{ r: 8 }} />
                         {previousYearExpenses.length > 0 && (
                             <Line type="monotone" dataKey={(year - 1).toString()} stroke="#f97316" strokeWidth={2} name={`${year - 1}`} strokeDasharray="5 5" dot={{ r: 3 }} />
                         )}
@@ -367,7 +432,9 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                 <div className="relative flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-xl flex flex-col p-4 animate-scale-up max-h-[90vh]">
                     <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
                         <h2 className="text-xl font-bold text-slate-800 dark:text-white">
-                            Évolution des dépenses mensuelles
+                            {chartCategoryFilter === 'all' 
+                                ? 'Évolution des dépenses mensuelles' 
+                                : `Évolution : ${chartCategoryFilter}`}
                         </h2>
                         <button 
                             onClick={() => setIsChartExpanded(false)}
@@ -385,8 +452,8 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                                 <YAxis stroke={tickColor} tickFormatter={(value) => `${value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`} tick={{ fill: tickColor, fontSize: 14 }} width={80} />
                                 <Tooltip content={<CustomTooltip year={year} />} />
                                 <Legend wrapperStyle={{ color: tickColor, paddingTop: '20px' }} iconSize={14} />
-                                <Area type="monotone" dataKey={year.toString()} fill="#06b6d4" stroke="none" fillOpacity={0.1} name={`${year}`} legendType="none" />
-                                <Line type="monotone" dataKey={year.toString()} stroke="#06b6d4" strokeWidth={4} name={`${year}`} dot={{ r: 6 }} activeDot={{ r: 10 }} />
+                                <Area type="monotone" dataKey={year.toString()} fill={activeColor} stroke="none" fillOpacity={0.1} name={`${year}`} legendType="none" />
+                                <Line type="monotone" dataKey={year.toString()} stroke={activeColor} strokeWidth={4} name={`${year}`} dot={{ r: 6 }} activeDot={{ r: 10 }} />
                                 {previousYearExpenses.length > 0 && (
                                     <Line type="monotone" dataKey={(year - 1).toString()} stroke="#f97316" strokeWidth={3} name={`${year - 1}`} strokeDasharray="5 5" dot={{ r: 4 }} />
                                 )}
@@ -458,13 +525,29 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                         </div>
                     </div>
                     
-                    <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/30">
+                    <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/30 space-y-4">
                         <div className="flex justify-between items-center text-sm">
                             <span className="font-medium text-slate-600 dark:text-slate-300">Total Catégorie</span>
                             <span className="font-bold text-slate-800 dark:text-slate-100 text-lg">
                                 {breakdownData.reduce((acc, curr) => acc + curr.total, 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                             </span>
                         </div>
+                        <button
+                            onClick={() => {
+                                setChartCategoryFilter(selectedCategory);
+                                setSelectedCategory(null);
+                                setTimeout(() => {
+                                    const element = document.getElementById('yearly-trend-chart-section');
+                                    if (element) {
+                                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }
+                                }, 100);
+                            }}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-white text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200"
+                            style={{ backgroundColor: CategoryVisuals[selectedCategory]?.pieColor || '#06b6d4' }}
+                        >
+                            📊 Voir l'évolution temporelle
+                        </button>
                     </div>
                 </div>
             </div>,

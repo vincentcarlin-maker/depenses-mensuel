@@ -113,13 +113,11 @@ export async function notifySubscriptionsDirectly(
     // Normalize notificationData (can be a standard expense object or structured notification payload)
     let type: 'add' | 'delete' | 'update' | 'moneypot' = 'add';
     let expense: any = null;
-    let _moneyPotTransaction: any = null;
 
     if (notificationData) {
       if (notificationData.type && ['add', 'delete', 'update', 'moneypot'].includes(notificationData.type)) {
         type = notificationData.type;
         expense = notificationData.expense;
-        _moneyPotTransaction = notificationData.moneyPotTransaction;
       } else {
         // Simple fallback
         expense = notificationData;
