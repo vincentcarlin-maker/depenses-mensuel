@@ -12,7 +12,7 @@ self.addEventListener('push', function (event) {
         try {
             data = event.data.json();
         } catch (e) {
-            data = { title: 'DuoBudget', body: event.data.text() };
+            data = { title: 'Notification', body: event.data.text() };
         }
         
         const title = data.title || 'Nouvelle notification';
@@ -49,7 +49,7 @@ self.addEventListener('push', function (event) {
             if (expenses && expenses.length > 0) {
                 const expense = expenses[0];
                 const author = expense.user || "Quelqu'un";
-                return self.registration.showNotification('DuoBudget - Nouvelle dépense', {
+                return self.registration.showNotification('Nouvelle dépense', {
                     body: `${author} a ajouté une dépense de ${expense.amount}€ (${expense.description || expense.category})`,
                     icon: '/icon-192x192.png',
                     badge: '/icon-192x192.png',
@@ -57,7 +57,7 @@ self.addEventListener('push', function (event) {
                     vibrate: [200, 100, 200]
                 });
             } else {
-                return self.registration.showNotification('DuoBudget', {
+                return self.registration.showNotification('Mise à jour', {
                     body: 'Une mise à jour de vos dépenses est disponible !',
                     icon: '/icon-192x192.png',
                     badge: '/icon-192x192.png',
@@ -67,7 +67,7 @@ self.addEventListener('push', function (event) {
         })
         .catch(err => {
             console.error("Erreur de récupération de la dépense dans le SW:", err);
-            return self.registration.showNotification('DuoBudget', {
+            return self.registration.showNotification('Mise à jour', {
                 body: 'Une mise à jour de vos dépenses est disponible !',
                 icon: '/icon-192x192.png',
                 badge: '/icon-192x192.png',

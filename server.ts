@@ -180,11 +180,11 @@ async function startServer() {
                 // 2. Conception personnalisée du payload de notification (Confidentialité)
                 const isPrivacy = subscription.preferences?.privacyMode === true;
                 
-                let title = 'DuoBudget';
+                let title = 'Mise à jour';
                 let body = '';
 
                 if (isPrivacy) {
-                    title = 'DuoBudget 🔒';
+                    title = 'Notification 🔒';
                     if (type === 'delete') {
                         body = 'Une dépense a été retirée par votre partenaire.';
                     } else if (type === 'moneypot') {
@@ -196,17 +196,17 @@ async function startServer() {
                     }
                 } else {
                     if (type === 'delete') {
-                        title = 'DuoBudget - Dépense supprimée';
+                        title = 'Dépense supprimée';
                         body = `${author} a supprimé la dépense de ${expense.amount}€ (${expense.description || expense.category})`;
                     } else if (type === 'update') {
-                        title = 'DuoBudget - Dépense modifiée';
+                        title = 'Dépense modifiée';
                         body = `${author} a modifié la dépense : ${expense.description || expense.category} (${expense.amount}€)`;
                     } else if (type === 'moneypot') {
-                        title = 'DuoBudget - Cagnotte commune';
+                        title = 'Cagnotte commune';
                         const symbol = moneyPotTransaction.amount >= 0 ? '+' : '';
                         body = `${author} a enregistré une transaction de ${symbol}${moneyPotTransaction.amount}€ dans la cagnotte : ${moneyPotTransaction.description || ''}`;
                     } else {
-                        title = 'DuoBudget - Nouvelle dépense';
+                        title = 'Nouvelle dépense';
                         body = `${author} a ajouté une dépense de ${expense.amount}€ (${expense.description || expense.category})`;
                     }
                 }

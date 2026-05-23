@@ -165,11 +165,11 @@ Deno.serve(async (req) => {
 
         // B. Composer le message selon le mode Confidentiel (Privacy Mode)
         const isPrivacy = sub.preferences?.privacyMode === true;
-        let title = 'DuoBudget';
+        let title = 'Mise à jour';
         let bodyPayload = '';
 
         if (isPrivacy) {
-          title = 'DuoBudget 🔒';
+          title = 'Notification 🔒';
           if (isTest) {
             bodyPayload = 'Ceci est une alerte de test confidentielle.';
           } else if (type === 'delete') {
@@ -183,20 +183,20 @@ Deno.serve(async (req) => {
           }
         } else {
           if (isTest) {
-            title = 'Test de Push (Supabase)';
+            title = 'Test de push';
             bodyPayload = "Ceci est un test direct de l'Edge Function Supabase vers votre appareil.";
           } else if (type === 'delete') {
-            title = 'DuoBudget - Dépense supprimée';
+            title = 'Dépense supprimée';
             bodyPayload = `${author} a supprimé la dépense de ${expense.amount}€ (${expense.description || expense.category})`;
           } else if (type === 'update') {
-            title = 'DuoBudget - Dépense modifiée';
+            title = 'Dépense modifiée';
             bodyPayload = `${author} a modifié la dépense : ${expense.description || expense.category} (${expense.amount}€)`;
           } else if (type === 'moneypot') {
-            title = 'DuoBudget - Cagnotte commune';
+            title = 'Cagnotte commune';
             const symbol = moneyPotTransaction.amount >= 0 ? '+' : '';
             bodyPayload = `${author} a enregistré une transaction de ${symbol}${moneyPotTransaction.amount}€ dans la cagnotte : ${moneyPotTransaction.description || ''}`;
           } else {
-            title = 'DuoBudget - Nouvelle dépense';
+            title = 'Nouvelle dépense';
             bodyPayload = `${author} a ajouté une dépense de ${expense.amount}€ (${expense.description || expense.category})`;
           }
         }

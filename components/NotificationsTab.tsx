@@ -328,15 +328,15 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
         if (permission === 'granted') {
             try {
                 const registration = await navigator.serviceWorker.ready;
-                registration.showNotification("DuoBudget", {
-                    body: "Ceci est une notification de test de DuoBudget !",
+                registration.showNotification("Notification de test", {
+                    body: "Ceci est une notification de test push !",
                     icon: "/logo.svg",
                     badge: "/logo.svg",
                     vibrate: [200, 100, 200]
                 });
             } catch (error) {
                 // Fallback si le SW n'est pas prêt
-                new Notification("DuoBudget", {
+                new Notification("Notification de test", {
                     body: "Ceci est une notification de test !",
                     icon: "/logo.svg"
                 });
