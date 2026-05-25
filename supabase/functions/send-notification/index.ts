@@ -165,11 +165,10 @@ Deno.serve(async (req) => {
 
         // B. Composer le message selon le mode Confidentiel (Privacy Mode)
         const isPrivacy = sub.preferences?.privacyMode === true;
-        let title = 'Mise à jour';
+        let title = isPrivacy ? 'DuoBudget 🔒' : 'DuoBudget';
         let bodyPayload = '';
 
         if (isPrivacy) {
-          title = 'Notification 🔒';
           if (isTest) {
             bodyPayload = 'Ceci est une alerte de test confidentielle.';
           } else if (type === 'delete') {
@@ -183,21 +182,16 @@ Deno.serve(async (req) => {
           }
         } else {
           if (isTest) {
-            title = 'Test de push';
-            bodyPayload = "Ceci est un test direct de l'Edge Function Supabase vers votre appareil.";
+            bodyPayload = "Test de push\nCeci est un test direct de l'Edge Function Supabase vers votre appareil.";
           } else if (type === 'delete') {
-            title = 'Dépense supprimée';
-            bodyPayload = `${author} a supprimé la dépense de ${expense.amount}€ (${expense.description || expense.category})`;
+            bodyPayload = `Dépense supprimée\n${author} a supprimé la dépense de ${expense.amount}€ (${expense.description || expense.category})`;
           } else if (type === 'update') {
-            title = 'Dépense modifiée';
-            bodyPayload = `${author} a modifié la dépense : ${expense.description || expense.category} (${expense.amount}€)`;
+            bodyPayload = `Dépense modifiée\n${author} a modifié la dépense : ${expense.description || expense.category} (${expense.amount}€)`;
           } else if (type === 'moneypot') {
-            title = 'Cagnotte commune';
             const symbol = moneyPotTransaction.amount >= 0 ? '+' : '';
-            bodyPayload = `${author} a enregistré une transaction de ${symbol}${moneyPotTransaction.amount}€ dans la cagnotte : ${moneyPotTransaction.description || ''}`;
+            bodyPayload = `Cagnotte commune\n${author} a enregistré une transaction de ${symbol}${moneyPotTransaction.amount}€ dans la cagnotte : ${moneyPotTransaction.description || ''}`;
           } else {
-            title = 'Nouvelle dépense';
-            bodyPayload = `${author} a ajouté une dépense de ${expense.amount}€ (${expense.description || expense.category})`;
+            bodyPayload = `Nouvelle dépense\n${author} a ajouté une dépense de ${expense.amount}€ (${expense.description || expense.category})`;
           }
         }
 
