@@ -103,9 +103,9 @@ export const ShieldIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const WifiIcon: React.FC<IconProps> = ({ className }) => (
   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
     <circle cx="12" cy="12" r="12" fill="#6366F1"/>
-    <path d="M5 10c3-3.5 11-3.5 14 0" stroke="white" stroke-width="2" stroke-linecap="round"/>
-    <path d="M8 13.5c2-2.5 6-2.5 8 0" stroke="white" stroke-width="2" stroke-linecap="round"/>
-    <path d="M10.5 16.5c1-1 2.5-1 3.5 0" stroke="white" stroke-width="2" stroke-linecap="round"/>
+    <path d="M5 10c3-3.5 11-3.5 14 0" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M8 13.5c2-2.5 6-2.5 8 0" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M10.5 16.5c1-1 2.5-1 3.5 0" stroke="white" strokeWidth="2" strokeLinecap="round"/>
     <circle cx="12.2" cy="20.2" r="1.5" fill="white"/>
   </svg>
 );

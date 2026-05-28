@@ -881,15 +881,20 @@ const MainApp: React.FC<{
     setIsRefreshing(false);
   };
   
-  const handlePayReminder = (reminder: any) => {
-    setFormInitialData({
-      formKey: crypto.randomUUID(),
-      description: reminder.description,
-      amount: reminder.amount,
-      category: reminder.category,
-      user: reminder.user,
-    });
-    document.getElementById('expense-form-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const handlePayReminder = async (reminder: any) => {
+    try {
+      await addExpense({
+        description: reminder.description,
+        amount: reminder.amount,
+        category: reminder.category,
+        user: reminder.user,
+        date: new Date().toISOString(),
+        subtracted_items: []
+      });
+    } catch (err) {
+      console.error(err);
+      setToastInfo({ message: "Erreur lors de l'ajout automatique de la dépense.", type: 'error' });
+    }
   };
 
   const markActivitiesAsRead = () => setLastBellCheck(new Date().toISOString());
