@@ -1044,7 +1044,7 @@ const MainApp: React.FC<{
               </div>
             )}
             {activeTab === 'analysis' && <CategoryTotals expenses={analysisExpenses} previousMonthExpenses={previousMonthExpenses} previousYearMonthExpenses={previousYearMonthExpenses} last3MonthsExpenses={last3MonthsExpenses} onExpenseClick={setExpenseToView} />}
-            {activeTab === 'yearly' && <YearlySummary expenses={yearlyFilteredExpenses} previousYearExpenses={previousYearFilteredExpenses} year={currentYear} />}
+            {activeTab === 'yearly' && <YearlySummary expenses={yearlyFilteredExpenses} previousYearExpenses={previousYearFilteredExpenses} year={currentYear} onExpenseClick={setExpenseToView} />}
             {activeTab === 'moneypot' && (<MoneyPotTab transactions={moneyPotTransactions} onAddTransaction={addMoneyPotTransaction} onDeleteTransaction={deleteMoneyPotTransaction} />)}
           </div>
         </main>

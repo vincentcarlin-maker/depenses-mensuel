@@ -39,6 +39,7 @@ interface YearlySummaryProps {
     expenses: Expense[];
     previousYearExpenses: Expense[];
     year: number;
+    onExpenseClick?: (expense: Expense) => void;
 }
 
 const CustomTooltip = ({ active, payload, label, year }: any) => {
@@ -69,12 +70,13 @@ const CustomTooltip = ({ active, payload, label, year }: any) => {
     return null;
 };
 
-const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExpenses, year }) => {
+const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExpenses, year, onExpenseClick }) => {
   const { theme } = useTheme();
   const tickColor = theme === 'dark' ? '#94a3b8' : '#64748b';
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [isChartExpanded, setIsChartExpanded] = useState(false);
   const [chartCategoryFilter, setChartCategoryFilter] = useState<Category | 'all'>('all');
+  const [expandedLabel, setExpandedLabel] = useState<string | null>(null);
 
   const filteredCurrentExpenses = useMemo(() => {
     if (chartCategoryFilter === 'all') return expenses;
@@ -184,7 +186,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
       if (!selectedCategory) return [];
 
       const categoryExpenses = expenses.filter(e => e.category === selectedCategory);
-      const breakdownMap = new Map<string, { total: number, count: number }>();
+      const breakdownMap = new Map<string, { total: number, count: number, items: Expense[] }>();
 
       categoryExpenses.forEach(expense => {
           let label = "Autre";
@@ -244,10 +246,11 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
           label = label.trim();
           if (!label) label = "Autre";
 
-          const current = breakdownMap.get(label) || { total: 0, count: 0 };
+          const current = breakdownMap.get(label) || { total: 0, count: 0, items: [] };
           breakdownMap.set(label, {
               total: current.total + expense.amount,
-              count: current.count + 1
+              count: current.count + 1,
+              items: [...current.items, expense]
           });
       });
 
@@ -259,6 +262,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
 
   const handleCategoryClick = (category: Category) => {
       setSelectedCategory(category);
+      setExpandedLabel(null);
   };
 
   if (expenses.length === 0) {
@@ -495,14 +499,34 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                                     // Calculate bar width based on the largest item
                                     const maxTotal = breakdownData[0].total;
                                     const percentage = (item.total / maxTotal) * 100;
+                                    const isExpanded = expandedLabel === item.label;
 
                                     return (
-                                        <div key={idx} className="bg-slate-50 dark:bg-slate-700/20 p-3 rounded-lg">
-                                            <div className="flex justify-between items-start mb-1">
-                                                <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm">{item.label}</span>
-                                                <span className="font-bold text-slate-800 dark:text-slate-100 text-sm">
-                                                    {item.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                                                </span>
+                                        <div key={idx} className="bg-slate-50 dark:bg-slate-700/20 p-3 rounded-lg transition-all">
+                                            <div 
+                                                onClick={() => setExpandedLabel(isExpanded ? null : item.label)}
+                                                className="flex justify-between items-start mb-1 cursor-pointer hover:opacity-85"
+                                            >
+                                                <div className="flex items-center gap-2 min-w-0 pr-2">
+                                                    <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm truncate">{item.label}</span>
+                                                    <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
+                                                        ({item.count} {item.count > 1 ? 'dépenses' : 'dépense'})
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    <span className="font-bold text-slate-800 dark:text-slate-100 text-sm">
+                                                        {item.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                                                    </span>
+                                                    <svg 
+                                                        xmlns="http://www.w3.org/2000/svg" 
+                                                        className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} 
+                                                        fill="none" 
+                                                        viewBox="0 0 24 24" 
+                                                        stroke="currentColor"
+                                                    >
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </div>
                                             </div>
                                             <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-1.5 mb-1">
                                                 <div 
@@ -513,9 +537,54 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                                                     }}
                                                 ></div>
                                             </div>
-                                            <p className="text-xs text-slate-400 dark:text-slate-500 text-right">
-                                                {item.count} dépense{item.count > 1 ? 's' : ''}
-                                            </p>
+
+                                            {isExpanded && (
+                                                <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700/50 space-y-2 animate-fade-in">
+                                                    {item.items.map((expense) => {
+                                                        const dateObj = new Date(expense.date);
+                                                        const formattedDate = dateObj.toLocaleDateString('fr-FR', {
+                                                            day: 'numeric',
+                                                            month: 'short'
+                                                        });
+                                                        
+                                                        const userBadgeColor = expense.user === 'Sophie'
+                                                            ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400'
+                                                            : expense.user === 'Vincent'
+                                                            ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400'
+                                                            : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
+
+                                                        return (
+                                                            <div 
+                                                                key={expense.id}
+                                                                onClick={() => {
+                                                                    if (onExpenseClick) {
+                                                                        onExpenseClick(expense);
+                                                                    }
+                                                                }}
+                                                                className="flex items-center justify-between p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer group"
+                                                            >
+                                                                <div className="flex flex-col min-w-0 pr-2">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{formattedDate}</span>
+                                                                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${userBadgeColor}`}>{expense.user}</span>
+                                                                    </div>
+                                                                    <span className="text-xs text-slate-700 dark:text-slate-300 truncate mt-0.5" title={expense.description}>
+                                                                        {expense.description}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center gap-2 shrink-0">
+                                                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                                                                        {expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                                                                    </span>
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-slate-400 group-hover:text-cyan-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                                    </svg>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })
