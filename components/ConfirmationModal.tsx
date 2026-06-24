@@ -38,14 +38,14 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, 
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 backdrop-blur-sm z-[100] flex justify-center items-center" aria-modal="true" role="dialog">
+    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 backdrop-blur-sm z-[200] flex justify-center items-center" aria-modal="true" role="dialog">
       <div 
         className="fixed inset-0"
         onClick={onClose}
         aria-hidden="true"
       ></div>
       
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-2xl z-[101] w-full max-w-sm m-4 animate-fade-in relative transform transition-all flex flex-col max-h-[90vh]">
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-2xl z-[201] w-full max-w-sm m-4 animate-fade-in relative transform transition-all flex flex-col max-h-[90vh]">
         <div className="overflow-y-auto custom-scrollbar">
             <div className="sm:flex sm:items-start">
                 <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-800/20 sm:mx-0 sm:h-10 sm:w-10">

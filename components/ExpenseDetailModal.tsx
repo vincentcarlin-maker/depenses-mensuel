@@ -146,9 +146,9 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
   const getUserColor = (u: User) => u === User.Sophie ? 'text-pink-600' : (u === User.Vincent ? 'text-sky-600' : 'text-emerald-600');
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 backdrop-blur-sm z-[60] flex justify-center items-center">
+    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 backdrop-blur-sm z-[150] flex justify-center items-center">
       <div className="fixed inset-0" onClick={onClose}></div>
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-2xl z-[60] w-full max-w-md m-4 animate-fade-in relative overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-2xl z-[151] w-full max-w-md m-4 animate-fade-in relative overflow-hidden flex flex-col max-h-[90vh]">
          <div className={`absolute top-0 left-0 w-full h-24 ${visual.color} opacity-50`}></div>
          <div className="relative flex flex-col items-center text-center pt-4 overflow-y-auto">
             <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg bg-white dark:bg-slate-700 mb-4 flex-shrink-0`}>

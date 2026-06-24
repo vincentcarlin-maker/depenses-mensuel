@@ -452,13 +452,13 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
 
     return (
         <>
-            <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 backdrop-blur-sm z-[60] flex justify-center items-center" aria-modal="true" role="dialog">
+            <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 backdrop-blur-sm z-[160] flex justify-center items-center" aria-modal="true" role="dialog">
                 <div 
                     className="fixed inset-0"
                     onClick={onClose}
                     aria-hidden="true"
                 ></div>
-                <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-xl z-[70] w-full max-w-md m-4 animate-fade-in flex flex-col max-h-[90vh]">
+                <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-xl z-[161] w-full max-w-md m-4 animate-fade-in flex flex-col max-h-[90vh]">
                     <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100 flex-shrink-0">Modifier la Transaction</h2>
                     <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto pr-1 custom-scrollbar">
                         <div>
