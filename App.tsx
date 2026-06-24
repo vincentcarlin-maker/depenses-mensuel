@@ -88,6 +88,17 @@ const MainApp: React.FC<{
   const recentlyUpdatedIds = useRef(new Set<string>());
   const recentlyDeletedIds = useRef(new Set<string>());
   const expensesRef = useRef<Expense[]>([]); // Ref to access current expenses in realtime callbacks
+  const allChangesChannelRef = useRef<any>(null);
+
+  const broadcastChange = useCallback((table: string, eventType: 'INSERT' | 'UPDATE' | 'DELETE', payload: any) => {
+    if (allChangesChannelRef.current) {
+      allChangesChannelRef.current.send({
+        type: 'broadcast',
+        event: 'db-change',
+        payload: { table, eventType, payload }
+      });
+    }
+  }, []);
 
   // Presence state
   const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
@@ -454,6 +465,22 @@ const MainApp: React.FC<{
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'expenses' }, handleExpenseDelete)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reminders' }, handleReminderChange)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'money_pot' }, handleMoneyPotChange)
+      .on('broadcast', { event: 'db-change' }, (payload: any) => {
+        const { table, eventType, payload: data } = payload.payload || {};
+        if (table === 'expenses') {
+            if (eventType === 'INSERT') {
+                handleExpenseInsert({ new: data });
+            } else if (eventType === 'UPDATE') {
+                handleExpenseUpdate({ new: data });
+            } else if (eventType === 'DELETE') {
+                handleExpenseDelete({ old: data });
+            }
+        } else if (table === 'reminders') {
+            handleReminderChange({ eventType, new: data, old: data });
+        } else if (table === 'money_pot') {
+            handleMoneyPotChange({ eventType, new: data, old: data });
+        }
+      })
       .subscribe((status, err) => {
         if (status === 'SUBSCRIBED') {
             setRealtimeStatus('SUBSCRIBED');
@@ -467,8 +494,11 @@ const MainApp: React.FC<{
         }
       });
       
+    allChangesChannelRef.current = allChangesChannel;
+      
     return () => {
       supabase.removeChannel(allChangesChannel);
+      allChangesChannelRef.current = null;
     };
   }, [highlightExpense, user, syncData, mergeAndDedupeActivities]);
 
@@ -545,6 +575,7 @@ const MainApp: React.FC<{
              type: 'moneypot',
              moneyPotTransaction: newTransaction
          });
+         broadcastChange('money_pot', 'INSERT', newTransaction);
       }
   };
 
@@ -560,6 +591,7 @@ const MainApp: React.FC<{
           setMoneyPotTransactions(previousTransactions);
       } else {
           setToastInfo({ message: "Opération supprimée.", type: "info" });
+          broadcastChange('money_pot', 'DELETE', { id });
       }
   }
 
@@ -599,6 +631,7 @@ const MainApp: React.FC<{
       
       setFormInitialData(null);
       setToastInfo({ message: 'Dépense ajoutée avec succès !', type: 'info' });
+      broadcastChange('expenses', 'INSERT', data);
       await logActivity({ type: 'add', expense: data as Expense, performedBy: user });
     }
   };
@@ -611,6 +644,8 @@ const MainApp: React.FC<{
         console.error('Error deleting expense:', error.message || error);
         setToastInfo({ message: "La suppression a échoué. Veuillez réessayer.", type: 'error' });
         syncData();
+      } else {
+        broadcastChange('expenses', 'DELETE', { id });
       }
   };
 
@@ -625,6 +660,8 @@ const MainApp: React.FC<{
           console.error('Error updating expense:', error.message || error);
           setToastInfo({ message: "La mise à jour a échoué. Veuillez réessayer.", type: 'error' });
           syncData();
+      } else {
+          broadcastChange('expenses', 'UPDATE', expenseToUpdate);
       }
   };
 
@@ -724,11 +761,13 @@ const MainApp: React.FC<{
     const optimisticReminder: any = { ...reminderData, created_at: new Date().toISOString() };
     setReminders(prev => [...prev, optimisticReminder].sort((a,b) => a.day_of_month - b.day_of_month));
 
-    const { error } = await supabase.from('reminders').insert(reminderData).select().single();
+    const { data, error } = await supabase.from('reminders').insert(reminderData).select().single();
     if (error) {
         console.error('Error adding reminder:', error.message || error);
         setToastInfo({ message: "Erreur lors de l'ajout du rappel.", type: 'error' });
         setReminders(prev => prev.filter(r => r.id !== newId));
+    } else {
+        broadcastChange('reminders', 'INSERT', data);
     }
   };
 
@@ -745,6 +784,8 @@ const MainApp: React.FC<{
         console.error('Error updating reminder:', error.message || error);
         setToastInfo({ message: "Erreur lors de la mise à jour du rappel.", type: 'error' });
         setReminders(prev => prev.map(r => r.id === originalReminder.id ? originalReminder : r).sort((a,b) => a.day_of_month - b.day_of_month));
+    } else {
+        broadcastChange('reminders', 'UPDATE', updatedReminder);
     }
   };
 
@@ -759,6 +800,8 @@ const MainApp: React.FC<{
         console.error('Error deleting reminder:', error.message || error);
         setToastInfo({ message: "Erreur lors de la suppression du rappel.", type: 'error' });
         setReminders(prev => [...prev, reminderToDelete].sort((a,b) => a.day_of_month - b.day_of_month));
+    } else {
+        broadcastChange('reminders', 'DELETE', { id });
     }
   };
 
