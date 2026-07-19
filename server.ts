@@ -87,10 +87,14 @@ async function startServer() {
                 return res.status(200).json({ message: "Aucun abonné enregistré." });
             }
 
+            const performedBy = req.body?.performedBy;
+            
             // Déduire l'auteur de l'événement
-            const author = expense 
-                ? (expense.user || "Quelqu'un") 
-                : (moneyPotTransaction ? (moneyPotTransaction.user_name || "Quelqu'un") : "Quelqu'un");
+            const author = performedBy 
+                ? performedBy
+                : (expense 
+                    ? (expense.user || "Quelqu'un") 
+                    : (moneyPotTransaction ? (moneyPotTransaction.user_name || "Quelqu'un") : "Quelqu'un"));
 
             // Filtrer les abonnements pour ne pas envoyer à l'auteur lui-même
             const targetSubs = subscriptions.filter((sub) => sub.user_id !== author);

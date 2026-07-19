@@ -20,6 +20,7 @@ Deno.serve(async (req) => {
     let type: 'add' | 'delete' | 'update' | 'moneypot' = body.type || 'add';
     const expense = body.expense || body.record;
     const moneyPotTransaction = body.moneyPotTransaction;
+    const performedBy = body.performedBy;
 
     // Récupérer l'URL et la clé d'API Supabase de l'environnement de l'Edge Function
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || "https://xcdyshzyxpngbpceilym.supabase.co"
@@ -59,9 +60,11 @@ Deno.serve(async (req) => {
     let targetSubscriptions = subscriptions;
 
     // Déduire l'auteur de l'événement
-    const author = expense 
-      ? (expense.user || "Quelqu'un") 
-      : (moneyPotTransaction ? (moneyPotTransaction.user_name || "Quelqu'un") : "Quelqu'un");
+    const author = performedBy 
+      ? performedBy
+      : (expense 
+          ? (expense.user || "Quelqu'un") 
+          : (moneyPotTransaction ? (moneyPotTransaction.user_name || "Quelqu'un") : "Quelqu'un"));
 
     if (isTest) {
       // Pour les tests, on envoie à tout le monde

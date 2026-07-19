@@ -90,12 +90,12 @@ const MainApp: React.FC<{
   const expensesRef = useRef<Expense[]>([]); // Ref to access current expenses in realtime callbacks
   const allChangesChannelRef = useRef<any>(null);
 
-  const broadcastChange = useCallback((table: string, eventType: 'INSERT' | 'UPDATE' | 'DELETE', payload: any) => {
+  const broadcastChange = useCallback((table: string, eventType: 'INSERT' | 'UPDATE' | 'DELETE', payload: any, performedBy?: string) => {
     if (allChangesChannelRef.current) {
       allChangesChannelRef.current.send({
         type: 'broadcast',
         event: 'db-change',
-        payload: { table, eventType, payload }
+        payload: { table, eventType, payload, performedBy }
       });
     }
   }, []);
@@ -394,11 +394,12 @@ const MainApp: React.FC<{
 
     const handleExpenseUpdate = (payload: any) => {
       const updatedExpense = payload.new as Expense;
+      const performedBy = payload.performedBy || updatedExpense.user;
       if (!updatedExpense?.id) return;
       
       const wasUpdatedLocally = recentlyUpdatedIds.current.has(updatedExpense.id);
-      if (!wasUpdatedLocally && updatedExpense.user !== user) {
-          setToastInfo({ message: `${updatedExpense.user} a modifié "${updatedExpense.description}".`, type: 'info' });
+      if (!wasUpdatedLocally && performedBy !== user) {
+          setToastInfo({ message: `${performedBy} a modifié "${updatedExpense.description}".`, type: 'info' });
       }
 
       setExpenses(prevExpenses =>
@@ -411,6 +412,7 @@ const MainApp: React.FC<{
 
     const handleExpenseDelete = (payload: any) => {
         const deletedPayload = payload.old as Partial<Expense> & { id: string };
+        const performedBy = payload.performedBy;
         if (!deletedPayload?.id) return;
 
         if (recentlyDeletedIds.current.has(deletedPayload.id)) return;
@@ -419,7 +421,8 @@ const MainApp: React.FC<{
             const expenseToDelete = prevExpenses.find(e => e.id === deletedPayload.id);
             if (!expenseToDelete) return prevExpenses.filter(expense => expense.id !== deletedPayload.id);
 
-            setToastInfo({ message: `Dépense "${expenseToDelete.description}" supprimée.`, type: 'info' });
+            const msg = performedBy ? `${performedBy} a supprimé "${expenseToDelete.description}".` : `Dépense "${expenseToDelete.description}" supprimée.`;
+            setToastInfo({ message: msg, type: 'info' });
             return prevExpenses.filter(expense => expense.id !== deletedPayload.id);
         });
     };
@@ -518,29 +521,30 @@ const MainApp: React.FC<{
   }, []);
 
   // Multi-route Unified Push Notification Dispatcher
-  const dispatchPushNotification = useCallback(async (payload: { type: 'add' | 'delete' | 'update' | 'moneypot'; expense?: any; moneyPotTransaction?: any }) => {
+  const dispatchPushNotification = useCallback(async (payload: { type: 'add' | 'delete' | 'update' | 'moneypot'; expense?: any; moneyPotTransaction?: any; performedBy?: string }) => {
     try {
       const author = user === 'Duo' ? 'Commun' : user;
+      const fullPayload = { ...payload, performedBy: author };
       supabase.functions.invoke('send-notification', {
-        body: payload
+        body: fullPayload
       }).then(({ error: funcError }) => {
         if (funcError) {
           console.warn("L'Edge Function a échoué, tentative d'envoi Push direct...");
-          notifySubscriptionsDirectly(author, payload).catch(err => {
+          notifySubscriptionsDirectly(author, fullPayload).catch(err => {
             console.error("Erreur d'envoi Push direct:", err);
             fetch(window.location.origin + '/api/send-notification', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(fullPayload)
             }).catch(err => console.error("Erreur d'appel notification locale:", err));
           });
         }
       }).catch(() => {
-        notifySubscriptionsDirectly(author, payload).catch(() => {
+        notifySubscriptionsDirectly(author, fullPayload).catch(() => {
           fetch(window.location.origin + '/api/send-notification', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
+              body: JSON.stringify(fullPayload)
           }).catch(() => {});
         });
       });
@@ -631,7 +635,7 @@ const MainApp: React.FC<{
       
       setFormInitialData(null);
       setToastInfo({ message: 'Dépense ajoutée avec succès !', type: 'info' });
-      broadcastChange('expenses', 'INSERT', data);
+      broadcastChange('expenses', 'INSERT', data, user);
       await logActivity({ type: 'add', expense: data as Expense, performedBy: user });
     }
   };
@@ -645,7 +649,7 @@ const MainApp: React.FC<{
         setToastInfo({ message: "La suppression a échoué. Veuillez réessayer.", type: 'error' });
         syncData();
       } else {
-        broadcastChange('expenses', 'DELETE', { id });
+        broadcastChange('expenses', 'DELETE', { id }, user);
       }
   };
 
@@ -661,7 +665,7 @@ const MainApp: React.FC<{
           setToastInfo({ message: "La mise à jour a échoué. Veuillez réessayer.", type: 'error' });
           syncData();
       } else {
-          broadcastChange('expenses', 'UPDATE', expenseToUpdate);
+          broadcastChange('expenses', 'UPDATE', expenseToUpdate, user);
       }
   };
 
