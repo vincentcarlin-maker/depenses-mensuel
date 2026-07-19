@@ -784,7 +784,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                           <label htmlFor="description" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
                             {category === 'Restaurant' ? 'Restaurant' : category === 'Réparation voitures' ? 'Réparation effectuée' : 'Description'}
                           </label>
-                          <div className="relative">
+                          <div className="relative z-50">
                               <input
                               type="text"
                               id="description"
@@ -797,7 +797,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                               autoComplete="off"
                               />
                               {suggestions.length > 0 && (
-                              <ul className="absolute z-10 w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md mt-1 shadow-lg max-h-48 overflow-y-auto">
+                              <ul className="absolute z-[100] w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md mt-1 shadow-xl max-h-48 overflow-y-auto">
                                   {suggestions.map((suggestion, index) => (
                                   <li
                                       key={index}
