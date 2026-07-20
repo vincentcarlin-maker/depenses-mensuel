@@ -568,7 +568,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                                                                         <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{formattedDate}</span>
                                                                         <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${userBadgeColor}`}>{expense.user}</span>
                                                                     </div>
-                                                                    <span className="text-xs text-slate-700 dark:text-slate-300 truncate mt-0.5" title={expense.description}>
+                                                                    <span className="text-xs text-slate-700 dark:text-slate-300 break-words mt-0.5" title={expense.description}>
                                                                         {expense.description}
                                                                     </span>
                                                                 </div>
