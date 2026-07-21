@@ -181,11 +181,11 @@ const ExpenseListItem: React.FC<{
                 )}
             </div>
             <div className="flex-1 min-w-0">
-                 <div className="flex items-start gap-1.5">
-                    {isCommun && <PiggyBankIcon className="w-3.5 h-3.5 mt-1 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />}
-                    <p className="font-semibold text-slate-700 dark:text-slate-200 break-words flex-1" title={description}>{description}</p>
+                 <div className="flex items-center gap-1.5">
+                    {isCommun && <PiggyBankIcon className="w-3.5 h-3.5 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />}
+                    <p className="font-semibold text-slate-700 dark:text-slate-200 truncate flex-1" title={description}>{description}</p>
                     {modificationTypes && modificationTypes.length > 0 && (
-                        <span className="flex-shrink-0 flex items-center gap-1 text-slate-400 dark:text-slate-500 mt-1" title="Cette dépense a été modifiée">
+                        <span className="flex-shrink-0 flex items-center gap-1 text-slate-400 dark:text-slate-500" title="Cette dépense a été modifiée">
                             {modificationTypes.includes('date') && <HistoryIcon />}
                             {modificationTypes.includes('amount') && <EuroIcon />}
                             {modificationTypes.includes('other') && <EditIcon className="h-3.5 w-3.5" />}
