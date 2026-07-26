@@ -37,8 +37,8 @@ const StableIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
     </svg>
 );
 
-const TrendIndicator: React.FC<{ current: number, previous: number }> = ({ current, previous }) => {
-    if (previous === 0) return <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter">Nouveau</span>;
+const TrendIndicator: React.FC<{ current: number, previous: number, hasHistory: boolean }> = ({ current, previous, hasHistory }) => {
+    if (previous === 0) return <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter">{hasHistory ? "Nouveau" : "-"}</span>;
     
     const diffPercent = ((current - previous) / previous) * 100;
 
@@ -49,7 +49,7 @@ const TrendIndicator: React.FC<{ current: number, previous: number }> = ({ curre
     } else {
         return <StableIcon className="h-3.5 w-3.5 text-slate-400" />;
     }
-};
+}
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; pieColor: string } } = {
   "Dépenses obligatoires": { icon: MandatoryIcon, color: 'bg-slate-500', pieColor: '#64748b' },
@@ -248,7 +248,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-semibold text-slate-700 dark:text-slate-200 truncate">{entry.name}</p>
-                    <TrendIndicator current={entry.value} previous={entry.previousYearMonthValue} />
+                    <TrendIndicator current={entry.value} previous={entry.previousYearMonthValue} hasHistory={previousYearMonthExpenses.length > 0} />
                   </div>
                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       Moyenne 3 mois: {entry.average.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}

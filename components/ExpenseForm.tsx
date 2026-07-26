@@ -213,18 +213,30 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
 
   const findPossibleDuplicates = (newExpense: Omit<Expense, 'id' | 'created_at'>): Expense[] => {
       const expenseDate = new Date(newExpense.date);
-      const currentMonth = expenseDate.getMonth();
-      const currentYear = expenseDate.getFullYear();
       const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
       const newDescNormalized = normalize(newExpense.description);
+      
       return expenses.filter(e => {
           const eDate = new Date(e.date);
-          if (eDate.getMonth() !== currentMonth || eDate.getFullYear() !== currentYear) return false;
-          if (e.user !== newExpense.user) return false;
-          if (e.category !== newExpense.category) return false;
+          const timeDiff = Math.abs(eDate.getTime() - expenseDate.getTime());
+          const daysDiff = timeDiff / (1000 * 3600 * 24);
+          
+          const isSameMonth = eDate.getMonth() === expenseDate.getMonth() && eDate.getFullYear() === expenseDate.getFullYear();
+          if (!isSameMonth && daysDiff > 7) return false;
+
           const isSameAmount = Math.abs(e.amount - newExpense.amount) < 0.01; 
-          if (!isSameAmount) return false;
-          return normalize(e.description) === newDescNormalized;
+          const isSameCategory = e.category === newExpense.category;
+          
+          const eDescNormalized = normalize(e.description);
+          const isDescriptionSimilar = eDescNormalized === newDescNormalized || 
+                                       (eDescNormalized.length > 3 && newDescNormalized.includes(eDescNormalized)) || 
+                                       (newDescNormalized.length > 3 && eDescNormalized.includes(newDescNormalized));
+
+          if (isSameAmount && (isSameCategory || isDescriptionSimilar)) {
+              return true;
+          }
+          
+          return false;
       });
   };
 
