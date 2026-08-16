@@ -166,23 +166,44 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
 
   return (
     <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg">
-      <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Analyse des Dépenses</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
+        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Analyse des Dépenses</h2>
+      </div>
       
-      <div className="my-6 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl">
-        <h3 className="text-base font-semibold mb-2 text-slate-700 dark:text-slate-200">Tendance Mensuelle (M-1)</h3>
-        <div className="flex items-center gap-3">
-            <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${trend.percentageChange > 0 ? 'bg-red-100 dark:bg-red-500/20' : 'bg-green-100 dark:bg-green-500/20'}`}>
-                <ActualTrendIcon className={trendColor} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <div className="bg-slate-50 dark:bg-slate-700/50 p-4 sm:p-5 rounded-2xl flex flex-col justify-center border border-slate-100 dark:border-slate-700/50">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Dépense Totale du Mois</span>
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-800 dark:text-slate-100 mt-1">
+                {totalExpenses.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
             </div>
-            <p className="text-sm text-slate-600 dark:text-slate-300">
+            <span className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                {expenses.length} transaction{expenses.length > 1 ? 's' : ''} sur ce mois
+            </span>
+        </div>
+
+        <div className="bg-slate-50 dark:bg-slate-700/50 p-4 sm:p-5 rounded-2xl flex flex-col justify-center border border-slate-100 dark:border-slate-700/50">
+            <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tendance Mensuelle (M-1)</span>
+                <div className={`flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-full ${trend.percentageChange > 0 ? 'bg-red-100 dark:bg-red-500/20' : 'bg-green-100 dark:bg-green-500/20'}`}>
+                    <ActualTrendIcon className={`h-4 w-4 ${trendColor}`} />
+                </div>
+            </div>
+            <div className="mt-1">
                 {trend.previousTotal > 0.01 ? (
-                    <>
-                    C'est <span className={`font-bold ${trendColor}`}>{Math.abs(trend.percentageChange).toFixed(0)}%</span> de {trend.percentageChange >= 0 ? 'plus' : 'moins'} que le mois dernier ({trend.previousTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}).
-                    </>
+                    <div>
+                        <span className={`text-xl font-bold ${trendColor}`}>
+                            {trend.percentageChange > 0 ? '+' : ''}{Math.abs(trend.percentageChange).toFixed(0)}%
+                        </span>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            {trend.percentageChange >= 0 ? 'de plus' : 'de moins'} que le mois dernier ({trend.previousTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})
+                        </p>
+                    </div>
                 ) : (
-                    "Aucune dépense le mois dernier pour comparer."
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                        Aucune dépense le mois dernier pour comparer.
+                    </p>
                 )}
-            </p>
+            </div>
         </div>
       </div>
 
