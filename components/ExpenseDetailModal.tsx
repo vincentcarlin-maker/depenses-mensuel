@@ -176,8 +176,13 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
                             </div>
                             <div className="space-y-2 mb-3">
                                 {expense.subtracted_items!.map((item, idx) => (
-                                    <div key={idx} className={`flex justify-between text-sm ${item.is_subtracted !== false ? 'text-red-600 dark:text-red-400 font-medium' : 'text-slate-600 dark:text-slate-400'}`}>
-                                        <span className={item.is_subtracted !== false ? 'line-through opacity-70' : ''}>{item.description}</span>
+                                    <div key={idx} className={`flex justify-between items-center text-sm ${item.is_subtracted !== false ? 'text-red-600 dark:text-red-400 font-medium' : 'text-slate-600 dark:text-slate-400'}`}>
+                                        <div className="flex flex-col">
+                                            <span className={item.is_subtracted !== false ? 'line-through opacity-70' : ''}>{item.description}</span>
+                                            {item.target_category && (
+                                                <span className="text-[11px] text-brand-600 dark:text-brand-400 font-normal">➡️ Réattribué en {item.target_category}</span>
+                                            )}
+                                        </div>
                                         <span>{item.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
                                     </div>
                                 ))}

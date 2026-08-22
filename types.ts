@@ -43,6 +43,9 @@ export interface SubtractedItem {
   amount: number;
   is_subtracted?: boolean;
   category?: string;
+  target_category?: Category;
+  create_expense?: boolean;
+  expense_created?: boolean;
 }
 
 export interface Expense {

@@ -53,6 +53,7 @@ interface EditExpenseModalProps {
     cars: string[];
     heatingTypes: string[];
     loggedInUser: User;
+    onAddExpense?: (expense: Omit<Expense, 'id' | 'created_at'>) => void;
 }
 
 const toDatetimeLocal = (isoString: string): string => {
@@ -65,7 +66,7 @@ const toDatetimeLocal = (isoString: string): string => {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
-const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, onUpdateExpense, onDeleteExpense, onClose, categories, groceryStores, cars, heatingTypes }) => {
+const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, onUpdateExpense, onDeleteExpense, onClose, categories, groceryStores, cars, heatingTypes, onAddExpense }) => {
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState(Math.abs(expense.amount).toString());
     const [category, setCategory] = useState<Category>(expense.category);
@@ -80,11 +81,17 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
     const initialReceiptTotal = initialShowSubtractions ? (expense.amount + (expense.subtracted_items || []).filter(i => i.is_subtracted !== false).reduce((sum, item) => sum + item.amount, 0)).toString() : '';
     const [receiptTotal, setReceiptTotal] = useState(initialReceiptTotal);
     
-    const [subtractedItems, setSubtractedItems] = useState<SubtractedItem[]>(initialShowSubtractions ? (expense.subtracted_items || []) : []);
+    const initialSubtractedItemsList = (expense.subtracted_items || []).map(item => ({
+        ...item,
+        create_expense: item.expense_created ? false : (item.create_expense ?? false)
+    }));
+    const [subtractedItems, setSubtractedItems] = useState<SubtractedItem[]>(initialShowSubtractions ? initialSubtractedItemsList : []);
     const [selectedItems, setSelectedItems] = useState<number[]>([]);
     const [itemDescription, setItemDescription] = useState('');
     const [itemAmount, setItemAmount] = useState('');
     const [itemCategory, setItemCategory] = useState(PRODUCT_CATEGORIES[0]);
+    const [itemTargetCategory, setItemTargetCategory] = useState<string>('');
+    const [createExpenseForItem, setCreateExpenseForItem] = useState<boolean>(true);
     const itemDescriptionInputRef = useRef<HTMLInputElement>(null);
 
     const [store, setStore] = useState('');
@@ -264,7 +271,14 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
           const currentSubtractedItems = [...subtractedItems];
           const parsedPendingAmount = parseFloat(itemAmount.replace(',', '.'));
           if (itemDescription.trim() && !isNaN(parsedPendingAmount) && parsedPendingAmount > 0) {
-            currentSubtractedItems.push({ description: itemDescription.trim(), amount: parsedPendingAmount });
+            currentSubtractedItems.push({ 
+              description: itemDescription.trim(), 
+              amount: parsedPendingAmount, 
+              is_subtracted: true,
+              category: itemCategory,
+              target_category: itemTargetCategory || undefined,
+              create_expense: itemTargetCategory ? createExpenseForItem : false
+            });
           }
 
           const parsedTotal = parseFloat(receiptTotal.replace(',', '.'));
@@ -370,6 +384,30 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
             return;
         }
 
+        let processedSubtractedItems = finalSubtractedItems;
+
+        // Automatically create separate expenses for subtracted items that have a target category assigned and create_expense === true
+        if (onAddExpense && finalSubtractedItems && finalSubtractedItems.length > 0) {
+            processedSubtractedItems = finalSubtractedItems.map(item => {
+                if (item.is_subtracted !== false && item.target_category && item.create_expense === true) {
+                    onAddExpense({
+                        description: `${item.description} (déduit de ${finalDescription})`,
+                        amount: item.amount,
+                        category: item.target_category,
+                        user,
+                        date: new Date(date).toISOString(),
+                        subtracted_items: []
+                    });
+                    return {
+                        ...item,
+                        expense_created: true,
+                        create_expense: false
+                    };
+                }
+                return item;
+            });
+        }
+
         onUpdateExpense({
             ...expense,
             description: finalDescription,
@@ -377,8 +415,10 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
             category,
             user,
             date: new Date(date).toISOString(),
-            subtracted_items: finalSubtractedItems,
+            subtracted_items: processedSubtractedItems,
         });
+
+        onClose();
     };
     
     const handleAddSubtractedItem = () => {
@@ -388,10 +428,14 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                 description: itemDescription.trim(), 
                 amount: parsedItemAmount, 
                 is_subtracted: true,
-                category: itemCategory
+                category: itemCategory,
+                target_category: itemTargetCategory || undefined,
+                create_expense: itemTargetCategory ? createExpenseForItem : false
             }]);
             setItemDescription('');
             setItemAmount('');
+            setItemTargetCategory('');
+            setCreateExpenseForItem(true);
             itemDescriptionInputRef.current?.focus();
         }
     };
@@ -567,7 +611,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                             </div>
                         )}
 
-                         {['Courses', 'Divers'].includes(category) && showSubtractions ? (
+                        {['Courses', 'Divers'].includes(category) && showSubtractions ? (
                             <div className="animate-fade-in space-y-4">
                                  <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-700 space-y-4">
                                     <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
@@ -575,8 +619,8 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                       <h4 className="font-semibold">Articles à déduire</h4>
                                     </div>
                                      {subtractedItems.length > 0 && (
-                                      <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                                        <div className="flex justify-between items-center text-xs text-slate-500">
+                                      <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+                                        <div className="flex justify-between items-center text-xs text-slate-500 pb-1">
                                           <button type="button" onClick={() => setSelectedItems(selectedItems.length === subtractedItems.length ? [] : subtractedItems.map((_, i) => i))} className="hover:text-brand-500">
                                             {selectedItems.length === subtractedItems.length ? 'Désélectionner tout' : 'Tout sélectionner'}
                                           </button>
@@ -591,39 +635,100 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                         </div>
                                         {subtractedItems.map((item, index) => (
                                           <div key={index} 
-                                               className={`flex items-center justify-between p-2 rounded-md transition-colors border ${item.is_subtracted !== false ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-600 border-slate-200 dark:border-slate-500'}`}>
-                                            <div className="flex items-center gap-2">
-                                                <input type="checkbox" checked={selectedItems.includes(index)} onChange={(e) => {
-                                                  if (e.target.checked) setSelectedItems([...selectedItems, index]);
-                                                  else setSelectedItems(selectedItems.filter(i => i !== index));
-                                                }} className="rounded text-brand-500 focus:ring-brand-500" />
-                                                <div className="flex flex-col cursor-pointer" onClick={() => handleToggleSubtractedItem(index)}>
-                                                    <span className={`text-sm ${item.is_subtracted !== false ? 'text-red-700 dark:text-red-300 font-medium line-through opacity-70' : 'text-slate-700 dark:text-slate-200'}`}>{item.description}</span>
-                                                    {item.category && <span className="text-[10px] text-slate-400 dark:text-slate-500">{item.category}</span>}
-                                                </div>
+                                               className={`p-2.5 rounded-lg border transition-colors space-y-2 ${item.is_subtracted !== false ? 'bg-red-50/70 dark:bg-red-900/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-600 border-slate-200 dark:border-slate-500'}`}>
+                                            <div className="flex items-center justify-between">
+                                              <div className="flex items-center gap-2">
+                                                  <input type="checkbox" checked={selectedItems.includes(index)} onChange={(e) => {
+                                                    if (e.target.checked) setSelectedItems([...selectedItems, index]);
+                                                    else setSelectedItems(selectedItems.filter(i => i !== index));
+                                                  }} className="rounded text-brand-500 focus:ring-brand-500" />
+                                                  <div className="flex flex-col cursor-pointer" onClick={() => handleToggleSubtractedItem(index)}>
+                                                      <span className={`text-sm ${item.is_subtracted !== false ? 'text-red-700 dark:text-red-300 font-medium line-through opacity-70' : 'text-slate-700 dark:text-slate-200'}`}>{item.description}</span>
+                                                      {item.category && <span className="text-[10px] text-slate-400 dark:text-slate-400">{item.category}</span>}
+                                                  </div>
+                                              </div>
+                                              <div className="flex items-center gap-2">
+                                                <span className={`text-sm font-bold ${item.is_subtracted !== false ? 'text-red-700 dark:text-red-300' : 'text-slate-800 dark:text-slate-100'}`}>{item.amount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})}</span>
+                                                <button type="button" onClick={() => handleRemoveSubtractedItem(index)} className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full">
+                                                  <TrashIcon />
+                                                </button>
+                                              </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                              <span className={`text-sm font-medium ${item.is_subtracted !== false ? 'text-red-700 dark:text-red-300' : 'text-slate-800 dark:text-slate-100'}`}>{item.amount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})}</span>
-                                              <button type="button" onClick={() => handleRemoveSubtractedItem(index)} className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full">
-                                                <TrashIcon />
-                                              </button>
+
+                                            {/* Destination category config */}
+                                            <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-1.5 border-t border-slate-200/60 dark:border-slate-600/60">
+                                              <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+                                                <span className="text-slate-500 dark:text-slate-400 font-medium text-[11px]">➡️ Réattribuer dans :</span>
+                                                <select 
+                                                  value={item.target_category || ''} 
+                                                  onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    const updated = [...subtractedItems];
+                                                    updated[index].target_category = val || undefined;
+                                                    updated[index].create_expense = (val && !updated[index].expense_created) ? true : false;
+                                                    setSubtractedItems(updated);
+                                                  }}
+                                                  className="px-2 py-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-500 rounded text-xs text-slate-800 dark:text-slate-100 font-medium focus:ring-1 focus:ring-brand-500"
+                                                >
+                                                  <option value="">Aucune (déduction seule)</option>
+                                                  {categories.filter(c => c !== category).map(c => (
+                                                    <option key={c} value={c}>{c}</option>
+                                                  ))}
+                                                </select>
+                                              </div>
+
+                                              {item.target_category && (
+                                                <div className="flex items-center gap-2">
+                                                  {item.expense_created && (
+                                                    <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/40 px-1.5 py-0.5 rounded">
+                                                      ✓ Dépense créée
+                                                    </span>
+                                                  )}
+                                                  <label className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 font-semibold cursor-pointer bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/50">
+                                                    <input 
+                                                      type="checkbox" 
+                                                      checked={item.create_expense === true} 
+                                                      onChange={(e) => {
+                                                        const updated = [...subtractedItems];
+                                                        updated[index].create_expense = e.target.checked;
+                                                        setSubtractedItems(updated);
+                                                      }}
+                                                      className="rounded text-emerald-600 focus:ring-emerald-500"
+                                                    />
+                                                    <span>{item.expense_created ? 'Recréer la dépense' : 'Créer la dépense'}</span>
+                                                  </label>
+                                                </div>
+                                              )}
                                             </div>
                                           </div>
                                         ))}
                                       </div>
                                     )}
-                                    <div className="flex flex-wrap gap-2 items-end">
-                                      <div className="flex-1 min-w-[120px]"><label className="text-xs font-medium text-slate-500">Article</label><input ref={itemDescriptionInputRef} type="text" value={itemDescription} onChange={e => setItemDescription(e.target.value)} onKeyDown={handleItemInputKeyDown} placeholder="Ex: Shampoing" className="block w-full px-2 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border-slate-300 dark:border-slate-500"/></div>
-                                      <div className="w-24"><label className="text-xs font-medium text-slate-500">Montant</label><input type="text" inputMode="decimal" value={itemAmount} onChange={e => setItemAmount(e.target.value)} onKeyDown={handleItemInputKeyDown} placeholder="0.00" className="block w-full px-2 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border-slate-300 dark:border-slate-500"/></div>
-                                      <div className="w-32">
-                                          <label className="text-xs font-medium text-slate-500">Catégorie</label>
-                                          <select value={itemCategory} onChange={e => setItemCategory(e.target.value)} className="block w-full px-2 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border-slate-300 dark:border-slate-500">
-                                              {PRODUCT_CATEGORIES.map(cat => (
-                                                  <option key={cat} value={cat}>{cat}</option>
-                                              ))}
-                                          </select>
+
+                                    <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 block">Ajouter un article à déduire :</span>
+                                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                                        <div className="sm:col-span-4">
+                                            <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">Article</label>
+                                            <input ref={itemDescriptionInputRef} type="text" value={itemDescription} onChange={e => setItemDescription(e.target.value)} onKeyDown={handleItemInputKeyDown} placeholder="Ex: Sweat Nathan" className="block w-full px-2.5 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border border-slate-300 dark:border-slate-500 text-slate-800 dark:text-slate-100"/>
+                                        </div>
+                                        <div className="sm:col-span-3">
+                                            <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">Montant (€)</label>
+                                            <input type="text" inputMode="decimal" value={itemAmount} onChange={e => setItemAmount(e.target.value)} onKeyDown={handleItemInputKeyDown} placeholder="0.00" className="block w-full px-2.5 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border border-slate-300 dark:border-slate-500 text-slate-800 dark:text-slate-100"/>
+                                        </div>
+                                        <div className="sm:col-span-4">
+                                            <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">Nouvelle Catégorie</label>
+                                            <select value={itemTargetCategory} onChange={e => setItemTargetCategory(e.target.value)} className="block w-full px-2.5 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border border-slate-300 dark:border-slate-500 text-slate-800 dark:text-slate-100">
+                                                <option value="">Déduction seule (sans création)</option>
+                                                {categories.filter(c => c !== category).map(cat => (
+                                                    <option key={cat} value={cat}>{cat}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="sm:col-span-1 flex justify-end">
+                                            <button type="button" onClick={handleAddSubtractedItem} className="w-full py-1.5 bg-cyan-500 text-white text-sm font-semibold rounded-md hover:bg-cyan-600 flex items-center justify-center gap-1 shadow-sm">+</button>
+                                        </div>
                                       </div>
-                                      <button type="button" onClick={handleAddSubtractedItem} className="px-3 py-1.5 bg-cyan-500 text-white text-sm font-semibold rounded-md hover:bg-cyan-600">+</button>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
