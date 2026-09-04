@@ -56,7 +56,7 @@ const Logo = () => {
 
     return (
         <img 
-            src="/logo.png" 
+            src="/logo.png?v=2" 
             alt="Logo DuoBudget" 
             className="w-28 h-28 object-contain mx-auto mb-4" 
             onError={() => setImgError(true)}
