@@ -52,6 +52,8 @@ const TrendIndicator: React.FC<{ current: number, previous: number, hasHistory: 
 }
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; pieColor: string } } = {
+  "Dép. récurrentes": { icon: MandatoryIcon, color: 'bg-slate-500', pieColor: '#64748b' },
+  "Dép. recurentes": { icon: MandatoryIcon, color: 'bg-slate-500', pieColor: '#64748b' },
   "Dépenses obligatoires": { icon: MandatoryIcon, color: 'bg-slate-500', pieColor: '#64748b' },
   "Carburant": { icon: FuelIcon, color: 'bg-orange-500', pieColor: '#f97316' },
   "Chauffage": { icon: HeatingIcon, color: 'bg-red-500', pieColor: '#ef4444' },

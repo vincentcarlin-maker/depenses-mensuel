@@ -11,7 +11,7 @@ export type Category = string;
 
 // Liste initiale des catégories lors du premier chargement de l'application.
 export const DEFAULT_CATEGORIES: Category[] = [
-  "Dépenses obligatoires",
+  "Dép. recurentes",
   "Carburant",
   "Chauffage",
   "Courses",

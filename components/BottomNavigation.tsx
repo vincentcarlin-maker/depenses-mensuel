@@ -24,8 +24,8 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 pb-[calc(env(safe-area-inset-bottom)+16px)] z-30 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] transition-all duration-300">
-      <div className="flex justify-around items-center h-14">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border-t border-slate-100 dark:border-slate-700/60 rounded-t-3xl pb-[calc(env(safe-area-inset-bottom)+8px)] pt-2 px-3 z-30 shadow-[0_-8px_20px_rgba(0,0,0,0.06)] transition-all duration-300">
+      <div className="flex justify-around items-center h-14 max-w-lg mx-auto">
         {tabs.map((tab) => {
           const isActive = !isSettingsActive && activeTab === tab.id;
           const Icon = tab.icon;
@@ -34,27 +34,27 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
+              className={`flex flex-col items-center justify-center transition-all duration-200 ${
                 isActive 
-                  ? 'text-brand-600 dark:text-brand-400' 
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                  ? 'bg-blue-100/80 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-2xl px-3.5 py-1.5' 
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 py-1.5 px-2'
               }`}
             >
-              <Icon className={`h-6 w-6 ${isActive ? 'scale-110' : ''} transition-transform duration-200`} />
-              <span className="text-[10px] font-medium">{tab.label}</span>
+              <Icon className={`h-5 w-5 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
+              <span className={`text-[11px] mt-0.5 ${isActive ? 'font-semibold text-blue-600 dark:text-blue-400' : 'font-medium text-slate-500 dark:text-slate-400'}`}>{tab.label}</span>
             </button>
           );
         })}
         <button
           onClick={onOpenSettings}
-          className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
+          className={`flex flex-col items-center justify-center transition-all duration-200 ${
             isSettingsActive
-              ? 'text-brand-600 dark:text-brand-400'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+              ? 'bg-blue-100/80 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-2xl px-3.5 py-1.5'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 py-1.5 px-2'
           }`}
         >
-          <SettingsIcon className={`h-6 w-6 ${isSettingsActive ? 'scale-110' : ''} transition-transform duration-200`} />
-          <span className="text-[10px] font-medium">Réglages</span>
+          <SettingsIcon className={`h-5 w-5 ${isSettingsActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
+          <span className={`text-[11px] mt-0.5 ${isSettingsActive ? 'font-semibold text-blue-600 dark:text-blue-400' : 'font-medium text-slate-500 dark:text-slate-400'}`}>Réglages</span>
         </button>
       </div>
     </nav>
@@ -62,3 +62,4 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
 };
 
 export default BottomNavigation;
+

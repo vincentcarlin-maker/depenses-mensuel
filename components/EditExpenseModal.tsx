@@ -22,6 +22,8 @@ import {
 } from './icons/CategoryIcons';
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; bgColor: string; borderColor: string } } = {
+  "Dép. récurrentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
+  "Dép. recurentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
   "Dépenses obligatoires": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
   "Carburant": { icon: FuelIcon, color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-50 dark:bg-orange-500/10', borderColor: 'border-orange-100 dark:border-orange-500/20' },
   "Chauffage": { icon: HeatingIcon, color: 'text-red-600 dark:text-red-400', bgColor: 'bg-red-50 dark:bg-red-500/10', borderColor: 'border-red-100 dark:border-red-500/20' },
@@ -496,40 +498,92 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
 
     return (
         <>
-            <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 backdrop-blur-sm z-[160] flex justify-center items-center" aria-modal="true" role="dialog">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[160] flex justify-center items-center p-4 sm:p-6" aria-modal="true" role="dialog">
                 <div 
                     className="fixed inset-0"
                     onClick={onClose}
                     aria-hidden="true"
                 ></div>
-                <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-xl z-[161] w-full max-w-md m-4 animate-fade-in flex flex-col max-h-[90vh]">
-                    <h2 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100 flex-shrink-0">Modifier la Transaction</h2>
-                    <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto pr-1 custom-scrollbar">
+                <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-2xl z-[161] w-full max-w-lg animate-fade-in relative overflow-hidden flex flex-col max-h-[90vh] p-6 sm:p-7 border border-slate-100 dark:border-slate-800">
+                    {/* Header */}
+                    <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 dark:border-slate-700/60 shrink-0">
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-11 h-11 rounded-2xl bg-blue-100/80 dark:bg-blue-950/60 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Modifier la dépense</h2>
+                                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">Modifiez les détails de cette transaction.</p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={onClose} 
+                            type="button"
+                            className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                        >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-6 overflow-y-auto pr-1 custom-scrollbar flex-1">
+                        {/* Qui a payé ? */}
                         <div>
-                          <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Qui a payé ?</label>
-                           <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1">
-                            <span
-                              className={`absolute top-1 bottom-1 left-1 w-[calc(33.33%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out ${getUserSliderPosition()}`}
-                              aria-hidden="true"
-                            />
-                            <button type="button" onClick={() => setUser(User.Sophie)} className={`relative z-10 w-1/3 p-2 rounded-full text-sm font-semibold transition-colors ${user === User.Sophie ? 'text-pink-600 dark:text-pink-400' : 'text-slate-600 dark:text-slate-300'}`}>
-                              Sophie
-                            </button>
-                            <button type="button" onClick={() => setUser(User.Vincent)} className={`relative z-10 w-1/3 p-2 rounded-full text-sm font-semibold transition-colors ${user === User.Vincent ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-300'}`}>
-                              Vincent
-                            </button>
-                            <button type="button" onClick={() => setUser(User.Commun)} className={`relative z-10 w-1/3 p-2 rounded-full text-sm font-semibold transition-colors flex items-center justify-center gap-1 ${user === User.Commun ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'}`}>
-                                <PiggyBankIcon className="w-4 h-4" />
-                                <span className="hidden sm:inline">Cagnotte</span>
-                            </button>
-                          </div>
+                            <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2.5">Qui a payé ?</label>
+                            <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-700/60">
+                                <button
+                                    type="button"
+                                    onClick={() => setUser(User.Sophie)}
+                                    className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all ${
+                                        user === User.Sophie
+                                            ? 'bg-pink-100/90 dark:bg-pink-950/50 text-pink-600 dark:text-pink-400 border border-pink-200/80 dark:border-pink-900/50 shadow-xs'
+                                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                                    }`}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                    <span>Sophie</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setUser(User.Vincent)}
+                                    className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all ${
+                                        user === User.Vincent
+                                            ? 'bg-blue-100/90 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-900/50 shadow-xs'
+                                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                                    }`}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                    <span>Vincent</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setUser(User.Commun)}
+                                    className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all ${
+                                        user === User.Commun
+                                            ? 'bg-purple-100/90 dark:bg-indigo-950/50 text-purple-600 dark:text-indigo-400 border border-purple-200/80 dark:border-indigo-900/50 shadow-xs'
+                                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                                    }`}
+                                >
+                                    <PiggyBankIcon className="w-4 h-4 shrink-0" />
+                                    <span>Cagnotte</span>
+                                </button>
+                            </div>
                         </div>
 
+                        {/* Category */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">
+                            <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-3">
                                 Catégorie
                             </label>
-                            <div className="grid grid-cols-3 gap-2">
+                            <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
                                 {categories.map((cat) => {
                                     const visual = CategoryVisuals[cat] || CategoryVisuals["Divers"];
                                     const Icon = visual.icon;
@@ -539,10 +593,10 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                             key={cat}
                                             type="button"
                                             onClick={() => setCategory(cat)}
-                                            className={`flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all duration-200 ${
+                                            className={`flex flex-col items-center justify-center p-1.5 rounded-lg border transition-all duration-200 ${
                                                 isSelected 
-                                                ? `${visual.borderColor} ${visual.bgColor} ring-2 ring-cyan-500/20 shadow-sm` 
-                                                : 'border-transparent bg-slate-50 dark:bg-slate-700/30 opacity-70'
+                                                ? `${visual.borderColor} ${visual.bgColor} ring-1 ring-blue-500/20 shadow-sm scale-105` 
+                                                : 'border-transparent bg-slate-50 dark:bg-slate-700/30 hover:bg-slate-100 dark:hover:bg-slate-700 opacity-70 hover:opacity-100'
                                             }`}
                                         >
                                             <div className={`mb-1 ${isSelected ? visual.color : 'text-slate-400 dark:text-slate-500'}`}>
@@ -557,33 +611,21 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                             </div>
                         </div>
 
-                        <div>
-                            <label htmlFor="edit-date" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Date et Heure</label>
-                            <input
-                                type="datetime-local"
-                                id="edit-date"
-                                value={date}
-                                onChange={(e) => setDate(e.target.value)}
-                                className={`${baseInputStyle} px-3`}
-                            />
-                        </div>
-
+                        {/* Category Specific Inputs */}
                         {category === 'Courses' && (
                             <div className="space-y-4 animate-fade-in">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
-                                        <div className="flex justify-between items-center mb-2">
-                                            <label htmlFor="edit-store-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Magasin</label>
-                                        </div>
-                                        <select id="edit-store-select" value={store} onChange={e => setStore(e.target.value)} className={`${baseInputStyle} pl-3 pr-10`}>
+                                        <label htmlFor="edit-store-select" className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Magasin</label>
+                                        <select id="edit-store-select" value={store} onChange={e => setStore(e.target.value)} className="block w-full px-4 py-2.5 text-base bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm font-semibold rounded-2xl">
                                             {groceryStores.map(s => <option key={s} value={s}>{s}</option>)}
                                             <option value="Autres">Autres</option>
                                         </select>
                                     </div>
                                     {store === 'Autres' && (
                                         <div>
-                                            <label htmlFor="edit-custom-store" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Magasin personnalisé</label>
-                                            <input type="text" id="edit-custom-store" value={customStore} onChange={e => setCustomStore(e.target.value)} className={`${baseInputStyle} px-3`} />
+                                            <label htmlFor="edit-custom-store" className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Magasin personnalisé</label>
+                                            <input type="text" id="edit-custom-store" value={customStore} onChange={e => setCustomStore(e.target.value)} className="block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm font-semibold" placeholder="Nom du magasin" />
                                         </div>
                                     )}
                                 </div>
@@ -592,8 +634,8 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
 
                         {['Courses', 'Divers'].includes(category) && (
                             <div className="animate-fade-in mt-4">
-                                <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
-                                    <label htmlFor="edit-toggle-sub" className="font-medium text-slate-700 dark:text-slate-200 cursor-pointer flex items-center gap-2">
+                                <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/80 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-700/60">
+                                    <label htmlFor="edit-toggle-sub" className="font-bold text-sm text-slate-800 dark:text-slate-200 cursor-pointer flex items-center gap-2">
                                         <ScissorsIcon />
                                         <span>Déduire des articles ?</span>
                                     </label>
@@ -601,7 +643,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                         type="button"
                                         id="edit-toggle-sub"
                                         onClick={() => setShowSubtractions(!showSubtractions)}
-                                        className={`${showSubtractions ? 'bg-cyan-600' : 'bg-slate-300 dark:bg-slate-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800`}
+                                        className={`${showSubtractions ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none`}
                                         role="switch"
                                         aria-checked={showSubtractions}
                                     >
@@ -613,37 +655,37 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
 
                         {['Courses', 'Divers'].includes(category) && showSubtractions ? (
                             <div className="animate-fade-in space-y-4">
-                                 <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-700 space-y-4">
-                                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                                 <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-700/60 space-y-4">
+                                    <div className="flex items-center gap-2 text-slate-800 dark:text-slate-200 font-bold text-sm">
                                       <ScissorsIcon />
-                                      <h4 className="font-semibold">Articles à déduire</h4>
+                                      <h4>Articles à déduire</h4>
                                     </div>
                                      {subtractedItems.length > 0 && (
                                       <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
                                         <div className="flex justify-between items-center text-xs text-slate-500 pb-1">
-                                          <button type="button" onClick={() => setSelectedItems(selectedItems.length === subtractedItems.length ? [] : subtractedItems.map((_, i) => i))} className="hover:text-brand-500">
+                                          <button type="button" onClick={() => setSelectedItems(selectedItems.length === subtractedItems.length ? [] : subtractedItems.map((_, i) => i))} className="hover:text-blue-600 font-semibold">
                                             {selectedItems.length === subtractedItems.length ? 'Désélectionner tout' : 'Tout sélectionner'}
                                           </button>
                                           {selectedItems.length > 0 && (
                                             <button type="button" onClick={() => {
                                               setSubtractedItems(subtractedItems.filter((_, i) => !selectedItems.includes(i)));
                                               setSelectedItems([]);
-                                            }} className="text-red-500 hover:text-red-700">
+                                            }} className="text-red-500 hover:text-red-700 font-semibold">
                                               Supprimer la sélection ({selectedItems.length})
                                             </button>
                                           )}
                                         </div>
                                         {subtractedItems.map((item, index) => (
                                           <div key={index} 
-                                               className={`p-2.5 rounded-lg border transition-colors space-y-2 ${item.is_subtracted !== false ? 'bg-red-50/70 dark:bg-red-900/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-600 border-slate-200 dark:border-slate-500'}`}>
+                                               className={`p-3 rounded-xl border transition-colors space-y-2 ${item.is_subtracted !== false ? 'bg-red-50/70 dark:bg-red-900/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600'}`}>
                                             <div className="flex items-center justify-between">
                                               <div className="flex items-center gap-2">
                                                   <input type="checkbox" checked={selectedItems.includes(index)} onChange={(e) => {
                                                     if (e.target.checked) setSelectedItems([...selectedItems, index]);
                                                     else setSelectedItems(selectedItems.filter(i => i !== index));
-                                                  }} className="rounded text-brand-500 focus:ring-brand-500" />
+                                                  }} className="rounded text-blue-600 focus:ring-blue-500" />
                                                   <div className="flex flex-col cursor-pointer" onClick={() => handleToggleSubtractedItem(index)}>
-                                                      <span className={`text-sm ${item.is_subtracted !== false ? 'text-red-700 dark:text-red-300 font-medium line-through opacity-70' : 'text-slate-700 dark:text-slate-200'}`}>{item.description}</span>
+                                                      <span className={`text-sm ${item.is_subtracted !== false ? 'text-red-700 dark:text-red-300 font-medium line-through opacity-70' : 'text-slate-800 dark:text-slate-100'}`}>{item.description}</span>
                                                       {item.category && <span className="text-[10px] text-slate-400 dark:text-slate-400">{item.category}</span>}
                                                   </div>
                                               </div>
@@ -656,9 +698,9 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                             </div>
 
                                             {/* Destination category config */}
-                                            <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-1.5 border-t border-slate-200/60 dark:border-slate-600/60">
+                                            <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-2 border-t border-slate-200/60 dark:border-slate-600/60">
                                               <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
-                                                <span className="text-slate-500 dark:text-slate-400 font-medium text-[11px]">➡️ Réattribuer dans :</span>
+                                                <span className="text-slate-500 dark:text-slate-400 font-semibold text-[11px]">➡️ Réattribuer dans :</span>
                                                 <select 
                                                   value={item.target_category || ''} 
                                                   onChange={(e) => {
@@ -668,7 +710,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                                     updated[index].create_expense = (val && !updated[index].expense_created) ? true : false;
                                                     setSubtractedItems(updated);
                                                   }}
-                                                  className="px-2 py-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-500 rounded text-xs text-slate-800 dark:text-slate-100 font-medium focus:ring-1 focus:ring-brand-500"
+                                                  className="px-2 py-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-500 rounded-lg text-xs text-slate-800 dark:text-slate-100 font-semibold focus:ring-1 focus:ring-blue-500"
                                                 >
                                                   <option value="">Aucune (déduction seule)</option>
                                                   {categories.filter(c => c !== category).map(c => (
@@ -680,11 +722,11 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                               {item.target_category && (
                                                 <div className="flex items-center gap-2">
                                                   {item.expense_created && (
-                                                    <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/40 px-1.5 py-0.5 rounded">
+                                                    <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded-full">
                                                       ✓ Dépense créée
                                                     </span>
                                                   )}
-                                                  <label className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 font-semibold cursor-pointer bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/50">
+                                                  <label className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 font-bold cursor-pointer bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800/50">
                                                     <input 
                                                       type="checkbox" 
                                                       checked={item.create_expense === true} 
@@ -703,79 +745,79 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                           </div>
                                         ))}
                                       </div>
-                                    )}
+                                     )}
 
-                                    <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 block">Ajouter un article à déduire :</span>
-                                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-                                        <div className="sm:col-span-4">
-                                            <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">Article</label>
-                                            <input ref={itemDescriptionInputRef} type="text" value={itemDescription} onChange={e => setItemDescription(e.target.value)} onKeyDown={handleItemInputKeyDown} placeholder="Ex: Sweat Nathan" className="block w-full px-2.5 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border border-slate-300 dark:border-slate-500 text-slate-800 dark:text-slate-100"/>
-                                        </div>
-                                        <div className="sm:col-span-3">
-                                            <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">Montant (€)</label>
-                                            <input type="text" inputMode="decimal" value={itemAmount} onChange={e => setItemAmount(e.target.value)} onKeyDown={handleItemInputKeyDown} placeholder="0.00" className="block w-full px-2.5 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border border-slate-300 dark:border-slate-500 text-slate-800 dark:text-slate-100"/>
-                                        </div>
-                                        <div className="sm:col-span-4">
-                                            <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">Nouvelle Catégorie</label>
-                                            <select value={itemTargetCategory} onChange={e => setItemTargetCategory(e.target.value)} className="block w-full px-2.5 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border border-slate-300 dark:border-slate-500 text-slate-800 dark:text-slate-100">
-                                                <option value="">Déduction seule (sans création)</option>
-                                                {categories.filter(c => c !== category).map(cat => (
-                                                    <option key={cat} value={cat}>{cat}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="sm:col-span-1 flex justify-end">
-                                            <button type="button" onClick={handleAddSubtractedItem} className="w-full py-1.5 bg-cyan-500 text-white text-sm font-semibold rounded-md hover:bg-cyan-600 flex items-center justify-center gap-1 shadow-sm">+</button>
-                                        </div>
-                                      </div>
-                                    </div>
+                                     <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                                       <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">Ajouter un article à déduire :</span>
+                                       <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                                         <div className="sm:col-span-4">
+                                             <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Article</label>
+                                             <input ref={itemDescriptionInputRef} type="text" value={itemDescription} onChange={e => setItemDescription(e.target.value)} onKeyDown={handleItemInputKeyDown} placeholder="Ex: Sweat Nathan" className="block w-full px-3 py-2 bg-white dark:bg-slate-700 text-sm rounded-xl border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100 font-semibold"/>
+                                         </div>
+                                         <div className="sm:col-span-3">
+                                             <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Montant (€)</label>
+                                             <input type="text" inputMode="decimal" value={itemAmount} onChange={e => setItemAmount(e.target.value)} onKeyDown={handleItemInputKeyDown} placeholder="0,00" className="block w-full px-3 py-2 bg-white dark:bg-slate-700 text-sm rounded-xl border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100 font-semibold"/>
+                                         </div>
+                                         <div className="sm:col-span-4">
+                                             <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Nouvelle Catégorie</label>
+                                             <select value={itemTargetCategory} onChange={e => setItemTargetCategory(e.target.value)} className="block w-full px-3 py-2 bg-white dark:bg-slate-700 text-sm rounded-xl border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100 font-semibold">
+                                                 <option value="">Déduction seule</option>
+                                                 {categories.filter(c => c !== category).map(cat => (
+                                                     <option key={cat} value={cat}>{cat}</option>
+                                                 ))}
+                                             </select>
+                                         </div>
+                                         <div className="sm:col-span-1 flex justify-end">
+                                             <button type="button" onClick={handleAddSubtractedItem} className="w-full py-2 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 flex items-center justify-center gap-1 shadow-sm">+</button>
+                                         </div>
+                                       </div>
+                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Ticket (€)</label><input type="text" inputMode="decimal" value={receiptTotal} onChange={e => setReceiptTotal(e.target.value)} className={`${baseInputStyle} px-3 font-semibold`}/></div>
-                                    <div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Montant final</label><input type="text" value={finalCalculatedAmount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})} readOnly className={`${baseInputStyle} px-3 bg-slate-100 dark:bg-slate-600 text-cyan-600 dark:text-cyan-400 font-bold`}/></div>
+                                    <div><label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-1.5">Ticket (€)</label><input type="text" inputMode="decimal" value={receiptTotal} onChange={e => setReceiptTotal(e.target.value)} className="block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl font-bold sm:text-base"/></div>
+                                    <div><label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-1.5">Montant final</label><input type="text" value={finalCalculatedAmount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})} readOnly className="block w-full px-4 py-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-900/40 rounded-2xl font-extrabold sm:text-base"/></div>
                                 </div>
                                 {category === 'Divers' && (
                                     <div>
-                                        <label htmlFor="edit-divers-subtraction-description" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Description de la dépense</label>
+                                        <label htmlFor="edit-divers-subtraction-description" className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Description de la dépense</label>
                                         <input
                                             type="text"
                                             id="edit-divers-subtraction-description"
                                             value={description}
                                             onChange={(e) => setDescription(e.target.value)}
-                                            className={`${baseInputStyle} px-3`}
+                                            className="block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl font-semibold sm:text-base"
                                             placeholder="Ex: Action, Leroy Merlin..."
                                         />
                                     </div>
                                 )}
                             </div>
                         ) : (
-                            <div className="animate-fade-in space-y-4">
+                            <div className="space-y-4">
                                 {category === 'Chauffage' && (
                                     <div className="animate-fade-in">
-                                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">Type de Chauffage</label>
+                                        <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Type de Chauffage</label>
                                         <SegmentedControl options={heatingOptions} value={heatingType} onChange={setHeatingType} className="mt-1" />
                                     </div>
                                 )}
                                 {category === 'Réparation voitures' && (
                                     <div className="animate-fade-in space-y-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-600 dark:text-slate-300">Véhicule</label>
+                                            <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Véhicule</label>
                                             <SegmentedControl options={carOptions} value={repairedCar} onChange={setRepairedCar} className="mt-1"/>
                                         </div>
                                         <div>
-                                            <label htmlFor="edit-car-garage" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Garage</label>
+                                            <label htmlFor="edit-car-garage" className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Garage</label>
                                             <input
                                                 type="text"
                                                 id="edit-car-garage"
                                                 value={carGarage}
                                                 onChange={(e) => setCarGarage(e.target.value)}
-                                                className={`${baseInputStyle} px-3 ${placeholderStyle}`}
+                                                className="block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl font-semibold sm:text-base placeholder-slate-400"
                                                 placeholder="Ex: Renault, Norauto..."
                                             />
                                         </div>
                                         <div>
-                                            <label htmlFor="edit-car-mileage" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Kilométrage</label>
+                                            <label htmlFor="edit-car-mileage" className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Kilométrage</label>
                                             <div className="relative">
                                                 <input
                                                     type="text"
@@ -783,44 +825,44 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                                     id="edit-car-mileage"
                                                     value={carMileage}
                                                     onChange={(e) => setCarMileage(e.target.value)}
-                                                    className={`${baseInputStyle} px-3 pr-10 ${placeholderStyle}`}
+                                                    className="block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl font-semibold sm:text-base pr-10 placeholder-slate-400"
                                                     placeholder="Ex: 120000"
                                                 />
-                                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                                    <span className="text-slate-500 sm:text-sm">km</span>
+                                                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                                    <span className="text-slate-500 font-bold sm:text-sm">km</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 )}
                                 {category === 'Vêtements' && (
-                                    <div className="animate-fade-in"><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label><SegmentedControl options={childrenOptions} value={clothingPerson} onChange={setClothingPerson} className="mt-1"/></div>
+                                    <div className="animate-fade-in"><label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Pour qui ?</label><SegmentedControl options={childrenOptions} value={clothingPerson} onChange={setClothingPerson} className="mt-1"/></div>
                                 )}
                                 {category === 'Cadeau' && (
-                                     <div className="space-y-4 animate-fade-in"><div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label><SegmentedControl options={childrenOptions} value={giftPerson} onChange={setGiftPerson} className="mt-1"/></div><div><label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Occasion</label><SegmentedControl options={occasionOptions} value={giftOccasion} onChange={setGiftOccasion} className="mt-1"/></div></div>
+                                     <div className="space-y-4 animate-fade-in"><div><label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Pour qui ?</label><SegmentedControl options={childrenOptions} value={giftPerson} onChange={setGiftPerson} className="mt-1"/></div><div><label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Occasion</label><SegmentedControl options={occasionOptions} value={giftOccasion} onChange={setGiftOccasion} className="mt-1"/></div></div>
                                 )}
                                 
                                 {category === 'Complément alimentaire' && (
                                     <div className="space-y-4 animate-fade-in">
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Boutique</label>
-                                                <select value={supplementStore} onChange={e => setSupplementStore(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent sm:text-sm rounded-lg">
+                                                <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Boutique</label>
+                                                <select value={supplementStore} onChange={e => setSupplementStore(e.target.value)} className="block w-full px-4 py-2.5 text-base bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm font-semibold rounded-2xl">
                                                     {SUPPLEMENT_STORES.map(s => <option key={s} value={s}>{s}</option>)}
                                                 </select>
                                             </div>
                                             {supplementStore === 'Autres' && (
                                                 <div>
-                                                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Boutique personnalisée</label>
-                                                    <input type="text" value={customSupplementStore} onChange={e => setCustomSupplementStore(e.target.value)} className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 sm:text-sm" placeholder="Nom de la boutique" />
+                                                    <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Boutique personnalisée</label>
+                                                    <input type="text" value={customSupplementStore} onChange={e => setCustomSupplementStore(e.target.value)} className="block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm font-semibold" placeholder="Nom de la boutique" />
                                                 </div>
                                             )}
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Compléments achetés</label>
+                                            <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Compléments achetés</label>
                                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                                 {SUPPLEMENT_TYPES.map(type => (
-                                                    <label key={type} className="flex items-center space-x-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors">
+                                                    <label key={type} className="flex items-center space-x-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                                                         <input
                                                             type="checkbox"
                                                             checked={supplementTypes.includes(type)}
@@ -831,29 +873,32 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                                                     setSupplementTypes(supplementTypes.filter(t => t !== type));
                                                                 }
                                                             }}
-                                                            className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                                                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                                                         />
-                                                        <span className="text-sm text-slate-700 dark:text-slate-200">{type}</span>
+                                                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{type}</span>
                                                     </label>
                                                 ))}
                                             </div>
                                         </div>
                                         {supplementTypes.includes('Autres') && (
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Complément personnalisé</label>
-                                                <input type="text" value={customSupplementType} onChange={e => setCustomSupplementType(e.target.value)} className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 sm:text-sm" placeholder="Nom du complément" />
+                                                <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Complément personnalisé</label>
+                                                <input type="text" value={customSupplementType} onChange={e => setCustomSupplementType(e.target.value)} className="block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm font-semibold" placeholder="Nom du complément" />
                                             </div>
                                         )}
                                     </div>
                                 )}
                                 
                                 { !['Chauffage', 'Courses', 'Complément alimentaire'].includes(category) && (
-                                    <div className="animate-fade-in">
+                                    <div>
                                         {category === "Carburant" ? (
-                                            <><label className="block text-sm font-medium text-slate-600 dark:text-slate-300">Véhicule</label><SegmentedControl options={carOptions} value={description} onChange={(val) => setDescription(val)} className="mt-1"/></>
+                                            <div className="animate-fade-in">
+                                                <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Véhicule</label>
+                                                <SegmentedControl options={carOptions} value={description} onChange={(val) => setDescription(val)} className="mt-1"/>
+                                            </div>
                                         ) : (
                                             <>
-                                              <label htmlFor="edit-description" className="block text-sm font-medium text-slate-600 dark:text-slate-300">
+                                              <label htmlFor="edit-description" className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">
                                                 {category === 'Restaurant' ? 'Restaurant' : category === 'Réparation voitures' ? 'Réparation effectuée' : 'Description'}
                                               </label>
                                               <input 
@@ -861,46 +906,113 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                                 id="edit-description" 
                                                 value={description} 
                                                 onChange={(e) => setDescription(e.target.value)} 
-                                                className={`${baseInputStyle} px-3 ${placeholderStyle}`} 
+                                                className="block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base font-semibold" 
                                                 placeholder={category === 'Restaurant' ? "Ex: La Pizzaiola, McDo..." : category === 'Réparation voitures' ? "Ex: Vidange, Pneus..." : "Ex: McDo, Cinéma..."}
                                               />
                                             </>
                                         )}
                                     </div>
                                 )}
-                                <div>
-                                   <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type de transaction</label>
-                                    <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1">
-                                      <span className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out ${transactionType === 'refund' ? 'translate-x-full' : 'translate-x-0'}`} aria-hidden="true"/>
-                                      <button type="button" onClick={() => setTransactionType('expense')} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${transactionType === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-300'}`}>Dépense</button>
-                                      <button type="button" onClick={() => setTransactionType('refund')} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${transactionType === 'refund' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'}`}>Remboursement</button>
+
+                                {/* Type & Montant */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Type</label>
+                                        <div className="grid grid-cols-2 gap-1.5 bg-slate-50 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-700/60">
+                                            <button
+                                                type="button"
+                                                onClick={() => setTransactionType('expense')}
+                                                className={`py-2 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all ${
+                                                    transactionType === 'expense'
+                                                        ? 'bg-pink-100/90 dark:bg-rose-950/50 text-pink-600 dark:text-rose-400 border border-pink-200/80 dark:border-rose-900/50 shadow-xs'
+                                                        : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
+                                                }`}
+                                            >
+                                                <span className="w-4 h-4 rounded-full bg-pink-500 text-white flex items-center justify-center text-[10px] font-black shrink-0">-</span>
+                                                <span>Dépense</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setTransactionType('refund')}
+                                                className={`py-2 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all ${
+                                                    transactionType === 'refund'
+                                                        ? 'bg-blue-100/90 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-900/50 shadow-xs'
+                                                        : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
+                                                }`}
+                                            >
+                                                <span className="w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-black shrink-0">+</span>
+                                                <span>Remb.</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label htmlFor="edit-amount" className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">
+                                            Montant (€)
+                                        </label>
+                                        <input 
+                                            type="text" 
+                                            inputMode="decimal" 
+                                            id="edit-amount" 
+                                            value={amount} 
+                                            onChange={(e) => setAmount(e.target.value)} 
+                                            className="block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base font-semibold" 
+                                            placeholder="0,00" 
+                                        />
                                     </div>
                                 </div>
-                                <div>
-                                  <label htmlFor="edit-amount" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Montant (€)</label>
-                                  <input type="text" inputMode="decimal" id="edit-amount" value={amount} onChange={(e) => setAmount(e.target.value)} className={`${baseInputStyle} px-3 ${placeholderStyle}`} />
+
+                                {/* Date & Time Field */}
+                                <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60 rounded-2xl">
+                                    <div className="flex items-center gap-2.5">
+                                        <svg className="w-5 h-5 text-slate-500 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                                            Date : <span className="font-bold text-slate-900 dark:text-slate-100">{new Date(date).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                        </p>
+                                    </div>
+                                    <label htmlFor="edit-expense-date-input" className="text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400 cursor-pointer hover:underline relative">
+                                        Modifier
+                                        <input
+                                            type="datetime-local"
+                                            id="edit-expense-date-input"
+                                            value={date}
+                                            onChange={(e) => setDate(e.target.value)}
+                                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                        />
+                                    </label>
                                 </div>
                             </div>
-                         )}
+                        )}
                         
-                        {error && <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>}
+                        {error && <p className="text-red-500 dark:text-red-400 text-sm font-bold">{error}</p>}
                     </form>
-                    <div className="flex justify-between items-center pt-4 mt-2 border-t border-slate-100 dark:border-slate-700 flex-shrink-0">
-                        <div className="flex gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setIsConfirmOpen(true)}
-                                className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-500/10 dark:hover:text-red-400 rounded-full transition-colors"
-                                aria-label="Supprimer la dépense"
+
+                    {/* Bottom Action Footer */}
+                    <div className="flex items-center justify-between pt-4 mt-3 border-t border-slate-100 dark:border-slate-700/60 shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setIsConfirmOpen(true)}
+                            className="p-3 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-2xl transition-colors border border-red-100 dark:border-red-900/30 flex items-center justify-center shrink-0"
+                            title="Supprimer la dépense"
+                            aria-label="Supprimer la dépense"
+                        >
+                            <TrashIcon />
+                        </button>
+
+                        <div className="flex items-center gap-2.5">
+                            <button 
+                                type="button" 
+                                onClick={onClose} 
+                                className="px-5 py-3 rounded-2xl font-bold text-sm text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                             >
-                                <TrashIcon />
-                            </button>
-                        </div>
-                        <div className="flex justify-end space-x-3">
-                            <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400">
                                 Annuler
                             </button>
-                            <button type="button" onClick={(e) => handleSubmit(e as any)} className="px-4 py-2 text-sm font-medium text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                            <button 
+                                type="button" 
+                                onClick={(e) => handleSubmit(e as any)} 
+                                className="px-6 py-3 rounded-2xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-md shadow-blue-500/20"
+                            >
                                 Enregistrer
                             </button>
                         </div>

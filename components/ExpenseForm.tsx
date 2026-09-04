@@ -23,6 +23,8 @@ import {
 } from './icons/CategoryIcons';
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; bgColor: string; borderColor: string } } = {
+  "Dép. récurrentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
+  "Dép. recurentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
   "Dépenses obligatoires": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
   "Carburant": { icon: FuelIcon, color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-50 dark:bg-orange-500/10', borderColor: 'border-orange-100 dark:border-orange-500/20' },
   "Chauffage": { icon: HeatingIcon, color: 'text-red-600 dark:text-red-400', bgColor: 'bg-red-50 dark:bg-red-500/10', borderColor: 'border-red-100 dark:border-red-500/20' },
@@ -520,33 +522,72 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
 
   return (
     <>
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden border border-brand-100 dark:border-slate-700">
-        <div className="p-6 bg-slate-50 dark:bg-slate-800/50">
-            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Ajouter une Transaction</h2>
+        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-md border border-slate-100 dark:border-slate-800 overflow-hidden">
+        <div className="p-6 sm:p-7 border-b border-slate-100 dark:border-slate-700/60 bg-white dark:bg-slate-800">
+            <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-blue-100/80 dark:bg-blue-950/60 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="12" y1="18" x2="12" y2="12" />
+                        <line x1="9" y1="15" x2="15" y2="15" />
+                    </svg>
+                </div>
+                <div>
+                    <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Ajouter une transaction</h2>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">Enregistrez une dépense ou un remboursement.</p>
+                </div>
+            </div>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="p-6 sm:p-7 space-y-6">
             <div>
-            <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Qui a payé ?</label>
-            <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1">
-                <span
-                className={`absolute top-1 bottom-1 left-1 w-[calc(33.33%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out ${getUserSliderPosition()}`}
-                aria-hidden="true"
-                />
-                <button type="button" onClick={() => setUser(User.Sophie)} className={`relative z-10 w-1/3 p-2 rounded-full text-sm font-semibold transition-colors ${sophieButtonClass}`}>
-                Sophie
+            <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2.5">Qui a payé ?</label>
+            <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-700/60">
+                <button
+                    type="button"
+                    onClick={() => setUser(User.Sophie)}
+                    className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all ${
+                        user === User.Sophie
+                            ? 'bg-pink-100/90 dark:bg-pink-950/50 text-pink-600 dark:text-pink-400 border border-pink-200/80 dark:border-pink-900/50 shadow-xs'
+                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span>Sophie</span>
                 </button>
-                <button type="button" onClick={() => setUser(User.Vincent)} className={`relative z-10 w-1/3 p-2 rounded-full text-sm font-semibold transition-colors ${vincentButtonClass}`}>
-                Vincent
+                <button
+                    type="button"
+                    onClick={() => setUser(User.Vincent)}
+                    className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all ${
+                        user === User.Vincent
+                            ? 'bg-blue-100/90 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-900/50 shadow-xs'
+                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span>Vincent</span>
                 </button>
-                <button type="button" onClick={() => setUser(User.Commun)} className={`relative z-10 w-1/3 p-2 rounded-full text-sm font-semibold transition-colors flex items-center justify-center gap-1 ${user === User.Commun ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'}`}>
-                    <PiggyBankIcon className="w-4 h-4" />
-                    <span className="hidden sm:inline">Cagnotte</span>
+                <button
+                    type="button"
+                    onClick={() => setUser(User.Commun)}
+                    className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all ${
+                        user === User.Commun
+                            ? 'bg-purple-100/90 dark:bg-indigo-950/50 text-purple-600 dark:text-indigo-400 border border-purple-200/80 dark:border-indigo-900/50 shadow-xs'
+                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                >
+                    <PiggyBankIcon className="w-4 h-4 shrink-0" />
+                    <span>Cagnotte</span>
                 </button>
             </div>
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">
+                <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-3">
                     Catégorie
                 </label>
                 <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
@@ -582,17 +623,17 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <div className="flex justify-between items-center mb-2">
-                                <label htmlFor="store-select" className="block text-sm font-medium text-slate-600 dark:text-slate-300">Magasin</label>
+                                <label htmlFor="store-select" className="block text-sm font-bold text-slate-900 dark:text-slate-100">Magasin</label>
                             </div>
-                            <select id="store-select" value={store} onChange={e => setStore(e.target.value)} className="block w-full pl-3 pr-10 py-2.5 text-base bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent sm:text-sm rounded-lg">
+                            <select id="store-select" value={store} onChange={e => setStore(e.target.value)} className="block w-full px-4 py-2.5 text-base bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm font-semibold rounded-2xl">
                                 {groceryStores.map(s => <option key={s} value={s}>{s}</option>)}
                                 <option value="Autres">Autres</option>
                             </select>
                         </div>
                         {store === 'Autres' && (
                             <div>
-                                <label htmlFor="custom-store" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Magasin personnalisé</label>
-                                <input type="text" id="custom-store" value={customStore} onChange={e => setCustomStore(e.target.value)} className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 sm:text-sm" placeholder="Nom du magasin" />
+                                <label htmlFor="custom-store" className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Magasin personnalisé</label>
+                                <input type="text" id="custom-store" value={customStore} onChange={e => setCustomStore(e.target.value)} className="block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm font-semibold" placeholder="Nom du magasin" />
                             </div>
                         )}
                     </div>
@@ -872,7 +913,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                       <div>
                       {category === "Carburant" ? (
                           <div className="animate-fade-in">
-                          <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Véhicule</label>
+                          <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Véhicule</label>
                           <SegmentedControl
                               options={cars}
                               value={description}
@@ -882,7 +923,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                           </div>
                       ) : (
                           <>
-                          <label htmlFor="description" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
+                          <label htmlFor="description" className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">
                             {category === 'Restaurant' ? 'Restaurant' : category === 'Réparation voitures' ? 'Réparation effectuée' : 'Description'}
                           </label>
                           <div className="relative z-50">
@@ -893,7 +934,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                               onChange={handleDescriptionChange}
                               onFocus={(e) => handleDescriptionChange(e)}
                               onBlur={() => setTimeout(() => setSuggestions([]), 150)}
-                              className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 sm:text-sm"
+                              className="block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base font-semibold"
                               placeholder={category === 'Restaurant' ? "Ex: La Pizzaiola, McDo..." : category === 'Vêtements' ? "Ex: Pantalon, Manteau..." : category === 'Cadeau' ? "Ex: Lego, Poupée..." : category === 'Réparation voitures' ? "Ex: Vidange, Pneus..." : "Ex: McDo, Cinéma..."}
                               autoComplete="off"
                               />
@@ -915,26 +956,38 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                       )}
                       </div>
                   )}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                      <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type</label>
-                      <div className="relative flex w-full bg-slate-100 dark:bg-slate-700 rounded-full p-1">
-                          <span
-                          className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform duration-300 ease-in-out
-                              ${transactionType === 'refund' ? 'translate-x-full' : 'translate-x-0'}
-                          `}
-                          aria-hidden="true"
-                          />
-                          <button type="button" onClick={() => setTransactionType('expense')} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${transactionType === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-300'}`}>
-                          Dépense
+                      <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Type</label>
+                      <div className="grid grid-cols-2 gap-1.5 bg-slate-50 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-700/60">
+                          <button
+                            type="button"
+                            onClick={() => setTransactionType('expense')}
+                            className={`py-2 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all ${
+                              transactionType === 'expense'
+                                ? 'bg-pink-100/90 dark:bg-rose-950/50 text-pink-600 dark:text-rose-400 border border-pink-200/80 dark:border-rose-900/50 shadow-xs'
+                                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
+                            }`}
+                          >
+                            <span className="w-4 h-4 rounded-full bg-pink-500 text-white flex items-center justify-center text-[10px] font-black shrink-0">-</span>
+                            <span>Dépense</span>
                           </button>
-                          <button type="button" onClick={() => setTransactionType('refund')} className={`relative z-10 w-1/2 p-2 rounded-full text-sm font-semibold transition-colors ${transactionType === 'refund' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'}`}>
-                          Remb.
+                          <button
+                            type="button"
+                            onClick={() => setTransactionType('refund')}
+                            className={`py-2 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all ${
+                              transactionType === 'refund'
+                                ? 'bg-blue-100/90 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-900/50 shadow-xs'
+                                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
+                            }`}
+                          >
+                            <span className="w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-black shrink-0">+</span>
+                            <span>Remb.</span>
                           </button>
                       </div>
                   </div>
                   <div>
-                      <label htmlFor="amount" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
+                      <label htmlFor="amount" className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">
                       Montant (€)
                       </label>
                       <input
@@ -944,24 +997,24 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                       id="amount"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 sm:text-sm"
-                      placeholder="0.00"
+                      className="block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base font-semibold"
+                      placeholder="0,00"
                       />
                   </div>
                   </div>
                 </div>
             )}
 
-            {error && <p className="text-red-500 dark:text-red-400 text-sm">{error}</p>}
-            <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
-                    <div className="flex items-center gap-2">
+            {error && <p className="text-red-500 dark:text-red-400 text-sm font-medium">{error}</p>}
+            <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60 rounded-2xl">
+                    <div className="flex items-center gap-2.5">
                         <CalendarDaysIcon className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                         <p className="text-sm text-slate-600 dark:text-slate-300">
                             Date : <span className="font-semibold text-slate-800 dark:text-slate-200">{new Date(date).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                         </p>
                     </div>
-                    <label htmlFor="expense-date" className="text-sm font-semibold text-brand-600 dark:text-brand-400 cursor-pointer hover:underline">
+                    <label htmlFor="expense-date" className="text-sm font-semibold text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
                         Modifier
                         <input
                             type="datetime-local"
@@ -978,7 +1031,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                 <button
                 type="submit"
                 disabled={disabled}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-brand-500 to-brand-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 dark:focus:ring-offset-slate-800 transition-all duration-200 ease-in-out transform hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-2.5 bg-blue-500 hover:bg-blue-600 active:scale-[0.99] text-white font-bold py-3.5 px-6 rounded-2xl shadow-lg shadow-blue-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base"
                 >
                 {disabled ? (
                     <>
@@ -990,10 +1043,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                     </>
                 ) : (
                     <>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                        </svg>
-                        <span>Ajouter</span>
+                        <div className="w-5 h-5 rounded-full bg-white text-blue-600 flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
+                            +
+                        </div>
+                        <span>{transactionType === 'refund' ? 'Ajouter le remboursement' : 'Ajouter la dépense'}</span>
                     </>
                 )}
                 </button>
