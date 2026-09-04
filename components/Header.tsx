@@ -6,51 +6,69 @@ import CloseIcon from './icons/CloseIcon';
 import SearchIcon from './icons/SearchIcon';
 import ActivityDetailModal from './ActivityDetailModal';
 
-const Logo = () => (
-    <svg width="44" height="44" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3">
-        <defs>
-            <linearGradient id="headerPinkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#f472b6" />
-                <stop offset="100%" stopColor="#db2777" />
-            </linearGradient>
-            <linearGradient id="headerBlueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#60a5fa" />
-                <stop offset="100%" stopColor="#2563eb" />
-            </linearGradient>
-            <linearGradient id="headerNoteGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#2563eb" />
-                <stop offset="100%" stopColor="#db2777" />
-            </linearGradient>
-            
-            <filter id="headerSoftGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur in="SourceAlpha" stdDeviation="8"></feGaussianBlur>
-                <feOffset dx="0" dy="8"></feOffset>
-                <feComponentTransfer>
-                    <feFuncA type="linear" slope="0.15"></feFuncA>
-                </feComponentTransfer>
-                <feMerge>
-                    <feMergeNode></feMergeNode>
-                    <feMergeNode in="SourceGraphic"></feMergeNode>
-                </feMerge>
-            </filter>
-        </defs>
+const Logo = () => {
+    const [hasError, setHasError] = useState(false);
 
-        <rect x="60" y="140" width="392" height="230" rx="40" stroke="url(#headerNoteGrad)" strokeWidth="20" filter="url(#headerSoftGlow)"></rect>
-        <path d="M120 180H392M120 330H392" stroke="url(#headerNoteGrad)" strokeWidth="4" strokeOpacity="0.2" strokeLinecap="round"></path>
-        
-        <g filter="url(#headerSoftGlow)">
-            <circle cx="210" cy="280" r="90" fill="url(#headerBlueGrad)"></circle>
-            <circle cx="210" cy="280" r="70" stroke="white" strokeWidth="4" strokeOpacity="0.4" fill="none"></circle>
-            <path d="M225 255C215 250 200 250 190 260C180 270 180 290 190 300C200 310 215 310 225 305M180 275H205M180 285H205" stroke="white" strokeWidth="10" strokeLinecap="round" strokeOpacity="0.9"></path>
-        </g>
+    if (hasError) {
+        return (
+            <svg width="44" height="44" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-3">
+                <defs>
+                    <linearGradient id="headerPinkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#f472b6" />
+                        <stop offset="100%" stopColor="#db2777" />
+                    </linearGradient>
+                    <linearGradient id="headerBlueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#60a5fa" />
+                        <stop offset="100%" stopColor="#2563eb" />
+                    </linearGradient>
+                    <linearGradient id="headerNoteGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#2563eb" />
+                        <stop offset="100%" stopColor="#db2777" />
+                    </linearGradient>
+                    <filter id="headerSoftGlow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur in="SourceAlpha" stdDeviation="8"></feGaussianBlur>
+                        <feOffset dx="0" dy="8"></feOffset>
+                        <feComponentTransfer>
+                            <feFuncA type="linear" slope="0.15"></feFuncA>
+                        </feComponentTransfer>
+                        <feMerge>
+                            <feMergeNode></feMergeNode>
+                            <feMergeNode in="SourceGraphic"></feMergeNode>
+                        </feMerge>
+                    </filter>
+                </defs>
+                <rect x="60" y="140" width="392" height="230" rx="40" stroke="url(#headerNoteGrad)" strokeWidth="20" filter="url(#headerSoftGlow)"></rect>
+                <path d="M120 180H392M120 330H392" stroke="url(#headerNoteGrad)" strokeWidth="4" strokeOpacity="0.2" strokeLinecap="round"></path>
+                <g filter="url(#headerSoftGlow)">
+                    <circle cx="210" cy="280" r="90" fill="url(#headerBlueGrad)"></circle>
+                    <circle cx="210" cy="280" r="70" stroke="white" strokeWidth="4" strokeOpacity="0.4" fill="none"></circle>
+                    <path d="M225 255C215 250 200 250 190 260C180 270 180 290 190 300C200 310 215 310 225 305M180 275H205M180 285H205" stroke="white" strokeWidth="10" strokeLinecap="round" strokeOpacity="0.9"></path>
+                </g>
+                <g filter="url(#headerSoftGlow)">
+                    <circle cx="310" cy="240" r="90" fill="url(#headerPinkGrad)"></circle>
+                    <circle cx="310" cy="240" r="70" stroke="white" strokeWidth="4" strokeOpacity="0.4" fill="none"></circle>
+                    <path d="M325 215C315 210 300 210 290 220C280 230 280 250 290 260C300 270 315 270 325 265M280 235H305M280 245H305" stroke="white" strokeWidth="10" strokeLinecap="round" strokeOpacity="0.9"></path>
+                </g>
+            </svg>
+        );
+    }
 
-        <g filter="url(#headerSoftGlow)">
-            <circle cx="310" cy="240" r="90" fill="url(#headerPinkGrad)"></circle>
-            <circle cx="310" cy="240" r="70" stroke="white" strokeWidth="4" strokeOpacity="0.4" fill="none"></circle>
-            <path d="M325 215C315 210 300 210 290 220C280 230 280 250 290 260C300 270 315 270 325 265M280 235H305M280 245H305" stroke="white" strokeWidth="10" strokeLinecap="round" strokeOpacity="0.9"></path>
-        </g>
-    </svg>
-);
+    return (
+        <img
+            src="apple-touch-icon.png"
+            onError={(e) => {
+                const target = e.currentTarget;
+                if (target.src.includes('apple-touch-icon.png')) {
+                    target.src = 'logo.png';
+                } else {
+                    setHasError(true);
+                }
+            }}
+            alt="DuoBudget Logo"
+            className="w-10 h-10 md:w-11 md:h-11 object-contain mr-3 rounded-xl shadow-sm"
+        />
+    );
+};
 
 interface HeaderProps {
   onOpenSearch: () => void;
