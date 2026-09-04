@@ -16,7 +16,7 @@ export default defineConfig({
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}']
       },
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo.png'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo.svg'],
       manifest: {
         name: 'DuoBudget',
         short_name: 'DuoBudget',
@@ -26,15 +26,10 @@ export default defineConfig({
         display: 'standalone',
         icons: [
           {
-            src: 'logo.png',
+            src: 'logo.svg',
             sizes: '192x192 512x512',
-            type: 'image/png',
+            type: 'image/svg+xml',
             purpose: 'any maskable'
-          },
-          {
-            src: 'apple-touch-icon.png',
-            sizes: '180x180',
-            type: 'image/png'
           }
         ]
       }
