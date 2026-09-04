@@ -187,22 +187,22 @@ const ExpenseListItem: React.FC<{
 
                 {/* Info Text */}
                 <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                        <p className="font-extrabold text-slate-900 dark:text-slate-100 text-base sm:text-lg truncate tracking-tight" title={description}>{description}</p>
+                    <div className="flex items-start gap-1.5 justify-between">
+                        <p className="font-extrabold text-slate-900 dark:text-slate-100 text-sm sm:text-base leading-snug line-clamp-2 break-words" title={description}>{description}</p>
                         {modificationTypes && modificationTypes.length > 0 && (
-                            <span className="shrink-0 flex items-center gap-1 text-slate-400 dark:text-slate-500" title="Cette dépense a été modifiée">
+                            <span className="shrink-0 flex items-center gap-1 text-slate-400 dark:text-slate-500 mt-0.5" title="Cette dépense a été modifiée">
                                 {modificationTypes.includes('date') && <HistoryIcon />}
                                 {modificationTypes.includes('amount') && <EuroIcon />}
                                 {modificationTypes.includes('other') && <EditIcon className="h-3.5 w-3.5" />}
                             </span>
                         )}
                     </div>
-                    <div className="flex items-center gap-2 flex-nowrap min-w-0 mt-0.5">
-                        <span className="text-xs sm:text-sm font-medium text-slate-400 dark:text-slate-500 truncate max-w-[100px] sm:max-w-[130px] shrink">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0 mt-1">
+                        <span className="text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300">
                             {(expense.category === 'Dépenses obligatoires' || expense.category === 'Dép. récurrentes') ? 'Dép. recurentes' : expense.category}
                         </span>
                         {isSophie && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-pink-100/90 dark:bg-pink-950/60 text-pink-600 dark:text-pink-300 text-xs font-bold shrink-0">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-950/80 text-pink-700 dark:text-pink-300 text-[11px] sm:text-xs font-bold shrink-0">
                                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                                 </svg>
@@ -210,7 +210,7 @@ const ExpenseListItem: React.FC<{
                             </span>
                         )}
                         {isVincent && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-100/90 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 text-xs font-bold shrink-0">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 text-[11px] sm:text-xs font-bold shrink-0">
                                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                                 </svg>
@@ -218,7 +218,7 @@ const ExpenseListItem: React.FC<{
                             </span>
                         )}
                         {isCommun && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-100/90 dark:bg-purple-950/60 text-purple-600 dark:text-purple-300 text-xs font-bold shrink-0">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 text-[11px] sm:text-xs font-bold shrink-0">
                                 <PiggyBankIcon className="w-3 h-3" />
                                 <span>Cagnotte</span>
                             </span>
@@ -228,26 +228,25 @@ const ExpenseListItem: React.FC<{
             </div>
 
             {/* Right Side Amount & Date */}
-            <div className="flex items-center gap-1.5 shrink-0 text-right pl-2">
+            <div className="flex items-center gap-1 shrink-0 text-right pl-1.5">
                 <div>
                      {hasSubtractions ? (
-                        <div className="flex items-center justify-end gap-1.5">
-                            <span className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 line-through">
+                        <div className="flex flex-col items-end justify-center">
+                            <span className="text-[11px] sm:text-xs text-slate-400 dark:text-slate-500 line-through leading-tight">
                                 {originalAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                             </span>
-                            <ArrowRightIcon className="h-3 w-3 text-slate-400 dark:text-slate-500" />
-                            <p className={`font-extrabold text-base sm:text-lg ${amountColorClass}`}>
+                            <p className={`font-extrabold text-sm sm:text-base ${amountColorClass}`}>
                                 {expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                             </p>
                         </div>
                     ) : (
-                        <p className={`font-extrabold text-base sm:text-lg ${amountColorClass}`}>
+                        <p className={`font-extrabold text-sm sm:text-base ${amountColorClass}`}>
                             {expense.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                         </p>
                     )}
-                    <p className="text-xs font-medium text-slate-400 dark:text-slate-500 mt-0.5">{formattedDate}</p>
+                    <p className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 whitespace-nowrap">{formattedDate}</p>
                 </div>
-                <svg className="w-4 h-4 text-slate-400 shrink-0 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-4 h-4 text-slate-400 shrink-0 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
             </div>
