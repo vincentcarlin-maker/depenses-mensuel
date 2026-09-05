@@ -14,9 +14,9 @@ export default defineConfig({
       filename: 'sw.js',
       registerType: 'autoUpdate',
       injectManifest: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp}']
       },
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo.png'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo.png', 'piggy-bank.png', 'yellow-coin.png', 'cagnotte-pig.jpg', 'cagnotte-pig-3d.jpg'],
       manifest: {
         name: 'DuoBudget',
         short_name: 'DuoBudget',

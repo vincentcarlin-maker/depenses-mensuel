@@ -7,9 +7,12 @@ import App from './App';
 import { registerSW } from 'virtual:pwa-register';
 
 const updateSW = registerSW({
-  onNeedRefresh() {},
+  immediate: true,
+  onNeedRefresh() {
+    updateSW(true);
+  },
   onOfflineReady() {},
-})
+});
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

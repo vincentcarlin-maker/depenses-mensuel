@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { type MoneyPotTransaction } from '../types';
 import TrashIcon from './icons/TrashIcon';
 import ConfirmationModal from './ConfirmationModal';
+import piggyBankImg from '../src/assets/piggy-bank.png';
 
 interface MoneyPotTabProps {
   transactions: MoneyPotTransaction[];
@@ -88,11 +89,17 @@ const MoneyPotTab: React.FC<MoneyPotTabProps> = ({ transactions, onAddTransactio
           {/* 3D Piggy Bank Illustration - En superposition, décalé encore plus vers la gauche */}
           <div className="absolute right-8 sm:right-14 md:right-20 lg:right-24 -bottom-3 sm:-bottom-5 -top-3 sm:-top-5 w-[42%] sm:w-[38%] md:w-[210px] lg:w-[230px] max-w-[240px] pointer-events-none select-none flex items-center justify-center z-20">
             <img
-              src="/piggy-bank.png"
+              src={piggyBankImg || "piggy-bank.png"}
               alt="Tirelire cagnotte"
               className={`w-full h-full object-contain drop-shadow-[0_12px_25px_rgba(0,0,0,0.32)] transition-transform ${
                 isBouncing ? 'animate-piggy-bounce' : ''
               }`}
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (!target.src.endsWith('piggy-bank.png')) {
+                  target.src = 'piggy-bank.png';
+                }
+              }}
               referrerPolicy="no-referrer"
             />
           </div>
