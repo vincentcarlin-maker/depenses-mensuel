@@ -18,6 +18,8 @@ import SettingsModal from './components/SettingsModal';
 import { useTheme } from './hooks/useTheme';
 import OfflineIndicator from './components/OfflineIndicator';
 import { useAuth, type Profile, type LoginEvent } from './hooks/useAuth';
+import { useMaintenanceMode } from './hooks/useMaintenanceMode';
+import { MaintenanceOverlay } from './components/MaintenanceOverlay';
 import Login from './components/Login';
 import PullToRefresh from './components/PullToRefresh';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -60,8 +62,22 @@ const MainApp: React.FC<{
     onAddProfile: (profile: Profile) => boolean,
     onUpdateProfilePassword: (username: string, newPassword: string) => boolean,
     onDeleteProfile: (username: string) => boolean,
+    onToggleBlockProfile: (username: string) => { success: boolean; message: string },
+    isMaintenanceMode: boolean,
+    onToggleMaintenanceMode: (newState?: boolean) => void,
     loginHistory: LoginEvent[]
-}> = ({ user, onLogout, profiles, onAddProfile, onUpdateProfilePassword, onDeleteProfile, loginHistory }) => {
+}> = ({ 
+    user, 
+    onLogout, 
+    profiles, 
+    onAddProfile, 
+    onUpdateProfilePassword, 
+    onDeleteProfile, 
+    onToggleBlockProfile,
+    isMaintenanceMode,
+    onToggleMaintenanceMode,
+    loginHistory 
+}) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<any[]>([]);
   const [moneyPotTransactions, setMoneyPotTransactions] = useState<MoneyPotTransaction[]>([]);
@@ -1074,6 +1090,21 @@ const MainApp: React.FC<{
 
   return (
     <div className="bg-gray-50 dark:bg-slate-900 min-h-screen font-sans">
+      {isMaintenanceMode && (
+        <div className="bg-amber-500 text-slate-900 px-4 py-2.5 font-extrabold text-xs sm:text-sm flex items-center justify-between shadow-md z-[90] sticky top-0">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🛠️</span>
+            <span>MODE MAINTENANCE ACTIF — Accès restreint aux administrateurs.</span>
+          </div>
+          <button 
+            type="button"
+            onClick={() => onToggleMaintenanceMode(false)}
+            className="px-3 py-1 bg-slate-900 text-amber-400 rounded-lg text-xs font-extrabold hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+          >
+            Désactiver
+          </button>
+        </div>
+      )}
       <PullToRefresh isRefreshing={isRefreshing} onRefresh={handleRefresh}>
         <Header onOpenSearch={() => setIsSearchOpen(true)} loggedInUser={user} activityItems={activityItemsForHeader} unreadCount={unreadCount} onMarkAsRead={markActivitiesAsRead} realtimeStatus={realtimeStatus} onDeleteActivity={deleteActivity} />
         <main className="container mx-auto p-4 md:p-8 pb-32">
@@ -1322,6 +1353,9 @@ const MainApp: React.FC<{
         onAddProfile={onAddProfile} 
         onUpdateProfilePassword={onUpdateProfilePassword} 
         onDeleteProfile={onDeleteProfile} 
+        onToggleBlockProfile={onToggleBlockProfile}
+        isMaintenanceMode={isMaintenanceMode}
+        onToggleMaintenanceMode={onToggleMaintenanceMode}
         onUpdateExpense={updateExpense}
         groceryStores={groceryStores} 
         setGroceryStores={setGroceryStores} 
@@ -1342,10 +1376,52 @@ const MainApp: React.FC<{
 
 const App: React.FC = () => {
   useTheme();
-  const { user, login, logout, isLoading, profiles, addProfile, updateProfilePassword, deleteProfile, loginHistory } = useAuth();
-  if (isLoading) return (<div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-slate-900"><div className="w-10 h-10 border-4 border-cyan-500/30 border-t-cyan-600 rounded-full animate-spin"></div></div>);
-  if (!user) return <Login onLogin={login} />;
-  return (<MainApp user={user} onLogout={logout} profiles={profiles} onAddProfile={addProfile} onUpdateProfilePassword={updateProfilePassword} onDeleteProfile={deleteProfile} loginHistory={loginHistory} />);
+  const { isMaintenanceMode, toggleMaintenanceMode } = useMaintenanceMode();
+  const { 
+    user, 
+    login, 
+    loginWithResult, 
+    logout, 
+    isLoading, 
+    profiles, 
+    addProfile, 
+    updateProfilePassword, 
+    toggleBlockProfile, 
+    deleteProfile, 
+    loginHistory 
+  } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-slate-900">
+        <div className="w-10 h-10 border-4 border-cyan-500/30 border-t-cyan-600 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // Maintenance mode handling
+  if (isMaintenanceMode && user !== User.Vincent) {
+    return <MaintenanceOverlay onAdminLogin={loginWithResult} />;
+  }
+
+  if (!user) {
+    return <Login onLogin={loginWithResult} />;
+  }
+
+  return (
+    <MainApp 
+      user={user} 
+      onLogout={logout} 
+      profiles={profiles} 
+      onAddProfile={addProfile} 
+      onUpdateProfilePassword={updateProfilePassword} 
+      onDeleteProfile={deleteProfile} 
+      onToggleBlockProfile={toggleBlockProfile}
+      isMaintenanceMode={isMaintenanceMode}
+      onToggleMaintenanceMode={toggleMaintenanceMode}
+      loginHistory={loginHistory} 
+    />
+  );
 };
 
 export default App;

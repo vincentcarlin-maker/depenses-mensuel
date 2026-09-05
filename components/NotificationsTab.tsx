@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase/client';
 import { type User } from '../types';
-import { useFeatureFlags } from '../hooks/useFeatureFlags';
 import ChevronRightIcon from './icons/ChevronRightIcon';
 import {
     FuelIcon,
@@ -107,7 +106,6 @@ const formatCategoryLabel = (cat: string) => {
 };
 
 const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => {
-    const flags = useFeatureFlags();
     const [permission, setPermission] = useState<NotificationPermission>('default');
     const [isSubscribed, setIsSubscribed] = useState(false);
     
@@ -554,23 +552,6 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                         <ChevronRightIcon className="w-4.5 h-4.5" />
                     </div>
                 </button>
-
-                {/* Exp V2: Notifications Enrichies Banner */}
-                {flags.richNotifications && (
-                    <div className="p-4 rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/40 space-y-2">
-                        <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-600 text-white uppercase tracking-wider">
-                                EXP V2
-                            </span>
-                            <h4 className="text-sm font-bold text-amber-950 dark:text-amber-200">
-                                Mode Notifications Enrichies Actif
-                            </h4>
-                        </div>
-                        <p className="text-xs text-amber-900/80 dark:text-amber-300">
-                            Les notifications incluent désormais la répartition automatique par catégorie, l'icône personnalisée du payeur et le résumé intelligent.
-                        </p>
-                    </div>
-                )}
             </div>
 
             {/* CARD 2: FILTRES & MOTIFS DE NOTIFICATIONS */}

@@ -35,6 +35,9 @@ interface SettingsModalProps {
   onAddProfile: (profile: Profile) => boolean;
   onUpdateProfilePassword: (username: string, newPassword: string) => boolean;
   onDeleteProfile: (username: string) => boolean;
+  onToggleBlockProfile?: (username: string) => { success: boolean; message: string };
+  isMaintenanceMode?: boolean;
+  onToggleMaintenanceMode?: (newState?: boolean) => void;
   onUpdateExpense: (expense: Expense) => Promise<void>;
   groceryStores: string[];
   setGroceryStores: React.Dispatch<React.SetStateAction<string[]>>;
@@ -601,6 +604,12 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         loggedInUser={props.loggedInUser}
                         setToastInfo={props.setToastInfo}
                         onSyncData={props.onSyncData}
+                        onToggleBlockProfile={props.onToggleBlockProfile}
+                        onDeleteProfile={props.onDeleteProfile}
+                        onAddProfile={props.onAddProfile}
+                        onUpdateProfilePassword={props.onUpdateProfilePassword}
+                        isMaintenanceMode={props.isMaintenanceMode}
+                        onToggleMaintenanceMode={props.onToggleMaintenanceMode}
                     />
                 </div>
             )}

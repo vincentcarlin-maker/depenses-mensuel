@@ -16,7 +16,7 @@ const Logo = () => {
 };
 
 interface LoginProps {
-    onLogin: (username: string, password: string) => Promise<boolean>;
+    onLogin: (username: string, password: string) => Promise<boolean | { success: boolean; error?: string }>;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
@@ -30,10 +30,15 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
-        const success = await onLogin(username, password);
+        const result = await onLogin(username, password);
         setIsLoading(false);
-        if (!success) {
-            setError('Nom d’utilisateur ou mot de passe incorrect.');
+
+        if (typeof result === 'boolean') {
+            if (!result) {
+                setError('Nom d’utilisateur ou mot de passe incorrect.');
+            }
+        } else if (!result.success) {
+            setError(result.error || 'Nom d’utilisateur ou mot de passe incorrect.');
         }
     };
 

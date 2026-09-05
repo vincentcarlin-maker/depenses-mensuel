@@ -15,6 +15,12 @@ interface AdminAndDevTabProps {
   loggedInUser: User;
   setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
   onSyncData?: () => Promise<void>;
+  onToggleBlockProfile?: (username: string) => { success: boolean; message: string };
+  onDeleteProfile?: (username: string) => boolean;
+  onAddProfile?: (profile: Profile) => boolean;
+  onUpdateProfilePassword?: (username: string, newPassword: string) => boolean;
+  isMaintenanceMode?: boolean;
+  onToggleMaintenanceMode?: (newState?: boolean) => void;
 }
 
 export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
@@ -27,11 +33,27 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
   loggedInUser,
   setToastInfo,
   onSyncData,
+  onToggleBlockProfile,
+  onDeleteProfile,
+  onAddProfile,
+  onUpdateProfilePassword,
+  isMaintenanceMode = false,
+  onToggleMaintenanceMode,
 }) => {
   // Only Vincent is authorized
   const isAuthorized = loggedInUser === User.Vincent;
 
   // --- States ---
+  // User Management Modals
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newUserRole, setNewUserRole] = useState<User>(User.Sophie);
+  const [addUserError, setAddUserError] = useState('');
+
+  const [editingPasswordUser, setEditingPasswordUser] = useState<string | null>(null);
+  const [editPasswordValue, setEditPasswordValue] = useState('');
+  const [deletingUser, setDeletingUser] = useState<string | null>(null);
   // Connection & latency
   const [dbStatus, setDbStatus] = useState<'connected' | 'checking' | 'error'>('connected');
   const [latencyMs, setLatencyMs] = useState<number | null>(84);
@@ -65,27 +87,6 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
   const [cacheSizeMb, setCacheSizeMb] = useState<string>('18,4 Mo');
   const [isSwActive, setIsSwActive] = useState<boolean>(false);
   const [isRefreshingSw, setIsRefreshingSw] = useState(false);
-
-  // Feature flags
-  const [featureFlags, setFeatureFlags] = useState<{
-    newBalance: boolean;
-    graphV2: boolean;
-    richNotifications: boolean;
-    turboOffline: boolean;
-  }>(() => {
-    try {
-      const saved = localStorage.getItem('duobudget_exp_flags');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error(e);
-    }
-    return {
-      newBalance: true,
-      graphV2: true,
-      richNotifications: false,
-      turboOffline: false,
-    };
-  });
 
   // Sessions & Security
   const [showSessionsModal, setShowSessionsModal] = useState(false);
@@ -388,19 +389,67 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
     }
   };
 
-  // 7. Toggle Feature Flags
-  const toggleFeatureFlag = (key: keyof typeof featureFlags) => {
-    const updated = { ...featureFlags, [key]: !featureFlags[key] };
-    setFeatureFlags(updated);
-    localStorage.setItem('duobudget_exp_flags', JSON.stringify(updated));
-    window.dispatchEvent(new Event('exp_flags_changed'));
-    setToastInfo({
-      message: `Fonction expérimentale « ${key} » : ${updated[key] ? 'Activée' : 'Désactivée'}.`,
-      type: 'info',
-    });
+  // User Management Actions
+  const handleToggleBlock = (username: string) => {
+    if (onToggleBlockProfile) {
+      const res = onToggleBlockProfile(username);
+      setToastInfo({
+        message: res.message,
+        type: res.success ? 'info' : 'error',
+      });
+    }
   };
 
-  // 8. Reset Test Data (Only sample records)
+  const handleDeleteUserConfirm = () => {
+    if (deletingUser && onDeleteProfile) {
+      const success = onDeleteProfile(deletingUser);
+      if (success) {
+        setToastInfo({ message: `L'utilisateur « ${deletingUser} » a été supprimé.`, type: 'info' });
+      } else {
+        setToastInfo({ message: 'Impossible de supprimer cet utilisateur.', type: 'error' });
+      }
+    }
+    setDeletingUser(null);
+  };
+
+  const handleAddUserSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddUserError('');
+    if (!newUsername.trim() || !newPassword.trim()) {
+      setAddUserError('Veuillez remplir tous les champs.');
+      return;
+    }
+    if (onAddProfile) {
+      const success = onAddProfile({
+        username: newUsername.trim(),
+        password: newPassword.trim(),
+        user: newUserRole,
+        blocked: false,
+      });
+      if (success) {
+        setToastInfo({ message: `Utilisateur « ${newUsername.trim()} » créé avec succès.`, type: 'info' });
+        setIsAddUserModalOpen(false);
+        setNewUsername('');
+        setNewPassword('');
+      } else {
+        setAddUserError('Ce nom d’utilisateur existe déjà.');
+      }
+    }
+  };
+
+  const handleUpdatePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingPasswordUser && editPasswordValue.trim() && onUpdateProfilePassword) {
+      const success = onUpdateProfilePassword(editingPasswordUser, editPasswordValue.trim());
+      if (success) {
+        setToastInfo({ message: `Mot de passe mis à jour pour « ${editingPasswordUser} ».`, type: 'info' });
+        setEditingPasswordUser(null);
+        setEditPasswordValue('');
+      } else {
+        setToastInfo({ message: 'Erreur lors de la mise à jour du mot de passe.', type: 'error' });
+      }
+    }
+  };
   const handleResetTestData = async () => {
     try {
       // Delete test expenses with '[TEST]' in description
@@ -846,115 +895,208 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
       </div>
 
       {/* ========================================================= */}
-      {/* 7. FONCTIONS EXPÉRIMENTALES (FEATURE FLAGS)                */}
+      {/* 7. MODE MAINTENANCE DE L'APPLICATION                      */}
       {/* ========================================================= */}
       <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-950/60 flex items-center justify-center text-[#a855f7] dark:text-purple-400 shrink-0">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-            </svg>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+              <span className="text-2xl">🛠️</span>
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                  Mode Maintenance
+                </h3>
+                <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider ${
+                  isMaintenanceMode 
+                    ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700' 
+                    : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
+                }`}>
+                  {isMaintenanceMode ? 'Actif' : 'Accessible à tous'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
+                Restreindre l'accès à l'application pendant les mises à jour
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
-              Fonctions expérimentales
-            </h3>
-            <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-              Fonctionnalités en cours de développement
-            </p>
-          </div>
+
+          <button
+            type="button"
+            onClick={() => onToggleMaintenanceMode && onToggleMaintenanceMode(!isMaintenanceMode)}
+            className={`w-12 h-7 rounded-full transition-colors relative flex items-center p-1 cursor-pointer shrink-0 ${
+              isMaintenanceMode ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-600'
+            }`}
+            aria-label="Basculer le mode maintenance"
+          >
+            <div className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform transform ${
+              isMaintenanceMode ? 'translate-x-5' : 'translate-x-0'
+            }`} />
+          </button>
         </div>
 
-        {/* Feature Switches List matching image */}
-        <div className="space-y-2.5 pt-1">
-          {/* Flag 1: Nouvelle Balance */}
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700/60 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-blue-100/80 dark:bg-blue-950 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 text-base">
-                📊
-              </div>
-              <div className="min-w-0">
-                <p className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">
-                  Nouvelle Balance
-                </p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
-                  Nouvelle vue de la balance avec plus d'insights
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => toggleFeatureFlag('newBalance')}
-              className={`w-12 h-7 rounded-full transition-colors relative flex items-center p-1 cursor-pointer shrink-0 ${
-                featureFlags.newBalance ? 'bg-[#3b82f6]' : 'bg-slate-300 dark:bg-slate-600'
-              }`}
-            >
-              <div className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform transform ${
-                featureFlags.newBalance ? 'translate-x-5' : 'translate-x-0'
-              }`} />
-            </button>
+        <div className={`p-4 rounded-2xl border text-xs space-y-2.5 transition-colors ${
+          isMaintenanceMode
+            ? 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200'
+            : 'bg-slate-50/80 dark:bg-slate-700/30 border-slate-200/80 dark:border-slate-700/60 text-slate-600 dark:text-slate-400'
+        }`}>
+          <div className="flex items-center gap-2 font-bold text-sm">
+            <span>{isMaintenanceMode ? '⚠️' : 'ℹ️'}</span>
+            <span>
+              {isMaintenanceMode 
+                ? 'Mode maintenance activé : Seul l’administrateur Vincent peut naviguer.' 
+                : 'L’application est en fonctionnement normal.'}
+            </span>
           </div>
-
-          {/* Flag 2: Graphique v2 */}
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700/60 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-cyan-100/80 dark:bg-cyan-950 flex items-center justify-center text-cyan-600 dark:text-cyan-400 shrink-0 text-base">
-                📈
-              </div>
-              <div className="min-w-0">
-                <p className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">
-                  Graphique v2
-                </p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
-                  Nouveaux graphiques et métriques avancées
-                </p>
-              </div>
-            </div>
+          <p className="leading-relaxed">
+            {isMaintenanceMode
+              ? 'Sophie et tous les autres utilisateurs ouvrant l’application verront un écran d’information de maintenance. Seul Vincent peut accéder aux données.'
+              : 'Activez ce mode si vous vous préparez à exécuter des scripts de migration SQL, purger des données ou modifier la structure.'}
+          </p>
+          <div className="pt-1 flex items-center gap-2">
             <button
               type="button"
-              onClick={() => toggleFeatureFlag('graphV2')}
-              className={`w-12 h-7 rounded-full transition-colors relative flex items-center p-1 cursor-pointer shrink-0 ${
-                featureFlags.graphV2 ? 'bg-[#3b82f6]' : 'bg-slate-300 dark:bg-slate-600'
+              onClick={() => onToggleMaintenanceMode && onToggleMaintenanceMode(!isMaintenanceMode)}
+              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer shadow-2xs ${
+                isMaintenanceMode
+                  ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                  : 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 hover:opacity-90'
               }`}
             >
-              <div className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform transform ${
-                featureFlags.graphV2 ? 'translate-x-5' : 'translate-x-0'
-              }`} />
-            </button>
-          </div>
-
-          {/* Flag 3: Notifications enrichies */}
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700/60 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-purple-100/80 dark:bg-purple-950 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0 text-base">
-                🔔
-              </div>
-              <div className="min-w-0">
-                <p className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">
-                  Notifications enrichies
-                </p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
-                  Notifications avec résumé intelligent
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => toggleFeatureFlag('richNotifications')}
-              className={`w-12 h-7 rounded-full transition-colors relative flex items-center p-1 cursor-pointer shrink-0 ${
-                featureFlags.richNotifications ? 'bg-[#3b82f6]' : 'bg-slate-300 dark:bg-slate-600'
-              }`}
-            >
-              <div className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform transform ${
-                featureFlags.richNotifications ? 'translate-x-5' : 'translate-x-0'
-              }`} />
+              {isMaintenanceMode ? 'Désactiver le mode maintenance' : 'Passer en mode maintenance maintenant'}
             </button>
           </div>
         </div>
       </div>
 
       {/* ========================================================= */}
-      {/* 8. SESSIONS & SÉCURITÉ (SAFE TOOLS)                       */}
+      {/* 8. GESTION DES UTILISATEURS (BLOQUER / SUPPRIMER)         */}
+      {/* ========================================================= */}
+      <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                Gestion des comptes utilisateurs
+              </h3>
+              <p className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate">
+                {profiles.length} comptes enregistrés dans l’application
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setAddUserError('');
+              setNewUsername('');
+              setNewPassword('');
+              setIsAddUserModalOpen(true);
+            }}
+            className="px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-indigo-200/80 dark:border-indigo-800/60 shrink-0"
+          >
+            <span>➕</span>
+            <span>Nouveau compte</span>
+          </button>
+        </div>
+
+        {/* User Profiles List */}
+        <div className="divide-y divide-slate-100/90 dark:divide-slate-700/60 pt-1">
+          {profiles.map((p) => {
+            const isVincent = p.user === User.Vincent;
+            const isBlocked = !!p.blocked;
+
+            return (
+              <div key={p.username} className="py-3.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-10 h-10 rounded-2xl font-extrabold text-base flex items-center justify-center shrink-0 border ${
+                    p.user === User.Sophie 
+                      ? 'bg-pink-100 text-pink-600 border-pink-200 dark:bg-pink-950/60 dark:text-pink-300 dark:border-pink-900/60'
+                      : 'bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-900/60'
+                  }`}>
+                    {p.username.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-extrabold text-slate-900 dark:text-white text-sm truncate">
+                        {p.username}
+                      </p>
+                      {isVincent && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                          ADMIN
+                        </span>
+                      )}
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        isBlocked 
+                          ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
+                          : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                      }`}>
+                        {isBlocked ? 'Bloqué' : 'Actif'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
+                      Rôle : {p.user}
+                    </p>
+                  </div>
+                </div>
+
+                {/* User actions */}
+                <div className="flex items-center gap-2 shrink-0">
+                  {!isVincent && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleBlock(p.username)}
+                        className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border ${
+                          isBlocked
+                            ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                            : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
+                        }`}
+                        title={isBlocked ? "Débloquer l'utilisateur" : "Bloquer l'utilisateur"}
+                      >
+                        <span>{isBlocked ? '🔓' : '🚫'}</span>
+                        <span>{isBlocked ? 'Débloquer' : 'Bloquer'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setDeletingUser(p.username)}
+                        className="p-1.5 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-300 font-bold text-xs flex items-center gap-1 transition-all cursor-pointer border border-rose-200 dark:border-rose-800/60"
+                        title="Supprimer le compte"
+                      >
+                        <span>🗑️</span>
+                        <span>Supprimer</span>
+                      </button>
+                    </>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingPasswordUser(p.username);
+                      setEditPasswordValue('');
+                    }}
+                    className="p-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1 transition-all cursor-pointer"
+                    title="Modifier le mot de passe"
+                  >
+                    <span>🔑</span>
+                    <span>MDP</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ========================================================= */}
+      {/* 7. SESSIONS & SÉCURITÉ (SAFE TOOLS)                       */}
       {/* ========================================================= */}
       <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
@@ -1052,6 +1194,129 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
           <span>Confirmation requise</span>
         </div>
       </div>
+
+      {/* ========================================================= */}
+      {/* USER MANAGEMENT MODALS (ADD, EDIT PASSWORD, DELETE)       */}
+      {/* ========================================================= */}
+      {isAddUserModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[999] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-6 w-full max-w-sm space-y-4 border border-slate-100 dark:border-slate-700">
+            <div className="space-y-1">
+              <h4 className="font-extrabold text-lg text-slate-900 dark:text-white">Ajouter un utilisateur</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Créez un nouveau profil pour accéder à l'application.</p>
+            </div>
+            <form onSubmit={handleAddUserSubmit} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Nom d’utilisateur
+                </label>
+                <input
+                  type="text"
+                  placeholder="ex: sophie"
+                  value={newUsername}
+                  onChange={e => setNewUsername(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Mot de passe
+                </label>
+                <input
+                  type="text"
+                  placeholder="••••••••"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Rôle associé
+                </label>
+                <select
+                  value={newUserRole}
+                  onChange={e => setNewUserRole(e.target.value as User)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value={User.Sophie}>Sophie</option>
+                  <option value={User.Vincent}>Vincent (Admin)</option>
+                </select>
+              </div>
+
+              {addUserError && <p className="text-xs text-rose-500 font-bold">{addUserError}</p>}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddUserModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl font-bold text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors"
+                >
+                  Créer le compte
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editingPasswordUser && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[999] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-6 w-full max-w-sm space-y-4 border border-slate-100 dark:border-slate-700">
+            <div className="space-y-1">
+              <h4 className="font-extrabold text-lg text-slate-900 dark:text-white">Modifier le mot de passe</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Pour le compte « {editingPasswordUser} ».</p>
+            </div>
+            <form onSubmit={handleUpdatePasswordSubmit} className="space-y-3">
+              <input
+                type="text"
+                placeholder="Nouveau mot de passe"
+                value={editPasswordValue}
+                onChange={e => setEditPasswordValue(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                autoFocus
+              />
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingPasswordUser(null)}
+                  className="px-4 py-2.5 rounded-xl font-bold text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors"
+                >
+                  Enregistrer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {deletingUser && (
+        <ConfirmationModal
+          isOpen={true}
+          onClose={() => setDeletingUser(null)}
+          onConfirm={handleDeleteUserConfirm}
+          title="Supprimer l'utilisateur"
+          message={`Êtes-vous sûr de vouloir supprimer définitivement le compte « ${deletingUser} » ? L'utilisateur ne pourra plus se connecter.`}
+          confirmButtonText="Supprimer"
+          cancelButtonText="Annuler"
+          isDestructive={true}
+        />
+      )}
 
       {/* ========================================================= */}
       {/* MODALS: SQL INSTRUCTIONS & DANGER CONFIRMATIONS           */}

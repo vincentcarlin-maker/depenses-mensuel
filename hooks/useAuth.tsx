@@ -10,6 +10,7 @@ export interface Profile {
     username: string;
     password: string;
     user: User;
+    blocked?: boolean;
 }
 
 export interface LoginEvent {
@@ -134,46 +135,6 @@ export const useAuth = () => {
         }
     }, [logVisit]);
 
-    const login = useCallback(async (username: string, password: string): Promise<boolean> => {
-        const normalizedUsername = username.toLowerCase().trim();
-        const profile = profiles.find(p => p.username === normalizedUsername);
-
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        if (profile && profile.password === password) {
-            const oneYearFromNow = Date.now() + 365 * 24 * 60 * 60 * 1000;
-            const session: Session = {
-                user: profile.user,
-                expiresAt: oneYearFromNow,
-            };
-            window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-            setUser(profile.user);
-            
-            // Création du log pour l'affichage immédiat (Optimistic UI)
-            const newLogEntry: LoginEvent = {
-                user: profile.user,
-                timestamp: new Date().toISOString()
-            };
-
-            // Mise à jour immédiate de l'état local pour que l'utilisateur le voie tout de suite
-            setLoginHistory(prev => [newLogEntry, ...prev]);
-
-            // Enregistrement en base de données (Fire and forget)
-            supabase.from('login_logs').insert({
-                user_name: profile.user,
-                timestamp: newLogEntry.timestamp
-            }).then(({ error }) => {
-                if (!error) {
-                     // On marque le sessionStorage pour éviter que le rechargement de page ne crée un doublon immédiat
-                     sessionStorage.setItem(`last_visit_log_v2_${profile.user}`, Date.now().toString());
-                }
-            });
-            
-            return true;
-        }
-        return false;
-    }, [profiles]);
-
     const logout = useCallback(() => {
         window.localStorage.removeItem(SESSION_KEY);
         // On nettoie aussi le tracker de visite pour permettre un re-log immédiat si besoin
@@ -182,6 +143,83 @@ export const useAuth = () => {
         }
         setUser(null);
     }, [user]);
+
+    // Check if active user profile has been blocked by admin
+    useEffect(() => {
+        if (user) {
+            const currentProfile = profiles.find(p => p.user === user);
+            if (currentProfile && currentProfile.blocked) {
+                logout();
+            }
+        }
+    }, [user, profiles, logout]);
+
+    const loginWithResult = useCallback(async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+        const normalizedUsername = username.toLowerCase().trim();
+        const profile = profiles.find(p => p.username === normalizedUsername);
+
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        if (!profile) {
+            return { success: false, error: 'Nom d’utilisateur ou mot de passe incorrect.' };
+        }
+
+        if (profile.blocked) {
+            return { success: false, error: 'Ce compte utilisateur a été bloqué par l’administrateur.' };
+        }
+
+        if (profile.password === password) {
+            const oneYearFromNow = Date.now() + 365 * 24 * 60 * 60 * 1000;
+            const session: Session = {
+                user: profile.user,
+                expiresAt: oneYearFromNow,
+            };
+            window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+            setUser(profile.user);
+            
+            const newLogEntry: LoginEvent = {
+                user: profile.user,
+                timestamp: new Date().toISOString()
+            };
+
+            setLoginHistory(prev => [newLogEntry, ...prev]);
+
+            supabase.from('login_logs').insert({
+                user_name: profile.user,
+                timestamp: newLogEntry.timestamp
+            }).then(({ error }) => {
+                if (!error) {
+                     sessionStorage.setItem(`last_visit_log_v2_${profile.user}`, Date.now().toString());
+                }
+            });
+            
+            return { success: true };
+        }
+
+        return { success: false, error: 'Nom d’utilisateur ou mot de passe incorrect.' };
+    }, [profiles]);
+
+    const login = useCallback(async (username: string, password: string): Promise<boolean> => {
+        const res = await loginWithResult(username, password);
+        return res.success;
+    }, [loginWithResult]);
+
+    const toggleBlockProfile = useCallback((username: string): { success: boolean; message: string } => {
+        const normalizedUsername = username.toLowerCase().trim();
+        const target = profiles.find(p => p.username === normalizedUsername);
+        if (!target) {
+            return { success: false, message: 'Utilisateur introuvable.' };
+        }
+        if (target.user === User.Vincent) {
+            return { success: false, message: 'Impossible de bloquer le compte administrateur Vincent.' };
+        }
+        const willBlock = !target.blocked;
+        setProfiles(prev => prev.map(p => p.username === normalizedUsername ? { ...p, blocked: willBlock } : p));
+        return { 
+            success: true, 
+            message: `L'utilisateur « ${target.username} » a été ${willBlock ? 'bloqué' : 'débloqué'}.` 
+        };
+    }, [profiles, setProfiles]);
 
     const addProfile = useCallback((newProfile: Profile): boolean => {
         const normalizedUsername = newProfile.username.toLowerCase().trim();
@@ -214,5 +252,17 @@ export const useAuth = () => {
         return true;
     }, [profiles, setProfiles, user]);
     
-    return { user, login, logout, isLoading, profiles, addProfile, updateProfilePassword, deleteProfile, loginHistory };
+    return { 
+        user, 
+        login, 
+        loginWithResult, 
+        logout, 
+        isLoading, 
+        profiles, 
+        addProfile, 
+        updateProfilePassword, 
+        toggleBlockProfile, 
+        deleteProfile, 
+        loginHistory 
+    };
 };
