@@ -7,16 +7,13 @@ import ThemeSelector from './ThemeSelector';
 import VibeSelector from './VibeSelector';
 import ArrowLeftIcon from './icons/ArrowLeftIcon';
 import ChevronRightIcon from './icons/ChevronRightIcon';
-import PaintBrushIcon from './icons/PaintBrushIcon';
-import BellIcon from './icons/BellIcon';
 import { type Profile, type LoginEvent } from '../hooks/useAuth';
 import ManagementTab from './ManagementTab';
 import NotificationsTab from './NotificationsTab';
-import WrenchScrewdriverIcon from './icons/WrenchScrewdriverIcon';
-import LogoutIcon from './icons/LogoutIcon';
 import ConfirmationModal from './ConfirmationModal';
 import { TabId } from './BottomNavigation';
 import BottomNavigation from './BottomNavigation';
+import { useTheme } from '../hooks/useTheme';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -47,33 +44,49 @@ interface SettingsModalProps {
   onLogout: () => void;
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
-  initialView?: 'main' | 'appearance' | 'reminders' | 'management' | 'notifications';
+  initialView?: 'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'data';
 }
 
-const SettingsMenuItem: React.FC<{
+const SettingsItemRow: React.FC<{
+  iconBg: string;
+  iconColor: string;
   icon: React.ReactNode;
   title: string;
   description: string;
+  value?: string;
+  titleColor?: string;
   onClick: () => void;
-  className?: string;
-}> = ({ icon, title, description, onClick, className = '' }) => (
+}> = ({ iconBg, iconColor, icon, title, description, value, titleColor, onClick }) => (
   <button
+    type="button"
     onClick={onClick}
-    className={`w-full flex items-center p-4 rounded-xl transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-brand-500 ${className}`}
+    className="w-full flex items-center justify-between p-4 sm:p-4.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60 text-left focus:outline-none focus:bg-slate-50 dark:focus:bg-slate-800/60 group"
   >
-    <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-      {icon}
+    <div className="flex items-center gap-3.5 min-w-0 pr-2">
+      <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 ${iconBg} ${iconColor} transition-transform group-hover:scale-105`}>
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className={`font-bold text-sm sm:text-base leading-snug truncate ${titleColor || 'text-slate-900 dark:text-slate-100'}`}>
+          {title}
+        </p>
+        <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
+          {description}
+        </p>
+      </div>
     </div>
-    <div className="flex-1 text-left ml-4">
-      <p className="font-semibold text-slate-800 dark:text-slate-100">{title}</p>
-      <p className="text-sm text-slate-500 dark:text-slate-400">{description}</p>
-    </div>
-    <div className="text-slate-400 dark:text-slate-500">
-      <ChevronRightIcon />
+    <div className="flex items-center gap-2 shrink-0">
+      {value && (
+        <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+          {value}
+        </span>
+      )}
+      <div className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
+        <ChevronRightIcon className="w-5 h-5" />
+      </div>
     </div>
   </button>
 );
-
 
 const SettingsModal: React.FC<SettingsModalProps> = (props) => {
   const { 
@@ -88,8 +101,9 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     activeTab,
     onTabChange,
   } = props;
-  const [activeView, setActiveView] = useState<'main' | 'appearance' | 'reminders' | 'management' | 'notifications'>('main');
+  const [activeView, setActiveView] = useState<'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'data'>('main');
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const { themeSetting } = useTheme();
 
   useEffect(() => {
     if (isOpen) {
@@ -130,108 +144,272 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     return null;
   }
   
-  const viewTitles = {
+  const viewTitles: Record<string, string> = {
       main: 'Réglages',
       appearance: 'Apparence',
       reminders: 'Gestion des rappels',
-      management: 'Gestion de l\'application',
-      notifications: 'Notifications'
-  }
+      notifications: 'Notifications',
+      users: 'Utilisateurs',
+      categories: 'Catégories',
+      data: 'Données & sauvegarde',
+      management: 'Gestion de l\'application'
+  };
+
+  const activeRemindersCount = reminders.filter(r => r.is_active !== false).length;
+  const themeLabel = themeSetting === 'light' ? 'Clair' : themeSetting === 'dark' ? 'Sombre' : 'Système';
+  const hasPushEnabled = typeof Notification !== 'undefined' && Notification.permission === 'granted';
 
   return (
     <div 
-      className="fixed inset-0 bg-gray-50 dark:bg-slate-900 z-50 animate-slide-in-up"
+      className="fixed inset-0 bg-[#f8fafc] dark:bg-slate-900 z-50 animate-slide-in-up flex flex-col"
       aria-modal="true" 
       role="dialog"
     >
-        <header className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-sm shadow-sm sticky top-0 z-10">
-          <div className="container mx-auto px-4 py-4 md:px-8 flex items-center justify-between">
+        {/* Sticky top header */}
+        <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
             <div className="flex items-center gap-2">
-                {activeView !== 'main' && (
+                {activeView !== 'main' ? (
                     <button
                         onClick={() => setActiveView('main')}
-                        className="p-2 -ml-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                        className="p-2 -ml-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5 font-medium text-sm"
                         aria-label="Retour"
                     >
-                        <ArrowLeftIcon />
+                        <ArrowLeftIcon className="w-5 h-5" />
+                        <span className="font-bold text-slate-800 dark:text-slate-100 text-base">{viewTitles[activeView]}</span>
                     </button>
+                ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">Réglages</span>
+                    </div>
                 )}
-                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">{viewTitles[activeView]}</h2>
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              className="p-2 -mr-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               aria-label="Fermer les réglages"
             >
-              <CloseIcon />
+              <CloseIcon className="w-5 h-5" />
             </button>
           </div>
         </header>
-        <main className="p-4 md:p-8 overflow-y-auto h-[calc(100%-64px)] container mx-auto pb-24">
+
+        {/* Scrollable Content */}
+        <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 max-w-2xl mx-auto w-full pb-32">
             {activeView === 'main' && (
-                 <div className="bg-white dark:bg-slate-800 p-2 sm:p-4 rounded-2xl shadow-lg">
-                    <div className="space-y-2">
-                        <SettingsMenuItem
-                            icon={<PaintBrushIcon />}
-                            title="Apparence"
-                            description="Thème et couleurs d'ambiance"
-                            onClick={() => setActiveView('appearance')}
-                        />
-                        <SettingsMenuItem
-                            icon={<BellIcon />}
-                            title="Rappels"
-                            description="Gérer les dépenses mensuelles récurrentes"
-                            onClick={() => setActiveView('reminders')}
-                        />
-                        <SettingsMenuItem
-                            icon={<BellIcon />}
-                            title="Notifications Push"
-                            description="Gérer les alertes sur cet appareil"
-                            onClick={() => setActiveView('notifications')}
-                        />
-                        <SettingsMenuItem
-                            icon={<WrenchScrewdriverIcon />}
-                            title="Gestion"
-                            description="Utilisateurs, données et catégories"
-                            onClick={() => setActiveView('management')}
-                        />
+              <div className="space-y-6 animate-fade-in">
+                {/* Title & Subtitle */}
+                <div className="space-y-1">
+                  <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                    Réglages
+                  </h1>
+                  <p className="text-slate-500 dark:text-slate-400 font-medium text-sm sm:text-base">
+                    Personnalisez votre expérience DuoBudget
+                  </p>
+                </div>
+
+                {/* Top Card: Couple Profile / Duo Card */}
+                <div 
+                  onClick={() => setActiveView('users')}
+                  className="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 flex items-center justify-between transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/90 cursor-pointer group"
+                >
+                  <div className="flex items-center gap-4">
+                    {/* Overlapping Avatars with heart */}
+                    <div className="relative flex items-center">
+                      <div className="w-12 h-12 rounded-full bg-[#fde8ec] dark:bg-rose-950/60 text-[#e11d48] dark:text-rose-300 font-extrabold text-lg flex items-center justify-center border-2 border-white dark:border-slate-800 shadow-xs z-0">
+                        S
+                      </div>
+                      <div className="w-6 h-6 rounded-full bg-white dark:bg-slate-800 border border-rose-100 dark:border-rose-900/60 shadow-xs flex items-center justify-center -mx-2.5 z-20 text-xs">
+                        💖
+                      </div>
+                      <div className="w-12 h-12 rounded-full bg-[#e0f2fe] dark:bg-sky-950/60 text-[#0284c7] dark:text-sky-300 font-extrabold text-lg flex items-center justify-center border-2 border-white dark:border-slate-800 shadow-xs z-10">
+                        V
+                      </div>
                     </div>
-                    <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                         <button
-                            onClick={() => setIsLogoutConfirmOpen(true)}
-                            className="w-full flex items-center p-4 rounded-xl transition-colors hover:bg-red-50 dark:hover:bg-red-500/10 focus:outline-none focus:ring-2 focus:ring-red-500"
-                        >
-                            <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">
-                                <LogoutIcon />
-                            </div>
-                            <div className="flex-1 text-left ml-4">
-                            <p className="font-semibold text-red-700 dark:text-red-400">Déconnexion</p>
-                            <p className="text-sm text-red-600 dark:text-red-500">Se déconnecter de votre session</p>
-                            </div>
-                        </button>
+
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 dark:text-slate-100 text-base sm:text-lg">
+                        Sophie & Vincent
+                      </h3>
+                      <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 font-medium">
+                        Compte DuoBudget
+                      </p>
                     </div>
-                 </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {/* Decorative floating heart with subtle curve */}
+                    <div className="hidden sm:flex items-center gap-1.5 opacity-60">
+                      <svg className="w-12 h-6 text-rose-200 dark:text-rose-900/40 stroke-current fill-none stroke-[2]" viewBox="0 0 60 24">
+                        <path d="M0 16 Q 15 24 30 14 T 60 16" />
+                      </svg>
+                      <span className="text-base text-rose-300">💖</span>
+                    </div>
+                    <div className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
+                      <ChevronRightIcon className="w-5 h-5" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section: Personnalisation */}
+                <div className="space-y-2">
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+                    Personnalisation
+                  </h4>
+                  <div className="bg-white dark:bg-slate-800 rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden">
+                    <SettingsItemRow
+                      iconBg="bg-[#eff6ff] dark:bg-blue-950/60"
+                      iconColor="text-[#3b82f6] dark:text-blue-400"
+                      icon={
+                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      }
+                      title="Apparence"
+                      description="Thème et couleurs d'ambiance"
+                      value={themeLabel}
+                      onClick={() => setActiveView('appearance')}
+                    />
+                  </div>
+                </div>
+
+                {/* Section: Notifications */}
+                <div className="space-y-2">
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+                    Notifications
+                  </h4>
+                  <div className="bg-white dark:bg-slate-800 rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
+                    <SettingsItemRow
+                      iconBg="bg-[#ecfdf5] dark:bg-emerald-950/60"
+                      iconColor="text-[#10b981] dark:text-emerald-400"
+                      icon={
+                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          <circle cx="16" cy="16" r="3" fill="currentColor" className="fill-[#10b981]/20 stroke-[#10b981] stroke-[1.5]" />
+                        </svg>
+                      }
+                      title="Rappels"
+                      description="Gérer les dépenses mensuelles récurrentes"
+                      value={`${activeRemindersCount} actifs`}
+                      onClick={() => setActiveView('reminders')}
+                    />
+                    <SettingsItemRow
+                      iconBg="bg-[#fff1f2] dark:bg-rose-950/60"
+                      iconColor="text-[#f43f5e] dark:text-rose-400"
+                      icon={
+                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                      }
+                      title="Notifications Push"
+                      description="Recevoir les alertes sur cet appareil"
+                      value={hasPushEnabled ? 'Activées' : 'Gérer'}
+                      onClick={() => setActiveView('notifications')}
+                    />
+                  </div>
+                </div>
+
+                {/* Section: Gestion */}
+                <div className="space-y-2">
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+                    Gestion
+                  </h4>
+                  <div className="bg-white dark:bg-slate-800 rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
+                    <SettingsItemRow
+                      iconBg="bg-[#eff6ff] dark:bg-blue-950/60"
+                      iconColor="text-[#3b82f6] dark:text-blue-400"
+                      icon={
+                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      }
+                      title="Utilisateurs"
+                      description="Gérer les membres du compte"
+                      onClick={() => setActiveView('users')}
+                    />
+                    <SettingsItemRow
+                      iconBg="bg-[#ecfdf5] dark:bg-emerald-950/60"
+                      iconColor="text-[#10b981] dark:text-emerald-400"
+                      icon={
+                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                      }
+                      title="Catégories"
+                      description="Personnaliser vos catégories de dépenses"
+                      onClick={() => setActiveView('categories')}
+                    />
+                    <SettingsItemRow
+                      iconBg="bg-[#f5f3ff] dark:bg-purple-950/60"
+                      iconColor="text-[#8b5cf6] dark:text-purple-400"
+                      icon={
+                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z" />
+                        </svg>
+                      }
+                      title="Données & sauvegarde"
+                      description="Sauvegarder et restaurer vos données"
+                      onClick={() => setActiveView('data')}
+                    />
+                  </div>
+                </div>
+
+                {/* Section: Compte */}
+                <div className="space-y-2">
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+                    Compte
+                  </h4>
+                  <div className="bg-white dark:bg-slate-800 rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden">
+                    <SettingsItemRow
+                      iconBg="bg-[#fff1f2] dark:bg-rose-950/60"
+                      iconColor="text-[#f43f5e] dark:text-rose-400"
+                      icon={
+                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                      }
+                      title="Déconnexion"
+                      titleColor="text-[#e11d48] dark:text-rose-400"
+                      description="Se déconnecter de votre session"
+                      onClick={() => setIsLogoutConfirmOpen(true)}
+                    />
+                  </div>
+                </div>
+              </div>
             )}
+
             {activeView === 'appearance' && (
-                <div className="space-y-8 animate-fade-in">
-                    <section className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg space-y-4">
+                <div className="space-y-6 animate-fade-in">
+                    <section className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-xs border border-slate-100 dark:border-slate-700/60 space-y-4">
                         <div className="flex justify-between items-center">
-                            <h3 className="font-bold text-slate-800 dark:text-slate-100">Mode de luminosité</h3>
+                            <div>
+                              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base sm:text-lg">Mode de luminosité</h3>
+                              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Thème clair, sombre ou automatique</p>
+                            </div>
                             <ThemeSelector />
                         </div>
                     </section>
 
-                    <section className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg space-y-4">
+                    <section className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-xs border border-slate-100 dark:border-slate-700/60 space-y-4">
                         <div>
-                            <h3 className="font-bold text-slate-800 dark:text-slate-100">Ambiance de l'application</h3>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Choisissez le fond et la couleur d'accentuation</p>
+                            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base sm:text-lg">Ambiance de l'application</h3>
+                            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Choisissez le fond et la couleur d'accentuation</p>
                         </div>
                         <VibeSelector />
                     </section>
                 </div>
             )}
+
             {activeView === 'reminders' && (
-                <div className="animate-fade-in">
+                <div className="space-y-5 animate-fade-in">
+                    <div className="space-y-0.5">
+                      <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                        Gestion des rappels
+                      </h1>
+                      <p className="text-slate-500 dark:text-slate-400 font-medium text-xs sm:text-sm">
+                        Créez et gérez vos dépenses récurrentes
+                      </p>
+                    </div>
                     <RemindersTab
                         reminders={reminders}
                         onAddReminder={onAddReminder}
@@ -241,9 +419,25 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                     />
                 </div>
             )}
-            {activeView === 'management' && (
-                <div className="animate-fade-in">
+
+            {activeView === 'notifications' && (
+                <div className="space-y-5 animate-fade-in">
+                    <div className="space-y-0.5">
+                      <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                        Notifications
+                      </h1>
+                      <p className="text-slate-500 dark:text-slate-400 font-medium text-xs sm:text-sm">
+                        Gérez vos alertes et préférences sur cet appareil
+                      </p>
+                    </div>
+                    <NotificationsTab loggedInUser={props.loggedInUser} />
+                </div>
+            )}
+
+            {(activeView === 'users' || activeView === 'categories' || activeView === 'data' || activeView === 'management') && (
+                <div className="animate-fade-in bg-white dark:bg-slate-800 p-5 sm:p-7 rounded-3xl shadow-xs border border-slate-100 dark:border-slate-700/60">
                     <ManagementTab 
+                        focusSection={activeView === 'users' ? 'users' : activeView === 'categories' ? 'categories' : activeView === 'data' ? 'data' : 'all'}
                         expenses={props.expenses}
                         profiles={props.profiles}
                         loggedInUser={props.loggedInUser}
@@ -264,9 +458,6 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         loginHistory={props.loginHistory}
                     />
                 </div>
-            )}
-            {activeView === 'notifications' && (
-                <NotificationsTab loggedInUser={props.loggedInUser} />
             )}
         </main>
 

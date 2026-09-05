@@ -1,7 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase/client';
 import { type User } from '../types';
-import BellIcon from './icons/BellIcon';
+import ChevronRightIcon from './icons/ChevronRightIcon';
+import {
+    FuelIcon,
+    HeatingIcon,
+    GroceriesIcon,
+    RestaurantIcon,
+    CarRepairsIcon,
+    MiscIcon,
+    GiftIcon,
+    ClothingIcon,
+    PalmTreeIcon,
+    PillIcon,
+    MandatoryIcon
+} from './icons/CategoryIcons';
 
 const VAPID_PUBLIC_KEY = 'BN0Z3nqz3OLK1q2RuvukfLMAffOncCrBsvMw7GncY_9EK8u6-W0OzfIsRElejTlC-TM2uNDXCZkicnJX47pNGdc';
 
@@ -24,6 +37,74 @@ interface NotificationsTabProps {
     loggedInUser: User;
 }
 
+// Category visual mapping for the filter chips
+const getCategoryIcon = (category: string) => {
+    const normalized = category.toLowerCase().trim();
+
+    // 1. Complément alimentaire / Santé / Pharmacie (check first to avoid matching "alimentaire" as groceries)
+    if (normalized.includes('complément') || normalized.includes('complement') || normalized.includes('pill') || normalized.includes('santé') || normalized.includes('pharmacie')) {
+        return <PillIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
+    }
+
+    // 2. Dépenses récurrentes / Dép. recurentes / Obligatoires / Loyer
+    if (normalized.includes('recurent') || normalized.includes('récurrent') || normalized.includes('obligatoire') || normalized.includes('dép.') || normalized.includes('dep.') || normalized.includes('loyer')) {
+        return (
+            <svg className="w-4 h-4 text-rose-500 dark:text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+        );
+    }
+
+    // 3. Carburant / Essence / Diesel
+    if (normalized.includes('carburant') || normalized.includes('essence') || normalized.includes('diesel') || normalized.includes('gasoil')) {
+        return <FuelIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
+    }
+
+    // 4. Chauffage / Énergie / Gaz / Bois
+    if (normalized.includes('chauffage') || normalized.includes('bois') || normalized.includes('gaz') || normalized.includes('pellet') || normalized.includes('fioul')) {
+        return <HeatingIcon className="w-4 h-4 text-amber-500 dark:text-amber-400" />;
+    }
+
+    // 5. Courses / Supermarché
+    if (normalized.includes('course') || normalized.includes('supermarché') || normalized.includes('supermarche') || normalized.includes('hyper')) {
+        return <GroceriesIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />;
+    }
+
+    // 6. Restaurant / Resto / Bar
+    if (normalized.includes('restaurant') || normalized.includes('resto') || normalized.includes('bar') || normalized.includes('brasserie')) {
+        return <RestaurantIcon className="w-4 h-4 text-teal-600 dark:text-teal-400" />;
+    }
+
+    // 7. Vacances / Voyage
+    if (normalized.includes('vacance') || normalized.includes('voyage') || normalized.includes('hotel') || normalized.includes('hôtel')) {
+        return <PalmTreeIcon className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />;
+    }
+
+    // 8. Réparation voitures / Auto / Garage
+    if (normalized.includes('voiture') || normalized.includes('auto') || normalized.includes('garage') || normalized.includes('réparation') || normalized.includes('reparation')) {
+        return <CarRepairsIcon className="w-4 h-4 text-sky-600 dark:text-sky-400" />;
+    }
+
+    // 9. Vêtements / Habit / Shopping
+    if (normalized.includes('vêtement') || normalized.includes('vetement') || normalized.includes('habit') || normalized.includes('mode') || normalized.includes('fringue')) {
+        return <ClothingIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />;
+    }
+
+    // 10. Cadeau / Anniversaire / Fête
+    if (normalized.includes('cadeau') || normalized.includes('anniversaire') || normalized.includes('fête') || normalized.includes('fete')) {
+        return <GiftIcon className="w-4 h-4 text-pink-500 dark:text-pink-400" />;
+    }
+
+    // 11. Divers / Autre
+    return <MiscIcon className="w-4 h-4 text-blue-500 dark:text-blue-400" />;
+};
+
+// Short label helper matching mockup (e.g. "Dépenses obligatoires" -> "Dép. récurrentes")
+const formatCategoryLabel = (cat: string) => {
+    if (cat === "Dépenses obligatoires") return "Dép. récurrentes";
+    return cat;
+};
+
 const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => {
     const [permission, setPermission] = useState<NotificationPermission>('default');
     const [isSubscribed, setIsSubscribed] = useState(false);
@@ -42,6 +123,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
 
     const [isSyncingPrefs, setIsSyncingPrefs] = useState(false);
     const [isActionLoading, setIsActionLoading] = useState(false);
+    const [testAlertSent, setTestAlertSent] = useState(false);
 
     useEffect(() => {
         if ('Notification' in window) {
@@ -57,12 +139,12 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
             "Chauffage",
             "Courses",
             "Restaurant",
+            "Divers",
             "Vacances",
             "Réparation voitures",
             "Vêtements",
             "Cadeau",
-            "Complément alimentaire",
-            "Divers",
+            "Complément alimentaire"
         ];
         setAvailableCategories(cats);
 
@@ -81,7 +163,6 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                 if (typeof parsed.privacyMode === 'boolean') setPrefPrivacyMode(parsed.privacyMode);
                 
                 if (parsed.categories) {
-                    // Filtrer pour éliminer d'anciennes catégories si supprimées
                     setPrefCategories(parsed.categories.filter((c: string) => cats.includes(c)));
                 } else {
                     setPrefCategories(cats);
@@ -125,7 +206,6 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                             subscription: subscriptionJSON
                         });
                     } else {
-                        // Si l'abonnement existe déjà sur Supabase, on lit ses préférences pour mettre le front à jour
                         const subObj = typeof data[0].subscription === 'string'
                             ? JSON.parse(data[0].subscription)
                             : data[0].subscription;
@@ -178,16 +258,11 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                 const subscriptionJSON = subscription.toJSON() as any;
                 subscriptionJSON.preferences = updatedPrefs;
                 
-                // Mettre à jour dans Supabase
                 await (supabase.from('push_subscriptions') as any).delete().eq('user_id', userId);
-                const { error } = await (supabase.from('push_subscriptions') as any).insert({
+                await (supabase.from('push_subscriptions') as any).insert({
                     user_id: userId,
                     subscription: subscriptionJSON
                 });
-                
-                if (error) {
-                    console.error("Erreur de synchro des préférences DB:", error);
-                }
             }
         } catch (e) {
             console.error("Erreur de synchro préf:", e);
@@ -219,7 +294,6 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
             privacyMode: newFields.privacyMode !== undefined ? newFields.privacyMode : prefPrivacyMode
         };
 
-        // Update local React states
         if (newFields.authors !== undefined) setPrefAuthors(newFields.authors);
         if (newFields.minAmount !== undefined) setPrefMinAmount(newFields.minAmount);
         if (newFields.categories !== undefined) setPrefCategories(newFields.categories);
@@ -230,10 +304,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
         if (newFields.quietHoursEnd !== undefined) setPrefQuietHoursEnd(newFields.quietHoursEnd);
         if (newFields.privacyMode !== undefined) setPrefPrivacyMode(newFields.privacyMode);
 
-        // Persist local storage
         localStorage.setItem('notificationPreferences', JSON.stringify(fullPrefs));
-
-        // Sync to cloud
         syncPrefsToSupabase(fullPrefs);
     };
 
@@ -256,11 +327,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
     };
 
     const handleSelectAllCategories = () => {
-        const catsToSet = availableCategories.length > 0 ? availableCategories : [
-            "Dépenses obligatoires", "Carburant", "Chauffage", "Courses", "Restaurant",
-            "Vacances", "Réparation voitures", "Vêtements", "Cadeau", "Complément alimentaire", "Divers"
-        ];
-        handleUpdatePreference({ categories: catsToSet });
+        handleUpdatePreference({ categories: availableCategories });
     };
 
     const handleSelectNoneCategories = () => {
@@ -281,7 +348,6 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                 applicationServerKey
             });
 
-            // Sauvegarder dans Supabase (on efface l'ancien s'il existe pour éviter le doublon d'ID)
             const userId = (loggedInUser as string) === 'Duo' ? 'Commun' : loggedInUser;
             await (supabase.from('push_subscriptions') as any).delete().eq('user_id', userId);
             
@@ -298,14 +364,11 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                 privacyMode: prefPrivacyMode
             };
 
-            const { error: insertError } = await (supabase.from('push_subscriptions') as any).insert({
+            await (supabase.from('push_subscriptions') as any).insert({
                 user_id: userId,
                 subscription: subJSON
             });
 
-            if (insertError) {
-                console.error("Erreur lors de l'enregistrement de l'abonnement :", insertError);
-            }
             setIsSubscribed(true);
             localStorage.setItem('push_notifications_enabled', 'true');
             localStorage.removeItem('notif_reminder_snoozed_until');
@@ -365,6 +428,9 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
     };
 
     const sendTestNotification = async () => {
+        setTestAlertSent(true);
+        setTimeout(() => setTestAlertSent(false), 3000);
+
         if (permission === 'granted') {
             try {
                 const registration = await navigator.serviceWorker.ready;
@@ -380,331 +446,515 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                     icon: "/logo.svg"
                 });
             }
+        } else {
+            alert("Veuillez d'abord activer les notifications pour recevoir une alerte test.");
         }
     };
 
-    return (
-        <div className="space-y-6 animate-fade-in text-slate-700 dark:text-slate-200">
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
-                <h3 className="text-xl font-bold mb-4">Notifications Push</h3>
-                <p className="text-slate-600 dark:text-slate-300 mb-6">
-                    Pour recevoir des rappels sur votre appareil en temps réel, vous devez autoriser les notifications. Sur mobile, vous devez d'abord installer l'application sur votre écran d'accueil.
-                </p>
+    const isPushActive = isSubscribed && permission === 'granted';
 
-                <div className="space-y-4">
-                    <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border border-slate-100 dark:border-slate-700/60">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                            <div className="flex items-center gap-3.5">
-                                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
-                                    permission === 'denied'
-                                        ? 'bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400'
-                                        : isSubscribed && permission === 'granted'
-                                            ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400'
-                                            : 'bg-slate-200 dark:bg-slate-600 text-slate-500 dark:text-slate-400'
-                                }`}>
-                                    <BellIcon className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <p className="font-bold text-slate-800 dark:text-slate-100 text-base">Statut des notifications</p>
-                                        {permission === 'denied' ? (
-                                            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
-                                                Bloquées
-                                            </span>
-                                        ) : isSubscribed && permission === 'granted' ? (
-                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                                Activées
-                                            </span>
-                                        ) : (
-                                            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-200 text-slate-700 dark:bg-slate-600 dark:text-slate-300">
-                                                Désactivées
-                                            </span>
+    return (
+        <div className="space-y-6 animate-fade-in text-slate-800 dark:text-slate-100">
+            {/* CARD 1: NOTIFICATIONS PUSH */}
+            <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 shadow-xs border border-slate-100/90 dark:border-slate-700/60 space-y-5">
+                {/* Header */}
+                <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-[#dcfce7] dark:bg-emerald-950/60 text-[#16a34a] dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                    </div>
+                    <div className="min-w-0">
+                        <h2 className="font-extrabold text-slate-900 dark:text-white text-lg sm:text-xl leading-tight">
+                            Notifications Push
+                        </h2>
+                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                            Recevez vos rappels et alertes en temps réel sur cet appareil. Sur mobile, vous devez d'abord installer l'application sur votre écran d'accueil.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Sub-card: Statut des notifications */}
+                <div className="p-4 sm:p-4.5 bg-[#f8fafc] dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-start sm:items-center gap-3.5">
+                        <div className="w-11 h-11 rounded-2xl bg-[#dcfce7] dark:bg-emerald-950/70 text-[#16a34a] dark:text-emerald-400 flex items-center justify-center shrink-0">
+                            <svg className="w-5 h-5 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-extrabold text-slate-900 dark:text-slate-100 text-sm sm:text-base">
+                                    Statut des notifications
+                                </span>
+                                {permission === 'denied' ? (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">
+                                        Bloquées
+                                    </span>
+                                ) : isPushActive ? (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#dcfce7] text-[#15803d] dark:bg-emerald-950/60 dark:text-emerald-300">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a]"></span>
+                                        Activées
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                                        Désactivées
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                {isPushActive 
+                                    ? "Vous recevez les alertes de dépenses et synchronisations sur cet appareil."
+                                    : "Activez pour être alerté en direct des dépenses de votre duo."}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="self-end sm:self-center shrink-0">
+                        {permission === 'denied' ? (
+                            <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50">
+                                Accès refusé
+                            </span>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={handleToggleNotifications}
+                                disabled={isActionLoading}
+                                className={`px-4 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-2xs active:scale-95 cursor-pointer disabled:opacity-50 ${
+                                    isPushActive
+                                        ? 'bg-[#fff1f2] hover:bg-rose-100/80 text-[#e11d48] border border-rose-200/80 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 dark:text-rose-300 dark:border-rose-900/40'
+                                        : 'bg-[#0284c7] hover:bg-sky-600 text-white'
+                                }`}
+                            >
+                                {isActionLoading ? 'Chargement...' : isPushActive ? 'Désactiver' : 'Activer'}
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Row: Tester une alerte */}
+                <button
+                    type="button"
+                    onClick={sendTestNotification}
+                    className="w-full bg-[#f0f7ff] dark:bg-blue-950/30 border border-[#dbeafe] dark:border-blue-900/40 rounded-2xl p-3 sm:p-3.5 px-4 flex items-center justify-between hover:bg-blue-100/50 dark:hover:bg-blue-900/40 transition-all cursor-pointer group"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-7 h-7 rounded-full bg-[#2563eb] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                            <svg className="w-3.5 h-3.5 fill-current ml-0.5" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z" />
+                            </svg>
+                        </div>
+                        <span className="font-bold text-sm text-[#2563eb] dark:text-blue-400">
+                            {testAlertSent ? "Alerte de test envoyée !" : "Tester une alerte"}
+                        </span>
+                    </div>
+                    <div className="text-[#2563eb] dark:text-blue-400 group-hover:translate-x-0.5 transition-transform">
+                        <ChevronRightIcon className="w-4.5 h-4.5" />
+                    </div>
+                </button>
+            </div>
+
+            {/* CARD 2: FILTRES & MOTIFS DE NOTIFICATIONS */}
+            <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 shadow-xs border border-slate-100/90 dark:border-slate-700/60 space-y-6">
+                {/* Section Header */}
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-[#e0f2fe] dark:bg-sky-950/60 text-[#0284c7] dark:text-sky-400 flex items-center justify-center shrink-0">
+                            <svg className="w-5 h-5 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                            </svg>
+                        </div>
+                        <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg">
+                            Filtres & motifs de notifications
+                        </h3>
+                    </div>
+
+                    {/* Cloud status pill */}
+                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#ecfdf5] text-[#059669] dark:bg-emerald-950/40 dark:text-emerald-400 border border-[#a7f3d0] dark:border-emerald-900/50">
+                        {isSyncingPrefs ? (
+                            <>
+                                <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>Synchronisation...</span>
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-3.5 h-3.5 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z" />
+                                </svg>
+                                <span>Enregistré sur le cloud</span>
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                {/* Subsection 1: Auteurs à suivre */}
+                <div className="space-y-2.5">
+                    <div>
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                            Auteurs à suivre
+                        </h4>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">
+                            Choisissez qui peut déclencher des notifications.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5">
+                        {/* Sophie */}
+                        {(() => {
+                            const isChecked = prefAuthors.includes('Sophie');
+                            return (
+                                <button
+                                    type="button"
+                                    onClick={() => handleAuthorToggle('Sophie')}
+                                    className={`py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl border flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 transition-all cursor-pointer font-bold text-xs sm:text-sm min-w-0 ${
+                                        isChecked
+                                            ? 'bg-[#e0f2fe] dark:bg-sky-950/60 border-[#bae6fd] dark:border-sky-800 text-slate-900 dark:text-white shadow-2xs'
+                                            : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200/80 dark:border-slate-700 text-slate-400 dark:text-slate-500'
+                                    }`}
+                                >
+                                    <div className={`w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-[6px] flex items-center justify-center shrink-0 transition-colors ${
+                                        isChecked
+                                            ? 'bg-[#0284c7] text-white'
+                                            : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
+                                    }`}>
+                                        {isChecked && (
+                                            <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                            </svg>
                                         )}
                                     </div>
-                                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                                        {permission === 'denied'
-                                            ? "Bloquées par votre navigateur. Autorisez les notifications dans les paramètres de votre navigateur pour continuer."
-                                            : isSubscribed && permission === 'granted'
-                                                ? "Vous recevez les alertes de dépenses et synchronisations sur cet appareil."
-                                                : "Activez pour être alerté en direct des dépenses de votre duo."}
+                                    <span className="text-sm sm:text-base shrink-0">👤</span>
+                                    <span className="truncate">Sophie</span>
+                                </button>
+                            );
+                        })()}
+
+                        {/* Vincent */}
+                        {(() => {
+                            const isChecked = prefAuthors.includes('Vincent');
+                            return (
+                                <button
+                                    type="button"
+                                    onClick={() => handleAuthorToggle('Vincent')}
+                                    className={`py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl border flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 transition-all cursor-pointer font-bold text-xs sm:text-sm min-w-0 ${
+                                        isChecked
+                                            ? 'bg-[#e0f2fe] dark:bg-sky-950/60 border-[#bae6fd] dark:border-sky-800 text-slate-900 dark:text-white shadow-2xs'
+                                            : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200/80 dark:border-slate-700 text-slate-400 dark:text-slate-500'
+                                    }`}
+                                >
+                                    <div className={`w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-[6px] flex items-center justify-center shrink-0 transition-colors ${
+                                        isChecked
+                                            ? 'bg-[#0284c7] text-white'
+                                            : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
+                                    }`}>
+                                        {isChecked && (
+                                            <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        )}
+                                    </div>
+                                    <span className="text-sm sm:text-base shrink-0">👤</span>
+                                    <span className="truncate">Vincent</span>
+                                </button>
+                            );
+                        })()}
+
+                        {/* Dépenses communes */}
+                        {(() => {
+                            const isChecked = prefAuthors.includes('Commun');
+                            return (
+                                <button
+                                    type="button"
+                                    onClick={() => handleAuthorToggle('Commun')}
+                                    className={`py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl border flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 transition-all cursor-pointer font-bold text-xs sm:text-sm min-w-0 ${
+                                        isChecked
+                                            ? 'bg-[#e0f2fe] dark:bg-sky-950/60 border-[#bae6fd] dark:border-sky-800 text-slate-900 dark:text-white shadow-2xs'
+                                            : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200/80 dark:border-slate-700 text-slate-400 dark:text-slate-500'
+                                    }`}
+                                >
+                                    <div className={`w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-[6px] flex items-center justify-center shrink-0 transition-colors ${
+                                        isChecked
+                                            ? 'bg-[#0284c7] text-white'
+                                            : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
+                                    }`}>
+                                        {isChecked && (
+                                            <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        )}
+                                    </div>
+                                    <span className="text-sm sm:text-base shrink-0">👥</span>
+                                    <span className="truncate">Communes</span>
+                                </button>
+                            );
+                        })()}
+                    </div>
+                </div>
+
+                {/* Subsection 2: Montant minimum */}
+                <div className="space-y-2">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                        Alerter uniquement si le montant est supérieur ou égal à :
+                    </h4>
+                    <div className="flex items-center gap-4 pt-1">
+                        <div className="flex-1 relative flex items-center">
+                            <input
+                                type="range"
+                                min="0"
+                                max="500"
+                                step="5"
+                                value={prefMinAmount}
+                                onChange={(e) => handleMinAmountChange(Number(e.target.value))}
+                                className="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#0284c7]"
+                            />
+                        </div>
+                        <div className="px-4 py-1.5 bg-[#f8fafc] dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700 rounded-xl font-extrabold text-sm text-slate-900 dark:text-white min-w-[70px] text-center shadow-2xs">
+                            {prefMinAmount} €
+                        </div>
+                    </div>
+                </div>
+
+                {/* Subsection 3: Catégories surveillées */}
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                            Catégories surveillées ({prefCategories.length}/{availableCategories.length})
+                        </h4>
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={handleSelectAllCategories}
+                                className="px-3 py-1 rounded-lg text-xs font-semibold bg-[#eff6ff] text-[#2563eb] hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 transition-colors cursor-pointer"
+                            >
+                                Tout cocher
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleSelectNoneCategories}
+                                className="px-3 py-1 rounded-lg text-xs font-semibold bg-[#eff6ff] text-[#2563eb] hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 transition-colors cursor-pointer"
+                            >
+                                Tout décocher
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
+                        {availableCategories.map((category) => {
+                            const isChecked = prefCategories.includes(category);
+                            return (
+                                <button
+                                    key={category}
+                                    type="button"
+                                    onClick={() => handleCategoryToggle(category)}
+                                    className={`p-2.5 px-3 rounded-xl border flex items-center gap-2 transition-all cursor-pointer text-left font-bold text-xs sm:text-sm min-w-0 ${
+                                        isChecked
+                                            ? 'bg-[#e0f2fe] dark:bg-sky-950/60 border-[#bae6fd] dark:border-sky-800 text-slate-900 dark:text-white shadow-2xs'
+                                            : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200/80 dark:border-slate-700 text-slate-400 dark:text-slate-500'
+                                    }`}
+                                >
+                                    <div className={`w-5 h-5 rounded-[6px] flex items-center justify-center shrink-0 transition-colors ${
+                                        isChecked
+                                            ? 'bg-[#0284c7] text-white'
+                                            : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
+                                    }`}>
+                                        {isChecked && (
+                                            <svg className="w-3.5 h-3.5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        )}
+                                    </div>
+                                    <span className="shrink-0">
+                                        {getCategoryIcon(category)}
+                                    </span>
+                                    <span className="truncate flex-1">
+                                        {formatCategoryLabel(category)}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Subsection 4: Types d'activités à suivre */}
+                <div className="space-y-3 pt-2">
+                    <h4 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                        Types d'activités à suivre
+                    </h4>
+
+                    <div className="space-y-3">
+                        {/* 1. Cagnotte & Commun */}
+                        <div 
+                            onClick={() => handleUpdatePreference({ includeMoneyPot: !prefIncludeMoneyPot })}
+                            className="p-4 bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-100/90 dark:border-slate-700/60 flex items-center gap-3.5 cursor-pointer hover:bg-slate-50/70 dark:hover:bg-slate-800 transition-colors group shadow-2xs"
+                        >
+                            <div className={`w-5 h-5 rounded-[6px] flex items-center justify-center shrink-0 transition-colors ${
+                                prefIncludeMoneyPot
+                                    ? 'bg-[#0284c7] text-white'
+                                    : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
+                            }`}>
+                                {prefIncludeMoneyPot && (
+                                    <svg className="w-3.5 h-3.5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                )}
+                            </div>
+                            <div className="w-11 h-11 rounded-full bg-[#dcfce7] dark:bg-emerald-950/60 text-[#10b981] dark:text-emerald-400 flex items-center justify-center shrink-0 font-bold text-lg">
+                                $
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="font-bold text-base text-slate-900 dark:text-slate-100 leading-snug">
+                                    Cagnotte & Commun
+                                </p>
+                                <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                                    Recevoir les mouvements de fonds ou versements de la cagnotte
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* 2. Suppressions de dépenses */}
+                        <div 
+                            onClick={() => handleUpdatePreference({ includeDeletes: !prefIncludeDeletes })}
+                            className="p-4 bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-100/90 dark:border-slate-700/60 flex items-center gap-3.5 cursor-pointer hover:bg-slate-50/70 dark:hover:bg-slate-800 transition-colors group shadow-2xs"
+                        >
+                            <div className={`w-5 h-5 rounded-[6px] flex items-center justify-center shrink-0 transition-colors ${
+                                prefIncludeDeletes
+                                    ? 'bg-[#0284c7] text-white'
+                                    : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
+                            }`}>
+                                {prefIncludeDeletes && (
+                                    <svg className="w-3.5 h-3.5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                )}
+                            </div>
+                            <div className="w-11 h-11 rounded-full bg-[#ffe4e6] dark:bg-rose-950/60 text-[#e11d48] dark:text-rose-400 flex items-center justify-center shrink-0">
+                                <svg className="w-5 h-5 stroke-[2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="font-bold text-base text-slate-900 dark:text-slate-100 leading-snug">
+                                    Suppressions de dépenses
+                                </p>
+                                <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                                    Recevoir une alerte quand une dépense est retirée ou annulée
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* 3. Mode Ne Pas Déranger */}
+                        <div className="p-4 bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-100/90 dark:border-slate-700/60 space-y-3 shadow-2xs">
+                            <div className="flex items-center justify-between gap-3.5">
+                                <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                                    <div className="w-11 h-11 rounded-full bg-[#f3e8ff] dark:bg-purple-950/60 text-[#9333ea] dark:text-purple-400 flex items-center justify-center shrink-0">
+                                        <svg className="w-5 h-5 stroke-[2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                        </svg>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="font-bold text-base text-slate-900 dark:text-slate-100 leading-snug">
+                                            Mode Ne Pas Déranger
+                                        </p>
+                                        <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                                            Sommeil silencieux
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Toggle switch */}
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={prefQuietHoursActive}
+                                    onClick={() => handleUpdatePreference({ quietHoursActive: !prefQuietHoursActive })}
+                                    className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                        prefQuietHoursActive ? 'bg-[#0284c7]' : 'bg-slate-200 dark:bg-slate-700'
+                                    }`}
+                                >
+                                    <span
+                                        aria-hidden="true"
+                                        className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                                            prefQuietHoursActive ? 'translate-x-5' : 'translate-x-0'
+                                        }`}
+                                    />
+                                </button>
+                            </div>
+
+                            {prefQuietHoursActive && (
+                                <div className="pt-2.5 border-t border-slate-100 dark:border-slate-700/60 flex flex-wrap items-center gap-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                                    <span>Silencieux de</span>
+                                    <input
+                                        type="time"
+                                        value={prefQuietHoursStart}
+                                        onChange={(e) => handleUpdatePreference({ quietHoursStart: e.target.value })}
+                                        className="px-2.5 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-xs"
+                                    />
+                                    <span>jusqu'à</span>
+                                    <input
+                                        type="time"
+                                        value={prefQuietHoursEnd}
+                                        onChange={(e) => handleUpdatePreference({ quietHoursEnd: e.target.value })}
+                                        className="px-2.5 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-xs"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 4. Mode Confidentiel */}
+                        <div className="p-4 bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-100/90 dark:border-slate-700/60 flex items-center justify-between gap-3.5 shadow-2xs">
+                            <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                                <div className="w-11 h-11 rounded-full bg-[#e0f2fe] dark:bg-sky-950/60 text-[#0284c7] dark:text-sky-400 flex items-center justify-center shrink-0">
+                                    <svg className="w-5 h-5 stroke-[2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="font-bold text-base text-slate-900 dark:text-slate-100 leading-snug">
+                                        Mode Confidentiel
+                                    </p>
+                                    <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                                        Masquer l'auteur et le montant sur l'écran verrouillé
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 self-end sm:self-center">
-                                {permission === 'denied' ? (
-                                    <span className="text-xs font-medium text-rose-600 dark:text-rose-400 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50">
-                                        Accès refusé
-                                    </span>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        onClick={handleToggleNotifications}
-                                        disabled={isActionLoading}
-                                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-50 ${
-                                            isSubscribed && permission === 'granted'
-                                                ? 'bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 dark:text-rose-300 border border-rose-200/60 dark:border-rose-900/40'
-                                                : 'bg-brand-500 hover:bg-brand-600 text-white'
-                                        }`}
-                                    >
-                                        {isActionLoading ? (
-                                            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                        ) : isSubscribed && permission === 'granted' ? (
-                                            <span>Désactiver</span>
-                                        ) : (
-                                            <span>Activer</span>
-                                        )}
-                                    </button>
-                                )}
-                            </div>
+                            {/* Toggle switch */}
+                            <button
+                                type="button"
+                                role="switch"
+                                aria-checked={prefPrivacyMode}
+                                onClick={() => handleUpdatePreference({ privacyMode: !prefPrivacyMode })}
+                                className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                    prefPrivacyMode ? 'bg-[#0284c7]' : 'bg-slate-200 dark:bg-slate-700'
+                                }`}
+                            >
+                                <span
+                                    aria-hidden="true"
+                                    className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                                        prefPrivacyMode ? 'translate-x-5' : 'translate-x-0'
+                                    }`}
+                                />
+                            </button>
                         </div>
                     </div>
-
-                    {isSubscribed && permission === 'granted' && (
-                        <div className="p-5 border border-slate-100 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-900/30 space-y-6 animate-fade-in mt-4">
-                            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-2">
-                                <h4 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-md">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-brand-500 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                                    </svg>
-                                    Filtres & Motifs de notifications
-                                </h4>
-                                {isSyncingPrefs ? (
-                                    <span className="text-xs text-brand-500 flex items-center gap-1">
-                                        <svg className="animate-spin h-3.5 w-3.5 text-brand-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Sauvegarde en cours...
-                                    </span>
-                                ) : (
-                                    <span className="text-xs text-green-500 flex items-center gap-1 font-medium">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                        </svg>
-                                        Enregistré sur le cloud
-                                    </span>
-                                )}
-                            </div>
-
-                            {/* Filtre par Auteur */}
-                            <div className="space-y-2">
-                                <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">Auteurs des dépenses à suivre :</span>
-                                <div className="flex flex-wrap gap-4 pt-1">
-                                    {['Sophie', 'Vincent', 'Commun'].map(author => (
-                                        <label key={author} className="flex items-center gap-2 cursor-pointer text-sm">
-                                            <input
-                                                type="checkbox"
-                                                checked={prefAuthors.includes(author)}
-                                                onChange={() => handleAuthorToggle(author)}
-                                                className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 h-4.5 w-4.5"
-                                            />
-                                            <span className="font-medium text-slate-700 dark:text-slate-200">
-                                                {author === 'Commun' ? 'Dépenses Communes (Duo)' : author}
-                                            </span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Filtre par Montant minimum */}
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
-                                        Alerter uniquement si le montant est supérieur ou égal :
-                                    </span>
-                                    <span className="text-sm px-2.5 py-0.5 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 font-bold rounded-full">
-                                        {prefMinAmount} €
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="500"
-                                        step="5"
-                                        value={prefMinAmount}
-                                        onChange={(e) => handleMinAmountChange(Number(e.target.value))}
-                                        className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand-500"
-                                    />
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        value={prefMinAmount}
-                                        onChange={(e) => handleMinAmountChange(Number(e.target.value))}
-                                        className="w-20 p-1.5 border border-slate-200 dark:border-slate-600 rounded-lg text-center font-bold text-sm bg-white dark:bg-slate-750"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Filtre par Catégories/Motifs */}
-                            <div className="space-y-3">
-                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                                    <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
-                                        Motifs / Catégories de dépenses sélectionnés ({prefCategories.length}/{availableCategories.length}) :
-                                    </span>
-                                    <div className="flex gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={handleSelectAllCategories}
-                                            className="text-xs px-2.5 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded font-medium text-slate-600 dark:text-slate-300 transition-colors"
-                                        >
-                                            Tout cocher
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={handleSelectNoneCategories}
-                                            className="text-xs px-2.5 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded font-medium text-slate-600 dark:text-slate-300 transition-colors"
-                                        >
-                                            Tout décocher
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-2 bg-slate-100/50 dark:bg-slate-900/50 rounded-xl scrollbar-thin">
-                                    {availableCategories.map((category) => {
-                                        const isChecked = prefCategories.includes(category);
-                                        return (
-                                            <label
-                                                key={category}
-                                                className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer text-xs transition-colors border ${
-                                                    isChecked 
-                                                    ? 'bg-brand-50/40 dark:bg-brand-900/10 border-brand-100 dark:border-brand-900/30' 
-                                                    : 'hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent'
-                                                }`}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isChecked}
-                                                    onChange={() => handleCategoryToggle(category)}
-                                                    className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 h-4 w-4"
-                                                />
-                                                <span className={`truncate font-medium ${isChecked ? 'text-brand-800 dark:text-brand-300' : 'text-slate-600 dark:text-slate-400'}`}>
-                                                    {category}
-                                                </span>
-                                            </label>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {/* Options additionnelles de filtrage */}
-                            <div className="border-t border-slate-100 dark:border-slate-700 pt-5 space-y-4">
-                                <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">Types d'activités à suivre :</span>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <label className="flex items-start gap-3 cursor-pointer p-3 rounded-xl border border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                        <input
-                                            type="checkbox"
-                                            checked={prefIncludeMoneyPot}
-                                            onChange={(e) => handleUpdatePreference({ includeMoneyPot: e.target.checked })}
-                                            className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 h-4.5 w-4.5 mt-0.5"
-                                        />
-                                        <div>
-                                            <span className="block font-bold text-sm text-slate-700 dark:text-slate-200">💰 Cagnotte & Commun</span>
-                                            <span className="block text-xs text-slate-500 dark:text-slate-400">Recevoir les mouvements de fonds ou versements de la cagnotte</span>
-                                        </div>
-                                    </label>
-
-                                    <label className="flex items-start gap-3 cursor-pointer p-3 rounded-xl border border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                        <input
-                                            type="checkbox"
-                                            checked={prefIncludeDeletes}
-                                            onChange={(e) => handleUpdatePreference({ includeDeletes: e.target.checked })}
-                                            className="rounded border-slate-300 text-brand-600 focus:ring-brand-500 h-4.5 w-4.5 mt-0.5"
-                                        />
-                                        <div>
-                                            <span className="block font-bold text-sm text-slate-700 dark:text-slate-200">❌ Suppressions de dépenses</span>
-                                            <span className="block text-xs text-slate-500 dark:text-slate-400">Recevoir une alerte quand une dépense est retirée ou annulée</span>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-
-                            {/* Mode Ne Pas Déranger (Heures de Silence) */}
-                            <div className="border-t border-slate-100 dark:border-slate-700 pt-5 space-y-4">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">Mode "Ne Pas Déranger" (Sommeil silencieux) :</span>
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={prefQuietHoursActive}
-                                            onChange={(e) => handleUpdatePreference({ quietHoursActive: e.target.checked })}
-                                            className="sr-only peer"
-                                        />
-                                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-brand-500"></div>
-                                    </label>
-                                </div>
-
-                                {prefQuietHoursActive && (
-                                    <div className="p-4 bg-yellow-50/50 dark:bg-yellow-950/10 border border-yellow-100/30 dark:border-yellow-900/20 rounded-xl flex flex-wrap gap-4 items-center animate-fade-in text-sm">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-slate-500 dark:text-slate-400 font-medium">De</span>
-                                            <input
-                                                type="time"
-                                                value={prefQuietHoursStart}
-                                                onChange={(e) => handleUpdatePreference({ quietHoursStart: e.target.value })}
-                                                className="px-2.5 py-1.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-750 font-semibold"
-                                            />
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-slate-500 dark:text-slate-400 font-medium">jusqu'à</span>
-                                            <input
-                                                type="time"
-                                                value={prefQuietHoursEnd}
-                                                onChange={(e) => handleUpdatePreference({ quietHoursEnd: e.target.value })}
-                                                className="px-2.5 py-1.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-750 font-semibold"
-                                            />
-                                        </div>
-                                        <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 sm:mt-0 flex items-center gap-1">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                            </svg>
-                                            Pendant cette plage, les alertes de votre partenaire seront silencieuses pour préserver votre repos.
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Mode d'affichage confidentiel */}
-                            <div className="border-t border-slate-100 dark:border-slate-700 pt-5 space-y-4">
-                                <div className="flex justify-between items-center">
-                                    <div>
-                                        <span className="block text-sm font-semibold text-slate-600 dark:text-slate-300">🔒 Mode Confidentiel</span>
-                                        <span className="block text-xs text-slate-500 dark:text-slate-400">Masquer l'auteur et le montant sur votre écran verrouillé</span>
-                                    </div>
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={prefPrivacyMode}
-                                            onChange={(e) => handleUpdatePreference({ privacyMode: e.target.checked })}
-                                            className="sr-only peer"
-                                        />
-                                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-brand-500"></div>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {permission === 'granted' && (
-                        <button
-                            onClick={sendTestNotification}
-                            className="w-full p-4 border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-brand-500 transition-colors font-medium flex justify-center items-center gap-2 mt-4"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                            </svg>
-                            Tester l'envoi direct d'une alerte sur mon écran
-                        </button>
-                    )}
                 </div>
-                
-                <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 rounded-xl text-sm">
-                    <strong>Note technique :</strong> Les préférences de notifications push sont directement rattachées à votre appareil/navigateur. En filtrant les notifications avant leur dispatch, vous économisez de la batterie et de la bande passante tout en gardant une vie privée totalement sous contrôle.
+            </div>
+
+            {/* CARD 3: NOTE TECHNIQUE */}
+            <div className="bg-[#f0f7ff] dark:bg-blue-950/30 border border-[#dbeafe] dark:border-blue-900/40 rounded-[22px] p-4 sm:p-5 flex gap-3.5 items-start">
+                <div className="w-7 h-7 rounded-full bg-[#2563eb] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                    i
+                </div>
+                <div className="space-y-1">
+                    <h4 className="font-extrabold text-sm text-[#1e40af] dark:text-blue-300">
+                        Note technique
+                    </h4>
+                    <p className="text-xs sm:text-sm text-[#2563eb]/90 dark:text-blue-300/80 leading-relaxed font-medium">
+                        Les préférences de notifications push sont directement rattachées à votre appareil/navigateur. En filtrant les notifications avant leur dispatch, vous économisez de la batterie et de la bande passante tout en gardant une vie privée totalement sous contrôle.
+                    </p>
                 </div>
             </div>
         </div>

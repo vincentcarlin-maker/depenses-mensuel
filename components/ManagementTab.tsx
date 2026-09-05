@@ -478,9 +478,12 @@ interface ManagementTabProps {
     setHeatingTypes: React.Dispatch<React.SetStateAction<string[]>>;
     setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
     loginHistory: LoginEvent[];
+    focusSection?: 'all' | 'users' | 'categories' | 'data';
 }
 
 const ManagementTab: React.FC<ManagementTabProps> = (props) => {
+    const { focusSection = 'all' } = props;
+
     return (
         <div className="space-y-12">
             <style>{`
@@ -546,20 +549,22 @@ const ManagementTab: React.FC<ManagementTabProps> = (props) => {
                     background-color: rgb(185 28 28 / 1); /* hover:bg-red-700 */
                 }
             `}</style>
-            <DatabaseManagement />
-            <HistoryManagement loginHistory={props.loginHistory} />
-            <DataManagement expenses={props.expenses} />
-            <UserManagement {...props} />
-            <CategoryManagement {...props} />
-            <ListManagement 
-                groceryStores={props.groceryStores}
-                setGroceryStores={props.setGroceryStores}
-                cars={props.cars}
-                setCars={props.setCars}
-                heatingTypes={props.heatingTypes}
-                setHeatingTypes={props.setHeatingTypes}
-                setToastInfo={props.setToastInfo}
-            />
+            {(focusSection === 'all' || focusSection === 'data') && <DatabaseManagement />}
+            {(focusSection === 'all' || focusSection === 'users') && <HistoryManagement loginHistory={props.loginHistory} />}
+            {(focusSection === 'all' || focusSection === 'data') && <DataManagement expenses={props.expenses} />}
+            {(focusSection === 'all' || focusSection === 'users') && <UserManagement {...props} />}
+            {(focusSection === 'all' || focusSection === 'categories') && <CategoryManagement {...props} />}
+            {(focusSection === 'all' || focusSection === 'categories') && (
+                <ListManagement 
+                    groceryStores={props.groceryStores}
+                    setGroceryStores={props.setGroceryStores}
+                    cars={props.cars}
+                    setCars={props.setCars}
+                    heatingTypes={props.heatingTypes}
+                    setHeatingTypes={props.setHeatingTypes}
+                    setToastInfo={props.setToastInfo}
+                />
+            )}
         </div>
     );
 };
