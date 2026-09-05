@@ -6,6 +6,7 @@ import CloseIcon from './icons/CloseIcon';
 import SearchIcon from './icons/SearchIcon';
 import ActivityDetailModal from './ActivityDetailModal';
 import { APP_LOGO_BASE64 } from '../constants/logoBase64';
+import CoinOIcon from './icons/CoinOIcon';
 
 const Logo = () => {
     return (
@@ -138,8 +139,9 @@ const Header: React.FC<HeaderProps> = ({ onOpenSearch, loggedInUser, activityIte
         <div className="flex items-center">
           <Logo />
           <div className="ml-2">
-            <h1 className="text-xl md:text-2xl font-extrabold tracking-tight leading-tight md:leading-normal">
-              <span className="text-slate-900 dark:text-white">Duo</span>
+            <h1 className="text-xl md:text-2xl font-extrabold tracking-tight leading-normal">
+              <span className="text-[#f32e5e]">Du</span>
+              <CoinOIcon />
               <span className="text-blue-500">Budget</span>
             </h1>
             <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 font-bold italic -mt-0.5 md:mt-0">

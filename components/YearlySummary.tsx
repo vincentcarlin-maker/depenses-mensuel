@@ -315,7 +315,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                 <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-blue-100/90 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                     <BarChartHeaderIcon className="w-5 h-5" />
                 </div>
-                <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
                     Résumé de l'Année {year}
                 </h1>
             </div>
@@ -363,7 +363,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                     <PieChartHeaderIcon className="w-5 h-5" />
                 </div>
                 <div>
-                    <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+                    <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight">
                         Moyenne mensuelle par catégorie
                     </h2>
                     <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
@@ -440,7 +440,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                         <LineChartHeaderIcon className="w-5 h-5" />
                     </div>
                     <div>
-                        <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+                        <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight">
                             {chartCategoryFilter === 'all' 
                                 ? 'Évolution des dépenses mensuelles' 
                                 : `Évolution : ${getCategoryDisplayName(chartCategoryFilter)}`}

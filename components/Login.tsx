@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import EyeIcon from './icons/EyeIcon';
 import EyeSlashIcon from './icons/EyeSlashIcon';
 import { APP_LOGO_BASE64 } from '../constants/logoBase64';
+import CoinOIcon from './icons/CoinOIcon';
 
 const Logo = () => {
     return (
@@ -41,7 +42,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <div className="w-full max-w-sm">
                 <Logo />
                 <h1 className="text-4xl font-extrabold text-center mb-2">
-                    <span className="text-slate-900 dark:text-white">Duo</span>
+                    <span className="text-[#f32e5e]">Du</span>
+                    <CoinOIcon />
                     <span className="text-blue-500">Budget</span>
                 </h1>
                 <p className="text-center text-slate-500 dark:text-slate-400 mb-8 font-bold italic text-lg">

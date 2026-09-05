@@ -167,7 +167,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
   if (expenses.length === 0) {
     return (
       <div className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800">
-        <h2 className="text-2xl font-extrabold mb-4 text-slate-900 dark:text-slate-100 tracking-tight">Analyse des dépenses</h2>
+        <h2 className="text-lg sm:text-xl font-bold mb-4 text-slate-900 dark:text-slate-100 tracking-tight">Analyse des dépenses</h2>
         <div className="text-center py-16 h-[300px] flex flex-col justify-center items-center">
           <p className="text-4xl mb-2">📊</p>
           <p className="text-slate-500 dark:text-slate-400 font-medium">Aucune dépense à analyser pour ce mois.</p>
@@ -177,8 +177,8 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+    <div className="space-y-5">
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
         Analyse des dépenses
       </h1>
 
@@ -245,7 +245,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
           <div className="w-10 h-10 rounded-2xl bg-blue-100/90 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
             <BarChartIcon className="w-5 h-5" />
           </div>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             Répartition par catégorie
           </h2>
         </div>
@@ -316,7 +316,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
             <div className="w-10 h-10 rounded-2xl bg-blue-100/90 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
               <ListIcon className="w-5 h-5" />
             </div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight">
               Détails par catégorie
             </h2>
           </div>
