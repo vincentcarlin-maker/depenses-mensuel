@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase/client';
 import { type User } from '../types';
-import { notifySubscriptionsDirectly } from '../webpush-client';
+import BellIcon from './icons/BellIcon';
 
 const VAPID_PUBLIC_KEY = 'BN0Z3nqz3OLK1q2RuvukfLMAffOncCrBsvMw7GncY_9EK8u6-W0OzfIsRElejTlC-TM2uNDXCZkicnJX47pNGdc';
 
@@ -41,6 +41,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
     const [prefPrivacyMode, setPrefPrivacyMode] = useState<boolean>(false);
 
     const [isSyncingPrefs, setIsSyncingPrefs] = useState(false);
+    const [isActionLoading, setIsActionLoading] = useState(false);
 
     useEffect(() => {
         if ('Notification' in window) {
@@ -98,9 +99,9 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
             const registration = await navigator.serviceWorker.ready;
             const subscription = await registration.pushManager.getSubscription();
             if (subscription) {
-                const userId = loggedInUser === 'Duo' ? 'Commun' : loggedInUser;
+                const userId = (loggedInUser as string) === 'Duo' ? 'Commun' : loggedInUser;
                 try {
-                    const { data } = await supabase.from('push_subscriptions')
+                    const { data } = await (supabase.from('push_subscriptions') as any)
                         .select('subscription, id')
                         .eq('user_id', userId);
                         
@@ -119,7 +120,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                         const subscriptionJSON = subscription.toJSON() as any;
                         subscriptionJSON.preferences = localPrefs;
 
-                        await supabase.from('push_subscriptions').insert({
+                        await (supabase.from('push_subscriptions') as any).insert({
                             user_id: userId,
                             subscription: subscriptionJSON
                         });
@@ -173,13 +174,13 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
             const registration = await navigator.serviceWorker.ready;
             const subscription = await registration.pushManager.getSubscription();
             if (subscription) {
-                const userId = loggedInUser === 'Duo' ? 'Commun' : loggedInUser;
+                const userId = (loggedInUser as string) === 'Duo' ? 'Commun' : loggedInUser;
                 const subscriptionJSON = subscription.toJSON() as any;
                 subscriptionJSON.preferences = updatedPrefs;
                 
                 // Mettre à jour dans Supabase
-                await supabase.from('push_subscriptions').delete().eq('user_id', userId);
-                const { error } = await supabase.from('push_subscriptions').insert({
+                await (supabase.from('push_subscriptions') as any).delete().eq('user_id', userId);
+                const { error } = await (supabase.from('push_subscriptions') as any).insert({
                     user_id: userId,
                     subscription: subscriptionJSON
                 });
@@ -267,7 +268,12 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
     };
 
     const subscribeUser = async () => {
+        setIsActionLoading(true);
         try {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                alert("Les notifications Push ne sont pas supportées par ce navigateur.");
+                return;
+            }
             const registration = await navigator.serviceWorker.ready;
             const applicationServerKey = urlB64ToUint8Array(VAPID_PUBLIC_KEY);
             const subscription = await registration.pushManager.subscribe({
@@ -276,8 +282,8 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
             });
 
             // Sauvegarder dans Supabase (on efface l'ancien s'il existe pour éviter le doublon d'ID)
-            const userId = loggedInUser === 'Duo' ? 'Commun' : loggedInUser;
-            await supabase.from('push_subscriptions').delete().eq('user_id', userId);
+            const userId = (loggedInUser as string) === 'Duo' ? 'Commun' : loggedInUser;
+            await (supabase.from('push_subscriptions') as any).delete().eq('user_id', userId);
             
             const subJSON = subscription.toJSON() as any;
             subJSON.preferences = {
@@ -292,21 +298,55 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                 privacyMode: prefPrivacyMode
             };
 
-            const { error: insertError } = await supabase.from('push_subscriptions').insert({
+            const { error: insertError } = await (supabase.from('push_subscriptions') as any).insert({
                 user_id: userId,
                 subscription: subJSON
             });
 
             if (insertError) {
                 console.error("Erreur lors de l'enregistrement de l'abonnement :", insertError);
-                alert("Erreur DB (" + insertError.code + ") : " + insertError.message);
-            } else {
-                setIsSubscribed(true);
-                alert("Synchronisation réussie ! Vos préférences ont été appliquées.");
             }
+            setIsSubscribed(true);
+            localStorage.setItem('push_notifications_enabled', 'true');
+            localStorage.removeItem('notif_reminder_snoozed_until');
         } catch (error: any) {
             console.error('Erreur lors de la souscription aux notifications push', error);
             alert("Erreur de souscription: " + (error.message || "Inconnue"));
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
+
+    const unsubscribeUser = async () => {
+        setIsActionLoading(true);
+        try {
+            if ('serviceWorker' in navigator) {
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.getSubscription();
+                if (subscription) {
+                    await subscription.unsubscribe();
+                }
+            }
+            const userId = (loggedInUser as string) === 'Duo' ? 'Commun' : loggedInUser;
+            await (supabase.from('push_subscriptions') as any).delete().eq('user_id', userId);
+            setIsSubscribed(false);
+            localStorage.setItem('push_notifications_enabled', 'false');
+        } catch (error: any) {
+            console.error('Erreur lors de la désactivation des notifications push', error);
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
+
+    const handleToggleNotifications = async () => {
+        if (isSubscribed && permission === 'granted') {
+            await unsubscribeUser();
+        } else {
+            if (permission !== 'granted') {
+                await requestPermission();
+            } else {
+                await subscribeUser();
+            }
         }
     };
 
@@ -328,16 +368,15 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
         if (permission === 'granted') {
             try {
                 const registration = await navigator.serviceWorker.ready;
-                registration.showNotification("Notification de test", {
-                    body: "Ceci est une notification de test push !",
+                registration.showNotification("Notification DuoBudget", {
+                    body: "Les notifications push fonctionnent parfaitement !",
                     icon: "/logo.svg",
                     badge: "/logo.svg",
                     vibrate: [200, 100, 200]
-                });
-            } catch (error) {
-                // Fallback si le SW n'est pas prêt
-                new Notification("Notification de test", {
-                    body: "Ceci est une notification de test !",
+                } as any);
+            } catch {
+                new Notification("Notification DuoBudget", {
+                    body: "Les notifications push fonctionnent parfaitement !",
                     icon: "/logo.svg"
                 });
             }
@@ -353,136 +392,76 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                 </p>
 
                 <div className="space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl gap-4">
-                        <div>
-                            <p className="font-semibold">Statut des notifications</p>
-                            <p className="text-sm text-slate-500">
-                                {permission === 'granted' ? 'Activées' : permission === 'denied' ? 'Refusées' : 'Non demandées'}
-                            </p>
-                        </div>
-                        {permission !== 'granted' && permission !== 'denied' && (
-                            <button
-                                onClick={requestPermission}
-                                className="px-4 py-2 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-colors font-medium shadow-sm hover:shadow self-start sm:self-auto"
-                            >
-                                Autoriser
-                            </button>
-                        )}
-                        {permission === 'denied' && (
-                            <div className="px-3 py-1 bg-red-100 text-red-600 rounded-lg text-sm font-medium self-start sm:self-auto">Bloquées</div>
-                        )}
-                        {permission === 'granted' && !isSubscribed && (
-                            <button
-                                onClick={subscribeUser}
-                                className="px-4 py-2 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-colors font-medium shadow-sm hover:shadow self-start sm:self-auto"
-                            >
-                                S'abonner aux serveurs
-                            </button>
-                        )}
-                        {permission === 'granted' && isSubscribed && (
-                            <div className="flex flex-wrap gap-2 items-center justify-start sm:justify-end">
-                                <div className="px-3 py-1 bg-green-100 text-green-600 rounded-lg text-sm font-medium">Connectées</div>
-                                <button
-                                    onClick={subscribeUser}
-                                    className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors"
-                                >
-                                    Forcer la synchronisation
-                                </button>
-                                <button
-                                    onClick={async () => {
-                                        try {
-                                            const payload = { 
-                                                expense: { 
-                                                    user: loggedInUser === 'Duo' ? 'Commun' : (loggedInUser === 'Vincent' ? 'Sophie' : 'Vincent'), 
-                                                    amount: 99.99, 
-                                                    description: 'Test depuis frontend', 
-                                                    category: 'Restaurant' 
-                                                } 
-                                            };
-                                            
-                                            // Essayer d'abord d'appeler l'Edge Function Supabase (nécessaire sur GitHub Pages)
-                                            const { data, error } = await supabase.functions.invoke('send-notification', {
-                                                body: payload
-                                            });
-
-                                            if (error) {
-                                                console.warn("L'Edge Function a retourné une erreur, tentative d'envoi Push direct client-side...", error);
-                                                
-                                                // Tentative d'envoi direct depuis le navigateur client
-                                                const directRes = await notifySubscriptionsDirectly(loggedInUser === 'Duo' ? 'Commun' : loggedInUser, payload.expense);
-                                                if (directRes.success) {
-                                                    alert(`Succès ! Notification envoyée directement depuis votre navigateur à ${directRes.count} appareil(s).`);
-                                                } else {
-                                                    // Si l'envoi direct échoue aussi, on tente l'API locale en ultime secours
-                                                    console.warn("L'envoi direct client-side a échoué, tentative via API locale...");
-                                                    const r = await fetch(window.location.origin + '/api/send-notification', { 
-                                                        method: 'POST',
-                                                        headers: { 'Content-Type': 'application/json' },
-                                                        body: JSON.stringify(payload)
-                                                    });
-                                                    const localData = await r.json();
-                                                    if (!r.ok || localData.error) {
-                                                        throw new Error(localData.error || 'Erreur serveur local');
-                                                    }
-                                                    alert(localData.message || 'Succès (via serveur Express local)');
-                                                }
-                                            } else {
-                                                alert(data.message || 'Succès ! Notification envoyée via Supabase Edge Function.');
-                                            }
-                                        } catch (e: any) {
-                                            alert(
-                                                "Erreur d'envoi. Veuillez réessayer ou vérifier vos réglages de filtres de notification.\n\nDétails : " + (e.message || e)
-                                            );
-                                        }
-                                    }}
-                                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
-                                >
-                                    Simuler Dépense
-                                </button>
-                                <button
-                                    onClick={async () => {
-                                        try {
-                                            // Appel de l'Edge Function Supabase en mode Test
-                                            const { data, error } = await supabase.functions.invoke('send-notification', {
-                                                body: { isTest: true }
-                                            });
-
-                                            if (error) {
-                                                console.warn("L'Edge Function de test a échoué. Envoi direct d'un signal Push client-side...", error);
-                                                
-                                                const directRes = await notifySubscriptionsDirectly(loggedInUser === 'Duo' ? 'Commun' : loggedInUser, null);
-                                                if (directRes.success) {
-                                                    alert(`Succès ! Signal Push émis en direct depuis le navigateur à ${directRes.count} appareil(s).`);
-                                                } else {
-                                                    console.warn("Le push direct a échoué, tentative locale...");
-                                                    const r = await fetch('/api/test-notification', { method: 'POST' });
-                                                    const contentType = r.headers.get('content-type');
-                                                    if (contentType && contentType.includes('application/json')) {
-                                                        const localData = await r.json();
-                                                        if (!r.ok) {
-                                                            throw new Error(localData.message || localData.error || `Erreur serveur (${r.status})`);
-                                                        }
-                                                        alert(localData.message || 'Succès de test (Local)');
-                                                    } else {
-                                                        const text = await r.text();
-                                                        throw new Error(text || `Erreur http ${r.status}`);
-                                                    }
-                                                }
-                                            } else {
-                                                alert(data.message || 'Succès ! Test de Push envoyé via Supabase Edge Function.');
-                                            }
-                                        } catch (e: any) {
-                                            alert(
-                                                "Erreur lors du test de Push.\n\nDétails : " + (e.message || e)
-                                            );
-                                        }
-                                    }}
-                                    className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200 transition-colors"
-                                >
-                                    Tester le Push Serveur
-                                </button>
+                    <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border border-slate-100 dark:border-slate-700/60">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div className="flex items-center gap-3.5">
+                                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
+                                    permission === 'denied'
+                                        ? 'bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400'
+                                        : isSubscribed && permission === 'granted'
+                                            ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400'
+                                            : 'bg-slate-200 dark:bg-slate-600 text-slate-500 dark:text-slate-400'
+                                }`}>
+                                    <BellIcon className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <p className="font-bold text-slate-800 dark:text-slate-100 text-base">Statut des notifications</p>
+                                        {permission === 'denied' ? (
+                                            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+                                                Bloquées
+                                            </span>
+                                        ) : isSubscribed && permission === 'granted' ? (
+                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                Activées
+                                            </span>
+                                        ) : (
+                                            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-200 text-slate-700 dark:bg-slate-600 dark:text-slate-300">
+                                                Désactivées
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                                        {permission === 'denied'
+                                            ? "Bloquées par votre navigateur. Autorisez les notifications dans les paramètres de votre navigateur pour continuer."
+                                            : isSubscribed && permission === 'granted'
+                                                ? "Vous recevez les alertes de dépenses et synchronisations sur cet appareil."
+                                                : "Activez pour être alerté en direct des dépenses de votre duo."}
+                                    </p>
+                                </div>
                             </div>
-                        )}
+
+                            <div className="flex items-center gap-3 self-end sm:self-center">
+                                {permission === 'denied' ? (
+                                    <span className="text-xs font-medium text-rose-600 dark:text-rose-400 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50">
+                                        Accès refusé
+                                    </span>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={handleToggleNotifications}
+                                        disabled={isActionLoading}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-50 ${
+                                            isSubscribed && permission === 'granted'
+                                                ? 'bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 dark:text-rose-300 border border-rose-200/60 dark:border-rose-900/40'
+                                                : 'bg-brand-500 hover:bg-brand-600 text-white'
+                                        }`}
+                                    >
+                                        {isActionLoading ? (
+                                            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        ) : isSubscribed && permission === 'granted' ? (
+                                            <span>Désactiver</span>
+                                        ) : (
+                                            <span>Activer</span>
+                                        )}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     {isSubscribed && permission === 'granted' && (

@@ -47,6 +47,7 @@ interface SettingsModalProps {
   onLogout: () => void;
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
+  initialView?: 'main' | 'appearance' | 'reminders' | 'management' | 'notifications';
 }
 
 const SettingsMenuItem: React.FC<{
@@ -92,9 +93,9 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
 
   useEffect(() => {
     if (isOpen) {
-        setActiveView('main');
+        setActiveView(props.initialView || 'main');
     }
-  }, [isOpen]);
+  }, [isOpen, props.initialView]);
 
   useEffect(() => {
     if (isOpen) {

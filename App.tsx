@@ -13,6 +13,7 @@ import ExpenseSuccessModal from './components/ExpenseSuccessModal';
 import Toast from './components/Toast';
 import YearlySummary from './components/YearlySummary';
 import ReminderAlerts from './components/ReminderAlerts';
+import NotificationReminderAlert from './components/NotificationReminderAlert';
 import SettingsModal from './components/SettingsModal';
 import { useTheme } from './hooks/useTheme';
 import OfflineIndicator from './components/OfflineIndicator';
@@ -80,6 +81,7 @@ const MainApp: React.FC<{
 
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsInitialView, setSettingsInitialView] = useState<'main' | 'appearance' | 'reminders' | 'management' | 'notifications'>('main');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [formInitialData, setFormInitialData] = useState<(Omit<Expense, 'id' | 'date' | 'created_at'> & { formKey?: string }) | null>(null);
   const [successExpense, setSuccessExpense] = useState<Expense | null>(null);
@@ -1116,6 +1118,7 @@ const MainApp: React.FC<{
             </button>
           </div>
           <ReminderAlerts reminders={reminders} monthlyExpenses={filteredExpenses} onPayReminder={handlePayReminder} currentMonth={currentMonth} currentYear={currentYear} loggedInUser={user} />
+          <NotificationReminderAlert onOpenSettings={() => { setSettingsInitialView('notifications'); setIsSettingsOpen(true); }} />
           <div className="animate-fade-in">
             {activeTab === 'dashboard' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -1284,7 +1287,7 @@ const MainApp: React.FC<{
           </div>
         </main>
       </PullToRefresh>
-      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} onOpenSettings={() => setIsSettingsOpen(true)} />
+      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} onOpenSettings={() => { setSettingsInitialView('main'); setIsSettingsOpen(true); }} />
       <ExpenseSuccessModal
         isOpen={!!successExpense}
         onClose={() => setSuccessExpense(null)}
@@ -1302,6 +1305,7 @@ const MainApp: React.FC<{
       <SettingsModal 
         isOpen={isSettingsOpen} 
         onClose={() => setIsSettingsOpen(false)} 
+        initialView={settingsInitialView}
         reminders={reminders} 
         expenses={expenses} 
         onAddReminder={addReminder} 
