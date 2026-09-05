@@ -183,51 +183,51 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
       </h1>
 
       {/* Top 2 KPI Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         {/* Card 1: Total */}
-        <div className="bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-xs border border-slate-100 dark:border-slate-800 flex items-start gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-blue-100/90 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-            <WalletIcon className="w-6 h-6" />
+        <div className="bg-white dark:bg-slate-800 p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-xs border border-slate-100 dark:border-slate-800 flex items-center gap-3 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-blue-100/90 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <WalletIcon className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">Dépense totale du mois</p>
-            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 mt-1">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 truncate">Dépense totale du mois</p>
+            <p className="text-base sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 mt-0.5 truncate">
               {totalExpenses.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
             </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+            <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">
               {expenses.length} transaction{expenses.length > 1 ? 's' : ''} sur ce mois
             </p>
           </div>
         </div>
 
         {/* Card 2: Trend */}
-        <div className={`p-5 rounded-3xl shadow-xs border flex items-start gap-4 ${
+        <div className={`p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-xs border flex items-center gap-3 sm:gap-4 ${
           trend.percentageChange <= 0 
             ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100/80 dark:border-emerald-900/40' 
             : 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-100/80 dark:border-rose-900/40'
         }`}>
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+          <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 ${
             trend.percentageChange <= 0 
               ? 'bg-emerald-100/90 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400' 
               : 'bg-rose-100/90 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400'
           }`}>
-            <TrendArrowIcon isUp={trend.percentageChange > 0} className="w-6 h-6" />
+            <TrendArrowIcon isUp={trend.percentageChange > 0} className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">Tendance mensuelle (M-1)</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 truncate">Tendance mensuelle (M-1)</p>
             {trend.previousTotal > 0.01 ? (
               <>
-                <p className={`text-2xl sm:text-3xl font-extrabold mt-1 ${
+                <p className={`text-base sm:text-2xl font-extrabold mt-0.5 truncate ${
                   trend.percentageChange <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                 }`}>
                   {Math.abs(trend.percentageChange).toFixed(0)}%
                 </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  {trend.percentageChange <= 0 ? 'de moins' : 'de plus'} que le mois dernier ({trend.previousTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})
+                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                  {trend.percentageChange <= 0 ? 'de moins' : 'de plus'} que M-1
                 </p>
               </>
             ) : (
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Aucune dépense le mois dernier pour comparer.</p>
+              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">Mois dernier : 0 €</p>
             )}
           </div>
         </div>
