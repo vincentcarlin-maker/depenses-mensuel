@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { User } from '../types';
 import { useLocalStorage } from './useLocalStorage';
 import { supabase } from '../supabase/client';
@@ -144,6 +144,85 @@ export const useAuth = () => {
         setUser(null);
     }, [user]);
 
+    // Realtime sync for profiles across devices
+    const profileChannelRef = useRef<any>(null);
+
+    const syncProfilesToCloud = useCallback(async (updatedProfiles: Profile[]) => {
+        if (profileChannelRef.current) {
+            profileChannelRef.current.send({
+                type: 'broadcast',
+                event: 'user_profiles_changed',
+                payload: { profiles: updatedProfiles }
+            });
+        }
+        try {
+            await (supabase.from('app_settings') as any).upsert({
+                key: 'user_profiles',
+                value: JSON.stringify(updatedProfiles),
+                updated_at: new Date().toISOString()
+            });
+        } catch (e) {
+            console.warn('Could not save user_profiles to Supabase app_settings:', e);
+        }
+    }, []);
+
+    useEffect(() => {
+        const fetchProfilesFromCloud = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('app_settings')
+                    .select('value')
+                    .eq('key', 'user_profiles')
+                    .maybeSingle();
+
+                if (!error && data && data.value) {
+                    const cloudProfiles: Profile[] = JSON.parse(data.value);
+                    if (Array.isArray(cloudProfiles) && cloudProfiles.length > 0) {
+                        setProfiles(cloudProfiles);
+                    }
+                }
+            } catch {
+                // Ignore missing table
+            }
+        };
+
+        fetchProfilesFromCloud();
+
+        const channel = supabase.channel('duobudget_profiles_channel', {
+            config: { broadcast: { ack: false, self: true } }
+        });
+
+        profileChannelRef.current = channel;
+
+        channel
+            .on('broadcast', { event: 'user_profiles_changed' }, (payload: any) => {
+                const data = payload?.payload || payload;
+                if (data && Array.isArray(data.profiles)) {
+                    setProfiles(data.profiles);
+                }
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'app_settings' }, (payload: any) => {
+                if (payload.new && payload.new.key === 'user_profiles' && payload.new.value) {
+                    try {
+                        const cloudProfiles = JSON.parse(payload.new.value);
+                        if (Array.isArray(cloudProfiles)) {
+                            setProfiles(cloudProfiles);
+                        }
+                    } catch {
+                        // ignore
+                    }
+                }
+            })
+            .subscribe();
+
+        const intervalId = setInterval(fetchProfilesFromCloud, 3000);
+
+        return () => {
+            supabase.removeChannel(channel);
+            clearInterval(intervalId);
+        };
+    }, [setProfiles]);
+
     // Check if active user profile has been blocked by admin
     useEffect(() => {
         if (user) {
@@ -214,30 +293,36 @@ export const useAuth = () => {
             return { success: false, message: 'Impossible de bloquer le compte administrateur Vincent.' };
         }
         const willBlock = !target.blocked;
-        setProfiles(prev => prev.map(p => p.username === normalizedUsername ? { ...p, blocked: willBlock } : p));
+        const updated = profiles.map(p => p.username === normalizedUsername ? { ...p, blocked: willBlock } : p);
+        setProfiles(updated);
+        syncProfilesToCloud(updated);
         return { 
             success: true, 
             message: `L'utilisateur « ${target.username} » a été ${willBlock ? 'bloqué' : 'débloqué'}.` 
         };
-    }, [profiles, setProfiles]);
+    }, [profiles, setProfiles, syncProfilesToCloud]);
 
     const addProfile = useCallback((newProfile: Profile): boolean => {
         const normalizedUsername = newProfile.username.toLowerCase().trim();
         if (profiles.some(p => p.username === normalizedUsername)) {
             return false; // Username already exists
         }
-        setProfiles(prev => [...prev, { ...newProfile, username: normalizedUsername }]);
+        const updated = [...profiles, { ...newProfile, username: normalizedUsername }];
+        setProfiles(updated);
+        syncProfilesToCloud(updated);
         return true;
-    }, [profiles, setProfiles]);
+    }, [profiles, setProfiles, syncProfilesToCloud]);
 
     const updateProfilePassword = useCallback((username: string, newPassword: string): boolean => {
         const normalizedUsername = username.toLowerCase().trim();
         if (!profiles.some(p => p.username === normalizedUsername)) {
             return false; // User not found
         }
-        setProfiles(prev => prev.map(p => p.username === normalizedUsername ? { ...p, password: newPassword } : p));
+        const updated = profiles.map(p => p.username === normalizedUsername ? { ...p, password: newPassword } : p);
+        setProfiles(updated);
+        syncProfilesToCloud(updated);
         return true;
-    }, [profiles, setProfiles]);
+    }, [profiles, setProfiles, syncProfilesToCloud]);
 
     const deleteProfile = useCallback((username: string): boolean => {
         const normalizedUsername = username.toLowerCase().trim();
@@ -248,9 +333,11 @@ export const useAuth = () => {
         if (profileToDelete?.user === user) {
             return false; // Cannot delete currently logged-in user
         }
-        setProfiles(prev => prev.filter(p => p.username !== normalizedUsername));
+        const updated = profiles.filter(p => p.username !== normalizedUsername);
+        setProfiles(updated);
+        syncProfilesToCloud(updated);
         return true;
-    }, [profiles, setProfiles, user]);
+    }, [profiles, setProfiles, user, syncProfilesToCloud]);
     
     return { 
         user, 

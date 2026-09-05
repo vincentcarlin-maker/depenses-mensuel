@@ -78,25 +78,35 @@ BEGIN
   END IF;
 END $migration_add_performed_by$;
 
--- 6. Activer la sécurité (RLS)
+-- 6. Créer la table pour les paramètres globaux (Mode maintenance, profils, etc.)
+CREATE TABLE IF NOT EXISTS public.app_settings (
+  key text primary key,
+  value text not null,
+  updated_at timestamptz default now()
+);
+
+-- 7. Activer la sécurité (RLS)
 alter table public.expenses enable row level security;
 alter table public.reminders enable row level security;
 alter table public.login_logs enable row level security;
 alter table public.money_pot enable row level security;
 alter table public.activities enable row level security;
+alter table public.app_settings enable row level security;
 
--- 7. Créer les règles d'accès public (Anonyme)
+-- 8. Créer les règles d'accès public (Anonyme)
 DROP POLICY IF EXISTS "Allow all access" ON public.expenses;
 DROP POLICY IF EXISTS "Allow all access" ON public.reminders;
 DROP POLICY IF EXISTS "Allow all access" ON public.login_logs;
 DROP POLICY IF EXISTS "Allow all access" ON public.money_pot;
 DROP POLICY IF EXISTS "Allow all access" ON public.activities;
+DROP POLICY IF EXISTS "Allow all access" ON public.app_settings;
 
 CREATE POLICY "Allow all access" ON public.expenses FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access" ON public.reminders FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access" ON public.login_logs FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access" ON public.money_pot FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access" ON public.activities FOR ALL TO anon USING (true) WITH CHECK (true);`;
+CREATE POLICY "Allow all access" ON public.activities FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all access" ON public.app_settings FOR ALL TO anon USING (true) WITH CHECK (true);`;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center" aria-modal="true" role="dialog">
