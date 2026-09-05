@@ -255,9 +255,9 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
             return (
               <div key={entry.name} className="flex items-center gap-2 sm:gap-4 text-sm">
                 {/* Left Category Name + Icon */}
-                <div className="w-32 sm:w-48 shrink-0 flex items-center gap-2 min-w-0">
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${visual.color} text-white`}>
-                    <IconComponent className="w-4 h-4" />
+                <div className="w-28 sm:w-44 shrink-0 flex items-center gap-1.5 sm:gap-2 min-w-0">
+                  <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center shrink-0 ${visual.color} text-white`}>
+                    <IconComponent className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                   <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs sm:text-sm truncate" title={getCategoryDisplayName(entry.name)}>
                     {getCategoryDisplayName(entry.name)}
@@ -265,7 +265,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
                 </div>
 
                 {/* Middle Progress Bar + Centered Percentage */}
-                <div className="flex-1 relative h-6 sm:h-7 bg-slate-100/80 dark:bg-slate-700/40 rounded-xl flex items-center overflow-hidden">
+                <div className="flex-1 relative h-5 sm:h-7 bg-slate-100/80 dark:bg-slate-700/40 rounded-lg sm:rounded-xl flex items-center overflow-hidden">
                   {/* Vertical grid lines */}
                   <div className="absolute inset-0 flex justify-between pointer-events-none px-0.5">
                     {ticks.map((t, idx) => (
@@ -279,20 +279,20 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
 
                   {/* Filled category bar */}
                   <div 
-                    className={`h-full rounded-xl transition-all duration-500 relative z-10 ${visual.color}`}
+                    className={`h-full rounded-lg sm:rounded-xl transition-all duration-500 relative z-10 ${visual.color}`}
                     style={{ width: `${widthPercent}%` }}
                   />
 
                   {/* Centered Percentage in Middle of Gauge */}
                   <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-                    <span className="text-[11px] sm:text-xs font-extrabold text-slate-800 dark:text-slate-100 bg-white/80 dark:bg-slate-900/80 px-2.5 py-0.5 rounded-full backdrop-blur-xs shadow-2xs border border-slate-200/50 dark:border-slate-700/50">
+                    <span className="text-[10px] sm:text-xs font-extrabold text-slate-800 dark:text-slate-100 bg-white/85 dark:bg-slate-900/85 px-1.5 sm:px-2.5 py-0.5 rounded-full backdrop-blur-xs shadow-2xs border border-slate-200/50 dark:border-slate-700/50">
                       {percentage.toFixed(1)}%
                     </span>
                   </div>
                 </div>
 
                 {/* Right Amount */}
-                <div className="shrink-0 flex items-center justify-end min-w-[80px] sm:min-w-[100px]">
+                <div className="shrink-0 flex items-center justify-end min-w-[65px] sm:min-w-[90px]">
                   <span className="font-extrabold text-slate-900 dark:text-slate-100 text-xs sm:text-sm whitespace-nowrap">
                     {entry.value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                   </span>

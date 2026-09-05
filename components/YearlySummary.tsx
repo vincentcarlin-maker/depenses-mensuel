@@ -357,7 +357,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
         </div>
 
         {/* Section: Moyenne mensuelle par catégorie */}
-        <div className="bg-white dark:bg-slate-800 p-5 sm:p-6 rounded-3xl shadow-xs border border-slate-100 dark:border-slate-800 space-y-5">
+        <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-3xl shadow-xs border border-slate-100 dark:border-slate-800 space-y-4 sm:space-y-5">
             <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-blue-100/90 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                     <PieChartHeaderIcon className="w-5 h-5" />
@@ -372,56 +372,59 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                 </div>
             </div>
 
-            {/* Category Gauges - Same layout as Analyse */}
-            <div className="space-y-3 pt-1">
+            {/* Category Gauges - Full-width stacked layout for mobile & desktop */}
+            <div className="space-y-2.5 sm:space-y-3 pt-1">
                 {categoryData.map((entry) => {
                     const visual = CategoryVisuals[entry.name as Category] || CategoryVisuals["Divers"];
                     const IconComponent = visual.icon;
-                    const percentageOfTotal = totalYearlyExpense > 0 ? (entry.total / totalYearlyExpense) * 100 : 0;
-                    const barWidthPercent = maxAverage > 0 ? Math.min(100, Math.max(3, (entry.average / maxAverage) * 100)) : 0;
+                    const barWidthPercent = maxAverage > 0 ? Math.min(100, Math.max(4, (entry.average / maxAverage) * 100)) : 0;
                     const displayName = getCategoryDisplayName(entry.name);
 
                     return (
                         <div 
                             key={entry.name} 
                             onClick={() => handleCategoryClick(entry.name as Category)}
-                            className="w-full flex items-center gap-3 sm:gap-4 p-3.5 bg-slate-50/60 dark:bg-slate-700/30 hover:bg-slate-100/80 dark:hover:bg-slate-700/60 border border-slate-100/80 dark:border-slate-700/60 rounded-2xl transition-all cursor-pointer group"
+                            className="w-full p-3 sm:p-4 bg-slate-50/70 dark:bg-slate-700/30 hover:bg-slate-100/80 dark:hover:bg-slate-700/60 border border-slate-100/80 dark:border-slate-700/60 rounded-2xl transition-all cursor-pointer group"
                         >
-                            {/* Left Category Icon + Name */}
-                            <div className="w-32 sm:w-44 shrink-0 flex items-center gap-2.5 min-w-0">
-                                <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 ${visual.color} text-white shadow-2xs`}>
+                            <div className="flex items-start gap-2.5 sm:gap-3.5">
+                                {/* Left Category Icon */}
+                                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 ${visual.color} text-white shadow-2xs mt-0.5`}>
                                     <IconComponent className="w-4 h-4 sm:w-5 sm:h-5" />
                                 </div>
-                                <div className="min-w-0 flex-1">
-                                    <p className="font-extrabold text-slate-900 dark:text-slate-100 text-xs sm:text-sm truncate" title={displayName}>
-                                        {displayName}
-                                    </p>
-                                    <span className="inline-block text-[10px] font-semibold text-slate-400 dark:text-slate-500 bg-slate-200/60 dark:bg-slate-600/50 px-1.5 py-0.2 rounded-md mt-0.5">
-                                        Détails
-                                    </span>
-                                </div>
-                            </div>
 
-                            {/* Middle Progress Bar Gauge */}
-                            <div className="flex-1 relative h-6 sm:h-7 bg-slate-100/80 dark:bg-slate-700/40 rounded-xl flex items-center overflow-hidden">
-                                <div 
-                                    className={`h-full rounded-xl transition-all duration-500 relative z-10 ${visual.color}`}
-                                    style={{ width: `${barWidthPercent}%` }}
-                                />
-                            </div>
+                                {/* Content Column */}
+                                <div className="flex-1 min-w-0">
+                                    {/* Top Row: Category Title & Monthly Amount + Chevron */}
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="min-w-0">
+                                            <span className="font-extrabold text-slate-900 dark:text-slate-100 text-xs sm:text-sm truncate block" title={displayName}>
+                                                {displayName}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 text-right">
+                                            <span className="font-extrabold text-slate-900 dark:text-slate-100 text-xs sm:text-sm whitespace-nowrap">
+                                                {entry.average.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                                                <span className="text-[10px] sm:text-xs font-normal text-slate-500 dark:text-slate-400"> / mo</span>
+                                            </span>
+                                            <ChevronRightIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors shrink-0" />
+                                        </div>
+                                    </div>
 
-                            {/* Right Amounts + Chevron */}
-                            <div className="shrink-0 flex items-center gap-2 sm:gap-3 min-w-[120px] sm:min-w-[150px] justify-end text-right">
-                                <div>
-                                    <p className="font-extrabold text-slate-900 dark:text-slate-100 text-xs sm:text-sm whitespace-nowrap">
-                                        {entry.average.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                                        <span className="text-xs font-normal text-slate-500 dark:text-slate-400"> / mo</span>
-                                    </p>
-                                    <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">
-                                        Total {year}: {entry.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                                    </p>
+                                    {/* Gauge Progress Bar (Full width of the column) */}
+                                    <div className="w-full relative h-2 sm:h-2.5 bg-slate-200/80 dark:bg-slate-700/50 rounded-full overflow-hidden mt-2">
+                                        <div 
+                                            className={`h-full rounded-full transition-all duration-500 ${visual.color}`}
+                                            style={{ width: `${barWidthPercent}%` }}
+                                        />
+                                    </div>
+
+                                    {/* Bottom Row: Total Annual */}
+                                    <div className="flex justify-end mt-1">
+                                        <span className="text-[10px] sm:text-[11px] font-medium text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                                            Total {year}: {entry.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                                        </span>
+                                    </div>
                                 </div>
-                                <ChevronRightIcon className="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors shrink-0" />
                             </div>
                         </div>
                     );
