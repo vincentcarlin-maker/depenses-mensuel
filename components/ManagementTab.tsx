@@ -2,13 +2,11 @@
 import React, { useState } from 'react';
 import { User, type Category, type Expense } from '../types';
 import { type Profile, type LoginEvent } from '../hooks/useAuth';
-import TrashIcon from './icons/TrashIcon';
-import EditIcon from './icons/EditIcon';
-import EyeIcon from './icons/EyeIcon';
 import ConfirmationModal from './ConfirmationModal';
 import ArrowDownTrayIcon from './icons/ArrowDownTrayIcon';
 import SupabaseInstructionsModal from './SupabaseInstructionsModal';
 import WrenchScrewdriverIcon from './icons/WrenchScrewdriverIcon';
+import DataAndBackupTab from './DataAndBackupTab';
 
 // --- Section Header Component ---
 const SectionHeader: React.FC<{ title: string; description: string }> = ({ title, description }) => (
@@ -43,37 +41,72 @@ const DatabaseManagement: React.FC = () => {
     );
 };
 
+// --- Helper for French date format matching screenshot (e.g., 5 sept. à 23:58) ---
+const formatDateFrench = (timestamp: string) => {
+    try {
+        const d = new Date(timestamp);
+        const day = d.getDate();
+        const months = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+        const month = months[d.getMonth()];
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        return `${day} ${month} à ${hours}:${minutes}`;
+    } catch {
+        return timestamp;
+    }
+};
+
 // --- History Management ---
 const HistoryManagement: React.FC<{ loginHistory: LoginEvent[] }> = ({ loginHistory }) => {
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-start">
-                <div>
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Historique des connexions</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Connexions des 30 derniers jours.</p>
+        <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                            Historique des connexions
+                        </h3>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                            30 derniers jours
+                        </p>
+                    </div>
+                </div>
+                {/* Right decorative mini bars */}
+                <div className="flex items-end gap-1 shrink-0 opacity-80">
+                    <div className="w-1.5 h-3.5 bg-pink-200 dark:bg-pink-900/60 rounded-full" />
+                    <div className="w-1.5 h-6 bg-cyan-200 dark:bg-cyan-900/60 rounded-full" />
+                    <div className="w-1.5 h-4.5 bg-emerald-200 dark:bg-emerald-900/60 rounded-full" />
                 </div>
             </div>
             
             {loginHistory.length === 0 ? (
-                <div className="text-center py-4 bg-slate-50 dark:bg-slate-700/30 rounded-lg border border-slate-100 dark:border-slate-700">
-                    <p className="text-slate-500 dark:text-slate-400 text-sm">Aucun historique disponible.</p>
+                <div className="text-center py-5 bg-slate-50/60 dark:bg-slate-700/30 rounded-2xl border border-slate-100 dark:border-slate-700/60">
+                    <p className="text-slate-400 dark:text-slate-500 text-xs sm:text-sm font-medium">Aucun historique disponible pour le moment.</p>
                 </div>
             ) : (
-                <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
-                    {loginHistory.map((event, index) => {
-                         const userColorClass = event.user === User.Sophie ? 'bg-pink-500' : 'bg-sky-500';
-                         const formattedDate = new Date(event.timestamp).toLocaleString('fr-FR', {
-                            day: 'numeric',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                         });
+                <div className="divide-y divide-slate-100/80 dark:divide-slate-700/50 pt-1">
+                    {loginHistory.slice(0, 8).map((event, index) => {
+                        const isSophie = event.user === User.Sophie;
+                        const dotColor = isSophie ? 'bg-[#f43f5e]' : 'bg-[#0ea5e9]';
+                        const formattedDate = formatDateFrench(event.timestamp);
 
                         return (
-                            <div key={index} className="flex items-center p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                                <div className={`w-2 h-2 rounded-full ${userColorClass} mr-3`}></div>
-                                <span className="font-medium text-slate-700 dark:text-slate-200 mr-2">{event.user}</span>
-                                <span className="text-sm text-slate-400 dark:text-slate-500 ml-auto">{formattedDate}</span>
+                            <div key={index} className="flex items-center justify-between py-2.5 sm:py-3 first:pt-1 last:pb-0">
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-2.5 h-2.5 rounded-full ${dotColor} shrink-0`} />
+                                    <span className="font-bold text-slate-800 dark:text-slate-200 text-sm sm:text-base">
+                                        {event.user}
+                                    </span>
+                                </div>
+                                <span className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 font-medium">
+                                    {formattedDate}
+                                </span>
                             </div>
                         );
                     })}
@@ -137,7 +170,7 @@ const UserManagement: React.FC<{
     onAddProfile: (profile: Profile) => boolean;
     onUpdateProfilePassword: (username: string, newPassword: string) => boolean;
     onDeleteProfile: (username: string) => boolean;
-}> = ({ profiles, loggedInUser, onAddProfile, onUpdateProfilePassword, onDeleteProfile }) => {
+}> = ({ profiles, onAddProfile, onUpdateProfilePassword, onDeleteProfile }) => {
     const [newUsername, setNewUsername] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [selectedUser, setSelectedUser] = useState<User>(User.Sophie);
@@ -159,7 +192,7 @@ const UserManagement: React.FC<{
             setNewPassword('');
             setError('');
         } else {
-            setError(`L'utilisateur "${newUsername}" existe déjà.`);
+            setError(`L'utilisateur « ${newUsername} » existe déjà.`);
         }
     };
 
@@ -179,44 +212,232 @@ const UserManagement: React.FC<{
     }
 
     return (
-        <div className="space-y-6">
-            <SectionHeader title="Gestion des Utilisateurs" description="Ajouter, modifier ou supprimer des profils utilisateurs." />
-            <div className="space-y-4">
-                {profiles.map(p => (
-                    <div key={p.username} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                        <span className="font-medium text-slate-700 dark:text-slate-200">{p.username} ({p.user})</span>
-                        <div className="flex items-center gap-2">
-                           <button onClick={() => setEditingUser(p)} className="p-2 text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 rounded-full transition-colors"><EditIcon /></button>
-                           <button onClick={() => setDeletingUser(p)} className="p-2 text-slate-500 hover:text-red-600 dark:hover:text-red-400 rounded-full transition-colors"><TrashIcon /></button>
+        <div className="space-y-5 sm:space-y-6">
+            {/* Card 1: Gestion des utilisateurs */}
+            <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center text-[#3b82f6] dark:text-blue-400 shrink-0">
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                                Gestion des utilisateurs
+                            </h3>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                                Ajouter, modifier ou supprimer des profils.
+                            </p>
                         </div>
                     </div>
-                ))}
-            </div>
-            <form onSubmit={handleAddUser} className="space-y-4 p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
-                <h4 className="font-semibold text-slate-700 dark:text-slate-200">Ajouter un utilisateur</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <input type="text" placeholder="Nom d'utilisateur" value={newUsername} onChange={e => setNewUsername(e.target.value)} className="input-style" />
-                    <div className="relative">
-                        <input type={isPasswordVisible ? "text" : "password"} placeholder="Mot de passe" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="input-style w-full pr-10" />
-                        <button type="button" onClick={() => setIsPasswordVisible(!isPasswordVisible)} className="absolute inset-y-0 right-0 px-3 flex items-center text-slate-500"><EyeIcon /></button>
+                    {/* Cute overlapping user avatars badge */}
+                    <div className="flex -space-x-1.5 opacity-80">
+                        <div className="w-5 h-5 rounded-full bg-pink-200 dark:bg-pink-900/60 border-2 border-white dark:border-slate-800" />
+                        <div className="w-5 h-5 rounded-full bg-blue-200 dark:bg-blue-900/60 border-2 border-white dark:border-slate-800" />
                     </div>
                 </div>
-                 <select value={selectedUser} onChange={e => setSelectedUser(e.target.value as User)} className="input-style w-full">
-                    {Object.values(User).map(u => <option key={u} value={u}>{u}</option>)}
-                </select>
-                {error && <p className="text-sm text-red-500">{error}</p>}
-                <button type="submit" className="btn-primary w-full sm:w-auto">Ajouter</button>
-            </form>
+
+                <div className="space-y-2.5 pt-1">
+                    {profiles.map(p => {
+                        const isSophie = p.user === User.Sophie;
+                        const avatarBg = isSophie 
+                            ? 'bg-[#fce7f3] dark:bg-pink-950/70 text-[#ec4899] dark:text-pink-300' 
+                            : 'bg-[#e0f2fe] dark:bg-sky-950/70 text-[#0284c7] dark:text-sky-300';
+                        const initial = (p.username.charAt(0) || (isSophie ? 'S' : 'V')).toUpperCase();
+
+                        return (
+                            <div key={p.username} className="flex items-center justify-between p-2 rounded-2xl hover:bg-slate-50/60 dark:hover:bg-slate-700/30 transition-colors">
+                                <div className="flex items-center gap-3.5 min-w-0">
+                                    <div className={`w-10 h-10 rounded-full ${avatarBg} font-extrabold flex items-center justify-center text-sm shrink-0`}>
+                                        {initial}
+                                    </div>
+                                    <span className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base truncate">
+                                        {p.username} ({p.user})
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <button 
+                                        type="button"
+                                        onClick={() => { setEditingUser(p); setEditingPassword(''); }} 
+                                        className="w-10 h-10 rounded-xl bg-blue-50/80 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 border border-blue-100/60 dark:border-blue-800/40 flex items-center justify-center text-[#2563eb] dark:text-blue-400 transition-all active:scale-95 cursor-pointer shadow-2xs"
+                                        title={`Modifier le mot de passe de ${p.username}`}
+                                        aria-label={`Modifier le mot de passe de ${p.username}`}
+                                    >
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                        </svg>
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setDeletingUser(p)} 
+                                        className="w-10 h-10 rounded-xl bg-[#fee2e2] dark:bg-rose-950/60 hover:bg-[#fecaca] dark:hover:bg-rose-900/80 border border-rose-200 dark:border-rose-800/60 flex items-center justify-center text-[#ef4444] dark:text-rose-400 transition-all active:scale-95 cursor-pointer shadow-2xs"
+                                        title={`Supprimer le profil ${p.username}`}
+                                        aria-label={`Supprimer le profil ${p.username}`}
+                                    >
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M3 6h18" />
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                            <line x1="10" y1="11" x2="10" y2="17" />
+                                            <line x1="14" y1="11" x2="14" y2="17" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Card 2: Ajouter un utilisateur */}
+            <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                            <svg className="w-6 h-6 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                                Ajouter un utilisateur
+                            </h3>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                                Créez un nouveau profil pour DuoBudget.
+                            </p>
+                        </div>
+                    </div>
+                    {/* Cute pastel dots on top right */}
+                    <div className="flex gap-1 opacity-80">
+                        <div className="w-2.5 h-2.5 rounded-full bg-cyan-200 dark:bg-cyan-900/60" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-purple-200 dark:bg-purple-900/60" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-pink-200 dark:bg-pink-900/60" />
+                    </div>
+                </div>
+
+                <form onSubmit={handleAddUser} className="space-y-3 pt-1">
+                    {/* Input 1: Username */}
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </div>
+                        <input 
+                            type="text" 
+                            placeholder="Nom d'utilisateur" 
+                            value={newUsername} 
+                            onChange={e => setNewUsername(e.target.value)} 
+                            className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-[#f8fafc] dark:bg-slate-700/50 border border-slate-100 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all" 
+                        />
+                    </div>
+
+                    {/* Input 2: Password */}
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </div>
+                        <input 
+                            type={isPasswordVisible ? "text" : "password"} 
+                            placeholder="Mot de passe" 
+                            value={newPassword} 
+                            onChange={e => setNewPassword(e.target.value)} 
+                            className="w-full pl-11 pr-11 py-3.5 rounded-2xl bg-[#f8fafc] dark:bg-slate-700/50 border border-slate-100 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all" 
+                        />
+                        <button 
+                            type="button" 
+                            onClick={() => setIsPasswordVisible(!isPasswordVisible)} 
+                            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors cursor-pointer"
+                            aria-label={isPasswordVisible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                        >
+                            {isPasswordVisible ? (
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                                </svg>
+                            ) : (
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            )}
+                        </button>
+                    </div>
+
+                    {/* Input 3: Select Sophie / Vincent */}
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </div>
+                        <select 
+                            value={selectedUser} 
+                            onChange={e => setSelectedUser(e.target.value as User)} 
+                            className="w-full pl-11 pr-10 py-3.5 rounded-2xl bg-[#f8fafc] dark:bg-slate-700/50 border border-slate-100 dark:border-slate-700 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 appearance-none transition-all cursor-pointer"
+                        >
+                            {Object.values(User).map(u => (
+                                <option key={u} value={u}>{u}</option>
+                            ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {error && <p className="text-xs text-rose-500 font-bold px-1">{error}</p>}
+
+                    {/* Submit button: Vibrant cyan button matching screenshot */}
+                    <button 
+                        type="submit" 
+                        className="w-full py-3.5 px-4 rounded-2xl bg-[#00c5eb] hover:bg-[#00b4d8] active:bg-[#0096c7] text-white font-bold text-base flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.99] cursor-pointer mt-2"
+                    >
+                        <div className="w-5 h-5 rounded-full border-2 border-white flex items-center justify-center font-extrabold text-xs">
+                            +
+                        </div>
+                        <span>Ajouter</span>
+                    </button>
+                </form>
+            </div>
 
             {/* Edit Modal */}
             {editingUser && (
-                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-sm space-y-4">
-                        <h4 className="font-bold text-lg">Modifier le mot de passe de "{editingUser.username}"</h4>
-                        <input type="password" placeholder="Nouveau mot de passe" value={editingPassword} onChange={e => setEditingPassword(e.target.value)} className="input-style w-full"/>
-                        <div className="flex justify-end gap-2">
-                            <button onClick={() => setEditingUser(null)} className="btn-secondary">Annuler</button>
-                            <button onClick={handleUpdatePassword} className="btn-primary">Enregistrer</button>
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-6 w-full max-w-sm space-y-4 border border-slate-100 dark:border-slate-700">
+                        <div className="space-y-1">
+                            <h4 className="font-extrabold text-lg text-slate-900 dark:text-white">Modifier le mot de passe</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Pour le compte de « {editingUser.username} ».</p>
+                        </div>
+                        <input 
+                            type="password" 
+                            placeholder="Nouveau mot de passe" 
+                            value={editingPassword} 
+                            onChange={e => setEditingPassword(e.target.value)} 
+                            className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            autoFocus
+                        />
+                        <div className="flex justify-end gap-2 pt-2">
+                            <button 
+                                type="button"
+                                onClick={() => setEditingUser(null)} 
+                                className="px-4 py-2.5 rounded-xl font-bold text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            >
+                                Annuler
+                            </button>
+                            <button 
+                                type="button"
+                                onClick={handleUpdatePassword} 
+                                className="px-5 py-2.5 rounded-xl font-bold text-sm bg-[#00c5eb] hover:bg-[#00b4d8] text-white shadow-xs transition-colors"
+                            >
+                                Enregistrer
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -228,10 +449,166 @@ const UserManagement: React.FC<{
                 onClose={() => setDeletingUser(null)}
                 onConfirm={handleDeleteUser}
                 title="Confirmer la suppression"
-                message={`Êtes-vous sûr de vouloir supprimer l'utilisateur "${deletingUser?.username}" ? Cette action est irréversible.`}
+                message={`Êtes-vous sûr de vouloir supprimer l'utilisateur « ${deletingUser?.username} » ? Cette action est irréversible.`}
             />
         </div>
     );
+};
+
+// --- Category Visuals Mapping matching mockup ---
+const getCategoryVisuals = (catName: string) => {
+    const norm = catName.toLowerCase().trim();
+
+    // 1. Complément alimentaire / Santé / Pharmacie (green badge, pill icon)
+    if (norm.includes('complément') || norm.includes('complement') || norm.includes('pill') || norm.includes('santé') || norm.includes('pharmacie')) {
+        return {
+            bg: 'bg-[#dcfce7] dark:bg-emerald-950/70',
+            icon: (
+                <svg viewBox="44 40 120 120" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-[#10b981] dark:text-emerald-400" fill="none" stroke="currentColor" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="60" y="75" width="45" height="65" rx="8" />
+                    <rect x="65" y="58" width="35" height="12" rx="4" />
+                    <rect x="70" y="95" width="25" height="15" rx="2" fill="currentColor" stroke="none" />
+                    <g transform="translate(135 115) rotate(30)">
+                        <rect x="-12" y="-25" width="24" height="50" rx="12" />
+                        <line x1="-12" y1="0" x2="12" y2="0" />
+                    </g>
+                </svg>
+            )
+        };
+    }
+
+    // 2. Dép. récurrentes / Dépenses obligatoires (light blue badge, circular sync/refresh icon)
+    if (norm.includes('recurent') || norm.includes('récurrent') || norm.includes('obligatoire') || norm.includes('dép.') || norm.includes('dep.') || norm.includes('loyer')) {
+        return {
+            bg: 'bg-[#dbeafe] dark:bg-sky-950/70',
+            icon: (
+                <svg className="w-6 h-6 text-[#2563eb] dark:text-sky-400 stroke-[2.4]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                </svg>
+            )
+        };
+    }
+
+    // 3. Carburant (light pink/rose badge, gas pump icon)
+    if (norm.includes('carburant') || norm.includes('essence') || norm.includes('diesel') || norm.includes('gasoil')) {
+        return {
+            bg: 'bg-[#ffe4e6] dark:bg-rose-950/70',
+            icon: (
+                <svg className="w-6 h-6 text-[#f43f5e] dark:text-rose-400 fill-current" viewBox="0 0 24 24">
+                    <path d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1v4.5c0 1.65 1.35 3 3 3s3-1.35 3-3V9c0-.69-.28-1.32-.73-1.77zM12 10H6V5h6v5z" />
+                </svg>
+            )
+        };
+    }
+
+    // 4. Chauffage (light mint green badge, green house icon as shown in mockup)
+    if (norm.includes('chauffage') || norm.includes('bois') || norm.includes('gaz') || norm.includes('pellet') || norm.includes('fioul')) {
+        return {
+            bg: 'bg-[#dcfce7] dark:bg-emerald-950/70',
+            icon: (
+                <svg className="w-6 h-6 text-[#10b981] dark:text-emerald-400 fill-current" viewBox="0 0 24 24">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+                </svg>
+            )
+        };
+    }
+
+    // 5. Courses (light blue badge, shopping cart icon)
+    if (norm.includes('course') || norm.includes('supermarché') || norm.includes('supermarche') || norm.includes('hyper')) {
+        return {
+            bg: 'bg-[#dbeafe] dark:bg-sky-950/70',
+            icon: (
+                <svg className="w-6 h-6 text-[#2563eb] dark:text-sky-400 fill-current" viewBox="0 0 24 24">
+                    <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
+                </svg>
+            )
+        };
+    }
+
+    // 6. Restaurant (light lavender/purple badge, fork & knife icon)
+    if (norm.includes('restaurant') || norm.includes('resto') || norm.includes('bar') || norm.includes('brasserie')) {
+        return {
+            bg: 'bg-[#f3e8ff] dark:bg-purple-950/70',
+            icon: (
+                <svg className="w-6 h-6 text-[#a855f7] dark:text-purple-400 fill-current" viewBox="0 0 24 24">
+                    <path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z" />
+                </svg>
+            )
+        };
+    }
+
+    // 7. Vacances (light mint green badge, palm tree icon)
+    if (norm.includes('vacance') || norm.includes('voyage') || norm.includes('hotel') || norm.includes('hôtel')) {
+        return {
+            bg: 'bg-[#dcfce7] dark:bg-emerald-950/70',
+            icon: (
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-[#10b981] dark:text-emerald-400">
+                    <path d="M12 22V11" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"/>
+                    <path d="M12 11C12 11 15 6 21 7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M12 11C12 11 9 6 3 7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M12 11C12 11 17 9 19 14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M12 11C12 11 7 9 5 14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+            )
+        };
+    }
+
+    // 8. Réparation voitures (light blue badge, car icon)
+    if (norm.includes('voiture') || norm.includes('auto') || norm.includes('garage') || norm.includes('réparation') || norm.includes('reparation')) {
+        return {
+            bg: 'bg-[#dbeafe] dark:bg-sky-950/70',
+            icon: (
+                <svg className="w-6 h-6 text-[#0284c7] dark:text-sky-400 fill-current" viewBox="0 0 24 24">
+                    <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+                </svg>
+            )
+        };
+    }
+
+    // 9. Vêtements (light pink/rose badge, t-shirt icon)
+    if (norm.includes('vêtement') || norm.includes('vetement') || norm.includes('habit') || norm.includes('mode') || norm.includes('fringue')) {
+        return {
+            bg: 'bg-[#ffe4e6] dark:bg-rose-950/70',
+            icon: (
+                <svg className="w-6 h-6 text-[#f43f5e] dark:text-rose-400 fill-current" viewBox="0 0 24 24">
+                    <path d="M16 2l3 3-2 3h1v14H6V8h1L5 5l3-3 4 2 4-2zm-4 3a2 2 0 0 0-2-2c0 1.1.9 2 2 2s2-.9 2-2a2 2 0 0 0-2 2z"/>
+                </svg>
+            )
+        };
+    }
+
+    // 10. Cadeau (light pink badge, gift icon)
+    if (norm.includes('cadeau') || norm.includes('anniversaire') || norm.includes('fête') || norm.includes('fete')) {
+        return {
+            bg: 'bg-[#ffe4e6] dark:bg-pink-950/70',
+            icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-[#ec4899] dark:text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <rect x="3" y="8" width="18" height="4" rx="1" strokeLinecap="round" strokeLinejoin="round" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" />
+                </svg>
+            )
+        };
+    }
+
+    // 11. Divers / Autre (light blue badge, cube icon)
+    return {
+        bg: 'bg-[#dbeafe] dark:bg-blue-950/70',
+        icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-[#3b82f6] dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+            </svg>
+        )
+    };
+};
+
+const formatCategoryDisplayName = (cat: string) => {
+    const norm = cat.toLowerCase().trim();
+    if (norm.includes('obligatoire') || norm.includes('dépenses récurrentes') || norm.includes('depenses recurrentes') || norm.includes('dép. recurentes')) {
+        return 'Dép. récurrentes';
+    }
+    return cat;
 };
 
 // --- Category Management ---
@@ -241,24 +618,37 @@ const CategoryManagement: React.FC<{
     onUpdateCategory: (oldName: string, newName: string) => boolean;
     onDeleteCategory: (name: string) => void;
 }> = ({ categories, onAddCategory, onUpdateCategory, onDeleteCategory }) => {
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [newCategory, setNewCategory] = useState('');
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [editingName, setEditingName] = useState('');
     const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
+    const [addError, setAddError] = useState('');
 
     const handleAddCategory = (e: React.FormEvent) => {
         e.preventDefault();
-        if (onAddCategory(newCategory)) {
+        const trimmed = newCategory.trim();
+        if (!trimmed) {
+            setAddError('Le nom de la catégorie est requis.');
+            return;
+        }
+        if (onAddCategory(trimmed)) {
             setNewCategory('');
+            setAddError('');
+            setIsAddModalOpen(false);
+        } else {
+            setAddError('Cette catégorie existe déjà.');
         }
     };
     
     const handleUpdateCategory = () => {
-        if(editingCategory && onUpdateCategory(editingCategory, editingName)) {
-            setEditingCategory(null);
-            setEditingName('');
+        if(editingCategory && editingName.trim()) {
+            if (onUpdateCategory(editingCategory, editingName.trim())) {
+                setEditingCategory(null);
+                setEditingName('');
+            }
         }
-    }
+    };
 
     const handleDeleteCategory = () => {
         if (deletingCategory) {
@@ -268,39 +658,179 @@ const CategoryManagement: React.FC<{
     };
 
     return (
-        <div className="space-y-6">
-            <SectionHeader title="Gestion des Catégories" description="Personnalisez la liste des catégories de dépenses." />
-            <div className="space-y-2">
-                {categories.map(c => (
-                     <div key={c} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                        <span className="font-medium text-slate-700 dark:text-slate-200">{c}</span>
-                        <div className="flex items-center gap-2">
-                           <button onClick={() => { setEditingCategory(c); setEditingName(c); }} className="p-2 text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 rounded-full transition-colors"><EditIcon /></button>
-                           <button onClick={() => setDeletingCategory(c)} className="p-2 text-slate-500 hover:text-red-600 dark:hover:text-red-400 rounded-full transition-colors"><TrashIcon /></button>
-                        </div>
-                    </div>
-                ))}
-            </div>
-             <form onSubmit={handleAddCategory} className="flex gap-2 items-center p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
-                <input type="text" placeholder="Nouvelle catégorie" value={newCategory} onChange={e => setNewCategory(e.target.value)} className="input-style flex-grow" />
-                <button type="submit" className="btn-primary">Ajouter</button>
-            </form>
+        <div className="space-y-4 sm:space-y-5">
+            {/* Header with Title, Subtitle, and Decorative Sparkles */}
+            <div className="flex items-start justify-between relative pt-1 pb-1">
+                <div className="space-y-1">
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                        Gestion des catégories
+                    </h1>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium text-xs sm:text-sm">
+                        Personnalisez vos catégories de dépenses.
+                    </p>
+                </div>
 
-            {/* Edit Modal */}
+                {/* Decorative festive rays in top right matching mockup */}
+                <div className="relative w-10 h-10 shrink-0 pointer-events-none select-none opacity-85">
+                    <svg viewBox="0 0 48 48" fill="none" className="w-10 h-10">
+                        <path d="M12 28L6 34" stroke="#60A5FA" strokeWidth="3" strokeLinecap="round" />
+                        <path d="M22 18L18 8" stroke="#5EEAD4" strokeWidth="3" strokeLinecap="round" />
+                        <path d="M34 22L42 16" stroke="#93C5FD" strokeWidth="3.5" strokeLinecap="round" />
+                        <path d="M38 34L46 38" stroke="#FDA4AF" strokeWidth="3.5" strokeLinecap="round" />
+                    </svg>
+                </div>
+            </div>
+
+            {/* Primary Action Button: + Ajouter une catégorie */}
+            <button
+                type="button"
+                onClick={() => {
+                    setNewCategory('');
+                    setAddError('');
+                    setIsAddModalOpen(true);
+                }}
+                className="w-full py-3.5 px-4 rounded-2xl bg-[#4f83f8] hover:bg-[#3b72ea] active:bg-[#2d63dc] text-white font-bold text-base flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.99] cursor-pointer"
+            >
+                <svg className="w-5 h-5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                <span>Ajouter une catégorie</span>
+            </button>
+
+            {/* List of Category Cards */}
+            <div className="space-y-2.5 sm:space-y-3 pt-1">
+                {categories.map(c => {
+                    const visual = getCategoryVisuals(c);
+                    const displayName = formatCategoryDisplayName(c);
+
+                    return (
+                        <div 
+                            key={c} 
+                            className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100/90 dark:border-slate-700/60 shadow-2xs p-3 sm:p-3.5 flex items-center justify-between gap-3 transition-all hover:shadow-xs"
+                        >
+                            {/* Left: Icon badge + Label & Subtitle */}
+                            <div className="flex items-center gap-3.5 min-w-0">
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${visual.bg}`}>
+                                    {visual.icon}
+                                </div>
+                                <div className="min-w-0">
+                                    <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base truncate">
+                                        {displayName}
+                                    </h4>
+                                    <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                                        Visible dans les dépenses
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Right: Edit & Delete Action Buttons */}
+                            <div className="flex items-center gap-2 shrink-0">
+                                <button 
+                                    type="button"
+                                    onClick={() => { setEditingCategory(c); setEditingName(c); }} 
+                                    className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200/80 dark:border-slate-600/80 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all active:scale-95 cursor-pointer shadow-2xs"
+                                    title={`Modifier la catégorie ${c}`}
+                                    aria-label={`Modifier la catégorie ${c}`}
+                                >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                    </svg>
+                                </button>
+                                <button 
+                                    type="button"
+                                    onClick={() => setDeletingCategory(c)} 
+                                    className="w-10 h-10 rounded-xl bg-[#fee2e2] dark:bg-rose-950/60 hover:bg-[#fecaca] dark:hover:bg-rose-900/80 border border-rose-200 dark:border-rose-800/60 flex items-center justify-center text-[#ef4444] dark:text-rose-400 transition-all active:scale-95 cursor-pointer shadow-2xs"
+                                    title={`Supprimer la catégorie ${c}`}
+                                    aria-label={`Supprimer la catégorie ${c}`}
+                                >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M3 6h18" />
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                        <line x1="10" y1="11" x2="10" y2="17" />
+                                        <line x1="14" y1="11" x2="14" y2="17" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Add Category Modal */}
+            {isAddModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-6 w-full max-w-sm space-y-4 border border-slate-100 dark:border-slate-700">
+                        <div className="space-y-1">
+                            <h4 className="font-extrabold text-lg text-slate-900 dark:text-white">Ajouter une catégorie</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Entrez le nom de la nouvelle catégorie de dépense.</p>
+                        </div>
+                        <form onSubmit={handleAddCategory} className="space-y-4">
+                            <input 
+                                type="text" 
+                                placeholder="Nom de la catégorie (ex: Loisirs)" 
+                                value={newCategory} 
+                                onChange={e => setNewCategory(e.target.value)} 
+                                className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                autoFocus
+                            />
+                            {addError && <p className="text-xs text-rose-500 font-bold">{addError}</p>}
+                            <div className="flex justify-end gap-2 pt-2">
+                                <button 
+                                    type="button" 
+                                    onClick={() => { setIsAddModalOpen(false); setAddError(''); }} 
+                                    className="px-4 py-2.5 rounded-xl font-bold text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    Annuler
+                                </button>
+                                <button 
+                                    type="submit" 
+                                    className="px-5 py-2.5 rounded-xl font-bold text-sm bg-[#4f83f8] hover:bg-[#3b72ea] text-white shadow-xs transition-colors"
+                                >
+                                    Ajouter
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Category Modal */}
             {editingCategory && (
-                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-sm space-y-4">
-                        <h4 className="font-bold text-lg">Renommer "{editingCategory}"</h4>
-                        <input type="text" value={editingName} onChange={e => setEditingName(e.target.value)} className="input-style w-full"/>
-                        <div className="flex justify-end gap-2">
-                            <button onClick={() => setEditingCategory(null)} className="btn-secondary">Annuler</button>
-                            <button onClick={handleUpdateCategory} className="btn-primary">Enregistrer</button>
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-6 w-full max-w-sm space-y-4 border border-slate-100 dark:border-slate-700">
+                        <div className="space-y-1">
+                            <h4 className="font-extrabold text-lg text-slate-900 dark:text-white">Modifier la catégorie</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Renommer « {editingCategory} ».</p>
+                        </div>
+                        <input 
+                            type="text" 
+                            value={editingName} 
+                            onChange={e => setEditingName(e.target.value)} 
+                            className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            autoFocus
+                        />
+                        <div className="flex justify-end gap-2 pt-2">
+                            <button 
+                                type="button" 
+                                onClick={() => setEditingCategory(null)} 
+                                className="px-4 py-2.5 rounded-xl font-bold text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            >
+                                Annuler
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={handleUpdateCategory} 
+                                className="px-5 py-2.5 rounded-xl font-bold text-sm bg-[#4f83f8] hover:bg-[#3b72ea] text-white shadow-xs transition-colors"
+                            >
+                                Enregistrer
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
             
-            {/* Delete Confirmation */}
+            {/* Delete Confirmation Modal */}
             <ConfirmationModal
                 isOpen={!!deletingCategory}
                 onClose={() => setDeletingCategory(null)}
@@ -315,27 +845,75 @@ const CategoryManagement: React.FC<{
 // --- List Manager (Generic) ---
 interface ListManagerProps {
     title: string;
+    description: string;
     list: string[];
     setList: React.Dispatch<React.SetStateAction<string[]>>;
     itemNoun: string;
+    iconType: 'store' | 'car' | 'heating';
     setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
 }
 
-const ListManager: React.FC<ListManagerProps> = ({ title, list, setList, itemNoun, setToastInfo }) => {
+const getListIcon = (iconType: 'store' | 'car' | 'heating') => {
+    if (iconType === 'store') {
+        return {
+            bg: 'bg-[#dbeafe] dark:bg-sky-950/70',
+            icon: (
+                <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#0284c7] dark:text-sky-400" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="9" cy="21" r="1" />
+                    <circle cx="20" cy="21" r="1" />
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                </svg>
+            )
+        };
+    }
+    if (iconType === 'car') {
+        return {
+            bg: 'bg-[#e0f2fe] dark:bg-cyan-950/70',
+            icon: (
+                <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#0891b2] dark:text-cyan-400" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
+                    <circle cx="7" cy="17" r="2" />
+                    <path d="M9 17h6" />
+                    <circle cx="17" cy="17" r="2" />
+                </svg>
+            )
+        };
+    }
+    return {
+        bg: 'bg-[#fef3c7] dark:bg-amber-950/70',
+        icon: (
+            <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#d97706] dark:text-amber-400" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3z" />
+            </svg>
+        )
+    };
+};
+
+const ListManager: React.FC<ListManagerProps> = ({ title, description, list, setList, itemNoun, iconType, setToastInfo }) => {
     const [newItem, setNewItem] = useState('');
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [addError, setAddError] = useState('');
     const [editingItem, setEditingItem] = useState<{ old: string; new: string } | null>(null);
     const [deletingItem, setDeletingItem] = useState<string | null>(null);
+
+    const { bg, icon } = getListIcon(iconType);
 
     const handleAddItem = (e: React.FormEvent) => {
         e.preventDefault();
         const trimmedItem = newItem.trim();
-        if (!trimmedItem) return;
+        if (!trimmedItem) {
+            setAddError(`Le nom du ${itemNoun} est requis.`);
+            return;
+        }
         if (list.find(i => i.toLowerCase() === trimmedItem.toLowerCase())) {
-            setToastInfo({ message: `Cet élément existe déjà.`, type: 'error' });
+            setAddError(`« ${trimmedItem} » existe déjà.`);
             return;
         }
         setList(prev => [...prev, trimmedItem]);
         setNewItem('');
+        setAddError('');
+        setIsAddModalOpen(false);
+        setToastInfo({ message: `${itemNoun.charAt(0).toUpperCase() + itemNoun.slice(1)} « ${trimmedItem} » ajouté.`, type: 'info' });
     };
 
     const handleUpdateItem = () => {
@@ -345,12 +923,13 @@ const ListManager: React.FC<ListManagerProps> = ({ title, list, setList, itemNou
             setEditingItem(null);
             return;
         }
-        if (list.find(i => i.toLowerCase() === trimmedNewName.toLowerCase())) {
+        if (list.find(i => i.toLowerCase() === trimmedNewName.toLowerCase() && i.toLowerCase() !== editingItem.old.toLowerCase())) {
             setToastInfo({ message: `Cet élément existe déjà.`, type: 'error' });
             return;
         }
         setList(prev => prev.map(i => i === editingItem.old ? trimmedNewName : i));
         setEditingItem(null);
+        setToastInfo({ message: `Modifié en « ${trimmedNewName} ».`, type: 'info' });
     };
 
     const handleDeleteItem = () => {
@@ -361,37 +940,163 @@ const ListManager: React.FC<ListManagerProps> = ({ title, list, setList, itemNou
                  return;
             }
             setList(prev => prev.filter(i => i !== deletingItem));
+            setToastInfo({ message: `« ${deletingItem} » supprimé.`, type: 'info' });
             setDeletingItem(null);
         }
     };
 
     return (
-        <div className="space-y-6">
-            <h4 className="text-md font-bold text-slate-800 dark:text-slate-100">{title}</h4>
-            <div className="space-y-2">
+        <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg">
+                        {title}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                        {description} ({list.length})
+                    </p>
+                </div>
+            </div>
+
+            {/* Main Add Button */}
+            <button
+                type="button"
+                onClick={() => {
+                    setNewItem('');
+                    setAddError('');
+                    setIsAddModalOpen(true);
+                }}
+                className="w-full py-3.5 px-4 rounded-2xl bg-[#4f83f8] hover:bg-[#3b72ea] active:bg-[#2d63dc] text-white font-bold text-base flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.99] cursor-pointer"
+            >
+                <svg className="w-5 h-5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                <span>Ajouter un {itemNoun}</span>
+            </button>
+
+            {/* List Cards */}
+            <div className="space-y-2.5 sm:space-y-3 pt-1">
                 {list.map(item => (
-                    <div key={item} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                        <span className="font-medium text-slate-700 dark:text-slate-200">{item}</span>
-                        <div className="flex items-center gap-2">
-                           <button onClick={() => setEditingItem({ old: item, new: item })} className="p-2 text-slate-500 hover:text-cyan-600 dark:hover:text-cyan-400 rounded-full transition-colors"><EditIcon /></button>
-                           <button onClick={() => setDeletingItem(item)} className="p-2 text-slate-500 hover:text-red-600 dark:hover:text-red-400 rounded-full transition-colors"><TrashIcon /></button>
+                    <div 
+                        key={item} 
+                        className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100/90 dark:border-slate-700/60 shadow-2xs p-3 sm:p-3.5 flex items-center justify-between gap-3 transition-all hover:shadow-xs"
+                    >
+                        <div className="flex items-center gap-3.5 min-w-0">
+                            {/* Icon Badge */}
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${bg}`}>
+                                {icon}
+                            </div>
+                            <div className="min-w-0">
+                                <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base truncate">
+                                    {item}
+                                </h4>
+                                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate">
+                                    Option disponible dans les dépenses
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons: Pencil & Trash */}
+                        <div className="flex items-center gap-2 shrink-0">
+                            <button 
+                                type="button"
+                                onClick={() => setEditingItem({ old: item, new: item })} 
+                                className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200/80 dark:border-slate-600/80 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all active:scale-95 cursor-pointer shadow-2xs"
+                                title={`Modifier ${item}`}
+                                aria-label={`Modifier ${item}`}
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                            </button>
+                            <button 
+                                type="button"
+                                onClick={() => setDeletingItem(item)} 
+                                className="w-10 h-10 rounded-xl bg-[#fee2e2] dark:bg-rose-950/60 hover:bg-[#fecaca] dark:hover:bg-rose-900/80 border border-rose-200 dark:border-rose-800/60 flex items-center justify-center text-[#ef4444] dark:text-rose-400 transition-all active:scale-95 cursor-pointer shadow-2xs"
+                                title={`Supprimer ${item}`}
+                                aria-label={`Supprimer ${item}`}
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M3 6h18" />
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    <line x1="10" y1="11" x2="10" y2="17" />
+                                    <line x1="14" y1="11" x2="14" y2="17" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
                 ))}
             </div>
-            <form onSubmit={handleAddItem} className="flex gap-2 items-center p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
-                <input type="text" placeholder={`Nouveau ${itemNoun}`} value={newItem} onChange={e => setNewItem(e.target.value)} className="input-style flex-grow" />
-                <button type="submit" className="btn-primary">Ajouter</button>
-            </form>
 
+            {/* Add Item Modal */}
+            {isAddModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-6 w-full max-w-sm space-y-4 border border-slate-100 dark:border-slate-700">
+                        <div className="space-y-1">
+                            <h4 className="font-extrabold text-lg text-slate-900 dark:text-white">Ajouter un {itemNoun}</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Entrez le nom du nouveau {itemNoun}.</p>
+                        </div>
+                        <form onSubmit={handleAddItem} className="space-y-4">
+                            <input 
+                                type="text" 
+                                placeholder={`Nom du ${itemNoun}`} 
+                                value={newItem} 
+                                onChange={e => setNewItem(e.target.value)} 
+                                className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                autoFocus
+                            />
+                            {addError && <p className="text-xs text-rose-500 font-bold">{addError}</p>}
+                            <div className="flex justify-end gap-2 pt-2">
+                                <button 
+                                    type="button" 
+                                    onClick={() => { setIsAddModalOpen(false); setAddError(''); }} 
+                                    className="px-4 py-2.5 rounded-xl font-bold text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    Annuler
+                                </button>
+                                <button 
+                                    type="submit" 
+                                    className="px-5 py-2.5 rounded-xl font-bold text-sm bg-[#4f83f8] hover:bg-[#3b72ea] text-white shadow-xs transition-colors"
+                                >
+                                    Ajouter
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Item Modal */}
             {editingItem && (
-                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-sm space-y-4">
-                        <h4 className="font-bold text-lg">Renommer "{editingItem.old}"</h4>
-                        <input type="text" value={editingItem.new} onChange={e => setEditingItem({ ...editingItem, new: e.target.value })} className="input-style w-full"/>
-                        <div className="flex justify-end gap-2">
-                            <button onClick={() => setEditingItem(null)} className="btn-secondary">Annuler</button>
-                            <button onClick={handleUpdateItem} className="btn-primary">Enregistrer</button>
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-6 w-full max-w-sm space-y-4 border border-slate-100 dark:border-slate-700">
+                        <div className="space-y-1">
+                            <h4 className="font-extrabold text-lg text-slate-900 dark:text-white">Modifier {itemNoun}</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Renommer « {editingItem.old} ».</p>
+                        </div>
+                        <input 
+                            type="text" 
+                            value={editingItem.new} 
+                            onChange={e => setEditingItem({ ...editingItem, new: e.target.value })} 
+                            className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            autoFocus
+                        />
+                        <div className="flex justify-end gap-2 pt-2">
+                            <button 
+                                type="button" 
+                                onClick={() => setEditingItem(null)} 
+                                className="px-4 py-2.5 rounded-xl font-bold text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            >
+                                Annuler
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={handleUpdateItem} 
+                                className="px-5 py-2.5 rounded-xl font-bold text-sm bg-[#4f83f8] hover:bg-[#3b72ea] text-white shadow-xs transition-colors"
+                            >
+                                Enregistrer
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -402,7 +1107,7 @@ const ListManager: React.FC<ListManagerProps> = ({ title, list, setList, itemNou
                 onClose={() => setDeletingItem(null)}
                 onConfirm={handleDeleteItem}
                 title="Confirmer la suppression"
-                message={`Êtes-vous sûr de vouloir supprimer "${deletingItem}" ?`}
+                message={`Êtes-vous sûr de vouloir supprimer « ${deletingItem} » ?`}
             />
         </div>
     );
@@ -428,32 +1133,119 @@ const ListManagement: React.FC<ListManagementProps> = ({
     setHeatingTypes,
     setToastInfo,
 }) => {
+    const [activeSubTab, setActiveSubTab] = useState<'stores' | 'cars' | 'heating'>('stores');
+
     return (
-        <div className="space-y-6">
-             <SectionHeader title="Contenu des Listes" description="Personnalisez les options disponibles (magasins, véhicules...)." />
-             <div className="space-y-10">
-                <ListManager 
-                    title="Magasins" 
-                    list={groceryStores} 
-                    setList={setGroceryStores} 
-                    itemNoun="magasin" 
-                    setToastInfo={setToastInfo} 
-                />
-                <ListManager 
-                    title="Véhicules" 
-                    list={cars} 
-                    setList={setCars} 
-                    itemNoun="véhicule" 
-                    setToastInfo={setToastInfo} 
-                />
-                <ListManager 
-                    title="Types de Chauffage" 
-                    list={heatingTypes} 
-                    setList={setHeatingTypes} 
-                    itemNoun="type de chauffage" 
-                    setToastInfo={setToastInfo} 
-                />
-             </div>
+        <div className="space-y-5 sm:space-y-6">
+            {/* Header matching category header style */}
+            <div className="flex items-start justify-between relative pt-1 pb-1">
+                <div className="space-y-1">
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                        Contenu des listes
+                    </h1>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium text-xs sm:text-sm">
+                        Personnalisez les options disponibles pour vos dépenses.
+                    </p>
+                </div>
+                {/* Festive rays decorative header */}
+                <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+                    <div className="text-2xl select-none">📋</div>
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-80">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-400 absolute -top-1 -right-1 animate-ping" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute -bottom-1 -left-1" />
+                    </div>
+                </div>
+            </div>
+
+            {/* List selector pill tabs */}
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 dark:bg-slate-700/60 rounded-2xl">
+                <button
+                    type="button"
+                    onClick={() => setActiveSubTab('stores')}
+                    className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 ${
+                        activeSubTab === 'stores'
+                            ? 'bg-white dark:bg-slate-800 text-[#0284c7] dark:text-sky-300 shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    }`}
+                >
+                    <span>🛒</span>
+                    <span>Magasins</span>
+                    <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 font-bold ml-0.5">
+                        {groceryStores.length}
+                    </span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setActiveSubTab('cars')}
+                    className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 ${
+                        activeSubTab === 'cars'
+                            ? 'bg-white dark:bg-slate-800 text-[#0891b2] dark:text-cyan-300 shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    }`}
+                >
+                    <span>🚗</span>
+                    <span>Véhicules</span>
+                    <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-cyan-100 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-300 font-bold ml-0.5">
+                        {cars.length}
+                    </span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setActiveSubTab('heating')}
+                    className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 ${
+                        activeSubTab === 'heating'
+                            ? 'bg-white dark:bg-slate-800 text-[#d97706] dark:text-amber-300 shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    }`}
+                >
+                    <span>🔥</span>
+                    <span>Chauffage</span>
+                    <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-bold ml-0.5">
+                        {heatingTypes.length}
+                    </span>
+                </button>
+            </div>
+
+            {/* Active List Manager */}
+            {activeSubTab === 'stores' && (
+                <div className="animate-fade-in">
+                    <ListManager 
+                        title="Magasins & Supermarchés" 
+                        description="Magasins disponibles pour les courses"
+                        list={groceryStores} 
+                        setList={setGroceryStores} 
+                        itemNoun="magasin" 
+                        iconType="store"
+                        setToastInfo={setToastInfo} 
+                    />
+                </div>
+            )}
+            {activeSubTab === 'cars' && (
+                <div className="animate-fade-in">
+                    <ListManager 
+                        title="Véhicules" 
+                        description="Véhicules pour le carburant et les réparations"
+                        list={cars} 
+                        setList={setCars} 
+                        itemNoun="véhicule" 
+                        iconType="car"
+                        setToastInfo={setToastInfo} 
+                    />
+                </div>
+            )}
+            {activeSubTab === 'heating' && (
+                <div className="animate-fade-in">
+                    <ListManager 
+                        title="Types de Chauffage" 
+                        description="Énergies et chauffages pour l'habitation"
+                        list={heatingTypes} 
+                        setList={setHeatingTypes} 
+                        itemNoun="type de chauffage" 
+                        iconType="heating"
+                        setToastInfo={setToastInfo} 
+                    />
+                </div>
+            )}
         </div>
     );
 };
@@ -478,7 +1270,7 @@ interface ManagementTabProps {
     setHeatingTypes: React.Dispatch<React.SetStateAction<string[]>>;
     setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
     loginHistory: LoginEvent[];
-    focusSection?: 'all' | 'users' | 'categories' | 'data';
+    focusSection?: 'all' | 'users' | 'categories' | 'lists' | 'data';
 }
 
 const ManagementTab: React.FC<ManagementTabProps> = (props) => {
@@ -549,12 +1341,32 @@ const ManagementTab: React.FC<ManagementTabProps> = (props) => {
                     background-color: rgb(185 28 28 / 1); /* hover:bg-red-700 */
                 }
             `}</style>
-            {(focusSection === 'all' || focusSection === 'data') && <DatabaseManagement />}
+            {focusSection === 'data' && (
+                <DataAndBackupTab 
+                    expenses={props.expenses}
+                    categories={props.categories}
+                    groceryStores={props.groceryStores}
+                    cars={props.cars}
+                    heatingTypes={props.heatingTypes}
+                    setToastInfo={props.setToastInfo}
+                />
+            )}
+            {focusSection === 'all' && <DatabaseManagement />}
+            {focusSection === 'users' && (
+                <div className="space-y-1 pt-1 pb-1">
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                        Utilisateurs
+                    </h1>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium text-xs sm:text-sm">
+                        Gérez les membres du compte DuoBudget
+                    </p>
+                </div>
+            )}
             {(focusSection === 'all' || focusSection === 'users') && <HistoryManagement loginHistory={props.loginHistory} />}
-            {(focusSection === 'all' || focusSection === 'data') && <DataManagement expenses={props.expenses} />}
+            {focusSection === 'all' && <DataManagement expenses={props.expenses} />}
             {(focusSection === 'all' || focusSection === 'users') && <UserManagement {...props} />}
             {(focusSection === 'all' || focusSection === 'categories') && <CategoryManagement {...props} />}
-            {(focusSection === 'all' || focusSection === 'categories') && (
+            {(focusSection === 'all' || focusSection === 'lists' || focusSection === 'categories') && (
                 <ListManagement 
                     groceryStores={props.groceryStores}
                     setGroceryStores={props.setGroceryStores}

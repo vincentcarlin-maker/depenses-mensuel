@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { type Reminder, type Category, type Expense, User } from '../types';
+import { type Reminder, type Category, type Expense, type MoneyPotTransaction, User } from '../types';
 import RemindersTab from './RemindersTab';
-import CloseIcon from './icons/CloseIcon';
 import ThemeSelector from './ThemeSelector';
 import VibeSelector from './VibeSelector';
+import DataAndBackupTab from './DataAndBackupTab';
+import AdminAndDevTab from './AdminAndDevTab';
 import ArrowLeftIcon from './icons/ArrowLeftIcon';
 import ChevronRightIcon from './icons/ChevronRightIcon';
 import { type Profile, type LoginEvent } from '../hooks/useAuth';
@@ -20,6 +21,8 @@ interface SettingsModalProps {
   onClose: () => void;
   reminders: Reminder[];
   expenses: Expense[];
+  moneyPotTransactions?: MoneyPotTransaction[];
+  onSyncData?: () => Promise<void>;
   onAddReminder: (reminder: Omit<Reminder, 'id' | 'created_at'>) => Promise<void>;
   onUpdateReminder: (reminder: Reminder) => Promise<void>;
   onDeleteReminder: (id: string) => Promise<void>;
@@ -44,7 +47,7 @@ interface SettingsModalProps {
   onLogout: () => void;
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
-  initialView?: 'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'data';
+  initialView?: 'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin';
 }
 
 const SettingsItemRow: React.FC<{
@@ -101,7 +104,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     activeTab,
     onTabChange,
   } = props;
-  const [activeView, setActiveView] = useState<'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'data'>('main');
+  const [activeView, setActiveView] = useState<'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin'>('main');
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const { themeSetting } = useTheme();
 
@@ -151,7 +154,9 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
       notifications: 'Notifications',
       users: 'Utilisateurs',
       categories: 'Catégories',
+      lists: 'Contenu des listes',
       data: 'Données & sauvegarde',
+      admin: 'Administration & Développement',
       management: 'Gestion de l\'application'
   };
 
@@ -184,13 +189,6 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                     </div>
                 )}
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 -mr-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              aria-label="Fermer les réglages"
-            >
-              <CloseIcon className="w-5 h-5" />
-            </button>
           </div>
         </header>
 
@@ -340,6 +338,18 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                       onClick={() => setActiveView('categories')}
                     />
                     <SettingsItemRow
+                      iconBg="bg-[#e0f2fe] dark:bg-sky-950/60"
+                      iconColor="text-[#0284c7] dark:text-sky-400"
+                      icon={
+                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                      }
+                      title="Contenu des listes"
+                      description="Gérer magasins, véhicules et chauffages"
+                      onClick={() => setActiveView('lists')}
+                    />
+                    <SettingsItemRow
                       iconBg="bg-[#f5f3ff] dark:bg-purple-950/60"
                       iconColor="text-[#8b5cf6] dark:text-purple-400"
                       icon={
@@ -351,6 +361,21 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                       description="Sauvegarder et restaurer vos données"
                       onClick={() => setActiveView('data')}
                     />
+                    {(props.loggedInUser === User.Vincent || (props.loggedInUser as string) === 'Vincent') && (
+                      <SettingsItemRow
+                        iconBg="bg-[#eef2ff] dark:bg-indigo-950/60"
+                        iconColor="text-[#6366f1] dark:text-indigo-400"
+                        icon={
+                          <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                          </svg>
+                        }
+                        title="Administration & Développement"
+                        description="Outils techniques et avancés de DuoBudget"
+                        value="Vincent"
+                        onClick={() => setActiveView('admin')}
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -379,24 +404,60 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
             )}
 
             {activeView === 'appearance' && (
-                <div className="space-y-6 animate-fade-in">
-                    <section className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-xs border border-slate-100 dark:border-slate-700/60 space-y-4">
-                        <div className="flex justify-between items-center">
-                            <div>
-                              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base sm:text-lg">Mode de luminosité</h3>
-                              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Thème clair, sombre ou automatique</p>
-                            </div>
-                            <ThemeSelector />
-                        </div>
-                    </section>
+                <div className="space-y-5 sm:space-y-6 animate-fade-in">
+                    {/* View Header */}
+                    <div className="space-y-1">
+                        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                            Apparence
+                        </h1>
+                        <p className="text-slate-500 dark:text-slate-400 font-medium text-xs sm:text-sm">
+                            Personnalisez l'apparence de DuoBudget pour une expérience qui vous ressemble.
+                        </p>
+                    </div>
 
-                    <section className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-xs border border-slate-100 dark:border-slate-700/60 space-y-4">
-                        <div>
-                            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base sm:text-lg">Ambiance de l'application</h3>
-                            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Choisissez le fond et la couleur d'accentuation</p>
+                    {/* Card 1: Mode de luminosité */}
+                    <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 rounded-2xl bg-sky-50 dark:bg-sky-950/60 flex items-center justify-center text-[#0284c7] dark:text-sky-400 shrink-0">
+                                <svg className="w-6 h-6 stroke-[2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <circle cx="12" cy="12" r="4" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                                    Mode de luminosité
+                                </h3>
+                                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                                    Thème clair, sombre ou automatique.
+                                </p>
+                            </div>
+                        </div>
+                        <ThemeSelector />
+                    </div>
+
+                    {/* Card 2: Ambiance de l'application */}
+                    <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center text-[#3b82f6] dark:text-blue-400 shrink-0">
+                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M12 21a9 9 0 0 1-9-9c0-4.97 4.03-9 9-9 4.14 0 7.6 2.8 8.68 6.64.38 1.34-.63 2.36-1.98 2.36h-1.7a2 2 0 0 0-2 2v1c0 1.66-1.34 3-3 3z" />
+                                    <circle cx="7.5" cy="10.5" r="1.5" fill="currentColor" />
+                                    <circle cx="12" cy="7.5" r="1.5" fill="currentColor" />
+                                    <circle cx="16.5" cy="10.5" r="1.5" fill="currentColor" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                                    Ambiance de l'application
+                                </h3>
+                                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                                    Choisissez le fond et la couleur d'accentuation.
+                                </p>
+                            </div>
                         </div>
                         <VibeSelector />
-                    </section>
+                    </div>
                 </div>
             )}
 
@@ -434,10 +495,120 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                 </div>
             )}
 
-            {(activeView === 'users' || activeView === 'categories' || activeView === 'data' || activeView === 'management') && (
+            {activeView === 'categories' && (
+                <div className="space-y-5 animate-fade-in">
+                    <ManagementTab 
+                        focusSection="categories"
+                        expenses={props.expenses}
+                        profiles={props.profiles}
+                        loggedInUser={props.loggedInUser}
+                        onAddProfile={props.onAddProfile}
+                        onUpdateProfilePassword={props.onUpdateProfilePassword}
+                        onDeleteProfile={props.onDeleteProfile}
+                        categories={props.categories}
+                        onAddCategory={props.onAddCategory}
+                        onUpdateCategory={props.onUpdateCategory}
+                        onDeleteCategory={props.onDeleteCategory}
+                        groceryStores={props.groceryStores}
+                        setGroceryStores={props.setGroceryStores}
+                        cars={props.cars}
+                        setCars={props.setCars}
+                        heatingTypes={props.heatingTypes}
+                        setHeatingTypes={props.setHeatingTypes}
+                        setToastInfo={props.setToastInfo}
+                        loginHistory={props.loginHistory}
+                    />
+                </div>
+            )}
+
+            {activeView === 'lists' && (
+                <div className="space-y-5 animate-fade-in">
+                    <ManagementTab 
+                        focusSection="lists"
+                        expenses={props.expenses}
+                        profiles={props.profiles}
+                        loggedInUser={props.loggedInUser}
+                        onAddProfile={props.onAddProfile}
+                        onUpdateProfilePassword={props.onUpdateProfilePassword}
+                        onDeleteProfile={props.onDeleteProfile}
+                        categories={props.categories}
+                        onAddCategory={props.onAddCategory}
+                        onUpdateCategory={props.onUpdateCategory}
+                        onDeleteCategory={props.onDeleteCategory}
+                        groceryStores={props.groceryStores}
+                        setGroceryStores={props.setGroceryStores}
+                        cars={props.cars}
+                        setCars={props.setCars}
+                        heatingTypes={props.heatingTypes}
+                        setHeatingTypes={props.setHeatingTypes}
+                        setToastInfo={props.setToastInfo}
+                        loginHistory={props.loginHistory}
+                    />
+                </div>
+            )}
+
+            {activeView === 'users' && (
+                <div className="space-y-5 animate-fade-in">
+                    <ManagementTab 
+                        focusSection="users"
+                        expenses={props.expenses}
+                        profiles={props.profiles}
+                        loggedInUser={props.loggedInUser}
+                        onAddProfile={props.onAddProfile}
+                        onUpdateProfilePassword={props.onUpdateProfilePassword}
+                        onDeleteProfile={props.onDeleteProfile}
+                        categories={props.categories}
+                        onAddCategory={props.onAddCategory}
+                        onUpdateCategory={props.onUpdateCategory}
+                        onDeleteCategory={props.onDeleteCategory}
+                        groceryStores={props.groceryStores}
+                        setGroceryStores={props.setGroceryStores}
+                        cars={props.cars}
+                        setCars={props.setCars}
+                        heatingTypes={props.heatingTypes}
+                        setHeatingTypes={props.setHeatingTypes}
+                        setToastInfo={props.setToastInfo}
+                        loginHistory={props.loginHistory}
+                    />
+                </div>
+            )}
+
+            {activeView === 'data' && (
+                <div className="space-y-5 animate-fade-in">
+                    <DataAndBackupTab 
+                        expenses={props.expenses}
+                        reminders={props.reminders}
+                        moneyPotTransactions={props.moneyPotTransactions}
+                        categories={props.categories}
+                        groceryStores={props.groceryStores}
+                        cars={props.cars}
+                        heatingTypes={props.heatingTypes}
+                        setToastInfo={props.setToastInfo}
+                        onSyncData={props.onSyncData}
+                    />
+                </div>
+            )}
+
+            {activeView === 'admin' && (
+                <div className="space-y-5 animate-fade-in">
+                    <AdminAndDevTab 
+                        expenses={props.expenses}
+                        reminders={props.reminders}
+                        moneyPotTransactions={props.moneyPotTransactions}
+                        categories={props.categories}
+                        profiles={props.profiles}
+                        loginHistory={props.loginHistory}
+                        loggedInUser={props.loggedInUser}
+                        setToastInfo={props.setToastInfo}
+                        onSyncData={props.onSyncData}
+                    />
+                </div>
+            )}
+
+            {activeView === 'management' && (
                 <div className="animate-fade-in bg-white dark:bg-slate-800 p-5 sm:p-7 rounded-3xl shadow-xs border border-slate-100 dark:border-slate-700/60">
                     <ManagementTab 
-                        focusSection={activeView === 'users' ? 'users' : activeView === 'categories' ? 'categories' : activeView === 'data' ? 'data' : 'all'}
+                        focusSection="all"
                         expenses={props.expenses}
                         profiles={props.profiles}
                         loggedInUser={props.loggedInUser}

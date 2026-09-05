@@ -1308,6 +1308,8 @@ const MainApp: React.FC<{
         initialView={settingsInitialView}
         reminders={reminders} 
         expenses={expenses} 
+        moneyPotTransactions={moneyPotTransactions}
+        onSyncData={syncData}
         onAddReminder={addReminder} 
         onUpdateReminder={updateReminder} 
         onDeleteReminder={deleteReminder} 
