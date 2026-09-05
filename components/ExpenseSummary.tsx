@@ -6,6 +6,8 @@ import CloseIcon from './icons/CloseIcon';
 import ChevronRightIcon from './icons/ChevronRightIcon';
 import TrendingUpIcon from './icons/TrendingUpIcon';
 import PiggyBankIcon from './icons/PiggyBankIcon';
+import bannerRetardImg from '../src/assets/banner-retard.png';
+import bannerAvanceImg from '../src/assets/banner-avance.png';
 
 interface BalanceReportProps {
   allExpenses: Expense[];
@@ -96,20 +98,36 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Répartition et solde entre Sophie et Vincent</p>
             
             {/* Status Banner */}
-            <div className={`mt-5 p-5 sm:p-6 rounded-3xl transition-all duration-300 relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 ${
-              statusType === 'ahead' 
-                ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-100/90 dark:border-emerald-900/40' 
-                : statusType === 'behind'
-                ? 'bg-rose-50/80 dark:bg-rose-950/40 border border-rose-100/90 dark:border-rose-900/40'
-                : 'bg-blue-50/80 dark:bg-blue-950/40 border border-blue-100/90 dark:border-blue-900/40'
-            }`}>
-                <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${
-                  statusType === 'ahead'
-                    ? 'bg-emerald-100/90 dark:bg-emerald-900/60'
+            {(() => {
+              const bannerBg = statusType === 'behind' 
+                ? (bannerRetardImg || 'banner-retard.png') 
+                : (bannerAvanceImg || 'banner-avance.png');
+
+              return (
+                <div className={`mt-5 p-5 sm:p-6 rounded-3xl transition-all duration-300 relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-sm min-h-[140px] ${
+                  statusType === 'ahead' 
+                    ? 'bg-emerald-50/90 dark:bg-emerald-950/50 border border-emerald-100/90 dark:border-emerald-900/40' 
                     : statusType === 'behind'
-                    ? 'bg-rose-100/90 dark:bg-rose-900/60'
-                    : 'bg-blue-100/90 dark:bg-blue-900/60'
+                    ? 'bg-rose-50/90 dark:bg-rose-950/50 border border-rose-100/90 dark:border-rose-900/40'
+                    : 'bg-blue-50/90 dark:bg-blue-950/50 border border-blue-100/90 dark:border-blue-900/40'
                 }`}>
+                  {/* Custom Background Image */}
+                  <div className="absolute inset-0 z-0 pointer-events-none select-none">
+                    <img
+                      src={bannerBg}
+                      alt="Statut balance"
+                      className="w-full h-full object-cover object-center"
+                      onError={(e) => {
+                        const fallback = statusType === 'behind' ? 'banner-retard.png' : 'banner-avance.png';
+                        if (!e.currentTarget.src.endsWith(fallback)) {
+                          e.currentTarget.src = fallback;
+                        }
+                      }}
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+
+                  <div className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 relative z-10 backdrop-blur-xs shadow-sm bg-white/70 dark:bg-black/30">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white shadow-xs ${
                       statusType === 'ahead'
                         ? 'bg-emerald-600'
@@ -117,35 +135,37 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                         ? 'bg-rose-600'
                         : 'bg-blue-600'
                     }`}>
-                        <svg className="w-5 h-5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d={statusType === 'behind' ? "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" : "M5 13l4 4L19 7"} />
-                        </svg>
+                      <svg className="w-5 h-5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d={statusType === 'behind' ? "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" : "M5 13l4 4L19 7"} />
+                      </svg>
                     </div>
-                </div>
+                  </div>
 
-                <div className="flex-1">
-                    <p className={`text-lg sm:text-xl font-bold leading-snug ${
+                  <div className="flex-1 relative z-10">
+                    <p className={`text-lg sm:text-xl font-extrabold leading-snug ${
                       statusType === 'ahead'
-                        ? 'text-emerald-900 dark:text-emerald-100'
+                        ? 'text-emerald-950 dark:text-emerald-50'
                         : statusType === 'behind'
-                        ? 'text-rose-900 dark:text-rose-100'
-                        : 'text-blue-900 dark:text-blue-100'
+                        ? 'text-rose-950 dark:text-rose-50'
+                        : 'text-blue-950 dark:text-blue-50'
                     }`}>
                       {message}
                     </p>
 
-                    <div className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 mt-3 rounded-2xl text-xs sm:text-sm font-semibold ${
+                    <div className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 mt-3 rounded-2xl text-xs sm:text-sm font-semibold backdrop-blur-md shadow-xs ${
                       statusType === 'ahead'
-                        ? 'bg-emerald-100/90 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200'
+                        ? 'bg-white/80 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-100 border border-emerald-200/60 dark:border-emerald-800/40'
                         : statusType === 'behind'
-                        ? 'bg-rose-100/90 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200'
-                        : 'bg-blue-100/90 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200'
+                        ? 'bg-white/80 dark:bg-rose-950/80 text-rose-900 dark:text-rose-100 border border-rose-200/60 dark:border-rose-800/40'
+                        : 'bg-white/80 dark:bg-blue-950/80 text-blue-900 dark:text-blue-100 border border-blue-200/60 dark:border-blue-800/40'
                     }`}>
                       <TrendingUpIcon className="w-4 h-4 shrink-0" />
                       <span>Report des mois précédents : {historicDifference.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
                     </div>
+                  </div>
                 </div>
-            </div>
+              );
+            })()}
         </div>
 
         {/* Dépenses du mois section */}
