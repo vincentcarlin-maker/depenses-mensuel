@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { type Expense, type Category } from '../types';
@@ -19,21 +18,67 @@ import {
     PillIcon
 } from './icons/CategoryIcons';
 
+const WalletIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
+    <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-3" />
+  </svg>
+);
+
+const TrendUpLineIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+    <polyline points="16 7 22 7 22 13" />
+  </svg>
+);
+
+const BarChartHeaderIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+    <path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zM16.2 13h2.8v6h-2.8z" />
+  </svg>
+);
+
+const PieChartHeaderIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+    <path d="M22 12A10 10 0 0 0 12 2v10z" />
+  </svg>
+);
+
+const LineChartHeaderIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+  </svg>
+);
+
+const ChevronRightIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+  </svg>
+);
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; pieColor: string } } = {
-    "Dépenses obligatoires": { icon: MandatoryIcon, color: 'bg-slate-500', pieColor: '#64748b' },
+    "Dép. récurrentes": { icon: MandatoryIcon, color: 'bg-slate-600', pieColor: '#475569' },
+    "Dép. recurentes": { icon: MandatoryIcon, color: 'bg-slate-600', pieColor: '#475569' },
+    "Dépenses obligatoires": { icon: MandatoryIcon, color: 'bg-slate-600', pieColor: '#475569' },
     "Carburant": { icon: FuelIcon, color: 'bg-orange-500', pieColor: '#f97316' },
     "Chauffage": { icon: HeatingIcon, color: 'bg-red-500', pieColor: '#ef4444' },
-    "Courses": { icon: GroceriesIcon, color: 'bg-green-500', pieColor: '#22c55e' },
+    "Courses": { icon: GroceriesIcon, color: 'bg-emerald-500', pieColor: '#10b981' },
     "Restaurant": { icon: RestaurantIcon, color: 'bg-purple-500', pieColor: '#a855f7' },
     "Vacances": { icon: PalmTreeIcon, color: 'bg-teal-500', pieColor: '#14b8a6' },
-    "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-yellow-400', pieColor: '#FACC15' },
+    "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-amber-500', pieColor: '#f59e0b' },
     "Vêtements": { icon: ClothingIcon, color: 'bg-indigo-500', pieColor: '#6366f1' },
     "Cadeau": { icon: GiftIcon, color: 'bg-fuchsia-500', pieColor: '#d946ef' },
     "Complément alimentaire": { icon: PillIcon, color: 'bg-emerald-500', pieColor: '#10b981' },
     "Divers": { icon: MiscIcon, color: 'bg-cyan-500', pieColor: '#06b6d4' },
 };
 
+const getCategoryDisplayName = (name: string): string => {
+  if (name === 'Dépenses obligatoires' || name === 'Dép. récurrentes' || name === 'Dép. recurentes') {
+    return 'Dép. récurrentes';
+  }
+  return name;
+};
 
 interface YearlySummaryProps {
     expenses: Expense[];
@@ -48,19 +93,18 @@ const CustomTooltip = ({ active, payload, label, year }: any) => {
         const prevYearVal = payload.find((p: any) => p.name === (year - 1).toString())?.value || 0;
         const delta = currentYearVal - prevYearVal;
         
-        // Filter out duplicate payloads by name
         const uniquePayloads = payload.filter((v: any, i: number, a: any[]) => a.findIndex(t => (t.name === v.name)) === i);
 
         return (
-            <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
-                <p className="font-bold text-slate-800 dark:text-slate-100 mb-1">{label}</p>
+            <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-md">
+                <p className="font-bold text-slate-800 dark:text-slate-100 mb-1 text-xs">{label}</p>
                 {uniquePayloads.map((p: any, index: number) => (
-                    <p key={index} style={{ color: p.stroke || p.fill }} className="text-sm">
+                    <p key={index} style={{ color: p.stroke || p.fill }} className="text-xs font-semibold">
                         {p.name}: {p.value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                     </p>
                 ))}
                 {prevYearVal > 0 && (
-                    <p className={`text-xs mt-1 ${delta >= 0 ? 'text-red-500' : 'text-green-500'}`}>
+                    <p className={`text-[11px] font-medium mt-1 ${delta >= 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
                         {delta >= 0 ? '+' : ''}{delta.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} vs {year - 1}
                     </p>
                 )}
@@ -119,7 +163,6 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
       total += expense.amount;
       
       const expenseMonth = new Date(expense.date).getMonth();
-      // Pour le calcul de la moyenne, on ne compte pas les mois futurs
       if (year < currentYear || (year === currentYear && expenseMonth <= currentMonth)) {
         monthsWithData.add(expenseMonth);
       }
@@ -142,7 +185,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
         monthlyAverage: total / numMonths,
         numberOfMonthsWithData: numMonths
     };
-  }, [expenses]);
+  }, [expenses, year]);
 
   const maxAverage = useMemo(() => {
     if (!categoryData || categoryData.length === 0) return 0;
@@ -181,7 +224,6 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
     }));
   }, [filteredCurrentExpenses, filteredPreviousExpenses, year]);
 
-  // --- Breakdown Logic ---
   const breakdownData = useMemo(() => {
       if (!selectedCategory) return [];
 
@@ -192,32 +234,27 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
           let label = "Autre";
 
           if (selectedCategory === 'Courses') {
-              // Extract store name from "Courses (Leclerc)" or just "Leclerc"
               const storeRegex = /\s\(([^)]+)\)$/;
               const match = expense.description.match(storeRegex);
               if (match && expense.description.startsWith('Courses')) {
                   label = match[1];
               } else {
-                  // If it's just the store name or doesn't have brackets
                   label = expense.description; 
               }
           } 
           else if (selectedCategory === 'Cadeau') {
-              // Extract "Person - Occasion"
               const detailsRegex = /\s\(([^)]+)\s-\s([^)]+)\)$/;
               const match = expense.description.match(detailsRegex);
               if (match) {
-                  label = `${match[1]} - ${match[2]}`; // "Nathan - Noël"
+                  label = `${match[1]} - ${match[2]}`;
               } else {
                   label = expense.description;
               }
           }
           else if (selectedCategory === 'Carburant') {
-              // Usually the description is the car name directly
               label = expense.description;
           }
           else if (selectedCategory === 'Vêtements') {
-              // Extract Person from "Description (Person)"
               const personRegex = /\s\(([^)]+)\)$/;
               const match = expense.description.match(personRegex);
               if (match) {
@@ -227,22 +264,18 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
               }
           }
           else if (selectedCategory === 'Réparation voitures') {
-              // Extract Car from "Repair (Car)"
               const carRegex = /\s\(([^)]+)\)$/;
               const match = expense.description.match(carRegex);
               if (match) {
                   label = match[1];
               } else {
-                   // Fallback: try to see if the description *is* a car name if simpler format used
                    label = expense.description;
               }
           }
           else {
-              // Pour "Dépenses obligatoires" et autres : on groupe par description exacte
               label = expense.description;
           }
 
-          // Clean up label
           label = label.trim();
           if (!label) label = "Autre";
 
@@ -267,96 +300,158 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
 
   if (expenses.length === 0) {
     return (
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg text-center py-16 h-full flex flex-col justify-center items-center">
+      <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-xs border border-slate-100 dark:border-slate-800 text-center py-16 h-full flex flex-col justify-center items-center">
         <p className="text-4xl mb-2">🗓️</p>
-        <p className="text-slate-500 dark:text-slate-400">Aucune dépense enregistrée pour l'année {year}.</p>
+        <p className="text-slate-500 dark:text-slate-400 font-medium">Aucune dépense enregistrée pour l'année {year}.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-lg">
-        <h2 className="text-xl font-bold mb-6 text-center text-slate-800 dark:text-slate-100">Résumé de l'Année {year}</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <div className="bg-slate-100 dark:bg-slate-700/50 p-4 rounded-xl text-center">
-                <p className="text-sm text-slate-500 dark:text-slate-400">Total Annuel</p>
-                <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-                    {totalYearlyExpense.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                </p>
+    <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-blue-100/90 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                    <BarChartHeaderIcon className="w-5 h-5" />
+                </div>
+                <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+                    Résumé de l'Année {year}
+                </h1>
             </div>
-            <div className="bg-slate-100 dark:bg-slate-700/50 p-4 rounded-xl text-center">
-                <p className="text-sm text-slate-500 dark:text-slate-400">Moyenne Mensuelle</p>
-                <p className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">
-                    {monthlyAverage.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                </p>
-                 <p className="text-xs text-slate-400 dark:text-slate-500">calculée sur {numberOfMonthsWithData} mois</p>
+            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-pink-50 dark:bg-pink-950/40 text-pink-500 dark:text-pink-300 text-[11px] sm:text-xs font-medium italic border border-pink-100/80 dark:border-pink-900/40 shrink-0">
+                ✨ Une année plus sereine ♡
+            </div>
+        </div>
+        
+        {/* Top 2 KPI Summary Cards */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            {/* Card 1: Total Annuel */}
+            <div className="bg-[#f0f6ff] dark:bg-blue-950/30 p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-blue-100/80 dark:border-blue-900/40 flex items-center gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#dbeafe] dark:bg-blue-900/60 text-[#2563eb] dark:text-blue-300 flex items-center justify-center shrink-0">
+                    <WalletIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 truncate">Total annuel</p>
+                    <p className="text-base sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 mt-0.5 truncate">
+                        {totalYearlyExpense.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                    </p>
+                </div>
+            </div>
+
+            {/* Card 2: Moyenne Mensuelle */}
+            <div className="bg-[#fdf0f7] dark:bg-pink-950/30 p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-pink-100/80 dark:border-pink-900/40 flex items-center gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#fce7f3] dark:bg-pink-900/60 text-[#c026d3] dark:text-pink-300 flex items-center justify-center shrink-0">
+                    <TrendUpLineIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 truncate">Moyenne mensuelle</p>
+                    <p className="text-base sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 mt-0.5 truncate">
+                        {monthlyAverage.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">
+                        calculée sur {numberOfMonthsWithData} mois
+                    </p>
+                </div>
             </div>
         </div>
 
-        <h3 className="text-lg font-semibold mb-4 text-slate-700 dark:text-slate-200">Moyenne mensuelle par catégorie</h3>
-        <p className="text-xs text-slate-400 dark:text-slate-500 mb-3 -mt-3 italic">Cliquez sur une catégorie pour voir le détail.</p>
-        
-        <div className="space-y-3">
-            {categoryData.map((entry) => {
-                const visual = CategoryVisuals[entry.name as Category] || CategoryVisuals["Divers"];
-                const IconComponent = visual.icon;
-                const percentage = maxAverage > 0 ? (entry.average / maxAverage) * 100 : 0;
-                
-                return (
-                    <div 
-                        key={entry.name} 
-                        onClick={() => handleCategoryClick(entry.name)}
-                        className={`p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl transition-all duration-200 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 hover:shadow-sm ring-1 ring-transparent hover:ring-slate-200 dark:hover:ring-slate-600`}
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 flex items-center justify-center rounded-full ${visual.color}`}>
-                                <IconComponent className="h-6 w-6 text-white" />
+        {/* Section: Moyenne mensuelle par catégorie */}
+        <div className="bg-white dark:bg-slate-800 p-5 sm:p-6 rounded-3xl shadow-xs border border-slate-100 dark:border-slate-800 space-y-5">
+            <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-100/90 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                    <PieChartHeaderIcon className="w-5 h-5" />
+                </div>
+                <div>
+                    <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+                        Moyenne mensuelle par catégorie
+                    </h2>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                        Cliquez sur une catégorie pour voir le détail.
+                    </p>
+                </div>
+            </div>
+
+            {/* Category Gauges - Same layout as Analyse */}
+            <div className="space-y-3 pt-1">
+                {categoryData.map((entry) => {
+                    const visual = CategoryVisuals[entry.name as Category] || CategoryVisuals["Divers"];
+                    const IconComponent = visual.icon;
+                    const percentageOfTotal = totalYearlyExpense > 0 ? (entry.total / totalYearlyExpense) * 100 : 0;
+                    const barWidthPercent = maxAverage > 0 ? Math.min(100, Math.max(3, (entry.average / maxAverage) * 100)) : 0;
+                    const displayName = getCategoryDisplayName(entry.name);
+
+                    return (
+                        <div 
+                            key={entry.name} 
+                            onClick={() => handleCategoryClick(entry.name as Category)}
+                            className="w-full flex items-center gap-3 sm:gap-4 p-3.5 bg-slate-50/60 dark:bg-slate-700/30 hover:bg-slate-100/80 dark:hover:bg-slate-700/60 border border-slate-100/80 dark:border-slate-700/60 rounded-2xl transition-all cursor-pointer group"
+                        >
+                            {/* Left Category Icon + Name */}
+                            <div className="w-32 sm:w-44 shrink-0 flex items-center gap-2.5 min-w-0">
+                                <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 ${visual.color} text-white shadow-2xs`}>
+                                    <IconComponent className="w-4 h-4 sm:w-5 sm:h-5" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="font-extrabold text-slate-900 dark:text-slate-100 text-xs sm:text-sm truncate" title={displayName}>
+                                        {displayName}
+                                    </p>
+                                    <span className="inline-block text-[10px] font-semibold text-slate-400 dark:text-slate-500 bg-slate-200/60 dark:bg-slate-600/50 px-1.5 py-0.2 rounded-md mt-0.5">
+                                        Détails
+                                    </span>
+                                </div>
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="flex justify-between items-baseline gap-2">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <p className="font-semibold text-slate-700 dark:text-slate-200 truncate" title={entry.name}>{entry.name}</p>
-                                        <span className="text-[10px] bg-slate-200 dark:bg-slate-600 text-slate-500 dark:text-slate-300 px-1.5 py-0.5 rounded-full">Détails</span>
-                                    </div>
-                                    <p className="font-bold text-lg text-slate-800 dark:text-slate-100 whitespace-nowrap">
+
+                            {/* Middle Progress Bar Gauge */}
+                            <div className="flex-1 relative h-6 sm:h-7 bg-slate-100/80 dark:bg-slate-700/40 rounded-xl flex items-center overflow-hidden">
+                                <div 
+                                    className={`h-full rounded-xl transition-all duration-500 relative z-10 ${visual.color}`}
+                                    style={{ width: `${barWidthPercent}%` }}
+                                />
+                            </div>
+
+                            {/* Right Amounts + Chevron */}
+                            <div className="shrink-0 flex items-center gap-2 sm:gap-3 min-w-[120px] sm:min-w-[150px] justify-end text-right">
+                                <div>
+                                    <p className="font-extrabold text-slate-900 dark:text-slate-100 text-xs sm:text-sm whitespace-nowrap">
                                         {entry.average.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                                        <span className="text-sm font-normal text-slate-500 dark:text-slate-400"> / mois</span>
+                                        <span className="text-xs font-normal text-slate-500 dark:text-slate-400"> / mo</span>
+                                    </p>
+                                    <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5 whitespace-nowrap">
+                                        Total {year}: {entry.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                                     </p>
                                 </div>
-                                <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2 mt-1.5">
-                                    <div
-                                        className="h-2 rounded-full transition-all duration-500 ease-out"
-                                        style={{ width: `${percentage}%`, backgroundColor: visual.pieColor }}
-                                    ></div>
-                                </div>
+                                <ChevronRightIcon className="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors shrink-0" />
                             </div>
                         </div>
-                         <p className="text-xs text-right text-slate-500 dark:text-slate-400 mt-1 pr-1">
-                            Total {year}: {entry.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                        </p>
-                    </div>
-                );
-            })}
+                    );
+                })}
+            </div>
         </div>
         
-        <div id="yearly-trend-chart-section" className="mt-12 scroll-mt-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                <div>
-                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200">
-                        {chartCategoryFilter === 'all' 
-                            ? 'Évolution des dépenses mensuelles' 
-                            : `Évolution : ${chartCategoryFilter}`}
-                    </h3>
-                    <p className="text-xs text-slate-400 dark:text-slate-500">
-                        {chartCategoryFilter === 'all' 
-                            ? 'Toutes catégories confondues' 
-                            : `Suivi temporel de la catégorie ${chartCategoryFilter}`}
-                    </p>
+        {/* Section: Évolution des dépenses mensuelles */}
+        <div id="yearly-trend-chart-section" className="bg-white dark:bg-slate-800 p-5 sm:p-6 rounded-3xl shadow-xs border border-slate-100 dark:border-slate-800 space-y-5">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-blue-100/90 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                        <LineChartHeaderIcon className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+                            {chartCategoryFilter === 'all' 
+                                ? 'Évolution des dépenses mensuelles' 
+                                : `Évolution : ${getCategoryDisplayName(chartCategoryFilter)}`}
+                        </h2>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                            {chartCategoryFilter === 'all' 
+                                ? 'Toutes catégories confondues' 
+                                : `Suivi temporel de la catégorie ${getCategoryDisplayName(chartCategoryFilter)}`}
+                        </p>
+                    </div>
                 </div>
                 <button 
                     onClick={() => setIsChartExpanded(true)}
-                    className="self-end sm:self-center p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
+                    className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 rounded-xl transition-colors"
                     title="Agrandir le graphique"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -365,15 +460,15 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                 </button>
             </div>
 
-            {/* Filtre de catégorie pour le graphique */}
-            <div className="mb-6">
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+            {/* Filter Pills */}
+            <div className="pt-1">
+                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
                     <button
                         onClick={() => setChartCategoryFilter('all')}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 border ${
+                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 border ${
                             chartCategoryFilter === 'all'
-                                ? 'bg-slate-800 text-white border-transparent shadow-sm dark:bg-slate-100 dark:text-slate-800'
-                                : 'bg-slate-50 text-slate-600 dark:bg-slate-800/40 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                                ? 'bg-slate-900 text-white border-transparent shadow-xs dark:bg-slate-100 dark:text-slate-900'
+                                : 'bg-slate-50 text-slate-600 dark:bg-slate-800/40 dark:text-slate-300 border-slate-200/80 dark:border-slate-700 hover:bg-slate-100'
                         }`}
                     >
                         📊 Toutes
@@ -384,6 +479,8 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                         if (!hasExpenses) return null;
                         
                         const isSelected = chartCategoryFilter === catName;
+                        const displayName = getCategoryDisplayName(catName);
+
                         return (
                             <button
                                 key={catName}
@@ -393,30 +490,31 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                                     color: '#ffffff',
                                     borderColor: 'transparent',
                                 } : {}}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 border ${
+                                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 border ${
                                     isSelected 
-                                        ? 'shadow-sm' 
-                                        : 'bg-slate-50 text-slate-600 dark:bg-slate-800/40 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                                        ? 'shadow-xs' 
+                                        : 'bg-slate-50 text-slate-600 dark:bg-slate-800/40 dark:text-slate-300 border-slate-200/80 dark:border-slate-700 hover:bg-slate-100'
                                 }`}
                             >
                                 <IconComponent className={`h-3.5 w-3.5 ${isSelected ? 'text-white' : 'text-slate-500'}`} />
-                                {catName}
+                                {displayName}
                             </button>
                         );
                     })}
                 </div>
             </div>
 
-             <div style={{ width: '100%', height: 300 }}>
+            {/* Recharts Line/Composed Chart */}
+            <div style={{ width: '100%', height: 320 }}>
                 <ResponsiveContainer>
-                    <ComposedChart data={monthlyTrendData} margin={{ top: 5, right: 20, left: 40, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
-                        <XAxis dataKey="month" stroke={tickColor} tick={{ fill: tickColor }} />
-                        <YAxis stroke={tickColor} tickFormatter={(value) => `${value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`} tick={{ fill: tickColor }} />
+                    <ComposedChart data={monthlyTrendData} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#334155' : '#f1f5f9'} />
+                        <XAxis dataKey="month" stroke={tickColor} tick={{ fill: tickColor, fontSize: 12 }} />
+                        <YAxis stroke={tickColor} tickFormatter={(value) => `${value.toLocaleString('fr-FR')} €`} tick={{ fill: tickColor, fontSize: 12 }} />
                         <Tooltip content={<CustomTooltip year={year} />} />
-                        <Legend wrapperStyle={{ color: tickColor }} />
-                        <Area type="monotone" dataKey={year.toString()} fill={activeColor} stroke="none" fillOpacity={0.1} name={`${year}`} legendType="none" />
-                        <Line type="monotone" dataKey={year.toString()} stroke={activeColor} strokeWidth={3} name={`${year}`} dot={{ r: 5 }} activeDot={{ r: 8 }} />
+                        <Legend wrapperStyle={{ color: tickColor, paddingTop: '10px' }} />
+                        <Area type="monotone" dataKey={year.toString()} fill={activeColor} stroke="none" fillOpacity={0.12} name={`${year}`} legendType="none" />
+                        <Line type="monotone" dataKey={year.toString()} stroke={activeColor} strokeWidth={3} name={`${year}`} dot={{ r: 4 }} activeDot={{ r: 7 }} />
                         {previousYearExpenses.length > 0 && (
                             <Line type="monotone" dataKey={(year - 1).toString()} stroke="#f97316" strokeWidth={2} name={`${year - 1}`} strokeDasharray="5 5" dot={{ r: 3 }} />
                         )}
@@ -433,12 +531,12 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                     onClick={() => setIsChartExpanded(false)}
                 />
                 
-                <div className="relative flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-xl flex flex-col p-4 animate-scale-up max-h-[90vh]">
+                <div className="relative flex-1 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl flex flex-col p-5 animate-scale-up max-h-[90vh]">
                     <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
-                        <h2 className="text-xl font-bold text-slate-800 dark:text-white">
+                        <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">
                             {chartCategoryFilter === 'all' 
                                 ? 'Évolution des dépenses mensuelles' 
-                                : `Évolution : ${chartCategoryFilter}`}
+                                : `Évolution : ${getCategoryDisplayName(chartCategoryFilter)}`}
                         </h2>
                         <button 
                             onClick={() => setIsChartExpanded(false)}
@@ -456,7 +554,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                                 <YAxis stroke={tickColor} tickFormatter={(value) => `${value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`} tick={{ fill: tickColor, fontSize: 14 }} width={80} />
                                 <Tooltip content={<CustomTooltip year={year} />} />
                                 <Legend wrapperStyle={{ color: tickColor, paddingTop: '20px' }} iconSize={14} />
-                                <Area type="monotone" dataKey={year.toString()} fill={activeColor} stroke="none" fillOpacity={0.1} name={`${year}`} legendType="none" />
+                                <Area type="monotone" dataKey={year.toString()} fill={activeColor} stroke="none" fillOpacity={0.12} name={`${year}`} legendType="none" />
                                 <Line type="monotone" dataKey={year.toString()} stroke={activeColor} strokeWidth={4} name={`${year}`} dot={{ r: 6 }} activeDot={{ r: 10 }} />
                                 {previousYearExpenses.length > 0 && (
                                     <Line type="monotone" dataKey={(year - 1).toString()} stroke="#f97316" strokeWidth={3} name={`${year - 1}`} strokeDasharray="5 5" dot={{ r: 4 }} />
@@ -476,15 +574,15 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                     className="fixed inset-0"
                     onClick={() => setSelectedCategory(null)}
                 ></div>
-                <div className="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[80vh] animate-fade-in">
+                <div className="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[80vh] animate-fade-in">
                     <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-700/30">
                         <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 flex items-center justify-center rounded-full ${CategoryVisuals[selectedCategory]?.color || 'bg-slate-500'}`}>
-                                {CategoryVisuals[selectedCategory]?.icon && React.createElement(CategoryVisuals[selectedCategory].icon, { className: "h-5 w-5 text-white" })}
+                            <div className={`w-9 h-9 flex items-center justify-center rounded-2xl ${CategoryVisuals[selectedCategory]?.color || 'bg-slate-500'} text-white`}>
+                                {CategoryVisuals[selectedCategory]?.icon && React.createElement(CategoryVisuals[selectedCategory].icon, { className: "h-5 w-5" })}
                             </div>
                             <div>
-                                <h3 className="font-bold text-slate-800 dark:text-slate-100">Détail : {selectedCategory}</h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">Année {year}</p>
+                                <h3 className="font-extrabold text-slate-900 dark:text-slate-100 text-base">Détail : {getCategoryDisplayName(selectedCategory)}</h3>
+                                <p className="text-xs text-slate-400 dark:text-slate-500">Année {year}</p>
                             </div>
                         </div>
                         <button onClick={() => setSelectedCategory(null)} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
@@ -492,29 +590,28 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                         </button>
                     </div>
                     
-                    <div className="p-4 overflow-y-auto">
+                    <div className="p-4 overflow-y-auto custom-scrollbar">
                         <div className="space-y-3">
                             {breakdownData.length > 0 ? (
                                 breakdownData.map((item, idx) => {
-                                    // Calculate bar width based on the largest item
                                     const maxTotal = breakdownData[0].total;
                                     const percentage = (item.total / maxTotal) * 100;
                                     const isExpanded = expandedLabel === item.label;
 
                                     return (
-                                        <div key={idx} className="bg-slate-50 dark:bg-slate-700/20 p-3 rounded-lg transition-all">
+                                        <div key={idx} className="bg-slate-50 dark:bg-slate-700/30 p-3 rounded-2xl transition-all border border-slate-100/80 dark:border-slate-700/60">
                                             <div 
                                                 onClick={() => setExpandedLabel(isExpanded ? null : item.label)}
                                                 className="flex justify-between items-start mb-1 cursor-pointer hover:opacity-85"
                                             >
                                                 <div className="flex items-center gap-2 min-w-0 pr-2">
-                                                    <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm truncate">{item.label}</span>
-                                                    <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
+                                                    <span className="font-bold text-slate-800 dark:text-slate-200 text-sm truncate">{item.label}</span>
+                                                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 shrink-0">
                                                         ({item.count} {item.count > 1 ? 'dépenses' : 'dépense'})
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center gap-1.5 shrink-0">
-                                                    <span className="font-bold text-slate-800 dark:text-slate-100 text-sm">
+                                                    <span className="font-extrabold text-slate-900 dark:text-slate-100 text-sm">
                                                         {item.total.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                                                     </span>
                                                     <svg 
@@ -528,7 +625,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                                                     </svg>
                                                 </div>
                                             </div>
-                                            <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-1.5 mb-1">
+                                            <div className="w-full bg-slate-200/80 dark:bg-slate-600/60 rounded-full h-1.5 mb-1">
                                                 <div 
                                                     className="h-1.5 rounded-full transition-all duration-500"
                                                     style={{ 
@@ -561,7 +658,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                                                                         onExpenseClick(expense);
                                                                     }
                                                                 }}
-                                                                className="flex items-center justify-between p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer group"
+                                                                className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer group"
                                                             >
                                                                 <div className="flex flex-col min-w-0 pr-2">
                                                                     <div className="flex items-center gap-2">
@@ -594,10 +691,10 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                         </div>
                     </div>
                     
-                    <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/30 space-y-4">
+                    <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/30 space-y-3">
                         <div className="flex justify-between items-center text-sm">
-                            <span className="font-medium text-slate-600 dark:text-slate-300">Total Catégorie</span>
-                            <span className="font-bold text-slate-800 dark:text-slate-100 text-lg">
+                            <span className="font-semibold text-slate-600 dark:text-slate-300">Total Catégorie</span>
+                            <span className="font-extrabold text-slate-900 dark:text-slate-100 text-lg">
                                 {breakdownData.reduce((acc, curr) => acc + curr.total, 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                             </span>
                         </div>
@@ -612,7 +709,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                                     }
                                 }, 100);
                             }}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-white text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200"
+                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-white text-sm font-bold shadow-xs hover:shadow-md transition-all duration-200"
                             style={{ backgroundColor: CategoryVisuals[selectedCategory]?.pieColor || '#06b6d4' }}
                         >
                             📊 Voir l'évolution temporelle
