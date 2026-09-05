@@ -9,6 +9,7 @@ import ExpenseList from './components/ExpenseList';
 import CategoryTotals from './components/CategoryChart';
 import EditExpenseModal from './components/EditExpenseModal';
 import ExpenseDetailModal from './components/ExpenseDetailModal';
+import ExpenseSuccessModal from './components/ExpenseSuccessModal';
 import Toast from './components/Toast';
 import YearlySummary from './components/YearlySummary';
 import ReminderAlerts from './components/ReminderAlerts';
@@ -81,6 +82,7 @@ const MainApp: React.FC<{
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [formInitialData, setFormInitialData] = useState<(Omit<Expense, 'id' | 'date' | 'created_at'> & { formKey?: string }) | null>(null);
+  const [successExpense, setSuccessExpense] = useState<Expense | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [highlightedExpenseIds, setHighlightedExpenseIds] = useState<Set<string>>(new Set());
   const [realtimeStatus, setRealtimeStatus] = useState<'SUBSCRIBED' | 'TIMED_OUT' | 'CHANNEL_ERROR' | 'CONNECTING'>('CONNECTING');
@@ -676,6 +678,7 @@ const MainApp: React.FC<{
       });
       
       setFormInitialData(null);
+      setSuccessExpense(data as Expense);
       setToastInfo({ message: 'Dépense ajoutée avec succès !', type: 'info' });
       broadcastChange('expenses', 'INSERT', data, user);
       await logActivity({ type: 'add', expense: data as Expense, performedBy: user });
@@ -1282,6 +1285,15 @@ const MainApp: React.FC<{
         </main>
       </PullToRefresh>
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} onOpenSettings={() => setIsSettingsOpen(true)} />
+      <ExpenseSuccessModal
+        isOpen={!!successExpense}
+        onClose={() => setSuccessExpense(null)}
+        expense={successExpense}
+        onViewExpense={(exp) => {
+          setSuccessExpense(null);
+          setExpenseToView(exp);
+        }}
+      />
       {expenseToView && (<ExpenseDetailModal expense={expenseToView} history={expenseHistory} onClose={() => setExpenseToView(null)} onEdit={() => { setExpenseToEdit(expenseToView); setExpenseToView(null); }} />)}
       {expenseToEdit && (<EditExpenseModal expense={expenseToEdit} expenses={expenses} onUpdateExpense={updateExpense} onDeleteExpense={deleteExpense} onClose={() => setExpenseToEdit(null)} categories={categories} groceryStores={groceryStores} cars={cars} heatingTypes={heatingTypes} loggedInUser={user} onAddExpense={addExpense} />)}
       {toastInfo && (<Toast message={toastInfo.message} type={toastInfo.type} onClose={() => setToastInfo(null)} />)}
