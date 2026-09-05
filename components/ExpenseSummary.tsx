@@ -8,6 +8,7 @@ import TrendingUpIcon from './icons/TrendingUpIcon';
 import PiggyBankIcon from './icons/PiggyBankIcon';
 import bannerRetardImg from '../src/assets/banner-retard.png';
 import bannerAvanceImg from '../src/assets/banner-avance.png';
+import { useFeatureFlags } from '../hooks/useFeatureFlags';
 
 interface BalanceReportProps {
   allExpenses: Expense[];
@@ -19,6 +20,7 @@ interface BalanceReportProps {
 }
 
 const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear, currentMonth, sophieTotalMonth, vincentTotalMonth, loggedInUser }) => {
+  const flags = useFeatureFlags();
   const [userExpensesModal, setUserExpensesModal] = useState<{ user: User, expenses: Expense[] } | null>(null);
 
   const { historicDifference, cumulativeDifference, statusType, message, communTotalMonth, sophieExpenses, vincentExpenses } = useMemo(() => {
@@ -166,6 +168,62 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                 </div>
               );
             })()}
+
+            {/* Exp V2: Nouvelle Balance Insights */}
+            {flags.newBalance && (
+              <div className="mt-4 p-4 sm:p-5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-600 text-white uppercase tracking-wider">
+                      EXP V2
+                    </span>
+                    <h3 className="text-sm font-bold text-indigo-950 dark:text-indigo-200">
+                      Analyse d'équilibre intelligente
+                    </h3>
+                  </div>
+                  <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                    Calcul automatique
+                  </span>
+                </div>
+
+                {/* Progress breakdown bar */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    <span>Sophie : {sophieTotalMonth.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+                    <span>Vincent : {vincentTotalMonth.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+                  </div>
+                  <div className="h-3 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden flex">
+                    <div 
+                      className="bg-pink-500 h-full transition-all duration-500" 
+                      style={{ width: `${(totalExpenses > 0 ? (sophieTotalMonth / totalExpenses) * 100 : 50)}%` }}
+                      title="Sophie"
+                    />
+                    <div 
+                      className="bg-blue-500 h-full transition-all duration-500" 
+                      style={{ width: `${(totalExpenses > 0 ? (vincentTotalMonth / totalExpenses) * 100 : 50)}%` }}
+                      title="Vincent"
+                    />
+                    <div 
+                      className="bg-emerald-500 h-full transition-all duration-500" 
+                      style={{ width: `${(totalExpenses > 0 ? (communTotalMonth / totalExpenses) * 100 : 0)}%` }}
+                      title="Cagnotte commune"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-3 bg-white/80 dark:bg-slate-900/60 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  <span className="text-base">💡</span>
+                  <span>
+                    {Math.abs(cumulativeDifference) < 0.01 
+                      ? "Aucun virement requis pour le moment."
+                      : cumulativeDifference > 0 
+                      ? `Pour équilibrer les comptes, Vincent doit transférer ${(cumulativeDifference / 2).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} à Sophie.`
+                      : `Pour équilibrer les comptes, Sophie doit transférer ${(Math.abs(cumulativeDifference) / 2).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} à Vincent.`
+                    }
+                  </span>
+                </div>
+              </div>
+            )}
         </div>
 
         {/* Dépenses du mois section */}

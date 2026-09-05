@@ -393,6 +393,7 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
     const updated = { ...featureFlags, [key]: !featureFlags[key] };
     setFeatureFlags(updated);
     localStorage.setItem('duobudget_exp_flags', JSON.stringify(updated));
+    window.dispatchEvent(new Event('exp_flags_changed'));
     setToastInfo({
       message: `Fonction expérimentale « ${key} » : ${updated[key] ? 'Activée' : 'Désactivée'}.`,
       type: 'info',

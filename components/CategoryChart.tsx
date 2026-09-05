@@ -3,6 +3,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { type Expense, type Category } from '../types';
 import { useTheme } from '../hooks/useTheme';
+import { useFeatureFlags } from '../hooks/useFeatureFlags';
 import { 
     MandatoryIcon, 
     FuelIcon, 
@@ -86,6 +87,7 @@ interface CategoryTotalsProps {
 }
 
 const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonthExpenses, last3MonthsExpenses, onExpenseClick }) => {
+  const flags = useFeatureFlags();
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
   useEffect(() => {
@@ -238,6 +240,47 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
           </div>
         </div>
       </div>
+
+      {/* Exp V2: Graphique v2 Insights */}
+      {flags.graphV2 && chartData.length > 0 && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-violet-50 to-indigo-50/60 dark:from-violet-950/40 dark:to-indigo-950/30 border border-violet-100 dark:border-violet-900/40 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-600 text-white uppercase tracking-wider">
+                GRAPHIQUE V2
+              </span>
+              <h3 className="text-sm font-bold text-violet-950 dark:text-violet-200">
+                Top Poste & Rythme Journalier
+              </h3>
+            </div>
+            <span className="text-xs font-semibold text-violet-600 dark:text-violet-400">
+              Métriques v2
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="p-3 bg-white/80 dark:bg-slate-900/60 rounded-xl border border-violet-100/60 dark:border-violet-900/20">
+              <p className="text-slate-500 dark:text-slate-400 font-medium">1er Poste de dépense</p>
+              <p className="text-sm font-extrabold text-violet-950 dark:text-violet-100 mt-0.5 truncate">
+                {chartData[0]?.name || 'N/A'}
+              </p>
+              <p className="text-violet-600 dark:text-violet-400 font-bold mt-0.5">
+                {chartData[0]?.value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+              </p>
+            </div>
+
+            <div className="p-3 bg-white/80 dark:bg-slate-900/60 rounded-xl border border-violet-100/60 dark:border-violet-900/20">
+              <p className="text-slate-500 dark:text-slate-400 font-medium">Moyenne journalière</p>
+              <p className="text-sm font-extrabold text-violet-950 dark:text-violet-100 mt-0.5 truncate">
+                {(totalExpenses / Math.max(new Date().getDate(), 1)).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} / jour
+              </p>
+              <p className="text-slate-400 dark:text-slate-500 text-[10px] mt-0.5">
+                Basé sur {new Date().getDate()} jours écoulés
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Section 2: Répartition par catégorie */}
       <div className="bg-white dark:bg-slate-800 p-5 sm:p-6 rounded-3xl shadow-xs border border-slate-100 dark:border-slate-800 space-y-6">
