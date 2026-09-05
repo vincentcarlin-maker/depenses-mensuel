@@ -954,19 +954,6 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
               ? 'Sophie et tous les autres utilisateurs ouvrant l’application verront un écran d’information de maintenance. Seul Vincent peut accéder aux données.'
               : 'Activez ce mode si vous vous préparez à exécuter des scripts de migration SQL, purger des données ou modifier la structure.'}
           </p>
-          <div className="pt-1 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => onToggleMaintenanceMode && onToggleMaintenanceMode(!isMaintenanceMode)}
-              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer shadow-2xs ${
-                isMaintenanceMode
-                  ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                  : 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 hover:opacity-90'
-              }`}
-            >
-              {isMaintenanceMode ? 'Désactiver le mode maintenance' : 'Passer en mode maintenance maintenant'}
-            </button>
-          </div>
         </div>
       </div>
 
