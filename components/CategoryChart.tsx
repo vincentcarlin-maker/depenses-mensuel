@@ -190,12 +190,15 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
             <WalletIcon className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 truncate">Dépense totale du mois</p>
+            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 truncate">
+              <span className="sm:hidden">Dépense totale</span>
+              <span className="hidden sm:inline">Dépense totale du mois</span>
+            </p>
             <p className="text-base sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 mt-0.5 truncate">
               {totalExpenses.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
             </p>
             <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">
-              {expenses.length} transaction{expenses.length > 1 ? 's' : ''} sur ce mois
+              {expenses.length} transaction{expenses.length > 1 ? 's' : ''}
             </p>
           </div>
         </div>
@@ -214,7 +217,10 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
             <TrendArrowIcon isUp={trend.percentageChange > 0} className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 truncate">Tendance mensuelle (M-1)</p>
+            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 truncate">
+              <span className="sm:hidden">Tendance (M-1)</span>
+              <span className="hidden sm:inline">Tendance mensuelle (M-1)</span>
+            </p>
             {trend.previousTotal > 0.01 ? (
               <>
                 <p className={`text-base sm:text-2xl font-extrabold mt-0.5 truncate ${
