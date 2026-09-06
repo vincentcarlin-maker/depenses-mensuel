@@ -549,7 +549,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                         </span>
                     </div>
                     <div className="text-[#2563eb] dark:text-blue-400 group-hover:translate-x-0.5 transition-transform">
-                        <ChevronRightIcon className="w-4.5 h-4.5" />
+                        <ChevronRightIcon className="w-4 h-4" />
                     </div>
                 </button>
             </div>
@@ -615,7 +615,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                                             : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200/80 dark:border-slate-700 text-slate-400 dark:text-slate-500'
                                     }`}
                                 >
-                                    <div className={`w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-[6px] flex items-center justify-center shrink-0 transition-colors ${
+                                    <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-[6px] flex items-center justify-center shrink-0 transition-colors ${
                                         isChecked
                                             ? 'bg-[#0284c7] text-white'
                                             : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
@@ -645,7 +645,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                                             : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200/80 dark:border-slate-700 text-slate-400 dark:text-slate-500'
                                     }`}
                                 >
-                                    <div className={`w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-[6px] flex items-center justify-center shrink-0 transition-colors ${
+                                    <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-[6px] flex items-center justify-center shrink-0 transition-colors ${
                                         isChecked
                                             ? 'bg-[#0284c7] text-white'
                                             : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
@@ -675,7 +675,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                                             : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200/80 dark:border-slate-700 text-slate-400 dark:text-slate-500'
                                     }`}
                                 >
-                                    <div className={`w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-[6px] flex items-center justify-center shrink-0 transition-colors ${
+                                    <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-[6px] flex items-center justify-center shrink-0 transition-colors ${
                                         isChecked
                                             ? 'bg-[#0284c7] text-white'
                                             : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'

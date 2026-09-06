@@ -27,7 +27,14 @@ import {
   TotalEnergiesIcon,
   TrashBinIcon,
   NetflixIcon,
-  PillIcon
+  PillIcon,
+  HomeOutlineIcon,
+  HeartOutlineIcon,
+  PlaneOutlineIcon,
+  GraduationOutlineIcon,
+  PawOutlineIcon,
+  LeafOutlineIcon,
+  DumbbellOutlineIcon
 } from './icons/CategoryIcons';
 
 // --- Category Icon Management Section Component ---
@@ -80,6 +87,13 @@ const CategoryIconManagementSection: React.FC<{
     { name: 'TrashBinIcon', label: 'Poubelles', icon: TrashBinIcon, color: 'bg-rose-500' },
     { name: 'NetflixIcon', label: 'Netflix', icon: NetflixIcon, color: 'bg-black' },
     { name: 'PillIcon', label: 'Complément aliment.', icon: PillIcon, color: 'bg-emerald-500' },
+    { name: 'HomeIcon', label: 'Maison', icon: HomeOutlineIcon, color: 'bg-blue-500' },
+    { name: 'HeartIcon', label: 'Santé', icon: HeartOutlineIcon, color: 'bg-red-500' },
+    { name: 'PlaneIcon', label: 'Voyage', icon: PlaneOutlineIcon, color: 'bg-cyan-500' },
+    { name: 'GraduationIcon', label: 'Études', icon: GraduationOutlineIcon, color: 'bg-indigo-500' },
+    { name: 'PawIcon', label: 'Animaux', icon: PawOutlineIcon, color: 'bg-amber-500' },
+    { name: 'LeafIcon', label: 'Nature', icon: LeafOutlineIcon, color: 'bg-emerald-500' },
+    { name: 'DumbbellIcon', label: 'Sport', icon: DumbbellOutlineIcon, color: 'bg-teal-500' },
   ];
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

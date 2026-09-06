@@ -1091,46 +1091,48 @@ const MainApp: React.FC<{
       <PullToRefresh isRefreshing={isRefreshing} onRefresh={handleRefresh}>
         <Header onOpenSearch={() => setIsSearchOpen(true)} loggedInUser={user} activityItems={activityItemsForHeader} unreadCount={unreadCount} onMarkAsRead={markActivitiesAsRead} realtimeStatus={realtimeStatus} onDeleteActivity={deleteActivity} />
         <main className="container mx-auto p-4 md:p-8 pb-32">
-          <div className="flex justify-between items-center max-w-md mx-auto mb-6 px-2 animate-fade-in-up">
-            <button onClick={() => handleDateNavigation('prev')} disabled={isPrevDisabled} className="w-10 h-10 rounded-full bg-slate-100/90 dark:bg-slate-800/90 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-700 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <div className="relative group cursor-pointer flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                <h2 className="text-base sm:text-xl font-bold text-slate-900 dark:text-slate-100 text-center capitalize tracking-tight">{activeTab === 'yearly' ? currentYear : currentMonthName}</h2>
-                <ChevronDownIcon className="text-slate-400 dark:text-slate-500 w-4 h-4" />
-                {activeTab === 'yearly' ? (
-                  <select
-                    value={currentYear}
-                    onChange={(e) => {
-                      const year = parseInt(e.target.value, 10);
-                      if (!isNaN(year)) {
-                        const limit = new Date('2023-10-01T00:00:00Z');
-                        const newDate = new Date(currentDate);
-                        newDate.setUTCFullYear(year);
-                        setCurrentDate(newDate < limit ? limit : newDate);
-                      }
-                    }}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10 font-bold"
-                    aria-label="Sélectionner l'année"
-                  >
-                    {availableYears.map((y) => (
-                      <option key={y} value={y} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold">
-                        {y}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input type="month" value={monthInputValue} min="2023-10" onChange={handleDateSelect} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" ref={(input) => { if (input) input.onclick = () => { try { input.showPicker(); } catch (err) {} } }} />
-                )}
+          {activeTab !== 'settings' && (
+            <div className="flex justify-between items-center max-w-md mx-auto mb-6 px-2 animate-fade-in-up">
+              <button onClick={() => handleDateNavigation('prev')} disabled={isPrevDisabled} className="w-10 h-10 rounded-full bg-slate-100/90 dark:bg-slate-800/90 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-700 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <div className="relative group cursor-pointer flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                  <h2 className="text-base sm:text-xl font-bold text-slate-900 dark:text-slate-100 text-center capitalize tracking-tight">{activeTab === 'yearly' ? currentYear : currentMonthName}</h2>
+                  <ChevronDownIcon className="text-slate-400 dark:text-slate-500 w-4 h-4" />
+                  {activeTab === 'yearly' ? (
+                    <select
+                      value={currentYear}
+                      onChange={(e) => {
+                        const year = parseInt(e.target.value, 10);
+                        if (!isNaN(year)) {
+                          const limit = new Date('2023-10-01T00:00:00Z');
+                          const newDate = new Date(currentDate);
+                          newDate.setUTCFullYear(year);
+                          setCurrentDate(newDate < limit ? limit : newDate);
+                        }
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10 font-bold"
+                      aria-label="Sélectionner l'année"
+                    >
+                      {availableYears.map((y) => (
+                        <option key={y} value={y} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold">
+                          {y}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input type="month" value={monthInputValue} min="2023-10" onChange={handleDateSelect} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" ref={(input) => { if (input) input.onclick = () => { try { input.showPicker(); } catch (err) {} } }} />
+                  )}
+              </div>
+              <button onClick={() => handleDateNavigation('next')} className="w-10 h-10 rounded-full bg-slate-100/90 dark:bg-slate-800/90 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-700 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
             </div>
-            <button onClick={() => handleDateNavigation('next')} className="w-10 h-10 rounded-full bg-slate-100/90 dark:bg-slate-800/90 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shadow-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-700 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
+          )}
           <ReminderAlerts reminders={reminders} monthlyExpenses={filteredExpenses} onPayReminder={handlePayReminder} currentMonth={currentMonth} currentYear={currentYear} loggedInUser={user} />
           <NotificationReminderAlert onOpenSettings={() => { setSettingsInitialView('notifications'); setIsSettingsOpen(true); }} />
           <div className="animate-fade-in">
@@ -1336,7 +1338,16 @@ const MainApp: React.FC<{
           </div>
         </main>
       </PullToRefresh>
-      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} onOpenSettings={() => { setSettingsInitialView('main'); setIsSettingsOpen(true); }} />
+      <BottomNavigation 
+        activeTab={activeTab} 
+        onTabChange={(tabId) => {
+          if (tabId === 'settings') {
+            setSettingsInitialView('main');
+          }
+          setActiveTab(tabId);
+        }} 
+        onOpenSettings={() => { setSettingsInitialView('main'); setIsSettingsOpen(true); }} 
+      />
       <ExpenseSuccessModal
         isOpen={!!successExpense}
         onClose={() => setSuccessExpense(null)}

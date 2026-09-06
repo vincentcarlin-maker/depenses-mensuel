@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   MandatoryIcon,
   FuelIcon,
@@ -214,8 +215,8 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 animate-fade-in overflow-y-auto">
+  return createPortal(
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-[250] flex items-center justify-center p-3 sm:p-4 animate-fade-in overflow-y-auto">
       <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl w-full max-w-md p-5 sm:p-6 space-y-4 border border-slate-100 dark:border-slate-700 max-h-[92vh] flex flex-col">
         {/* Top grab bar & Header */}
         <div className="shrink-0 space-y-1">
@@ -406,6 +407,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
