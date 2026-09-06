@@ -137,12 +137,77 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
   onSave,
   isCreateMode = false,
 }) => {
-  const { customIcons: rawCustomIcons } = useCategoryVisuals();
+  const { customIcons: rawCustomIcons, deleteCustomIcon } = useCategoryVisuals();
   const customIcons = rawCustomIcons.filter(ci => !ci.id?.startsWith('mapping_'));
   const [name, setName] = useState(categoryName);
   const [selectedIconId, setSelectedIconId] = useState(initialIconId);
   const [selectedColor, setSelectedColor] = useState(initialColor);
   const [error, setError] = useState('');
+
+  const activeMapping = rawCustomIcons.find(
+    ci => ci.id?.startsWith('mapping_') && ci.category?.toLowerCase() === categoryName.toLowerCase()
+  );
+  const hasActiveMapping = !!activeMapping;
+
+  const handleResetMapping = () => {
+    if (activeMapping) {
+      deleteCustomIcon(activeMapping.id);
+      
+      const norm = categoryName.toLowerCase().trim();
+      let defaultIcon = 'misc';
+      let defaultColor = 'bg-[#3b82f6]';
+
+      if (norm.includes('obligatoire') || norm.includes('dépenses récurrentes') || norm.includes('depenses recurrentes') || norm.includes('dép. recurentes') || norm.includes('dép. récurrentes')) {
+        defaultIcon = 'mandatory'; defaultColor = 'bg-[#3b82f6]';
+      } else if (norm.includes('essence') || norm.includes('gasoil') || norm.includes('carburant') || norm.includes('diesel')) {
+        defaultIcon = 'fuel'; defaultColor = 'bg-[#f97316]';
+      } else if (norm.includes('course') || norm.includes('supermarch') || norm.includes('hyper')) {
+        defaultIcon = 'groceries'; defaultColor = 'bg-[#3b82f6]';
+      } else if (norm.includes('restaurant') || norm.includes('resto') || norm.includes('bar') || norm.includes('brasserie')) {
+        defaultIcon = 'restaurant'; defaultColor = 'bg-[#a855f7]';
+      } else if (norm.includes('chauffage') || norm.includes('bois') || norm.includes('gaz') || norm.includes('pellet') || norm.includes('fioul')) {
+        defaultIcon = 'heating'; defaultColor = 'bg-[#10b981]';
+      } else if (norm.includes('voiture') || norm.includes('garage') || norm.includes('auto') || norm.includes('réparation')) {
+        defaultIcon = 'carrepairs'; defaultColor = 'bg-[#f59e0b]';
+      } else if (norm.includes('vacances') || norm.includes('voyage') || norm.includes('mer') || norm.includes('montagne')) {
+        defaultIcon = 'vacation'; defaultColor = 'bg-[#14b8a6]';
+      } else if (norm.includes('vêtement') || norm.includes('clothing') || norm.includes('habits') || norm.includes('mode')) {
+        defaultIcon = 'clothing'; defaultColor = 'bg-[#ec4899]';
+      } else if (norm.includes('cadeau') || norm.includes('offrir') || norm.includes('noel') || norm.includes('noël')) {
+        defaultIcon = 'gift'; defaultColor = 'bg-[#ec4899]';
+      } else if (norm.includes('complément') || norm.includes('sante') || norm.includes('santé') || norm.includes('pharmac') || norm.includes('pill')) {
+        defaultIcon = 'pill'; defaultColor = 'bg-[#10b981]';
+      } else if (norm.includes('anniversaire') || norm.includes('anniv')) {
+        defaultIcon = 'birthday'; defaultColor = 'bg-[#10b981]';
+      } else if (norm.includes('assurance') || norm.includes('assur')) {
+        defaultIcon = 'shield'; defaultColor = 'bg-[#10b981]';
+      } else if (norm.includes('internet') || norm.includes('wifi') || norm.includes('box')) {
+        defaultIcon = 'wifi'; defaultColor = 'bg-[#6366f1]';
+      } else if (norm.includes('musique') || norm.includes('spotify') || norm.includes('deezer')) {
+        defaultIcon = 'music'; defaultColor = 'bg-[#a855f7]';
+      } else if (norm.includes('téléphone') || norm.includes('mobile') || norm.includes('forfait')) {
+        defaultIcon = 'phone'; defaultColor = 'bg-[#0ea5e9]';
+      } else if (norm.includes('eau')) {
+        defaultIcon = 'water'; defaultColor = 'bg-[#0ea5e9]';
+      } else if (norm.includes('energie') || norm.includes('électricité') || norm.includes('edf') || norm.includes('totalenergies')) {
+        defaultIcon = 'energy'; defaultColor = 'bg-[#f59e0b]';
+      } else if (norm.includes('poubelle') || norm.includes('ordure') || norm.includes('déchet')) {
+        defaultIcon = 'trash'; defaultColor = 'bg-[#ef4444]';
+      } else if (norm.includes('streaming') || norm.includes('netflix') || norm.includes('disney') || norm.includes('canal')) {
+        defaultIcon = 'streaming'; defaultColor = 'bg-[#ec4899]';
+      } else if (norm.includes('sfr')) {
+        defaultIcon = 'sfr'; defaultColor = 'bg-[#ef4444]';
+      } else if (norm.includes('maison') || norm.includes('foyer')) {
+        defaultIcon = 'home'; defaultColor = 'bg-[#3b82f6]';
+      } else if (norm.includes('sport') || norm.includes('gym') || norm.includes('fitness')) {
+        defaultIcon = 'dumbbell'; defaultColor = 'bg-[#14b8a6]';
+      }
+
+      setSelectedIconId(defaultIcon);
+      setSelectedColor(defaultColor);
+      onClose();
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -265,9 +330,24 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
 
           {/* 2. APERÇU */}
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Aperçu
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Aperçu
+              </label>
+              {!isCreateMode && hasActiveMapping && (
+                <button
+                  type="button"
+                  onClick={handleResetMapping}
+                  className="text-xs font-bold text-rose-500 hover:text-rose-600 flex items-center gap-1 cursor-pointer transition-colors"
+                  title="Réinitialiser l'icône et la couleur par défaut de cette catégorie"
+                >
+                  <svg className="w-3.5 h-3.5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  <span>Réinitialiser</span>
+                </button>
+              )}
+            </div>
             <div className="bg-slate-50/70 dark:bg-slate-700/40 rounded-2xl p-3.5 border border-slate-100/90 dark:border-slate-700/60 flex items-center gap-3.5">
               <div
                 className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${colorDef.badgeBgClass} ${colorDef.textColorClass} transition-colors shadow-2xs`}
