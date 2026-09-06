@@ -954,44 +954,44 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                       )}
                       </div>
                   )}
-                  <div className="space-y-5 pt-1">
+                  <div className="space-y-4 pt-1">
                     {/* Type Section */}
                     <div>
-                        <label className="block text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100 mb-2.5 tracking-tight">Type</label>
-                        <div className="grid grid-cols-2 gap-2.5 bg-[#f8fafc] dark:bg-slate-800/80 p-2 rounded-3xl border border-slate-200/60 dark:border-slate-700/60">
+                        <label className="block text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Type</label>
+                        <div className="grid grid-cols-2 gap-2 bg-[#f8fafc] dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/60">
                             <button
                               type="button"
                               onClick={() => setTransactionType('expense')}
-                              className={`py-3 px-3 sm:px-4 rounded-2xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 sm:gap-2.5 transition-all cursor-pointer ${
+                              className={`py-2 px-2.5 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
                                 transactionType === 'expense'
-                                  ? 'bg-[#fdeef3] dark:bg-rose-950/70 text-[#d91b5c] dark:text-rose-300 border-2 border-[#fbcfe0] dark:border-rose-900/60 shadow-xs'
+                                  ? 'bg-[#fdeef3] dark:bg-rose-950/70 text-[#d91b5c] dark:text-rose-300 border border-[#fbcfe0] dark:border-rose-900/60 shadow-2xs'
                                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 border border-slate-200/80 dark:border-slate-700/80'
                               }`}
                             >
-                              <span className="w-7 h-7 rounded-full bg-[#e60067] text-white flex items-center justify-center font-black text-sm shrink-0 shadow-2xs">-</span>
-                              <span>Dépense</span>
+                              <span className="w-5 h-5 rounded-full bg-[#e60067] text-white flex items-center justify-center font-black text-xs shrink-0 shadow-2xs">-</span>
+                              <span className="truncate">Dépense</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => setTransactionType('refund')}
-                              className={`py-3 px-3 sm:px-4 rounded-2xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 sm:gap-2.5 transition-all cursor-pointer ${
+                              className={`py-2 px-2.5 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
                                 transactionType === 'refund'
-                                  ? 'bg-[#edf5ff] dark:bg-blue-950/70 text-[#2563eb] dark:text-blue-300 border-2 border-[#bfdbfe] dark:border-blue-900/60 shadow-xs'
+                                  ? 'bg-[#edf5ff] dark:bg-blue-950/70 text-[#2563eb] dark:text-blue-300 border border-[#bfdbfe] dark:border-blue-900/60 shadow-2xs'
                                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 border border-slate-200/80 dark:border-slate-700/80'
                               }`}
                             >
-                              <span className="w-7 h-7 rounded-full bg-[#2563eb] text-white flex items-center justify-center font-black text-sm shrink-0 shadow-2xs">+</span>
-                              <span>Remboursement</span>
+                              <span className="w-5 h-5 rounded-full bg-[#2563eb] text-white flex items-center justify-center font-black text-xs shrink-0 shadow-2xs">+</span>
+                              <span className="truncate">Remboursement</span>
                             </button>
                         </div>
                     </div>
 
                     {/* Montant Section */}
                     <div>
-                        <label htmlFor="amount" className="block text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100 mb-2.5 tracking-tight">
+                        <label htmlFor="amount" className="block text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                           Montant (€)
                         </label>
-                        <div className="relative flex items-center bg-[#f4f8ff] dark:bg-slate-800/90 border-2 border-[#dbeafe] dark:border-blue-900/50 rounded-3xl px-5 py-3.5 sm:py-4 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
+                        <div className="relative flex items-center bg-[#f4f8ff] dark:bg-slate-800/90 border border-[#dbeafe] dark:border-blue-900/50 rounded-2xl px-4 py-2.5 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
                             <input
                               ref={amountInputRef}
                               type="text"
@@ -999,10 +999,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                               id="amount"
                               value={amount}
                               onChange={(e) => setAmount(e.target.value)}
-                              className="w-full bg-transparent text-2xl sm:text-3xl font-black text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 focus:outline-none tracking-tight"
+                              className="w-full bg-transparent text-xl sm:text-2xl font-black text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 focus:outline-none tracking-tight"
                               placeholder="0,00"
                             />
-                            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white ml-1 shrink-0 select-none">€</span>
+                            <span className="text-lg sm:text-xl font-black text-slate-700 dark:text-slate-300 ml-1.5 shrink-0 select-none">€</span>
                         </div>
                     </div>
                   </div>
@@ -1012,21 +1012,21 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             {error && <p className="text-red-500 dark:text-red-400 text-sm font-medium">{error}</p>}
             
             {/* Date de l'opération Section */}
-            <div className="space-y-4 pt-1">
-                <div className="bg-[#f8fafc] dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/60 rounded-3xl p-3.5 sm:p-4 flex items-center justify-between gap-3 shadow-2xs">
-                    <div className="flex items-center gap-3.5">
-                        <div className="w-12 h-12 rounded-2xl bg-[#e0edff] dark:bg-blue-950/60 text-[#2563eb] dark:text-blue-400 flex items-center justify-center shrink-0 shadow-2xs">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="space-y-3.5 pt-1">
+                <div className="bg-[#f8fafc] dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/60 rounded-2xl p-2.5 sm:p-3 flex items-center justify-between gap-2.5 shadow-2xs">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-[#e0edff] dark:bg-blue-950/60 text-[#2563eb] dark:text-blue-400 flex items-center justify-center shrink-0 shadow-2xs">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <rect x="3" y="4" width="18" height="18" rx="3" ry="3" />
                                 <line x1="16" y1="2" x2="16" y2="6" />
                                 <line x1="8" y1="2" x2="8" y2="6" />
                                 <line x1="3" y1="10" x2="21" y2="10" />
                             </svg>
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400">Date de l'opération</span>
-                            <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-slate-100">
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-tight">Date de l'opération</span>
+                            <div className="flex items-center gap-1.5 mt-0.5 whitespace-nowrap">
+                                <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100">
                                     {(() => {
                                         const d = new Date(date);
                                         if (isNaN(d.getTime())) return '';
@@ -1037,8 +1037,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                                         return `${day} ${month} ${year}`;
                                     })()}
                                 </span>
-                                <span className="text-slate-400 font-normal">·</span>
-                                <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+                                <span className="text-slate-300 dark:text-slate-600 font-normal">·</span>
+                                <span className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">
                                     {(() => {
                                         const d = new Date(date);
                                         if (isNaN(d.getTime())) return '';
@@ -1050,7 +1050,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                             </div>
                         </div>
                     </div>
-                    <label htmlFor="expense-date" className="bg-[#e0edff] hover:bg-[#d0e2ff] dark:bg-blue-950/80 dark:hover:bg-blue-900/80 text-[#2563eb] dark:text-blue-300 font-extrabold text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-full transition-all cursor-pointer shrink-0 active:scale-95 shadow-2xs">
+                    <label htmlFor="expense-date" className="bg-[#e0edff] hover:bg-[#d0e2ff] dark:bg-blue-950/80 dark:hover:bg-blue-900/80 text-[#2563eb] dark:text-blue-300 font-bold text-xs px-3.5 py-1.5 rounded-full transition-all cursor-pointer shrink-0 active:scale-95 shadow-2xs">
                         Modifier
                         <input
                             type="datetime-local"
@@ -1067,7 +1067,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                 <button
                 type="submit"
                 disabled={disabled}
-                className="w-full flex items-center justify-center gap-2.5 bg-blue-500 hover:bg-blue-600 active:scale-[0.99] text-white font-bold py-3.5 px-6 rounded-2xl shadow-lg shadow-blue-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base"
+                className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 active:scale-[0.99] text-white font-bold py-3 px-5 rounded-2xl shadow-md shadow-blue-500/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                 >
                 {disabled ? (
                     <>
