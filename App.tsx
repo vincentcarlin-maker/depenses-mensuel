@@ -417,32 +417,6 @@ const MainApp: React.FC<{
       const newExpense = payload.new as Expense;
       if (!newExpense?.id) return;
 
-      const wasAddedLocally = recentlyAddedIds.current.has(newExpense.id);
-      if (!wasAddedLocally) {
-        setToastInfo({ message: `${newExpense.user} a ajouté "${newExpense.description}".`, type: 'info' });
-        
-        // Envoi d'une notification push si autorisé
-        if ('Notification' in window && Notification.permission === 'granted' && newExpense.user !== user) {
-            const title = "Nouvelle dépense";
-            const options = {
-                body: `${newExpense.user} a ajouté ${newExpense.amount}€ pour ${newExpense.description || newExpense.category}`,
-                icon: "/logo.svg",
-                badge: "/logo.svg",
-                vibrate: [200, 100, 200]
-            };
-            
-            if (navigator.serviceWorker) {
-                navigator.serviceWorker.ready.then(reg => {
-                    reg.showNotification(title, options);
-                }).catch(() => {
-                    new Notification(title, options);
-                });
-            } else {
-                new Notification(title, options);
-            }
-        }
-      }
-
       setExpenses(prevExpenses => {
         const expenseExists = prevExpenses.some(e => e.id === newExpense.id);
         if (expenseExists) {
@@ -456,13 +430,7 @@ const MainApp: React.FC<{
 
     const handleExpenseUpdate = (payload: any) => {
       const updatedExpense = payload.new as Expense;
-      const performedBy = payload.performedBy || updatedExpense.user;
       if (!updatedExpense?.id) return;
-      
-      const wasUpdatedLocally = recentlyUpdatedIds.current.has(updatedExpense.id);
-      if (!wasUpdatedLocally && performedBy !== user) {
-          setToastInfo({ message: `${performedBy} a modifié "${updatedExpense.description}".`, type: 'info' });
-      }
 
       setExpenses(prevExpenses =>
         prevExpenses.map(expense =>
@@ -474,17 +442,11 @@ const MainApp: React.FC<{
 
     const handleExpenseDelete = (payload: any) => {
         const deletedPayload = payload.old as Partial<Expense> & { id: string };
-        const performedBy = payload.performedBy;
         if (!deletedPayload?.id) return;
 
         if (recentlyDeletedIds.current.has(deletedPayload.id)) return;
 
         setExpenses(prevExpenses => {
-            const expenseToDelete = prevExpenses.find(e => e.id === deletedPayload.id);
-            if (!expenseToDelete) return prevExpenses.filter(expense => expense.id !== deletedPayload.id);
-
-            const msg = performedBy ? `${performedBy} a supprimé "${expenseToDelete.description}".` : `Dépense "${expenseToDelete.description}" supprimée.`;
-            setToastInfo({ message: msg, type: 'info' });
             return prevExpenses.filter(expense => expense.id !== deletedPayload.id);
         });
     };
@@ -582,34 +544,49 @@ const MainApp: React.FC<{
     return id;
   }, []);
 
-  // Multi-route Unified Push Notification Dispatcher
+  // Multi-route Unified Push Notification Dispatcher (Sequential single-route dispatch to avoid duplicate triggers)
   const dispatchPushNotification = useCallback(async (payload: { type: 'add' | 'delete' | 'update' | 'moneypot'; expense?: any; moneyPotTransaction?: any; performedBy?: string }) => {
     try {
       const author = user === 'Duo' ? 'Commun' : user;
       const fullPayload = { ...payload, performedBy: author };
-      supabase.functions.invoke('send-notification', {
-        body: fullPayload
-      }).then(({ error: funcError }) => {
-        if (funcError) {
-          console.warn("L'Edge Function a échoué, tentative d'envoi Push direct...");
-          notifySubscriptionsDirectly(author, fullPayload).catch(err => {
-            console.error("Erreur d'envoi Push direct:", err);
-            fetch(window.location.origin + '/api/send-notification', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(fullPayload)
-            }).catch(err => console.error("Erreur d'appel notification locale:", err));
-          });
-        }
-      }).catch(() => {
-        notifySubscriptionsDirectly(author, fullPayload).catch(() => {
-          fetch(window.location.origin + '/api/send-notification', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(fullPayload)
-          }).catch(() => {});
+
+      // 1. Essayer l'Edge Function Supabase en priorité
+      let dispatched = false;
+      try {
+        const { data, error: funcError } = await supabase.functions.invoke('send-notification', {
+          body: fullPayload
         });
-      });
+        if (!funcError && data && (data.success || data.message)) {
+          dispatched = true;
+        }
+      } catch (e) {
+        console.warn("L'Edge Function Supabase est indisponible, bascule sur le fallback local...");
+      }
+
+      // 2. Si l'Edge Function n'a pas pu envoyer, utiliser le serveur backend local
+      if (!dispatched) {
+        try {
+          const res = await fetch(window.location.origin + '/api/send-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(fullPayload)
+          });
+          if (res.ok) {
+            dispatched = true;
+          }
+        } catch (e) {
+          console.warn("Le serveur local n'a pas pu envoyer la notification push.");
+        }
+      }
+
+      // 3. Dernier recours : envoi direct Web Push depuis le navigateur
+      if (!dispatched) {
+        try {
+          await notifySubscriptionsDirectly(author, fullPayload);
+        } catch (err) {
+          console.error("Erreur d'envoi push direct:", err);
+        }
+      }
     } catch(e) {
       console.error("Erreur d'émission d'avis push:", e);
     }
@@ -697,7 +674,6 @@ const MainApp: React.FC<{
       
       setFormInitialData(null);
       setSuccessExpense(data as Expense);
-      setToastInfo({ message: 'Dépense ajoutée avec succès !', type: 'info' });
       broadcastChange('expenses', 'INSERT', data, user);
       await logActivity({ type: 'add', expense: data as Expense, performedBy: user });
     }

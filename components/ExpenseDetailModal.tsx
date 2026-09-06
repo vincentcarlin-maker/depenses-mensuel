@@ -26,6 +26,7 @@ import {
     NetflixIcon,
     PillIcon
 } from './icons/CategoryIcons';
+import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; textColor: string; bannerBg: string } } = {
   "Dép. recurentes": { icon: MandatoryIcon, color: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300', bannerBg: 'bg-slate-100/90 dark:bg-slate-700/60' },
@@ -51,13 +52,15 @@ interface ExpenseDetailModalProps {
 }
 
 const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, history = [], onClose, onEdit }) => {
+  const { getVisual } = useCategoryVisuals();
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
-  const visual = CategoryVisuals[expense.category] || CategoryVisuals["Divers"];
+  const resolvedVisual = getVisual(expense.category);
+  const visual = resolvedVisual || CategoryVisuals[expense.category] || CategoryVisuals["Divers"];
   
   const lowerCaseDesc = expense.description.toLowerCase();
   const isChristmas = (expense.category === 'Divers' && /no[uëe]l/i.test(expense.description)) || (expense.category === 'Cadeau' && /no[uëe]l/i.test(expense.description));

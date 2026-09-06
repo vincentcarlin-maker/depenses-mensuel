@@ -18,6 +18,7 @@ import {
 } from './icons/CategoryIcons';
 import ExpenseListItem from './ExpenseListItem';
 import CloseIcon from './icons/CloseIcon';
+import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
 
 const WalletIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -86,6 +87,7 @@ interface CategoryTotalsProps {
 }
 
 const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonthExpenses, last3MonthsExpenses, onExpenseClick }) => {
+  const { getVisual } = useCategoryVisuals();
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
   useEffect(() => {
@@ -253,7 +255,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
         {/* Horizontal Bar Chart Container */}
         <div className="space-y-4 pt-1">
           {chartData.map((entry) => {
-            const visual = CategoryVisuals[entry.name as Category] || { icon: MiscIcon, color: 'bg-slate-500' };
+            const visual = getVisual(entry.name) || CategoryVisuals[entry.name as Category] || { icon: MiscIcon, color: 'bg-slate-500' };
             const IconComponent = visual.icon;
             const percentage = totalExpenses > 0 ? (entry.value / totalExpenses) * 100 : 0;
             const widthPercent = Math.min(100, Math.max(3, (entry.value / niceMax) * 100));
@@ -327,7 +329,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
 
         <div className="space-y-3">
           {chartData.map((entry) => {
-            const visual = CategoryVisuals[entry.name as Category] || { icon: MiscIcon, color: 'bg-slate-500' };
+            const visual = getVisual(entry.name) || CategoryVisuals[entry.name as Category] || { icon: MiscIcon, color: 'bg-slate-500' };
             const IconComponent = visual.icon;
             const percentage = totalExpenses > 0 ? (entry.value / totalExpenses) * 100 : 0;
 
@@ -378,9 +380,15 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
           <div className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-3xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[85vh] animate-fade-in">
             <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-700/30">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 flex items-center justify-center rounded-2xl ${CategoryVisuals[selectedCategory]?.color || 'bg-slate-500'} text-white`}>
-                  {CategoryVisuals[selectedCategory]?.icon && React.createElement(CategoryVisuals[selectedCategory].icon, { className: "h-5 w-5" })}
-                </div>
+                {(() => {
+                  const modalVisual = getVisual(selectedCategory) || CategoryVisuals[selectedCategory] || { icon: MiscIcon, color: 'bg-slate-500' };
+                  const ModalIcon = modalVisual.icon;
+                  return (
+                    <div className={`w-10 h-10 flex items-center justify-center rounded-2xl ${modalVisual.color} text-white`}>
+                      <ModalIcon className="h-5 w-5" />
+                    </div>
+                  );
+                })()}
                 <div>
                   <h3 className="font-extrabold text-slate-900 dark:text-slate-100 text-lg">Dépenses : {getCategoryDisplayName(selectedCategory)}</h3>
                   <p className="text-xs font-medium text-slate-400 dark:text-slate-500">Pour le mois en cours</p>

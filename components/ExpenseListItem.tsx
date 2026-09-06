@@ -29,6 +29,7 @@ import HistoryIcon from './icons/HistoryIcon';
 import EditIcon from './icons/EditIcon';
 import { type ModificationType } from '../App';
 import EuroIcon from './icons/EuroIcon';
+import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string } } = {
   "Dép. récurrentes": { icon: MandatoryIcon, color: 'bg-slate-500' },
@@ -58,6 +59,7 @@ const ExpenseListItem: React.FC<{
     isHighlighted: boolean;
     modificationTypes?: ModificationType[];
 }> = ({ expense, onExpenseClick, isHighlighted, modificationTypes }) => {
+    const { getVisual } = useCategoryVisuals();
     const { description } = parseDescription(expense.description);
 
     const formattedDate = new Date(expense.date).toLocaleString('fr-FR', {
@@ -106,7 +108,8 @@ const ExpenseListItem: React.FC<{
     const isPoubelles = lowerCaseDesc.includes('poubelles');
     const isNetflix = lowerCaseDesc.includes('netflix');
 
-    const visual = CategoryVisuals[expense.category] || CategoryVisuals["Divers"];
+    const resolvedVisual = getVisual(expense.category);
+    const visual = resolvedVisual || CategoryVisuals[expense.category] || CategoryVisuals["Divers"];
     let IconComponent = visual.icon;
     let iconBgClass = visual.color;
 

@@ -122,6 +122,27 @@ export function useCustomCategoryIcons() {
     return newIcon;
   }, [syncToCloud]);
 
+  const saveCategoryIconMapping = useCallback((categoryName: string, iconId: string, color?: string) => {
+    const trimmedCat = categoryName.trim();
+    if (!trimmedCat) return;
+
+    setCustomIcons(prev => {
+      // Remove any existing mapping for this category
+      const filtered = prev.filter(i => i.category?.toLowerCase() !== trimmedCat.toLowerCase());
+      const newMapping: CustomCategoryIcon = {
+        id: `mapping_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        name: iconId,
+        category: trimmedCat,
+        type: 'svg',
+        color: color,
+        createdAt: new Date().toISOString()
+      };
+      const updated = [newMapping, ...filtered];
+      syncToCloud(updated);
+      return updated;
+    });
+  }, [syncToCloud]);
+
   const deleteCustomIcon = useCallback((iconId: string) => {
     setCustomIcons(prev => {
       const updated = prev.filter(i => i.id !== iconId);
@@ -133,6 +154,7 @@ export function useCustomCategoryIcons() {
   return {
     customIcons,
     addCustomIcon,
+    saveCategoryIconMapping,
     deleteCustomIcon
   };
 }

@@ -7,6 +7,8 @@ import ArrowDownTrayIcon from './icons/ArrowDownTrayIcon';
 import SupabaseInstructionsModal from './SupabaseInstructionsModal';
 import WrenchScrewdriverIcon from './icons/WrenchScrewdriverIcon';
 import DataAndBackupTab from './DataAndBackupTab';
+import { CategoryIconPicker } from './CategoryIconPicker';
+import { useCustomCategoryIcons } from '../hooks/useCustomCategoryIcons';
 
 // --- Section Header Component ---
 const SectionHeader: React.FC<{ title: string; description: string }> = ({ title, description }) => (
@@ -455,9 +457,37 @@ const UserManagement: React.FC<{
     );
 };
 
-// --- Category Visuals Mapping matching mockup ---
-const getCategoryVisuals = (catName: string) => {
+// --- Category Visuals Helper ---
+const getCategoryVisuals = (catName: string, customIcons: CustomCategoryIcon[] = []) => {
     const norm = catName.toLowerCase().trim();
+
+    // 0. Check custom icons
+    const matchedCustom = customIcons.find(ci =>
+        ci.category?.trim().toLowerCase() === norm ||
+        ci.name.toLowerCase() === norm ||
+        ci.name.toLowerCase().replace(/icon$/, '') === norm
+    );
+
+    if (matchedCustom) {
+        if (matchedCustom.type === 'svg' && matchedCustom.svgContent) {
+            return {
+                bg: 'bg-[#dbeafe] dark:bg-sky-950/70',
+                icon: (
+                    <div
+                        className="w-6 h-6 flex items-center justify-center [&>svg]:w-6 [&>svg]:h-6"
+                        dangerouslySetInnerHTML={{ __html: matchedCustom.svgContent }}
+                    />
+                )
+            };
+        } else if (matchedCustom.imageUrl) {
+            return {
+                bg: 'bg-[#dbeafe] dark:bg-sky-950/70',
+                icon: (
+                    <img src={matchedCustom.imageUrl} className="w-6 h-6 object-contain" alt={matchedCustom.name} />
+                )
+            };
+        }
+    }
 
     // 1. Complément alimentaire / Santé / Pharmacie (green badge, pill icon)
     if (norm.includes('complément') || norm.includes('complement') || norm.includes('pill') || norm.includes('santé') || norm.includes('pharmacie')) {
@@ -618,12 +648,34 @@ const CategoryManagement: React.FC<{
     onUpdateCategory: (oldName: string, newName: string) => boolean;
     onDeleteCategory: (name: string) => void;
 }> = ({ categories, onAddCategory, onUpdateCategory, onDeleteCategory }) => {
+    const { customIcons, saveCategoryIconMapping } = useCustomCategoryIcons();
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [newCategory, setNewCategory] = useState('');
+    const [selectedIconId, setSelectedIconId] = useState<string>('misc');
+    const [selectedColor, setSelectedColor] = useState<string>('bg-blue-500');
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [editingName, setEditingName] = useState('');
+    const [editIconId, setEditIconId] = useState<string>('misc');
+    const [editColor, setEditColor] = useState<string>('bg-blue-500');
     const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
     const [addError, setAddError] = useState('');
+
+    const handleOpenAddModal = () => {
+        setNewCategory('');
+        setSelectedIconId('misc');
+        setSelectedColor('bg-blue-500');
+        setAddError('');
+        setIsAddModalOpen(true);
+    };
+
+    const handleOpenEditModal = (cat: Category) => {
+        setEditingCategory(cat);
+        setEditingName(cat);
+        // Look up existing icon mapping if any
+        const existing = customIcons.find(ci => ci.category?.toLowerCase() === cat.toLowerCase());
+        setEditIconId(existing?.name || 'misc');
+        setEditColor(existing?.color || 'bg-blue-500');
+    };
 
     const handleAddCategory = (e: React.FormEvent) => {
         e.preventDefault();
@@ -633,6 +685,8 @@ const CategoryManagement: React.FC<{
             return;
         }
         if (onAddCategory(trimmed)) {
+            // Save selected icon and color mapping
+            saveCategoryIconMapping(trimmed, selectedIconId, selectedColor);
             setNewCategory('');
             setAddError('');
             setIsAddModalOpen(false);
@@ -643,7 +697,9 @@ const CategoryManagement: React.FC<{
     
     const handleUpdateCategory = () => {
         if(editingCategory && editingName.trim()) {
-            if (onUpdateCategory(editingCategory, editingName.trim())) {
+            const trimmed = editingName.trim();
+            if (onUpdateCategory(editingCategory, trimmed)) {
+                saveCategoryIconMapping(trimmed, editIconId, editColor);
                 setEditingCategory(null);
                 setEditingName('');
             }
@@ -684,11 +740,7 @@ const CategoryManagement: React.FC<{
             {/* Primary Action Button: + Ajouter une catégorie */}
             <button
                 type="button"
-                onClick={() => {
-                    setNewCategory('');
-                    setAddError('');
-                    setIsAddModalOpen(true);
-                }}
+                onClick={handleOpenAddModal}
                 className="w-full py-3.5 px-4 rounded-2xl bg-[#4f83f8] hover:bg-[#3b72ea] active:bg-[#2d63dc] text-white font-bold text-base flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.99] cursor-pointer"
             >
                 <svg className="w-5 h-5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -700,7 +752,7 @@ const CategoryManagement: React.FC<{
             {/* List of Category Cards */}
             <div className="space-y-2.5 sm:space-y-3 pt-1">
                 {categories.map(c => {
-                    const visual = getCategoryVisuals(c);
+                    const visual = getCategoryVisuals(c, customIcons);
                     const displayName = formatCategoryDisplayName(c);
 
                     return (
@@ -727,7 +779,7 @@ const CategoryManagement: React.FC<{
                             <div className="flex items-center gap-2 shrink-0">
                                 <button 
                                     type="button"
-                                    onClick={() => { setEditingCategory(c); setEditingName(c); }} 
+                                    onClick={() => handleOpenEditModal(c)} 
                                     className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200/80 dark:border-slate-600/80 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all active:scale-95 cursor-pointer shadow-2xs"
                                     title={`Modifier la catégorie ${c}`}
                                     aria-label={`Modifier la catégorie ${c}`}
@@ -759,23 +811,43 @@ const CategoryManagement: React.FC<{
 
             {/* Add Category Modal */}
             {isAddModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in">
-                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-6 w-full max-w-sm space-y-4 border border-slate-100 dark:border-slate-700">
-                        <div className="space-y-1">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 animate-fade-in overflow-y-auto">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-5 sm:p-6 w-full max-w-md space-y-4 border border-slate-100 dark:border-slate-700 max-h-[92vh] flex flex-col">
+                        <div className="space-y-1 shrink-0">
                             <h4 className="font-extrabold text-lg text-slate-900 dark:text-white">Ajouter une catégorie</h4>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">Entrez le nom de la nouvelle catégorie de dépense.</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Entrez le nom et choisissez l'icône de votre choix.</p>
                         </div>
-                        <form onSubmit={handleAddCategory} className="space-y-4">
-                            <input 
-                                type="text" 
-                                placeholder="Nom de la catégorie (ex: Loisirs)" 
-                                value={newCategory} 
-                                onChange={e => setNewCategory(e.target.value)} 
-                                className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                                autoFocus
-                            />
-                            {addError && <p className="text-xs text-rose-500 font-bold">{addError}</p>}
-                            <div className="flex justify-end gap-2 pt-2">
+                        <form onSubmit={handleAddCategory} className="space-y-4 flex-1 overflow-y-auto pr-1">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                                    Nom de la catégorie
+                                </label>
+                                <input 
+                                    type="text" 
+                                    placeholder="Nom de la catégorie (ex: Loisirs, Shopping...)" 
+                                    value={newCategory} 
+                                    onChange={e => setNewCategory(e.target.value)} 
+                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                    autoFocus
+                                />
+                                {addError && <p className="text-xs text-rose-500 font-bold mt-1">{addError}</p>}
+                            </div>
+
+                            {/* Icon Picker Component */}
+                            <div className="pt-2 border-t border-slate-100 dark:border-slate-700/60">
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                                    Choisir une icône
+                                </label>
+                                <CategoryIconPicker
+                                    selectedIconId={selectedIconId}
+                                    selectedColor={selectedColor}
+                                    onSelectIcon={(iconId) => setSelectedIconId(iconId)}
+                                    onSelectColor={(color) => setSelectedColor(color)}
+                                    customIcons={customIcons}
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-700/60 shrink-0">
                                 <button 
                                     type="button" 
                                     onClick={() => { setIsAddModalOpen(false); setAddError(''); }} 
@@ -797,34 +869,56 @@ const CategoryManagement: React.FC<{
 
             {/* Edit Category Modal */}
             {editingCategory && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in">
-                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-6 w-full max-w-sm space-y-4 border border-slate-100 dark:border-slate-700">
-                        <div className="space-y-1">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 animate-fade-in overflow-y-auto">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-5 sm:p-6 w-full max-w-md space-y-4 border border-slate-100 dark:border-slate-700 max-h-[92vh] flex flex-col">
+                        <div className="space-y-1 shrink-0">
                             <h4 className="font-extrabold text-lg text-slate-900 dark:text-white">Modifier la catégorie</h4>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">Renommer « {editingCategory} ».</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Modifier le nom et l'icône de « {editingCategory} ».</p>
                         </div>
-                        <input 
-                            type="text" 
-                            value={editingName} 
-                            onChange={e => setEditingName(e.target.value)} 
-                            className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                            autoFocus
-                        />
-                        <div className="flex justify-end gap-2 pt-2">
-                            <button 
-                                type="button" 
-                                onClick={() => setEditingCategory(null)} 
-                                className="px-4 py-2.5 rounded-xl font-bold text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                            >
-                                Annuler
-                            </button>
-                            <button 
-                                type="button" 
-                                onClick={handleUpdateCategory} 
-                                className="px-5 py-2.5 rounded-xl font-bold text-sm bg-[#4f83f8] hover:bg-[#3b72ea] text-white shadow-xs transition-colors"
-                            >
-                                Enregistrer
-                            </button>
+                        <div className="space-y-4 flex-1 overflow-y-auto pr-1">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                                    Nom de la catégorie
+                                </label>
+                                <input 
+                                    type="text" 
+                                    value={editingName} 
+                                    onChange={e => setEditingName(e.target.value)} 
+                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                    autoFocus
+                                />
+                            </div>
+
+                            {/* Icon Picker Component */}
+                            <div className="pt-2 border-t border-slate-100 dark:border-slate-700/60">
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                                    Changer l'icône
+                                </label>
+                                <CategoryIconPicker
+                                    selectedIconId={editIconId}
+                                    selectedColor={editColor}
+                                    onSelectIcon={(iconId) => setEditIconId(iconId)}
+                                    onSelectColor={(color) => setEditColor(color)}
+                                    customIcons={customIcons}
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-700/60 shrink-0">
+                                <button 
+                                    type="button" 
+                                    onClick={() => setEditingCategory(null)} 
+                                    className="px-4 py-2.5 rounded-xl font-bold text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    Annuler
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onClick={handleUpdateCategory} 
+                                    className="px-5 py-2.5 rounded-xl font-bold text-sm bg-[#4f83f8] hover:bg-[#3b72ea] text-white shadow-xs transition-colors"
+                                >
+                                    Enregistrer
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
