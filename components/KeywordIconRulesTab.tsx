@@ -13,7 +13,11 @@ export const KeywordIconRulesTab: React.FC<KeywordIconRulesTabProps> = ({ setToa
   const { rules, addRule, deleteRule, updateRule, customIcons: rawCustomIcons } = useCategoryVisuals();
   
   // Filter out category assignments, keeping only pure custom icon assets so both lists are synchronized
-  const customIcons = rawCustomIcons.filter(ci => !ci.id?.startsWith('mapping_'));
+  const customIcons = rawCustomIcons.filter(ci => !ci.id?.startsWith('mapping_') && ci.category !== 'deleted_system_icon');
+  const deletedSystemIcons = rawCustomIcons
+    .filter(ci => ci.category === 'deleted_system_icon')
+    .map(ci => ci.name);
+  const filteredPresets = PRESET_CATEGORY_ICONS.filter(preset => !deletedSystemIcons.includes(preset.name));
 
   const [keyword, setKeyword] = useState('');
   const [selectedIconId, setSelectedIconId] = useState('misc');
@@ -23,7 +27,7 @@ export const KeywordIconRulesTab: React.FC<KeywordIconRulesTabProps> = ({ setToa
 
   // Combine presets and custom icons
   const totalIcons = [
-    ...PRESET_CATEGORY_ICONS,
+    ...filteredPresets,
     ...customIcons.map(ci => ({
       id: ci.id || ci.name,
       name: ci.name,

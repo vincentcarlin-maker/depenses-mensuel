@@ -138,7 +138,12 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
   isCreateMode = false,
 }) => {
   const { customIcons: rawCustomIcons, deleteCustomIcon } = useCategoryVisuals();
-  const customIcons = rawCustomIcons.filter(ci => !ci.id?.startsWith('mapping_'));
+  const customIcons = rawCustomIcons.filter(ci => !ci.id?.startsWith('mapping_') && ci.category !== 'deleted_system_icon');
+  const deletedSystemIcons = rawCustomIcons
+    .filter(ci => ci.category === 'deleted_system_icon')
+    .map(ci => ci.name);
+  const filteredPresets = PRESET_CATEGORY_ICONS.filter(preset => !deletedSystemIcons.includes(preset.name));
+
   const [name, setName] = useState(categoryName);
   const [selectedIconId, setSelectedIconId] = useState(initialIconId);
   const [selectedColor, setSelectedColor] = useState(initialColor);
@@ -221,11 +226,11 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
   if (!isOpen) return null;
 
   // Combine built-in presets and custom uploaded icons
-  const totalIconsCount = PRESET_CATEGORY_ICONS.length + customIcons.length;
+  const totalIconsCount = filteredPresets.length + customIcons.length;
   const colorDef = getColorDef(selectedColor);
 
   // Find selected icon metadata for preview and label
-  const selectedPreset = PRESET_CATEGORY_ICONS.find(
+  const selectedPreset = filteredPresets.find(
     p => p.id === selectedIconId || p.name === selectedIconId || p.name.toLowerCase().replace(/icon$/, '') === selectedIconId.toLowerCase()
   );
   const selectedCustom = customIcons.find(
@@ -383,7 +388,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
             {/* Grid of Icons (6 cols matching mockup) */}
             <div className="grid grid-cols-6 gap-2 max-h-48 overflow-y-auto p-1.5 rounded-2xl bg-slate-50/50 dark:bg-slate-700/30 border border-slate-200/70 dark:border-slate-700/70">
               {/* Preset built-ins */}
-              {PRESET_CATEGORY_ICONS.map(preset => {
+              {filteredPresets.map(preset => {
                 const isSelected = selectedIconId === preset.id || selectedIconId === preset.name;
                 const IconComp = preset.icon;
 

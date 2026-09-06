@@ -6,6 +6,7 @@ import {
   CategoryIconDef
 } from './CategoryEditModal';
 import { CustomCategoryIcon } from '../hooks/useCustomCategoryIcons';
+import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
 
 export { PRESET_CATEGORY_ICONS, CATEGORY_COLORS, getColorDef };
 
@@ -22,11 +23,20 @@ export const CategoryIconPicker: React.FC<CategoryIconPickerProps> = ({
   onSelectIcon,
   selectedColor = 'bg-[#3b82f6]',
   onSelectColor,
-  customIcons = [],
+  customIcons: passedCustomIcons = [],
 }) => {
-  const totalCount = PRESET_CATEGORY_ICONS.length + customIcons.length;
+  const { customIcons: contextCustomIcons } = useCategoryVisuals();
+  const customIconsSource = contextCustomIcons.length > 0 ? contextCustomIcons : passedCustomIcons;
 
-  const selectedPreset = PRESET_CATEGORY_ICONS.find(
+  const customIcons = customIconsSource.filter(ci => !ci.id?.startsWith('mapping_') && ci.category !== 'deleted_system_icon');
+  const deletedSystemIcons = customIconsSource
+    .filter(ci => ci.category === 'deleted_system_icon')
+    .map(ci => ci.name);
+  const filteredPresets = PRESET_CATEGORY_ICONS.filter(preset => !deletedSystemIcons.includes(preset.name));
+
+  const totalCount = filteredPresets.length + customIcons.length;
+
+  const selectedPreset = filteredPresets.find(
     p => p.id === selectedIconId || p.name === selectedIconId || p.name.toLowerCase().replace(/icon$/, '') === selectedIconId.toLowerCase()
   );
   const selectedCustom = customIcons.find(
@@ -77,7 +87,7 @@ export const CategoryIconPicker: React.FC<CategoryIconPickerProps> = ({
       {/* Grid of Icons */}
       <div className="grid grid-cols-6 gap-2 max-h-48 overflow-y-auto p-1.5 rounded-2xl bg-slate-50/50 dark:bg-slate-700/30 border border-slate-200/70 dark:border-slate-700/70">
         {/* Built-ins */}
-        {PRESET_CATEGORY_ICONS.map((item) => {
+        {filteredPresets.map((item) => {
           const isSelected = selectedIconId === item.id || selectedIconId === item.name;
           return (
             <button

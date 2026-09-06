@@ -44,6 +44,13 @@ const CategoryIconManagementSection: React.FC<{
 }> = ({ categories = [], setToastInfo }) => {
   const { customIcons, addCustomIcon, deleteCustomIcon } = useCategoryVisuals();
 
+  const activeCustomIcons = customIcons.filter(
+    ci => !ci.id?.startsWith('mapping_') && ci.category !== 'deleted_system_icon'
+  );
+  const deletedSystemIcons = customIcons
+    .filter(ci => ci.category === 'deleted_system_icon')
+    .map(ci => ci.name);
+
   const [iconName, setIconName] = useState('');
   const [associatedCategory, setAssociatedCategory] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState('bg-pink-500');
@@ -237,7 +244,7 @@ const CategoryIconManagementSection: React.FC<{
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
-            🖼️ Galerie ({BUILTIN_ICONS.length + customIcons.length})
+            🖼️ Galerie ({BUILTIN_ICONS.length + activeCustomIcons.length})
           </button>
         </div>
       </div>
@@ -421,13 +428,13 @@ const CategoryIconManagementSection: React.FC<{
       {activeTab === 'gallery' && (
         <div className="space-y-4 pt-1">
           {/* Custom uploaded icons */}
-          {customIcons.length > 0 && (
+          {activeCustomIcons.length > 0 && (
             <div className="space-y-2">
               <h4 className="font-extrabold text-xs uppercase tracking-wider text-fuchsia-600 dark:text-fuchsia-400">
-                Icônes personnalisées ajoutées ({customIcons.length})
+                Icônes personnalisées ajoutées ({activeCustomIcons.length})
               </h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {customIcons.map(icon => {
+                {activeCustomIcons.map(icon => {
                   const tsxCode = generateTsxCode(icon.name, icon.svgContent, icon.imageUrl);
 
                   return (
@@ -493,24 +500,64 @@ const CategoryIconManagementSection: React.FC<{
               {BUILTIN_ICONS.map((item, idx) => {
                 const IconComp = item.icon;
                 const sampleTsx = `export const ${item.name}: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (\n  /* Composant React dans /components/icons/CategoryIcons.tsx */\n);`;
+                const isDeleted = deletedSystemIcons.includes(item.name);
 
                 return (
                   <div
                     key={idx}
-                    className="bg-slate-50/80 dark:bg-slate-700/40 p-3 rounded-2xl border border-slate-200/70 dark:border-slate-700/60 flex flex-col justify-between gap-2.5"
+                    className={`p-3 rounded-2xl border transition-all flex flex-col justify-between gap-2.5 ${
+                      isDeleted
+                        ? 'bg-rose-50/10 dark:bg-rose-950/5 border-rose-200/40 dark:border-rose-900/40 opacity-55 grayscale'
+                        : 'bg-slate-50/80 dark:bg-slate-700/40 border-slate-200/70 dark:border-slate-700/60'
+                    }`}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className={`w-10 h-10 rounded-xl ${item.color} text-white flex items-center justify-center shrink-0 shadow-2xs`}>
-                        <IconComp className="w-5 h-5" />
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={`w-10 h-10 rounded-xl ${isDeleted ? 'bg-slate-400' : item.color} text-white flex items-center justify-center shrink-0 shadow-2xs`}>
+                          <IconComp className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-extrabold text-xs text-slate-900 dark:text-white truncate">
+                            {item.name}
+                          </p>
+                          <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">
+                            {item.label} {isDeleted && <span className="text-rose-500 font-extrabold text-[9px] uppercase tracking-wider">(Désactivé)</span>}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-extrabold text-xs text-slate-900 dark:text-white truncate">
-                          {item.name}
-                        </p>
-                        <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">
-                          {item.label}
-                        </p>
-                      </div>
+
+                      {isDeleted ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const found = customIcons.find(ci => ci.category === 'deleted_system_icon' && ci.name === item.name);
+                            if (found) deleteCustomIcon(found.id);
+                          }}
+                          className="text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 p-1.5 rounded-xl transition-colors cursor-pointer"
+                          title="Réactiver cette icône système"
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                          </svg>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            addCustomIcon({
+                              name: item.name,
+                              category: 'deleted_system_icon',
+                              type: 'svg',
+                            });
+                          }}
+                          className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 p-1.5 rounded-xl transition-colors cursor-pointer"
+                          title="Désactiver/Supprimer cette icône système du projet"
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
 
                     <button
