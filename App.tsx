@@ -25,6 +25,7 @@ import { MaintenanceOverlay } from './components/MaintenanceOverlay';
 import Login from './components/Login';
 import PullToRefresh from './components/PullToRefresh';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { useSyncedSettings } from './hooks/useSyncedSettings';
 import UndoToast from './components/UndoToast';
 import { DEFAULT_CATEGORIES } from './types';
 import GlobalSearchModal from './components/GlobalSearchModal';
@@ -131,7 +132,7 @@ const MainApp: React.FC<{
   const [activities, setActivities] = useState<Activity[]>([]);
   
   // Dynamic categories and lists
-  const [categories, setCategories] = useLocalStorage<any[]>('expenseCategories', DEFAULT_CATEGORIES);
+  const [categories, setCategories] = useSyncedSettings<any[]>('expenseCategories', DEFAULT_CATEGORIES);
   
   useEffect(() => {
       if (!categories.includes("Complément alimentaire")) {
@@ -142,9 +143,9 @@ const MainApp: React.FC<{
       }
   }, [categories, setCategories]);
 
-  const [groceryStores, setGroceryStores] = useLocalStorage<string[]>('groceryStores', ['Leclerc', 'Leclerc Drive', 'Intermarché', 'Intermarché Drive', 'Carrefour', 'Boulangerie']);
-  const [cars, setCars] = useLocalStorage<string[]>('cars', ['Peugeot 5008', 'Peugeot 207']);
-  const [heatingTypes, setHeatingTypes] = useLocalStorage<string[]>('heatingTypes', ['Bois', 'Fioul']);
+  const [groceryStores, setGroceryStores] = useSyncedSettings<string[]>('groceryStores', ['Leclerc', 'Leclerc Drive', 'Intermarché', 'Intermarché Drive', 'Carrefour', 'Boulangerie']);
+  const [cars, setCars] = useSyncedSettings<string[]>('cars', ['Peugeot 5008', 'Peugeot 207']);
+  const [heatingTypes, setHeatingTypes] = useSyncedSettings<string[]>('heatingTypes', ['Bois', 'Fioul']);
 
   const { currentMonth, currentYear } = useMemo(() => ({
       currentMonth: currentDate.getUTCMonth(),
