@@ -8,8 +8,7 @@ import SupabaseInstructionsModal from './SupabaseInstructionsModal';
 import WrenchScrewdriverIcon from './icons/WrenchScrewdriverIcon';
 import DataAndBackupTab from './DataAndBackupTab';
 import { CategoryEditModal } from './CategoryEditModal';
-import { useCustomCategoryIcons } from '../hooks/useCustomCategoryIcons';
-import { resolveCategoryVisual } from '../hooks/useCategoryVisuals';
+import { useCategoryVisuals, resolveCategoryVisual } from '../hooks/useCategoryVisuals';
 
 // --- Section Header Component ---
 const SectionHeader: React.FC<{ title: string; description: string }> = ({ title, description }) => (
@@ -473,7 +472,7 @@ const CategoryManagement: React.FC<{
     onUpdateCategory: (oldName: string, newName: string) => boolean;
     onDeleteCategory: (name: string) => void;
 }> = ({ categories, onAddCategory, onUpdateCategory, onDeleteCategory }) => {
-    const { customIcons, saveCategoryIconMapping } = useCustomCategoryIcons();
+    const { customIcons, saveCategoryIconMapping } = useCategoryVisuals();
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
@@ -514,7 +513,7 @@ const CategoryManagement: React.FC<{
         const mapping = customIcons.find(ci => ci.category?.toLowerCase() === categoryName.toLowerCase());
         if (mapping) {
             return {
-                iconId: mapping.id || mapping.name,
+                iconId: mapping.name,
                 color: mapping.color || 'bg-[#3b82f6]'
             };
         }

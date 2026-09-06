@@ -17,6 +17,7 @@ import NotificationReminderAlert from './components/NotificationReminderAlert';
 import SettingsModal from './components/SettingsModal';
 import SettingsTab, { type SettingsViewType } from './components/SettingsTab';
 import { useTheme } from './hooks/useTheme';
+import { CategoryVisualsProvider } from './hooks/useCategoryVisuals';
 import OfflineIndicator from './components/OfflineIndicator';
 import { useAuth, type Profile, type LoginEvent } from './hooks/useAuth';
 import { useMaintenanceMode } from './hooks/useMaintenanceMode';
@@ -1426,18 +1427,20 @@ const App: React.FC = () => {
   }
 
   return (
-    <MainApp 
-      user={user} 
-      onLogout={logout} 
-      profiles={profiles} 
-      onAddProfile={addProfile} 
-      onUpdateProfilePassword={updateProfilePassword} 
-      onDeleteProfile={deleteProfile} 
-      onToggleBlockProfile={toggleBlockProfile}
-      isMaintenanceMode={isMaintenanceMode}
-      onToggleMaintenanceMode={toggleMaintenanceMode}
-      loginHistory={loginHistory} 
-    />
+    <CategoryVisualsProvider>
+      <MainApp 
+        user={user} 
+        onLogout={logout} 
+        profiles={profiles} 
+        onAddProfile={addProfile} 
+        onUpdateProfilePassword={updateProfilePassword} 
+        onDeleteProfile={deleteProfile} 
+        onToggleBlockProfile={toggleBlockProfile}
+        isMaintenanceMode={isMaintenanceMode}
+        onToggleMaintenanceMode={toggleMaintenanceMode}
+        loginHistory={loginHistory} 
+      />
+    </CategoryVisualsProvider>
   );
 };
 

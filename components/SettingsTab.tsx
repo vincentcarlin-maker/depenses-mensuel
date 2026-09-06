@@ -12,8 +12,9 @@ import ManagementTab from './ManagementTab';
 import NotificationsTab from './NotificationsTab';
 import ConfirmationModal from './ConfirmationModal';
 import { useTheme } from '../hooks/useTheme';
+import { KeywordIconRulesTab } from './KeywordIconRulesTab';
 
-export type SettingsViewType = 'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin';
+export type SettingsViewType = 'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin' | 'keywords';
 
 interface SettingsTabProps {
   initialView?: SettingsViewType;
@@ -126,7 +127,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
     lists: 'Contenu des listes',
     data: 'Données & sauvegarde',
     admin: 'Administration & Développement',
-    management: 'Gestion de l\'application'
+    management: 'Gestion de l\'application',
+    keywords: 'Mots-clés & Icônes'
   };
 
   const activeRemindersCount = reminders.filter(r => r.is_active !== false).length;
@@ -288,6 +290,18 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
                 title="Catégories"
                 description="Personnaliser vos catégories et icônes"
                 onClick={() => setView('categories')}
+              />
+              <SettingsItemRow
+                iconBg="bg-[#fffbeb] dark:bg-amber-950/60"
+                iconColor="text-[#d97706] dark:text-amber-400"
+                icon={
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m4-3H6" />
+                  </svg>
+                }
+                title="Mots-clés & Icônes"
+                description="Associer des icônes automatiques à des mots-clés"
+                onClick={() => setView('keywords')}
               />
               <SettingsItemRow
                 iconBg="bg-[#e0f2fe] dark:bg-sky-950/60"
@@ -592,6 +606,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             setToastInfo={props.setToastInfo}
             loginHistory={props.loginHistory}
           />
+        </div>
+      )}
+
+      {/* Subview: Mots-clés & Icônes */}
+      {activeView === 'keywords' && (
+        <div className="space-y-4 sm:space-y-5 animate-fade-in">
+          <KeywordIconRulesTab setToastInfo={props.setToastInfo} />
         </div>
       )}
 

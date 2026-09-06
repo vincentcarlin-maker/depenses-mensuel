@@ -59,7 +59,7 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
-  const resolvedVisual = getVisual(expense.category);
+  const resolvedVisual = getVisual(expense.category, expense.description);
   const visual = resolvedVisual || CategoryVisuals[expense.category] || CategoryVisuals["Divers"];
   
   const lowerCaseDesc = expense.description.toLowerCase();

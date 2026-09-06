@@ -4,7 +4,8 @@ import { supabase } from '../supabase/client';
 import { Profile, LoginEvent } from '../hooks/useAuth';
 import ConfirmationModal from './ConfirmationModal';
 import SupabaseInstructionsModal from './SupabaseInstructionsModal';
-import { useCustomCategoryIcons, CustomCategoryIcon } from '../hooks/useCustomCategoryIcons';
+import { CustomCategoryIcon } from '../hooks/useCustomCategoryIcons';
+import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
 import {
   MandatoryIcon,
   FuelIcon,
@@ -34,7 +35,7 @@ const CategoryIconManagementSection: React.FC<{
   categories: Category[];
   setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
 }> = ({ categories = [], setToastInfo }) => {
-  const { customIcons, addCustomIcon, deleteCustomIcon } = useCustomCategoryIcons();
+  const { customIcons, addCustomIcon, deleteCustomIcon } = useCategoryVisuals();
 
   const [iconName, setIconName] = useState('');
   const [associatedCategory, setAssociatedCategory] = useState<string>('');

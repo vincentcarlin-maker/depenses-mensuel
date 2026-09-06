@@ -29,7 +29,8 @@ import {
   LeafOutlineIcon,
   DumbbellOutlineIcon
 } from './icons/CategoryIcons';
-import { CustomCategoryIcon, useCustomCategoryIcons } from '../hooks/useCustomCategoryIcons';
+import { CustomCategoryIcon } from '../hooks/useCustomCategoryIcons';
+import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
 
 export interface CategoryIconDef {
   id: string;
@@ -135,7 +136,8 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
   onSave,
   isCreateMode = false,
 }) => {
-  const { customIcons } = useCustomCategoryIcons();
+  const { customIcons: rawCustomIcons } = useCategoryVisuals();
+  const customIcons = rawCustomIcons.filter(ci => !ci.id?.startsWith('mapping_'));
   const [name, setName] = useState(categoryName);
   const [selectedIconId, setSelectedIconId] = useState(initialIconId);
   const [selectedColor, setSelectedColor] = useState(initialColor);
@@ -170,7 +172,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
     ? selectedCustom.name.replace(/Icon$/, '')
     : 'Divers';
 
-  const renderIconContent = (iconId: string, custom?: CustomCategoryIcon, isSelected = false) => {
+  const renderIconContent = (iconId: string, custom?: CustomCategoryIcon, _isSelected = false) => {
     if (custom) {
       if (custom.type === 'svg' && custom.svgContent) {
         return (
@@ -256,7 +258,6 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
               }}
               placeholder="Ex: Chauffage, Courses, Loisirs..."
               className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200/90 dark:border-slate-600 text-slate-900 dark:text-white font-bold text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-              autoFocus
             />
             {error && <p className="text-xs text-rose-500 font-bold mt-1">{error}</p>}
           </div>
