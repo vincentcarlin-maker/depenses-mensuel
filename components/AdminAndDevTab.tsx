@@ -4,6 +4,515 @@ import { supabase } from '../supabase/client';
 import { Profile, LoginEvent } from '../hooks/useAuth';
 import ConfirmationModal from './ConfirmationModal';
 import SupabaseInstructionsModal from './SupabaseInstructionsModal';
+import { useCustomCategoryIcons, CustomCategoryIcon } from '../hooks/useCustomCategoryIcons';
+import {
+  MandatoryIcon,
+  FuelIcon,
+  HeatingIcon,
+  GroceriesIcon,
+  RestaurantIcon,
+  CarRepairsIcon,
+  MiscIcon,
+  GiftIcon,
+  ClothingIcon,
+  PalmTreeIcon,
+  BirthdayIcon,
+  ShieldIcon,
+  WifiIcon,
+  MusicNoteIcon,
+  DevicePhoneMobileIcon,
+  CeoIcon,
+  SfrIcon,
+  TotalEnergiesIcon,
+  TrashBinIcon,
+  NetflixIcon,
+  PillIcon
+} from './icons/CategoryIcons';
+
+// --- Category Icon Management Section Component ---
+const CategoryIconManagementSection: React.FC<{
+  categories: Category[];
+  setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
+}> = ({ categories = [], setToastInfo }) => {
+  const { customIcons, addCustomIcon, deleteCustomIcon } = useCustomCategoryIcons();
+
+  const [iconName, setIconName] = useState('');
+  const [associatedCategory, setAssociatedCategory] = useState<string>('');
+  const [selectedColor, setSelectedColor] = useState('bg-pink-500');
+  const [rawSvgContent, setRawSvgContent] = useState('');
+  const [imageDataUrl, setImageDataUrl] = useState('');
+  const [fileName, setFileName] = useState('');
+  const [activeTab, setActiveTab] = useState<'upload' | 'gallery'>('upload');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const COLOR_OPTIONS = [
+    { label: 'Rose', value: 'bg-pink-500' },
+    { label: 'Bleu', value: 'bg-blue-500' },
+    { label: 'Émeraude', value: 'bg-emerald-500' },
+    { label: 'Orange', value: 'bg-orange-500' },
+    { label: 'Violet', value: 'bg-purple-500' },
+    { label: 'Ambre', value: 'bg-amber-500' },
+    { label: 'Teal', value: 'bg-teal-500' },
+    { label: 'Indigo', value: 'bg-indigo-500' },
+    { label: 'Gris', value: 'bg-slate-500' },
+  ];
+
+  const BUILTIN_ICONS = [
+    { name: 'MandatoryIcon', label: 'Dép. récurrentes', icon: MandatoryIcon, color: 'bg-slate-500' },
+    { name: 'FuelIcon', label: 'Carburant', icon: FuelIcon, color: 'bg-orange-500' },
+    { name: 'HeatingIcon', label: 'Chauffage', icon: HeatingIcon, color: 'bg-red-500' },
+    { name: 'GroceriesIcon', label: 'Courses', icon: GroceriesIcon, color: 'bg-green-500' },
+    { name: 'RestaurantIcon', label: 'Restaurant', icon: RestaurantIcon, color: 'bg-purple-500' },
+    { name: 'CarRepairsIcon', label: 'Réparation voitures', icon: CarRepairsIcon, color: 'bg-yellow-500' },
+    { name: 'MiscIcon', label: 'Divers', icon: MiscIcon, color: 'bg-cyan-500' },
+    { name: 'GiftIcon', label: 'Cadeau', icon: GiftIcon, color: 'bg-fuchsia-500' },
+    { name: 'ClothingIcon', label: 'Vêtements', icon: ClothingIcon, color: 'bg-indigo-500' },
+    { name: 'PalmTreeIcon', label: 'Vacances', icon: PalmTreeIcon, color: 'bg-teal-500' },
+    { name: 'BirthdayIcon', label: 'Anniversaire', icon: BirthdayIcon, color: 'bg-emerald-500' },
+    { name: 'ShieldIcon', label: 'Assurance', icon: ShieldIcon, color: 'bg-emerald-500' },
+    { name: 'WifiIcon', label: 'Internet', icon: WifiIcon, color: 'bg-indigo-500' },
+    { name: 'MusicNoteIcon', label: 'Musique', icon: MusicNoteIcon, color: 'bg-purple-500' },
+    { name: 'DevicePhoneMobileIcon', label: 'Téléphonie', icon: DevicePhoneMobileIcon, color: 'bg-sky-500' },
+    { name: 'CeoIcon', label: 'Eau / Énergie', icon: CeoIcon, color: 'bg-sky-500' },
+    { name: 'SfrIcon', label: 'SFR', icon: SfrIcon, color: 'bg-red-600' },
+    { name: 'TotalEnergiesIcon', label: 'TotalEnergies', icon: TotalEnergiesIcon, color: 'bg-amber-400' },
+    { name: 'TrashBinIcon', label: 'Poubelles', icon: TrashBinIcon, color: 'bg-rose-500' },
+    { name: 'NetflixIcon', label: 'Netflix', icon: NetflixIcon, color: 'bg-black' },
+    { name: 'PillIcon', label: 'Complément aliment.', icon: PillIcon, color: 'bg-emerald-500' },
+  ];
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setFileName(file.name);
+    if (!iconName) {
+      const baseName = file.name.split('.')[0].replace(/[^a-zA-Z0-9]/g, '');
+      const formatted = baseName ? baseName.charAt(0).toUpperCase() + baseName.slice(1) + 'Icon' : 'CustomIcon';
+      setIconName(formatted);
+    }
+
+    if (file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg')) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result as string;
+        if (text) {
+          setRawSvgContent(text);
+          setImageDataUrl('');
+        }
+      };
+      reader.readAsText(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        if (dataUrl) {
+          setImageDataUrl(dataUrl);
+          setRawSvgContent('');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const generateTsxCode = (name: string, svg?: string, image?: string) => {
+    const formattedName = name.replace(/[^a-zA-Z0-9]/g, '');
+    const componentName = formattedName.endsWith('Icon') ? formattedName : `${formattedName}Icon`;
+
+    if (svg) {
+      let cleaned = svg
+        .replace(/class=/g, 'className=')
+        .replace(/stroke-width=/g, 'strokeWidth=')
+        .replace(/stroke-linecap=/g, 'strokeLinecap=')
+        .replace(/stroke-linejoin=/g, 'strokeLinejoin=')
+        .replace(/fill-rule=/g, 'fillRule=')
+        .replace(/clip-rule=/g, 'clipRule=')
+        .replace(/stroke-miterlimit=/g, 'strokeMiterlimit=')
+        .replace(/stroke-dasharray=/g, 'strokeDasharray=');
+
+      return `export const ${componentName}: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (\n  ${cleaned.trim()}\n);`;
+    } else if (image) {
+      return `export const ${componentName}: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (\n  <img src="${image}" className={className} alt="${componentName}" />\n);`;
+    }
+    return `// Composant d'icône ${componentName}`;
+  };
+
+  const handleSaveToApp = () => {
+    if (!iconName.trim()) {
+      setToastInfo({ message: "Veuillez indiquer un nom d'icône.", type: 'error' });
+      return;
+    }
+    if (!rawSvgContent && !imageDataUrl) {
+      setToastInfo({ message: "Veuillez charger un fichier SVG/Image ou coller un code SVG.", type: 'error' });
+      return;
+    }
+
+    const cleanName = iconName.trim().replace(/\s+/g, '');
+    const formattedName = cleanName.endsWith('Icon') ? cleanName : `${cleanName}Icon`;
+    const isSvg = !!rawSvgContent;
+
+    addCustomIcon({
+      name: formattedName,
+      category: associatedCategory.trim() || 'Divers',
+      type: isSvg ? 'svg' : 'image',
+      svgContent: isSvg ? rawSvgContent : undefined,
+      imageUrl: !isSvg ? imageDataUrl : undefined,
+      color: selectedColor
+    });
+
+    setToastInfo({ message: `Icône « ${formattedName} » ajoutée et disponible dans l'application !`, type: 'info' });
+
+    setRawSvgContent('');
+    setImageDataUrl('');
+    setFileName('');
+    setIconName('');
+  };
+
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setToastInfo({ message: "Code TSX copié dans le presse-papiers !", type: 'info' });
+    setTimeout(() => setCopiedId(null), 2500);
+  };
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-5">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-start sm:items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-fuchsia-50 dark:bg-fuchsia-950/60 flex items-center justify-center text-fuchsia-600 dark:text-fuchsia-400 shrink-0">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                Ajout & Gestion d'icônes de catégorie
+              </h3>
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-fuchsia-100 dark:bg-fuchsia-950/80 text-fuchsia-800 dark:text-fuchsia-300 border border-fuchsia-200 dark:border-fuchsia-800">
+                PROJET / ICONS
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5">
+              Chargez des icônes de catégorie (.svg, .png) dans <code className="bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded text-[11px] text-fuchsia-600 dark:text-fuchsia-300">/components/icons/</code> ou directement dans l’application.
+            </p>
+          </div>
+        </div>
+
+        {/* Tab switch */}
+        <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-700/60 p-1 rounded-2xl shrink-0 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => setActiveTab('upload')}
+            className={`px-3.5 py-1.5 rounded-xl font-extrabold text-xs transition-all cursor-pointer ${
+              activeTab === 'upload'
+                ? 'bg-white dark:bg-slate-800 text-fuchsia-600 dark:text-fuchsia-400 shadow-2xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+          >
+            ➕ Charger une icône
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('gallery')}
+            className={`px-3.5 py-1.5 rounded-xl font-extrabold text-xs transition-all cursor-pointer ${
+              activeTab === 'gallery'
+                ? 'bg-white dark:bg-slate-800 text-fuchsia-600 dark:text-fuchsia-400 shadow-2xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+          >
+            🖼️ Galerie ({BUILTIN_ICONS.length + customIcons.length})
+          </button>
+        </div>
+      </div>
+
+      {/* Tab 1: Upload Form */}
+      {activeTab === 'upload' && (
+        <div className="space-y-4 pt-1">
+          {/* File Dropzone */}
+          <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-fuchsia-400 dark:hover:border-fuchsia-500 rounded-3xl p-5 sm:p-6 text-center bg-slate-50/60 dark:bg-slate-800/50 transition-all">
+            <input
+              type="file"
+              id="category-icon-file-input"
+              accept=".svg,.png,.jpg,.jpeg,.webp,image/svg+xml,image/png,image/jpeg,image/webp"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <label
+              htmlFor="category-icon-file-input"
+              className="cursor-pointer flex flex-col items-center justify-center gap-2"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-fuchsia-100/80 dark:bg-fuchsia-950/70 text-fuchsia-600 dark:text-fuchsia-300 flex items-center justify-center text-2xl shadow-2xs">
+                📥
+              </div>
+              <div className="space-y-1">
+                <p className="font-extrabold text-sm text-slate-800 dark:text-slate-200">
+                  Cliquez ou glissez une icône ici
+                </p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                  Formats acceptés : SVG (.svg), PNG, JPG, WEBP
+                </p>
+              </div>
+              {fileName && (
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-fuchsia-50 dark:bg-fuchsia-950/80 border border-fuchsia-200 dark:border-fuchsia-800 text-fuchsia-700 dark:text-fuchsia-300 text-xs font-bold mt-1">
+                  <span>📄 {fileName}</span>
+                </div>
+              )}
+            </label>
+          </div>
+
+          {/* Form fields */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Nom du composant / de l'icône
+              </label>
+              <input
+                type="text"
+                value={iconName}
+                onChange={e => setIconName(e.target.value)}
+                placeholder="ex: SpotifyIcon, GymIcon, ElectricityIcon"
+                className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-bold text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Catégorie associée (optionnel)
+              </label>
+              <input
+                type="text"
+                list="existing-categories-list"
+                value={associatedCategory}
+                onChange={e => setAssociatedCategory(e.target.value)}
+                placeholder="ex: Musique, Sport, Énergie..."
+                className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-bold text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
+              />
+              <datalist id="existing-categories-list">
+                {categories.map((c, i) => (
+                  <option key={i} value={c} />
+                ))}
+              </datalist>
+            </div>
+          </div>
+
+          {/* Raw SVG Paste TextArea optional */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                Code SVG brut (optionnel / édition directe)
+              </label>
+              {(rawSvgContent || imageDataUrl) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRawSvgContent('');
+                    setImageDataUrl('');
+                    setFileName('');
+                  }}
+                  className="text-xs text-rose-500 font-bold hover:underline"
+                >
+                  Effacer
+                </button>
+              )}
+            </div>
+            <textarea
+              rows={3}
+              value={rawSvgContent}
+              onChange={e => {
+                setRawSvgContent(e.target.value);
+                if (e.target.value) setImageDataUrl('');
+              }}
+              placeholder='<svg viewBox="0 0 24 24"...></svg>'
+              className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-200 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
+            />
+          </div>
+
+          {/* Color & Preview */}
+          <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-700/40 border border-slate-200/80 dark:border-slate-700/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="space-y-2 w-full sm:w-auto">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                Couleur d'arrière-plan du macaron
+              </label>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {COLOR_OPTIONS.map(c => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => setSelectedColor(c.value)}
+                    className={`w-7 h-7 rounded-xl ${c.value} transition-transform cursor-pointer ${
+                      selectedColor === c.value ? 'ring-2 ring-offset-2 ring-fuchsia-500 scale-110' : 'opacity-80 hover:opacity-100'
+                    }`}
+                    title={c.label}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Preview Box */}
+            <div className="flex items-center gap-3 shrink-0 bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+              <div className="text-right">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Aperçu en direct</p>
+                <p className="text-xs font-extrabold text-slate-900 dark:text-white truncate max-w-[120px]">
+                  {iconName || 'NouvelleIcône'}
+                </p>
+              </div>
+
+              <div className={`w-11 h-11 rounded-2xl ${selectedColor} text-white flex items-center justify-center shrink-0 shadow-2xs overflow-hidden`}>
+                {rawSvgContent ? (
+                  <div
+                    className="w-6 h-6 flex items-center justify-center [&>svg]:w-6 [&>svg]:h-6 [&>svg]:stroke-current [&>svg]:fill-current"
+                    dangerouslySetInnerHTML={{ __html: rawSvgContent }}
+                  />
+                ) : imageDataUrl ? (
+                  <img src={imageDataUrl} className="w-6 h-6 object-contain" alt="Aperçu" />
+                ) : (
+                  <span className="text-lg">✨</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                const code = generateTsxCode(iconName || 'CustomCategoryIcon', rawSvgContent, imageDataUrl);
+                copyToClipboard(code, 'current_upload');
+              }}
+              disabled={!rawSvgContent && !imageDataUrl}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <span>📋</span>
+              <span>Générer le code React pour CategoryIcons.tsx</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSaveToApp}
+              disabled={!rawSvgContent && !imageDataUrl}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+            >
+              <span>✨</span>
+              <span>Ajouter directement au projet / à l'application</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 2: Gallery */}
+      {activeTab === 'gallery' && (
+        <div className="space-y-4 pt-1">
+          {/* Custom uploaded icons */}
+          {customIcons.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="font-extrabold text-xs uppercase tracking-wider text-fuchsia-600 dark:text-fuchsia-400">
+                Icônes personnalisées ajoutées ({customIcons.length})
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {customIcons.map(icon => {
+                  const tsxCode = generateTsxCode(icon.name, icon.svgContent, icon.imageUrl);
+
+                  return (
+                    <div
+                      key={icon.id}
+                      className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-700 flex flex-col justify-between gap-2.5 relative group"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className={`w-10 h-10 rounded-xl ${icon.color || 'bg-fuchsia-500'} text-white flex items-center justify-center shrink-0 overflow-hidden shadow-2xs`}>
+                          {icon.type === 'svg' && icon.svgContent ? (
+                            <div
+                              className="w-5 h-5 flex items-center justify-center [&>svg]:w-5 [&>svg]:h-5"
+                              dangerouslySetInnerHTML={{ __html: icon.svgContent }}
+                            />
+                          ) : icon.imageUrl ? (
+                            <img src={icon.imageUrl} className="w-5 h-5 object-contain" alt={icon.name} />
+                          ) : (
+                            <span>✨</span>
+                          )}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => deleteCustomIcon(icon.id)}
+                          className="text-slate-400 hover:text-rose-500 p-1 transition-colors cursor-pointer"
+                          title="Supprimer cette icône"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="font-extrabold text-xs text-slate-900 dark:text-white truncate">
+                          {icon.name}
+                        </p>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">
+                          {icon.category || 'Catégorie'}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(tsxCode, icon.id)}
+                        className="w-full py-1.5 px-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950/50 text-fuchsia-700 dark:text-fuchsia-300 font-extrabold text-[11px] flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                      >
+                        <span>{copiedId === icon.id ? '✅ Copié !' : '📋 Code TSX'}</span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Built-in System Icons */}
+          <div className="space-y-2">
+            <h4 className="font-extrabold text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Icônes système du projet dans <code className="normal-case">/components/icons/CategoryIcons.tsx</code> ({BUILTIN_ICONS.length})
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {BUILTIN_ICONS.map((item, idx) => {
+                const IconComp = item.icon;
+                const sampleTsx = `export const ${item.name}: React.FC<{ className?: string }> = ({ className = "h-5 w-5" }) => (\n  /* Composant React dans /components/icons/CategoryIcons.tsx */\n);`;
+
+                return (
+                  <div
+                    key={idx}
+                    className="bg-slate-50/80 dark:bg-slate-700/40 p-3 rounded-2xl border border-slate-200/70 dark:border-slate-700/60 flex flex-col justify-between gap-2.5"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-10 h-10 rounded-xl ${item.color} text-white flex items-center justify-center shrink-0 shadow-2xs`}>
+                        <IconComp className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-extrabold text-xs text-slate-900 dark:text-white truncate">
+                          {item.name}
+                        </p>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">
+                          {item.label}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(sampleTsx, item.name)}
+                      className="w-full py-1.5 px-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold text-[11px] flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <span>{copiedId === item.name ? '✅ Copié !' : '📋 Copier nom TSX'}</span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface AdminAndDevTabProps {
   expenses: Expense[];
@@ -330,7 +839,7 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
         profiles: profiles.length,
         loginHistory: loginHistory.length,
       },
-      featureFlags,
+      featureFlags: { maintenance: isMaintenanceMode },
       cacheSize: cacheSizeMb,
       recentErrors: errorLogs,
     };
@@ -895,6 +1404,11 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
       </div>
 
       {/* ========================================================= */}
+      {/* 6.5. AJOUT & GESTION D'ICÔNES DE CATÉGORIE                */}
+      {/* ========================================================= */}
+      <CategoryIconManagementSection categories={categories} setToastInfo={setToastInfo} />
+
+      {/* ========================================================= */}
       {/* 7. MODE MAINTENANCE DE L'APPLICATION                      */}
       {/* ========================================================= */}
       <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
@@ -1299,9 +1813,6 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
           onConfirm={handleDeleteUserConfirm}
           title="Supprimer l'utilisateur"
           message={`Êtes-vous sûr de vouloir supprimer définitivement le compte « ${deletingUser} » ? L'utilisateur ne pourra plus se connecter.`}
-          confirmButtonText="Supprimer"
-          cancelButtonText="Annuler"
-          isDestructive={true}
         />
       )}
 
@@ -1330,9 +1841,6 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
               ? 'Cette action supprimera toutes les lignes identifiées comme tests. Tapez « SUPPRIMER » pour confirmer.'
               : 'Cette action réinitialisera les fichiers mis en cache et le service worker. Tapez « SUPPRIMER » pour confirmer.'
           }
-          confirmButtonText="Confirmer la suppression"
-          cancelButtonText="Annuler"
-          isDestructive={true}
           onConfirm={
             dangerModalMode === 'reset_test'
               ? handleResetTestData
