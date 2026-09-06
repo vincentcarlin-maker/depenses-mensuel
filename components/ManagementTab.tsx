@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { User, type Category, type Expense } from '../types';
+import { User, type Category, type Expense, type CustomCategoryIcon } from '../types';
 import { type Profile, type LoginEvent } from '../hooks/useAuth';
 import ConfirmationModal from './ConfirmationModal';
 import ArrowDownTrayIcon from './icons/ArrowDownTrayIcon';

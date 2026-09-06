@@ -805,10 +805,10 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                                 $
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="font-bold text-base text-slate-900 dark:text-slate-100 leading-snug">
+                                <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 leading-snug">
                                     Cagnotte & Commun
                                 </p>
-                                <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                                <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">
                                     Recevoir les mouvements de fonds ou versements de la cagnotte
                                 </p>
                             </div>
@@ -817,7 +817,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                         {/* 2. Suppressions de dépenses */}
                         <div 
                             onClick={() => handleUpdatePreference({ includeDeletes: !prefIncludeDeletes })}
-                            className="p-4 bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-100/90 dark:border-slate-700/60 flex items-center gap-3.5 cursor-pointer hover:bg-slate-50/70 dark:hover:bg-slate-800 transition-colors group shadow-2xs"
+                            className="p-3.5 sm:p-4 bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-100/90 dark:border-slate-700/60 flex items-center gap-3 sm:gap-3.5 cursor-pointer hover:bg-slate-50/70 dark:hover:bg-slate-800 transition-colors group shadow-2xs"
                         >
                             <div className={`w-5 h-5 rounded-[6px] flex items-center justify-center shrink-0 transition-colors ${
                                 prefIncludeDeletes
@@ -830,35 +830,35 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                                     </svg>
                                 )}
                             </div>
-                            <div className="w-11 h-11 rounded-full bg-[#ffe4e6] dark:bg-rose-950/60 text-[#e11d48] dark:text-rose-400 flex items-center justify-center shrink-0">
+                            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#ffe4e6] dark:bg-rose-950/60 text-[#e11d48] dark:text-rose-400 flex items-center justify-center shrink-0">
                                 <svg className="w-5 h-5 stroke-[2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="font-bold text-base text-slate-900 dark:text-slate-100 leading-snug">
+                                <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 leading-snug">
                                     Suppressions de dépenses
                                 </p>
-                                <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                                <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">
                                     Recevoir une alerte quand une dépense est retirée ou annulée
                                 </p>
                             </div>
                         </div>
 
                         {/* 3. Mode Ne Pas Déranger */}
-                        <div className="p-4 bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-100/90 dark:border-slate-700/60 space-y-3 shadow-2xs">
+                        <div className="p-3.5 sm:p-4 bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-100/90 dark:border-slate-700/60 space-y-3 shadow-2xs">
                             <div className="flex items-center justify-between gap-3.5">
-                                <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                                    <div className="w-11 h-11 rounded-full bg-[#f3e8ff] dark:bg-purple-950/60 text-[#9333ea] dark:text-purple-400 flex items-center justify-center shrink-0">
+                                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
+                                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#f3e8ff] dark:bg-purple-950/60 text-[#9333ea] dark:text-purple-400 flex items-center justify-center shrink-0">
                                         <svg className="w-5 h-5 stroke-[2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                                         </svg>
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="font-bold text-base text-slate-900 dark:text-slate-100 leading-snug">
+                                        <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 leading-snug">
                                             Mode Ne Pas Déranger
                                         </p>
-                                        <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                                        <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">
                                             Sommeil silencieux
                                         </p>
                                     </div>

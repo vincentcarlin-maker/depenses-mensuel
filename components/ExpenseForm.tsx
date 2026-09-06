@@ -522,36 +522,36 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   return (
     <>
         <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-md border border-slate-100 dark:border-slate-800 overflow-hidden">
-        <div className="p-6 sm:p-7 border-b border-slate-100 dark:border-slate-700/60 bg-white dark:bg-slate-800">
-            <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-blue-100/80 dark:bg-blue-950/60 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <div className="p-4 sm:p-7 border-b border-slate-100 dark:border-slate-700/60 bg-white dark:bg-slate-800">
+            <div className="flex items-center gap-3 sm:gap-3.5">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-blue-100/80 dark:bg-blue-950/60 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                         <polyline points="14 2 14 8 20 8" />
                         <line x1="12" y1="18" x2="12" y2="12" />
                         <line x1="9" y1="15" x2="15" y2="15" />
                     </svg>
                 </div>
-                <div>
-                    <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Ajouter une transaction</h2>
+                <div className="min-w-0">
+                    <h2 className="text-lg sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Ajouter une transaction</h2>
                     <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">Enregistrez une dépense ou un remboursement.</p>
                 </div>
             </div>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 sm:p-7 space-y-6">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-7 space-y-5 sm:space-y-6">
             <div>
-            <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2.5">Qui a payé ?</label>
-            <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-700/60">
+            <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2 sm:mb-2.5">Qui a payé ?</label>
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 bg-slate-50 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-700/60">
                 <button
                     type="button"
                     onClick={() => setUser(User.Sophie)}
-                    className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all ${
+                    className={`py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-1.5 transition-all ${
                         user === User.Sophie
                             ? 'bg-pink-100/90 dark:bg-pink-950/50 text-pink-600 dark:text-pink-400 border border-pink-200/80 dark:border-pink-900/50 shadow-xs'
                             : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                     <span>Sophie</span>
@@ -559,13 +559,13 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                 <button
                     type="button"
                     onClick={() => setUser(User.Vincent)}
-                    className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all ${
+                    className={`py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-1.5 transition-all ${
                         user === User.Vincent
                             ? 'bg-blue-100/90 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-900/50 shadow-xs'
                             : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                     <span>Vincent</span>
@@ -573,13 +573,13 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                 <button
                     type="button"
                     onClick={() => setUser(User.Commun)}
-                    className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all ${
+                    className={`py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-1.5 transition-all ${
                         user === User.Commun
                             ? 'bg-purple-100/90 dark:bg-indigo-950/50 text-purple-600 dark:text-indigo-400 border border-purple-200/80 dark:border-indigo-900/50 shadow-xs'
                             : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                 >
-                    <PiggyBankIcon className="w-4 h-4 shrink-0" />
+                    <PiggyBankIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                     <span>Cagnotte</span>
                 </button>
             </div>
@@ -959,30 +959,30 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                     {/* Type Section */}
                     <div>
                         <label className="block text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Type</label>
-                        <div className="grid grid-cols-2 gap-2 bg-[#f8fafc] dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/60">
+                        <div className="grid grid-cols-2 gap-1.5 sm:gap-2 bg-[#f8fafc] dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/60">
                             <button
                               type="button"
                               onClick={() => setTransactionType('expense')}
-                              className={`py-2 px-2.5 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                              className={`py-2 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer ${
                                 transactionType === 'expense'
                                   ? 'bg-[#fdeef3] dark:bg-rose-950/70 text-[#d91b5c] dark:text-rose-300 border border-[#fbcfe0] dark:border-rose-900/60 shadow-2xs'
                                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 border border-slate-200/80 dark:border-slate-700/80'
                               }`}
                             >
-                              <span className="w-5 h-5 rounded-full bg-[#e60067] text-white flex items-center justify-center font-black text-xs shrink-0 shadow-2xs">-</span>
-                              <span className="truncate">Dépense</span>
+                              <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#e60067] text-white flex items-center justify-center font-black text-[10px] sm:text-xs shrink-0 shadow-2xs">-</span>
+                              <span className="whitespace-nowrap">Dépense</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => setTransactionType('refund')}
-                              className={`py-2 px-2.5 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                              className={`py-2 px-1.5 sm:px-3 rounded-xl font-bold text-[11px] xs:text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2 transition-all cursor-pointer ${
                                 transactionType === 'refund'
                                   ? 'bg-[#edf5ff] dark:bg-blue-950/70 text-[#2563eb] dark:text-blue-300 border border-[#bfdbfe] dark:border-blue-900/60 shadow-2xs'
                                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 border border-slate-200/80 dark:border-slate-700/80'
                               }`}
                             >
-                              <span className="w-5 h-5 rounded-full bg-[#2563eb] text-white flex items-center justify-center font-black text-xs shrink-0 shadow-2xs">+</span>
-                              <span className="truncate">Remboursement</span>
+                              <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#2563eb] text-white flex items-center justify-center font-black text-[10px] sm:text-xs shrink-0 shadow-2xs">+</span>
+                              <span className="whitespace-nowrap">Remboursement</span>
                             </button>
                         </div>
                     </div>

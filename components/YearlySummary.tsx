@@ -325,32 +325,35 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
         </div>
         
         {/* Top 2 KPI Summary Cards */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
             {/* Card 1: Total Annuel */}
-            <div className="bg-[#f0f6ff] dark:bg-blue-950/30 p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-blue-100/80 dark:border-blue-900/40 flex items-center gap-3 sm:gap-4">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#dbeafe] dark:bg-blue-900/60 text-[#2563eb] dark:text-blue-300 flex items-center justify-center shrink-0">
-                    <WalletIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+            <div className="bg-[#f0f6ff] dark:bg-blue-950/30 p-3 sm:p-5 rounded-2xl sm:rounded-3xl border border-blue-100/80 dark:border-blue-900/40 flex items-center gap-2.5 sm:gap-4 min-w-0">
+                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#dbeafe] dark:bg-blue-900/60 text-[#2563eb] dark:text-blue-300 flex items-center justify-center shrink-0">
+                    <WalletIcon className="w-4 h-4 sm:w-6 sm:h-6" />
                 </div>
                 <div className="min-w-0 flex-1">
-                    <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 truncate">Total annuel</p>
-                    <p className="text-base sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 mt-0.5 truncate">
+                    <p className="text-[11px] sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-tight">Total annuel</p>
+                    <p className="text-sm xs:text-base sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 mt-0.5 tracking-tight break-normal">
                         {totalYearlyExpense.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                        {expenses.length} dépense{expenses.length > 1 ? 's' : ''}
                     </p>
                 </div>
             </div>
 
             {/* Card 2: Moyenne Mensuelle */}
-            <div className="bg-[#fdf0f7] dark:bg-pink-950/30 p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-pink-100/80 dark:border-pink-900/40 flex items-center gap-3 sm:gap-4">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#fce7f3] dark:bg-pink-900/60 text-[#c026d3] dark:text-pink-300 flex items-center justify-center shrink-0">
-                    <TrendUpLineIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+            <div className="bg-[#fdf0f7] dark:bg-pink-950/30 p-3 sm:p-5 rounded-2xl sm:rounded-3xl border border-pink-100/80 dark:border-pink-900/40 flex items-center gap-2.5 sm:gap-4 min-w-0">
+                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#fce7f3] dark:bg-pink-900/60 text-[#c026d3] dark:text-pink-300 flex items-center justify-center shrink-0">
+                    <TrendUpLineIcon className="w-4 h-4 sm:w-6 sm:h-6" />
                 </div>
                 <div className="min-w-0 flex-1">
-                    <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 truncate">Moyenne mensuelle</p>
-                    <p className="text-base sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 mt-0.5 truncate">
+                    <p className="text-[11px] sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-tight">Moy. mensuelle</p>
+                    <p className="text-sm xs:text-base sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 mt-0.5 tracking-tight break-normal">
                         {monthlyAverage.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                     </p>
-                    <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">
-                        calculée sur {numberOfMonthsWithData} mois
+                    <p className="text-[9.5px] sm:text-xs text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">
+                        sur {numberOfMonthsWithData} mois
                     </p>
                 </div>
             </div>

@@ -185,64 +185,64 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
       </h1>
 
       {/* Top 2 KPI Summary Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
         {/* Card 1: Total */}
-        <div className="bg-white dark:bg-slate-800 p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-xs border border-slate-100 dark:border-slate-800 flex items-center gap-3 sm:gap-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-blue-100/90 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-            <WalletIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+        <div className="bg-white dark:bg-slate-800 p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-xs border border-slate-100 dark:border-slate-800 flex items-center gap-2.5 sm:gap-4 min-w-0">
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-blue-100/90 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <WalletIcon className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 truncate">
+            <p className="text-[11px] sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-tight">
               <span className="sm:hidden">Dépense totale</span>
               <span className="hidden sm:inline">Dépense totale du mois</span>
             </p>
-            <p className="text-base sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 mt-0.5 truncate">
+            <p className="text-sm xs:text-base sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 mt-0.5 tracking-tight break-normal">
               {totalExpenses.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
             </p>
-            <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">
+            <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 mt-0.5">
               {expenses.length} transaction{expenses.length > 1 ? 's' : ''}
             </p>
           </div>
         </div>
 
         {/* Card 2: Trend */}
-        <div className={`p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl shadow-xs border flex items-center gap-3 sm:gap-4 ${
+        <div className={`p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-xs border flex items-center gap-2.5 sm:gap-4 min-w-0 ${
           trend.percentageChange <= 0 
             ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100/80 dark:border-emerald-900/40' 
             : 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-100/80 dark:border-rose-900/40'
         }`}>
-          <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+          <div className={`w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 ${
             trend.percentageChange <= 0 
               ? 'bg-emerald-100/90 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400' 
               : 'bg-rose-100/90 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400'
           }`}>
-            <TrendArrowIcon isUp={trend.percentageChange > 0} className="w-5 h-5 sm:w-6 sm:h-6" />
+            <TrendArrowIcon isUp={trend.percentageChange > 0} className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 truncate">
+            <p className="text-[11px] sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-tight">
               <span className="sm:hidden">Tendance (M-1)</span>
               <span className="hidden sm:inline">Tendance mensuelle (M-1)</span>
             </p>
             {trend.previousTotal > 0.01 ? (
               <>
-                <p className={`text-base sm:text-2xl font-extrabold mt-0.5 truncate ${
+                <p className={`text-sm xs:text-base sm:text-2xl font-extrabold mt-0.5 tracking-tight ${
                   trend.percentageChange <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                 }`}>
                   {Math.abs(trend.percentageChange).toFixed(0)}%
                 </p>
-                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                  {trend.percentageChange <= 0 ? 'de moins' : 'de plus'} que M-1
+                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">
+                  {trend.percentageChange <= 0 ? 'de moins' : 'de plus'} vs M-1
                 </p>
               </>
             ) : (
-              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">Mois dernier : 0 €</p>
+              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-1">Mois dernier : 0 €</p>
             )}
           </div>
         </div>
       </div>
 
       {/* Section 2: Répartition par catégorie */}
-      <div className="bg-white dark:bg-slate-800 p-5 sm:p-6 rounded-3xl shadow-xs border border-slate-100 dark:border-slate-800 space-y-6">
+      <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-3xl shadow-xs border border-slate-100 dark:border-slate-800 space-y-5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-blue-100/90 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
             <BarChartIcon className="w-5 h-5" />
@@ -253,7 +253,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
         </div>
 
         {/* Horizontal Bar Chart Container */}
-        <div className="space-y-4 pt-1">
+        <div className="space-y-3.5 pt-1">
           {chartData.map((entry) => {
             const visual = getVisual(entry.name) || CategoryVisuals[entry.name as Category] || { icon: MiscIcon, color: 'bg-slate-500' };
             const IconComponent = visual.icon;
@@ -263,11 +263,11 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
             return (
               <div key={entry.name} className="flex items-center gap-2 sm:gap-4 text-sm">
                 {/* Left Category Name + Icon */}
-                <div className="w-28 sm:w-44 shrink-0 flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <div className="w-24 xs:w-28 sm:w-44 shrink-0 flex items-center gap-1.5 sm:gap-2 min-w-0">
                   <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center shrink-0 ${visual.color} text-white`}>
                     <IconComponent className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs sm:text-sm truncate" title={getCategoryDisplayName(entry.name)}>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200 text-[11px] sm:text-sm truncate" title={getCategoryDisplayName(entry.name)}>
                     {getCategoryDisplayName(entry.name)}
                   </span>
                 </div>
@@ -293,15 +293,15 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
 
                   {/* Centered Percentage in Middle of Gauge */}
                   <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-                    <span className="text-[10px] sm:text-xs font-extrabold text-slate-800 dark:text-slate-100 bg-white/85 dark:bg-slate-900/85 px-1.5 sm:px-2.5 py-0.5 rounded-full backdrop-blur-xs shadow-2xs border border-slate-200/50 dark:border-slate-700/50">
+                    <span className="text-[9px] sm:text-xs font-extrabold text-slate-800 dark:text-slate-100 bg-white/85 dark:bg-slate-900/85 px-1 sm:px-2.5 py-0.5 rounded-full backdrop-blur-xs shadow-2xs border border-slate-200/50 dark:border-slate-700/50">
                       {percentage.toFixed(1)}%
                     </span>
                   </div>
                 </div>
 
                 {/* Right Amount */}
-                <div className="shrink-0 flex items-center justify-end min-w-[65px] sm:min-w-[90px]">
-                  <span className="font-extrabold text-slate-900 dark:text-slate-100 text-xs sm:text-sm whitespace-nowrap">
+                <div className="shrink-0 flex items-center justify-end min-w-[55px] sm:min-w-[90px]">
+                  <span className="font-extrabold text-slate-900 dark:text-slate-100 text-[11px] sm:text-sm whitespace-nowrap">
                     {entry.value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                   </span>
                 </div>
@@ -337,28 +337,28 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
               <button 
                 key={`detail-${entry.name}`} 
                 onClick={() => setSelectedCategory(entry.name as Category)}
-                className="w-full flex items-center justify-between p-3.5 bg-slate-50/60 dark:bg-slate-700/30 hover:bg-slate-100/80 dark:hover:bg-slate-700/60 border border-slate-100/80 dark:border-slate-700/60 rounded-2xl transition-all text-left group"
+                className="w-full flex items-center justify-between p-3 sm:p-3.5 bg-slate-50/60 dark:bg-slate-700/30 hover:bg-slate-100/80 dark:hover:bg-slate-700/60 border border-slate-100/80 dark:border-slate-700/60 rounded-2xl transition-all text-left group min-w-0"
               >
-                <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                  <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${visual.color} text-white shadow-2xs`}>
-                    <IconComponent className="w-5 h-5" />
+                <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1 pr-1">
+                  <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 ${visual.color} text-white shadow-2xs`}>
+                    <IconComponent className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-extrabold text-slate-900 dark:text-slate-100 text-sm sm:text-base truncate">
+                    <p className="font-extrabold text-slate-900 dark:text-slate-100 text-xs sm:text-base line-clamp-1" title={getCategoryDisplayName(entry.name)}>
                       {getCategoryDisplayName(entry.name)}
                     </p>
-                    <p className="text-xs font-medium text-slate-400 dark:text-slate-500 mt-0.5">
+                    <p className="text-[10.5px] sm:text-xs font-medium text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">
                       Moyenne 3 mois : {entry.average.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 shrink-0 text-right ml-3">
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0 text-right pl-1">
                   <div>
-                    <p className="font-extrabold text-slate-900 dark:text-slate-100 text-sm sm:text-base">
+                    <p className="font-extrabold text-slate-900 dark:text-slate-100 text-xs sm:text-base">
                       {entry.value.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                     </p>
-                    <p className="text-xs font-medium text-slate-400 dark:text-slate-500 mt-0.5">
+                    <p className="text-[10.5px] sm:text-xs font-medium text-slate-400 dark:text-slate-500 mt-0.5">
                       {percentage.toFixed(1)}%
                     </p>
                   </div>

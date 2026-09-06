@@ -197,15 +197,15 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
           {/* 2-Column Section: CATÉGORIE & DATE */}
           <div className="grid grid-cols-2 gap-3 py-3 relative border-t border-b border-slate-100 dark:border-slate-700/60">
             {/* Category Column */}
-            <div className="flex items-center gap-2.5 pr-1">
-              <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700/80 flex items-center justify-center text-slate-500 shrink-0">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="flex items-center gap-2 sm:gap-2.5 pr-1 min-w-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-100 dark:bg-slate-700/80 flex items-center justify-center text-slate-500 shrink-0">
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                 </svg>
               </div>
               <div className="min-w-0">
                 <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">CATÉGORIE</p>
-                <p className="font-extrabold text-slate-900 dark:text-slate-100 text-sm sm:text-base truncate mt-0.5">
+                <p className="font-extrabold text-slate-900 dark:text-slate-100 text-xs sm:text-base leading-tight mt-0.5 break-words">
                   {(expense.category === 'Dépenses obligatoires' || expense.category === 'Dép. récurrentes') ? 'Dép. recurentes' : expense.category}
                 </p>
               </div>
@@ -215,9 +215,9 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
             <div className="absolute top-3 bottom-3 left-1/2 -ml-px w-px bg-slate-100 dark:bg-slate-700/60"></div>
 
             {/* Date Column */}
-            <div className="flex items-center gap-2.5 pl-2">
-              <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700/80 flex items-center justify-center text-slate-500 shrink-0">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="flex items-center gap-2 sm:gap-2.5 pl-2 min-w-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-100 dark:bg-slate-700/80 flex items-center justify-center text-slate-500 shrink-0">
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
@@ -225,7 +225,7 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
                 <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">DATE</p>
                 <p className="font-extrabold text-slate-800 dark:text-slate-200 text-xs sm:text-sm capitalize mt-0.5 leading-tight">
                   {formattedDatePart}
-                  <span className="block text-slate-400 dark:text-slate-500 font-normal text-[11px] mt-0.5">à {formattedTimePart}</span>
+                  <span className="block text-slate-400 dark:text-slate-500 font-normal text-[10px] sm:text-[11px] mt-0.5">à {formattedTimePart}</span>
                 </p>
               </div>
             </div>
