@@ -4,20 +4,7 @@ import { type Expense, type Category } from '../types';
 import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Line, Area } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
 import CloseIcon from './icons/CloseIcon';
-import { 
-    MandatoryIcon, 
-    FuelIcon, 
-    HeatingIcon, 
-    GroceriesIcon, 
-    RestaurantIcon, 
-    CarRepairsIcon, 
-    MiscIcon,
-    ClothingIcon,
-    GiftIcon,
-    PalmTreeIcon,
-    PillIcon
-} from './icons/CategoryIcons';
-
+import { useCategoryVisuals, PRESET_CATEGORY_VISUALS } from '../hooks/useCategoryVisuals';
 const WalletIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
@@ -56,22 +43,6 @@ const ChevronRightIcon = ({ className = "w-5 h-5" }: { className?: string }) => 
     <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
   </svg>
 );
-
-const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; pieColor: string } } = {
-    "Dép. récurrentes": { icon: MandatoryIcon, color: 'bg-slate-600', pieColor: '#475569' },
-    "Dép. recurentes": { icon: MandatoryIcon, color: 'bg-slate-600', pieColor: '#475569' },
-    "Dépenses obligatoires": { icon: MandatoryIcon, color: 'bg-slate-600', pieColor: '#475569' },
-    "Carburant": { icon: FuelIcon, color: 'bg-orange-500', pieColor: '#f97316' },
-    "Chauffage": { icon: HeatingIcon, color: 'bg-red-500', pieColor: '#ef4444' },
-    "Courses": { icon: GroceriesIcon, color: 'bg-emerald-500', pieColor: '#10b981' },
-    "Restaurant": { icon: RestaurantIcon, color: 'bg-purple-500', pieColor: '#a855f7' },
-    "Vacances": { icon: PalmTreeIcon, color: 'bg-teal-500', pieColor: '#14b8a6' },
-    "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-amber-500', pieColor: '#f59e0b' },
-    "Vêtements": { icon: ClothingIcon, color: 'bg-indigo-500', pieColor: '#6366f1' },
-    "Cadeau": { icon: GiftIcon, color: 'bg-fuchsia-500', pieColor: '#d946ef' },
-    "Complément alimentaire": { icon: PillIcon, color: 'bg-emerald-500', pieColor: '#10b981' },
-    "Divers": { icon: MiscIcon, color: 'bg-cyan-500', pieColor: '#06b6d4' },
-};
 
 const getCategoryDisplayName = (name: string): string => {
   if (name === 'Dépenses obligatoires' || name === 'Dép. récurrentes' || name === 'Dép. recurentes') {
@@ -116,6 +87,7 @@ const CustomTooltip = ({ active, payload, label, year }: any) => {
 
 const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExpenses, year, onExpenseClick }) => {
   const { theme } = useTheme();
+  const { getVisual } = useCategoryVisuals();
   const tickColor = theme === 'dark' ? '#94a3b8' : '#64748b';
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [isChartExpanded, setIsChartExpanded] = useState(false);
@@ -134,8 +106,8 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
 
   const activeColor = useMemo(() => {
     if (chartCategoryFilter === 'all') return '#06b6d4';
-    return CategoryVisuals[chartCategoryFilter]?.pieColor || '#06b6d4';
-  }, [chartCategoryFilter]);
+    return getVisual(chartCategoryFilter).pieColor || '#06b6d4';
+  }, [chartCategoryFilter, getVisual]);
 
   useEffect(() => {
     if (selectedCategory || isChartExpanded) {
@@ -378,7 +350,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
             {/* Category Gauges - Full-width stacked layout for mobile & desktop */}
             <div className="space-y-2.5 sm:space-y-3 pt-1">
                 {categoryData.map((entry) => {
-                    const visual = CategoryVisuals[entry.name as Category] || CategoryVisuals["Divers"];
+                    const visual = getVisual(entry.name);
                     const IconComponent = visual.icon;
                     const barWidthPercent = maxAverage > 0 ? Math.min(100, Math.max(4, (entry.average / maxAverage) * 100)) : 0;
                     const displayName = getCategoryDisplayName(entry.name);
@@ -391,8 +363,8 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                         >
                             <div className="flex items-start gap-2.5 sm:gap-3.5">
                                 {/* Left Category Icon */}
-                                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 ${visual.color} text-white shadow-2xs mt-0.5`}>
-                                    <IconComponent className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 ${visual.isFullBadge ? '' : visual.color} text-white shadow-2xs mt-0.5 overflow-hidden`}>
+                                    <IconComponent className={visual.isFullBadge ? "w-full h-full" : "w-4 h-4 sm:w-5 sm:h-5"} />
                                 </div>
 
                                 {/* Content Column */}
@@ -479,7 +451,8 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                     >
                         📊 Toutes
                     </button>
-                    {Object.entries(CategoryVisuals).map(([catName, visual]) => {
+                    {Object.keys(PRESET_CATEGORY_VISUALS).map((catName) => {
+                        const visual = getVisual(catName);
                         const IconComponent = visual.icon;
                         const hasExpenses = expenses.some(e => e.category === catName) || previousYearExpenses.some(e => e.category === catName);
                         if (!hasExpenses) return null;
@@ -502,7 +475,9 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                                         : 'bg-slate-50 text-slate-600 dark:bg-slate-800/40 dark:text-slate-300 border-slate-200/80 dark:border-slate-700 hover:bg-slate-100'
                                 }`}
                             >
-                                <IconComponent className={`h-3.5 w-3.5 ${isSelected ? 'text-white' : 'text-slate-500'}`} />
+                                <div className={`h-3.5 w-3.5 flex items-center justify-center shrink-0 ${visual.isFullBadge ? 'rounded-full overflow-hidden' : ''}`}>
+                                    <IconComponent className={`h-full w-full ${isSelected ? 'text-white' : 'text-slate-500'}`} />
+                                </div>
                                 {displayName}
                             </button>
                         );
@@ -583,9 +558,15 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                 <div className="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[80vh] animate-fade-in">
                     <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-700/30">
                         <div className="flex items-center gap-3">
-                            <div className={`w-9 h-9 flex items-center justify-center rounded-2xl ${CategoryVisuals[selectedCategory]?.color || 'bg-slate-500'} text-white`}>
-                                {CategoryVisuals[selectedCategory]?.icon && React.createElement(CategoryVisuals[selectedCategory].icon, { className: "h-5 w-5" })}
-                            </div>
+                            {(() => {
+                                const mVisual = getVisual(selectedCategory);
+                                const MIcon = mVisual.icon;
+                                return (
+                                    <div className={`w-9 h-9 flex items-center justify-center rounded-2xl ${mVisual.isFullBadge ? '' : mVisual.color} text-white overflow-hidden`}>
+                                        <MIcon className={mVisual.isFullBadge ? "w-full h-full" : "h-5 w-5"} />
+                                    </div>
+                                );
+                            })()}
                             <div>
                                 <h3 className="font-extrabold text-slate-900 dark:text-slate-100 text-base">Détail : {getCategoryDisplayName(selectedCategory)}</h3>
                                 <p className="text-xs text-slate-400 dark:text-slate-500">Année {year}</p>
@@ -636,7 +617,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                                                     className="h-1.5 rounded-full transition-all duration-500"
                                                     style={{ 
                                                         width: `${percentage}%`, 
-                                                        backgroundColor: CategoryVisuals[selectedCategory!]?.pieColor || '#64748b'
+                                                        backgroundColor: getVisual(selectedCategory!).pieColor || '#64748b'
                                                     }}
                                                 ></div>
                                             </div>
@@ -716,7 +697,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                                 }, 100);
                             }}
                             className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-white text-sm font-bold shadow-xs hover:shadow-md transition-all duration-200"
-                            style={{ backgroundColor: CategoryVisuals[selectedCategory]?.pieColor || '#06b6d4' }}
+                            style={{ backgroundColor: getVisual(selectedCategory).pieColor || '#06b6d4' }}
                         >
                             📊 Voir l'évolution temporelle
                         </button>

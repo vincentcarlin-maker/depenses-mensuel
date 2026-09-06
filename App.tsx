@@ -15,6 +15,7 @@ import YearlySummary from './components/YearlySummary';
 import ReminderAlerts from './components/ReminderAlerts';
 import NotificationReminderAlert from './components/NotificationReminderAlert';
 import SettingsModal from './components/SettingsModal';
+import SettingsTab, { type SettingsViewType } from './components/SettingsTab';
 import { useTheme } from './hooks/useTheme';
 import OfflineIndicator from './components/OfflineIndicator';
 import { useAuth, type Profile, type LoginEvent } from './hooks/useAuth';
@@ -1020,7 +1021,12 @@ const MainApp: React.FC<{
 
   const updateCategory = (oldName: string, newName: string): boolean => {
     const trimmedNewName = newName.trim();
-    if (!trimmedNewName || oldName === trimmedNewName) return false;
+    if (!trimmedNewName) return false;
+    if (oldName === trimmedNewName) return true;
+    if (oldName.toLowerCase() === trimmedNewName.toLowerCase()) {
+      setCategories(prev => prev.map(c => c === oldName ? trimmedNewName : c));
+      return true;
+    }
     if (categories.find(c => c.toLowerCase() === trimmedNewName.toLowerCase())) {
         setToastInfo({ message: `La catégorie "${trimmedNewName}" existe déjà.`, type: 'error' });
         return false;
@@ -1291,6 +1297,41 @@ const MainApp: React.FC<{
             {activeTab === 'analysis' && <CategoryTotals expenses={analysisExpenses} previousMonthExpenses={previousMonthExpenses} previousYearMonthExpenses={previousYearMonthExpenses} last3MonthsExpenses={last3MonthsExpenses} onExpenseClick={setExpenseToView} />}
             {activeTab === 'yearly' && <YearlySummary expenses={yearlyFilteredExpenses} previousYearExpenses={previousYearFilteredExpenses} year={currentYear} onExpenseClick={setExpenseToView} />}
             {activeTab === 'moneypot' && (<MoneyPotTab transactions={moneyPotTransactions} onAddTransaction={addMoneyPotTransaction} onDeleteTransaction={deleteMoneyPotTransaction} />)}
+            {activeTab === 'settings' && (
+              <SettingsTab 
+                initialView={settingsInitialView} 
+                onViewChange={(v) => setSettingsInitialView(v)} 
+                reminders={reminders} 
+                expenses={expenses} 
+                moneyPotTransactions={moneyPotTransactions} 
+                onSyncData={syncData} 
+                onAddReminder={addReminder} 
+                onUpdateReminder={updateReminder} 
+                onDeleteReminder={deleteReminder} 
+                categories={categories} 
+                onAddCategory={addCategory} 
+                onUpdateCategory={updateCategory} 
+                onDeleteCategory={deleteCategory} 
+                profiles={profiles} 
+                loggedInUser={user} 
+                onAddProfile={onAddProfile} 
+                onUpdateProfilePassword={onUpdateProfilePassword} 
+                onDeleteProfile={onDeleteProfile} 
+                onToggleBlockProfile={onToggleBlockProfile} 
+                isMaintenanceMode={isMaintenanceMode} 
+                onToggleMaintenanceMode={onToggleMaintenanceMode} 
+                onUpdateExpense={updateExpense} 
+                groceryStores={groceryStores} 
+                setGroceryStores={setGroceryStores} 
+                cars={cars} 
+                setCars={setCars} 
+                heatingTypes={heatingTypes} 
+                setHeatingTypes={setHeatingTypes} 
+                setToastInfo={setToastInfo} 
+                loginHistory={loginHistory} 
+                onLogout={onLogout} 
+              />
+            )}
           </div>
         </main>
       </PullToRefresh>

@@ -257,3 +257,126 @@ export const PillIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
     </g>
   </svg>
 );
+
+// --- Outline Category Icons (Matching Mockup) ---
+
+export const HomeOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1V9.5z" />
+  </svg>
+);
+
+export const CartOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="9" cy="20" r="1.5" />
+    <circle cx="18" cy="20" r="1.5" />
+    <path d="M2.5 3h3l2.4 12h10.2l2.6-8H6.5" />
+  </svg>
+);
+
+export const GasPumpOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 22h12M4 9h10M4 5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v17H4V5zM14 9l3-3a1.5 1.5 0 0 1 2.5 1v8.5a1.5 1.5 0 0 1-3 0V13" />
+  </svg>
+);
+
+export const UtensilsOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 2v20M21 2v6a3 3 0 0 1-3 3M3 2v6a3 3 0 0 0 3 3v11M6 2v6M9 2v6a3 3 0 0 1-3 3" />
+  </svg>
+);
+
+export const FlameOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8.5 14.5A3.5 3.5 0 0 0 12 18a3.5 3.5 0 0 0 3.5-3.5C15.5 10 12 7 12 7s-3.5 3-3.5 7.5z" />
+    <path d="M12 2c5 4.5 8 9.5 8 13.5a8 8 0 1 1-16 0C4 11.5 7 6.5 12 2z" />
+  </svg>
+);
+
+export const HeartOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+  </svg>
+);
+
+export const CarOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="11" width="18" height="7" rx="2" />
+    <path d="M5 11l2-5h10l2 5M6 18v2M18 18v2M6.5 14.5h.01M17.5 14.5h.01" />
+  </svg>
+);
+
+export const PlaneOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21 4 19.5 2.5S16 1 14.5 2.5L11 6 2.8 4.2a1 1 0 0 0-1.1 1.5L4 10l-2 3 4 1 2 4 3-2 4.3 2.3a1 1 0 0 0 1.5-.7l1-8.4z" />
+  </svg>
+);
+
+export const PalmOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22V11M12 11C12 11 16 6 21 8M12 11C12 11 8 6 3 8M12 11C12 11 17 10 19 15M12 11C12 11 7 10 5 15" />
+  </svg>
+);
+
+export const ShoppingBagOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0" />
+  </svg>
+);
+
+export const GiftOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="8" width="18" height="4" rx="1" />
+    <path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" />
+  </svg>
+);
+
+export const PillCapsuleOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.5 4.5l9 9a5 5 0 0 1-7.07 7.07l-9-9a5 5 0 0 1 7.07-7.07zM7 11.5l5.5 5.5" />
+  </svg>
+);
+
+export const GraduationOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 10v6M2 10l10-5 10 5-10 5zM6 12v5c3 3 9 3 12 0v-5" />
+  </svg>
+);
+
+export const PawOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="6.5" cy="8.5" r="2" />
+    <circle cx="17.5" cy="8.5" r="2" />
+    <circle cx="10" cy="5" r="2" />
+    <circle cx="14" cy="5" r="2" />
+    <path d="M12 10c-3.5 0-6 2.5-6 6a4 4 0 0 0 7 2.5 4 4 0 0 0 5-2.5c0-3.5-2.5-6-6-6z" />
+  </svg>
+);
+
+export const LeafOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 20A7 7 0 0 1 4 13C4 7 11 3 20 3c0 9-4 16-9 17zM4 21c4-4 8-6 16-6" />
+  </svg>
+);
+
+export const DumbbellOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 8v8M4 10v4M18 8v8M20 10v4M6 12h12" />
+  </svg>
+);
+
+export const PhoneOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="7" y="3" width="10" height="18" rx="3" />
+    <circle cx="12" cy="17.5" r="0.75" fill="currentColor" />
+  </svg>
+);
+
+export const MoreDotsOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="6" cy="12" r="1.5" fill="currentColor" />
+    <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+    <circle cx="18" cy="12" r="1.5" fill="currentColor" />
+  </svg>
+);
+

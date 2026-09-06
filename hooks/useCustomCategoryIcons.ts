@@ -127,13 +127,19 @@ export function useCustomCategoryIcons() {
     if (!trimmedCat) return;
 
     setCustomIcons(prev => {
-      // Remove any existing mapping for this category
-      const filtered = prev.filter(i => i.category?.toLowerCase() !== trimmedCat.toLowerCase());
+      // Find if iconId refers to an existing uploaded custom icon
+      const foundCustom = prev.find(i => i.id === iconId || i.name === iconId || i.name.toLowerCase().replace(/icon$/, '') === iconId.toLowerCase());
+
+      // Filter out any previous mapping specifically assigned to this category (keep pure icon assets that have no category or different category)
+      const filtered = prev.filter(i => !i.category || i.category.toLowerCase() !== trimmedCat.toLowerCase());
+
       const newMapping: CustomCategoryIcon = {
         id: `mapping_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-        name: iconId,
+        name: foundCustom ? foundCustom.name : iconId,
         category: trimmedCat,
-        type: 'svg',
+        type: foundCustom ? foundCustom.type : 'svg',
+        svgContent: foundCustom?.svgContent,
+        imageUrl: foundCustom?.imageUrl,
         color: color,
         createdAt: new Date().toISOString()
       };

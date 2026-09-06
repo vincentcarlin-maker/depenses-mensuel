@@ -20,9 +20,28 @@ import {
   TotalEnergiesIcon,
   TrashBinIcon,
   NetflixIcon,
-  PillIcon
+  PillIcon,
+  HomeOutlineIcon,
+  CartOutlineIcon,
+  GasPumpOutlineIcon,
+  UtensilsOutlineIcon,
+  FlameOutlineIcon,
+  HeartOutlineIcon,
+  CarOutlineIcon,
+  PlaneOutlineIcon,
+  PalmOutlineIcon,
+  ShoppingBagOutlineIcon,
+  GiftOutlineIcon,
+  PillCapsuleOutlineIcon,
+  GraduationOutlineIcon,
+  PawOutlineIcon,
+  LeafOutlineIcon,
+  DumbbellOutlineIcon,
+  PhoneOutlineIcon,
+  MoreDotsOutlineIcon
 } from '../components/icons/CategoryIcons';
 import { CustomCategoryIcon, useCustomCategoryIcons } from './useCustomCategoryIcons';
+import { getColorDef } from '../components/CategoryEditModal';
 
 export interface CategoryVisual {
   icon: React.FC<{ className?: string }>;
@@ -35,148 +54,231 @@ export interface CategoryVisual {
   imageUrl?: string;
   isCustomSvg?: boolean;
   svgContent?: string;
+  pieColor?: string;
+  isFullBadge?: boolean;
 }
 
 // Built-in presets map
+// Built-in presets map with real icons used throughout the app
 export const PRESET_CATEGORY_VISUALS: Record<string, CategoryVisual> = {
   "Dép. récurrentes": {
     icon: MandatoryIcon,
-    color: 'bg-slate-500',
-    textColor: 'text-slate-600 dark:text-slate-300',
-    badgeBg: 'bg-slate-100 dark:bg-slate-700',
-    borderColor: 'border-slate-200 dark:border-slate-600'
+    color: 'bg-[#3b82f6]',
+    textColor: 'text-[#2563eb] dark:text-blue-400',
+    badgeBg: 'bg-[#dbeafe] dark:bg-blue-950/70',
+    borderColor: 'border-blue-100 dark:border-blue-900/40'
   },
   "Dép. recurentes": {
     icon: MandatoryIcon,
-    color: 'bg-slate-500',
-    textColor: 'text-slate-600 dark:text-slate-300',
-    badgeBg: 'bg-slate-100 dark:bg-slate-700',
-    borderColor: 'border-slate-200 dark:border-slate-600'
+    color: 'bg-[#3b82f6]',
+    textColor: 'text-[#2563eb] dark:text-blue-400',
+    badgeBg: 'bg-[#dbeafe] dark:bg-blue-950/70',
+    borderColor: 'border-blue-100 dark:border-blue-900/40'
   },
   "Dépenses obligatoires": {
     icon: MandatoryIcon,
-    color: 'bg-slate-500',
-    textColor: 'text-slate-600 dark:text-slate-300',
-    badgeBg: 'bg-slate-100 dark:bg-slate-700',
-    borderColor: 'border-slate-200 dark:border-slate-600'
+    color: 'bg-[#3b82f6]',
+    textColor: 'text-[#2563eb] dark:text-blue-400',
+    badgeBg: 'bg-[#dbeafe] dark:bg-blue-950/70',
+    borderColor: 'border-blue-100 dark:border-blue-900/40'
   },
   "Carburant": {
     icon: FuelIcon,
-    color: 'bg-orange-500',
-    textColor: 'text-orange-600 dark:text-orange-400',
-    badgeBg: 'bg-orange-50 dark:bg-orange-500/10',
-    borderColor: 'border-orange-100 dark:border-orange-500/20'
+    color: 'bg-[#f97316]',
+    textColor: 'text-[#ea580c] dark:text-orange-400',
+    badgeBg: 'bg-[#ffedd5] dark:bg-orange-950/70',
+    borderColor: 'border-orange-100 dark:border-orange-900/40'
   },
   "Chauffage": {
     icon: HeatingIcon,
-    color: 'bg-red-500',
-    textColor: 'text-red-600 dark:text-red-400',
-    badgeBg: 'bg-red-50 dark:bg-red-500/10',
-    borderColor: 'border-red-100 dark:border-red-500/20'
+    color: 'bg-[#10b981]',
+    textColor: 'text-[#059669] dark:text-emerald-400',
+    badgeBg: 'bg-[#dcfce7] dark:bg-emerald-950/70',
+    borderColor: 'border-emerald-100 dark:border-emerald-900/40'
   },
   "Courses": {
     icon: GroceriesIcon,
-    color: 'bg-green-500',
-    textColor: 'text-green-600 dark:text-green-400',
-    badgeBg: 'bg-green-50 dark:bg-green-500/10',
-    borderColor: 'border-green-100 dark:border-green-500/20'
+    color: 'bg-[#3b82f6]',
+    textColor: 'text-[#2563eb] dark:text-blue-400',
+    badgeBg: 'bg-[#dbeafe] dark:bg-blue-950/70',
+    borderColor: 'border-blue-100 dark:border-blue-900/40'
   },
   "Restaurant": {
     icon: RestaurantIcon,
-    color: 'bg-purple-500',
-    textColor: 'text-purple-600 dark:text-purple-400',
-    badgeBg: 'bg-purple-50 dark:bg-purple-500/10',
-    borderColor: 'border-purple-100 dark:border-purple-500/20'
+    color: 'bg-[#a855f7]',
+    textColor: 'text-[#9333ea] dark:text-purple-400',
+    badgeBg: 'bg-[#f3e8ff] dark:bg-purple-950/70',
+    borderColor: 'border-purple-100 dark:border-purple-900/40'
   },
   "Vacances": {
     icon: PalmTreeIcon,
-    color: 'bg-teal-500',
-    textColor: 'text-teal-600 dark:text-teal-400',
-    badgeBg: 'bg-teal-50 dark:bg-teal-500/10',
-    borderColor: 'border-teal-100 dark:border-teal-500/20'
+    color: 'bg-[#10b981]',
+    textColor: 'text-[#059669] dark:text-emerald-400',
+    badgeBg: 'bg-[#dcfce7] dark:bg-emerald-950/70',
+    borderColor: 'border-emerald-100 dark:border-emerald-900/40'
+  },
+  "Voiture": {
+    icon: CarRepairsIcon,
+    color: 'bg-[#0ea5e9]',
+    textColor: 'text-[#0284c7] dark:text-sky-400',
+    badgeBg: 'bg-[#e0f2fe] dark:bg-sky-950/70',
+    borderColor: 'border-sky-100 dark:border-sky-900/40'
   },
   "Réparation voitures": {
     icon: CarRepairsIcon,
-    color: 'bg-yellow-400',
-    textColor: 'text-yellow-600 dark:text-yellow-400',
-    badgeBg: 'bg-yellow-50 dark:bg-yellow-500/10',
-    borderColor: 'border-yellow-100 dark:border-yellow-500/20'
+    color: 'bg-[#0ea5e9]',
+    textColor: 'text-[#0284c7] dark:text-sky-400',
+    badgeBg: 'bg-[#e0f2fe] dark:bg-sky-950/70',
+    borderColor: 'border-sky-100 dark:border-sky-900/40'
   },
   "Vêtements": {
     icon: ClothingIcon,
-    color: 'bg-indigo-500',
-    textColor: 'text-indigo-600 dark:text-indigo-400',
-    badgeBg: 'bg-indigo-50 dark:bg-indigo-500/10',
-    borderColor: 'border-indigo-100 dark:border-indigo-500/20'
+    color: 'bg-[#ec4899]',
+    textColor: 'text-[#db2777] dark:text-pink-400',
+    badgeBg: 'bg-[#fce7f3] dark:bg-pink-950/70',
+    borderColor: 'border-pink-100 dark:border-pink-900/40'
   },
   "Cadeau": {
     icon: GiftIcon,
-    color: 'bg-fuchsia-500',
-    textColor: 'text-fuchsia-600 dark:text-fuchsia-400',
-    badgeBg: 'bg-fuchsia-50 dark:bg-fuchsia-500/10',
-    borderColor: 'border-fuchsia-100 dark:border-fuchsia-500/20'
+    color: 'bg-[#ec4899]',
+    textColor: 'text-[#db2777] dark:text-pink-400',
+    badgeBg: 'bg-[#fce7f3] dark:bg-pink-950/70',
+    borderColor: 'border-pink-100 dark:border-pink-900/40'
   },
   "Complément alimentaire": {
     icon: PillIcon,
-    color: 'bg-emerald-500',
-    textColor: 'text-emerald-600 dark:text-emerald-400',
-    badgeBg: 'bg-emerald-50 dark:bg-emerald-500/10',
-    borderColor: 'border-emerald-100 dark:border-emerald-500/20'
+    color: 'bg-[#10b981]',
+    textColor: 'text-[#059669] dark:text-emerald-400',
+    badgeBg: 'bg-[#dcfce7] dark:bg-emerald-950/70',
+    borderColor: 'border-emerald-100 dark:border-emerald-900/40'
   },
   "Divers": {
     icon: MiscIcon,
-    color: 'bg-cyan-500',
-    textColor: 'text-cyan-600 dark:text-cyan-400',
-    badgeBg: 'bg-cyan-50 dark:bg-cyan-500/10',
-    borderColor: 'border-cyan-100 dark:border-cyan-500/20'
+    color: 'bg-[#3b82f6]',
+    textColor: 'text-[#2563eb] dark:text-blue-400',
+    badgeBg: 'bg-[#dbeafe] dark:bg-blue-950/70',
+    borderColor: 'border-blue-100 dark:border-blue-900/40'
   }
 };
 
-export function resolveCategoryVisual(categoryName: string, customIcons: CustomCategoryIcon[] = []): CategoryVisual {
+export function normalizeCategoryName(name: string): string {
+  if (!name) return '';
+  let norm = name.toLowerCase().trim();
+  // Strip accents
+  norm = norm.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  // Normalize recurrentes/obligatoires/recurentes variations
+  if (
+    norm.includes('recurent') || 
+    norm.includes('recurrent') || 
+    norm.includes('obligatoire') || 
+    norm.includes('loyer')
+  ) {
+    return 'dep. recurentes';
+  }
+  return norm;
+}
+
+export const FULL_BADGE_ICONS = new Set<React.FC<any>>([
+  TrashBinIcon,
+  BirthdayIcon,
+  MusicNoteIcon,
+  SfrIcon,
+  ShieldIcon,
+  CeoIcon,
+  TotalEnergiesIcon,
+  NetflixIcon,
+  WifiIcon
+]);
+
+export function resolveCategoryVisual(categoryName: string, customIcons: CustomCategoryIcon[] = [], description?: string): CategoryVisual {
+  const result = resolveCategoryVisualInner(categoryName, customIcons, description);
+  result.isFullBadge = FULL_BADGE_ICONS.has(result.icon);
+  if (!result.pieColor) {
+    const colorDef = getColorDef(result.color);
+    result.pieColor = colorDef.hex;
+  }
+  return result;
+}
+
+function resolveCategoryVisualInner(categoryName: string, customIcons: CustomCategoryIcon[] = [], description?: string): CategoryVisual {
   if (!categoryName) return PRESET_CATEGORY_VISUALS["Divers"];
 
   // 1. Check custom icons first (matching associated category name or custom icon name)
-  const matchedCustom = customIcons.find(ci => 
-    ci.category?.trim().toLowerCase() === categoryName.trim().toLowerCase() ||
+  const normCategoryName = normalizeCategoryName(categoryName);
+  const matchedCustom = customIcons.find(ci => {
+    if (!ci.category) return false;
+    return normalizeCategoryName(ci.category) === normCategoryName;
+  }) || customIcons.find(ci => 
     ci.name.toLowerCase() === categoryName.toLowerCase() ||
     ci.name.toLowerCase().replace(/icon$/, '') === categoryName.toLowerCase()
   );
 
   if (matchedCustom) {
     const PRESET_LOOKUP: Record<string, { icon: React.FC<{ className?: string }>; defaultColor: string }> = {
-      mandatory: { icon: MandatoryIcon, defaultColor: 'bg-slate-500' },
-      groceries: { icon: GroceriesIcon, defaultColor: 'bg-emerald-500' },
-      fuel: { icon: FuelIcon, defaultColor: 'bg-orange-500' },
-      restaurant: { icon: RestaurantIcon, defaultColor: 'bg-purple-500' },
-      heating: { icon: HeatingIcon, defaultColor: 'bg-red-500' },
-      carrepairs: { icon: CarRepairsIcon, defaultColor: 'bg-amber-500' },
-      vacation: { icon: PalmTreeIcon, defaultColor: 'bg-teal-500' },
-      clothing: { icon: ClothingIcon, defaultColor: 'bg-indigo-500' },
-      gift: { icon: GiftIcon, defaultColor: 'bg-fuchsia-500' },
-      pill: { icon: PillIcon, defaultColor: 'bg-emerald-500' },
-      birthday: { icon: BirthdayIcon, defaultColor: 'bg-amber-500' },
-      shield: { icon: ShieldIcon, defaultColor: 'bg-emerald-500' },
-      wifi: { icon: WifiIcon, defaultColor: 'bg-indigo-500' },
-      phone: { icon: DevicePhoneMobileIcon, defaultColor: 'bg-sky-500' },
-      music: { icon: MusicNoteIcon, defaultColor: 'bg-purple-500' },
-      water: { icon: CeoIcon, defaultColor: 'bg-sky-500' },
-      energy: { icon: TotalEnergiesIcon, defaultColor: 'bg-amber-400' },
-      trash: { icon: TrashBinIcon, defaultColor: 'bg-rose-500' },
+      mandatory: { icon: MandatoryIcon, defaultColor: 'bg-[#3b82f6]' },
+      mandatoryicon: { icon: MandatoryIcon, defaultColor: 'bg-[#3b82f6]' },
+      groceries: { icon: GroceriesIcon, defaultColor: 'bg-[#3b82f6]' },
+      groceriesicon: { icon: GroceriesIcon, defaultColor: 'bg-[#3b82f6]' },
+      fuel: { icon: FuelIcon, defaultColor: 'bg-[#f97316]' },
+      fuelicon: { icon: FuelIcon, defaultColor: 'bg-[#f97316]' },
+      restaurant: { icon: RestaurantIcon, defaultColor: 'bg-[#a855f7]' },
+      restauranticon: { icon: RestaurantIcon, defaultColor: 'bg-[#a855f7]' },
+      heating: { icon: HeatingIcon, defaultColor: 'bg-[#10b981]' },
+      heatingicon: { icon: HeatingIcon, defaultColor: 'bg-[#10b981]' },
+      carrepairs: { icon: CarRepairsIcon, defaultColor: 'bg-[#0ea5e9]' },
+      carrepairsicon: { icon: CarRepairsIcon, defaultColor: 'bg-[#0ea5e9]' },
+      vacation: { icon: PalmTreeIcon, defaultColor: 'bg-[#10b981]' },
+      palmtreeicon: { icon: PalmTreeIcon, defaultColor: 'bg-[#10b981]' },
+      clothing: { icon: ClothingIcon, defaultColor: 'bg-[#ec4899]' },
+      clothingicon: { icon: ClothingIcon, defaultColor: 'bg-[#ec4899]' },
+      gift: { icon: GiftIcon, defaultColor: 'bg-[#ec4899]' },
+      gifticon: { icon: GiftIcon, defaultColor: 'bg-[#ec4899]' },
+      pill: { icon: PillIcon, defaultColor: 'bg-[#10b981]' },
+      pillicon: { icon: PillIcon, defaultColor: 'bg-[#10b981]' },
+      misc: { icon: MiscIcon, defaultColor: 'bg-[#3b82f6]' },
+      miscicon: { icon: MiscIcon, defaultColor: 'bg-[#3b82f6]' },
+      birthday: { icon: BirthdayIcon, defaultColor: 'bg-[#10b981]' },
+      birthdayicon: { icon: BirthdayIcon, defaultColor: 'bg-[#10b981]' },
+      shield: { icon: ShieldIcon, defaultColor: 'bg-[#10b981]' },
+      shieldicon: { icon: ShieldIcon, defaultColor: 'bg-[#10b981]' },
+      wifi: { icon: WifiIcon, defaultColor: 'bg-[#6366f1]' },
+      wifiicon: { icon: WifiIcon, defaultColor: 'bg-[#6366f1]' },
+      music: { icon: MusicNoteIcon, defaultColor: 'bg-[#a855f7]' },
+      musicnoteicon: { icon: MusicNoteIcon, defaultColor: 'bg-[#a855f7]' },
+      phone: { icon: DevicePhoneMobileIcon, defaultColor: 'bg-[#0ea5e9]' },
+      devicephonemobileicon: { icon: DevicePhoneMobileIcon, defaultColor: 'bg-[#0ea5e9]' },
+      water: { icon: CeoIcon, defaultColor: 'bg-[#0ea5e9]' },
+      ceoicon: { icon: CeoIcon, defaultColor: 'bg-[#0ea5e9]' },
+      energy: { icon: TotalEnergiesIcon, defaultColor: 'bg-[#f59e0b]' },
+      totalenergiesicon: { icon: TotalEnergiesIcon, defaultColor: 'bg-[#f59e0b]' },
+      trash: { icon: TrashBinIcon, defaultColor: 'bg-[#ef4444]' },
+      trashbinicon: { icon: TrashBinIcon, defaultColor: 'bg-[#ef4444]' },
       streaming: { icon: NetflixIcon, defaultColor: 'bg-black' },
-      misc: { icon: MiscIcon, defaultColor: 'bg-cyan-500' },
+      netflixicon: { icon: NetflixIcon, defaultColor: 'bg-black' },
+      sfr: { icon: SfrIcon, defaultColor: 'bg-[#ef4444]' },
+      sfricon: { icon: SfrIcon, defaultColor: 'bg-[#ef4444]' },
+      home: { icon: HomeOutlineIcon, defaultColor: 'bg-[#3b82f6]' },
+      heart: { icon: HeartOutlineIcon, defaultColor: 'bg-[#ef4444]' },
+      plane: { icon: PlaneOutlineIcon, defaultColor: 'bg-[#3b82f6]' },
+      graduation: { icon: GraduationOutlineIcon, defaultColor: 'bg-[#3b82f6]' },
+      paw: { icon: PawOutlineIcon, defaultColor: 'bg-[#f59e0b]' },
+      leaf: { icon: LeafOutlineIcon, defaultColor: 'bg-[#10b981]' },
+      dumbbell: { icon: DumbbellOutlineIcon, defaultColor: 'bg-[#64748b]' },
     };
 
+    const cleanPresetKey = matchedCustom.name.toLowerCase().replace(/icon$/, '');
     const presetIconDef = PRESET_LOOKUP[matchedCustom.name.toLowerCase()] ||
-      PRESET_LOOKUP[matchedCustom.name.toLowerCase().replace(/icon$/, '')];
+      PRESET_LOOKUP[cleanPresetKey];
+
+    const colorDef = getColorDef(matchedCustom.color || (presetIconDef ? presetIconDef.defaultColor : 'bg-[#3b82f6]'));
 
     if (presetIconDef) {
-      const color = matchedCustom.color || presetIconDef.defaultColor;
       return {
         icon: presetIconDef.icon,
-        color,
-        textColor: 'text-slate-700 dark:text-slate-200',
-        badgeBg: 'bg-slate-100 dark:bg-slate-700',
-        borderColor: 'border-slate-200 dark:border-slate-600'
+        color: colorDef.bgClass,
+        textColor: colorDef.textColorClass,
+        badgeBg: colorDef.badgeBgClass,
+        borderColor: 'border-slate-200 dark:border-slate-700'
       };
     }
 
@@ -190,10 +292,10 @@ export function resolveCategoryVisual(categoryName: string, customIcons: CustomC
       );
       return {
         icon: CustomSvgIcon,
-        color: matchedCustom.color || 'bg-fuchsia-500',
-        textColor: 'text-fuchsia-600 dark:text-fuchsia-400',
-        badgeBg: 'bg-fuchsia-50 dark:bg-fuchsia-500/10',
-        borderColor: 'border-fuchsia-200 dark:border-fuchsia-500/20',
+        color: colorDef.bgClass,
+        textColor: colorDef.textColorClass,
+        badgeBg: colorDef.badgeBgClass,
+        borderColor: 'border-slate-200 dark:border-slate-700',
         isCustomSvg: true,
         svgContent: matchedCustom.svgContent
       };
@@ -208,13 +310,45 @@ export function resolveCategoryVisual(categoryName: string, customIcons: CustomC
       );
       return {
         icon: CustomImgIcon,
-        color: matchedCustom.color || 'bg-fuchsia-500',
-        textColor: 'text-fuchsia-600 dark:text-fuchsia-400',
-        badgeBg: 'bg-fuchsia-50 dark:bg-fuchsia-500/10',
-        borderColor: 'border-fuchsia-200 dark:border-fuchsia-500/20',
+        color: colorDef.bgClass,
+        textColor: colorDef.textColorClass,
+        badgeBg: colorDef.badgeBgClass,
+        borderColor: 'border-slate-200 dark:border-slate-700',
         isCustomImage: true,
         imageUrl: matchedCustom.imageUrl
       };
+    }
+  }
+
+  // 1.5 Check description brand matching if no custom category icon is defined
+  if (description) {
+    const descNorm = description.toLowerCase();
+    if (descNorm.includes('sfr')) {
+      return { icon: SfrIcon, color: 'bg-red-600', textColor: 'text-red-600', badgeBg: 'bg-red-50 dark:bg-red-500/10', borderColor: 'border-red-200' };
+    }
+    if (descNorm.includes('netflix')) {
+      return { icon: NetflixIcon, color: 'bg-black', textColor: 'text-slate-800', badgeBg: 'bg-slate-100', borderColor: 'border-slate-200' };
+    }
+    if (descNorm.includes('total energies')) {
+      return { icon: TotalEnergiesIcon, color: 'bg-yellow-400', textColor: 'text-yellow-600', badgeBg: 'bg-yellow-50', borderColor: 'border-yellow-200' };
+    }
+    if (descNorm.includes('deezer') || descNorm.includes('musique') || descNorm.includes('spotify')) {
+      return { icon: MusicNoteIcon, color: 'bg-purple-500', textColor: 'text-purple-600', badgeBg: 'bg-purple-50', borderColor: 'border-purple-200' };
+    }
+    if (descNorm.includes('poubelles') || descNorm.includes('poubelle') || descNorm.includes('dechet') || descNorm.includes('déchet')) {
+      return { icon: TrashBinIcon, color: 'bg-rose-500', textColor: 'text-rose-600', badgeBg: 'bg-rose-50', borderColor: 'border-rose-200' };
+    }
+    if (descNorm.includes('wifi') || descNorm.includes('internet') || descNorm.includes('fibre') || descNorm.includes('box')) {
+      return { icon: WifiIcon, color: 'bg-indigo-500', textColor: 'text-indigo-600', badgeBg: 'bg-indigo-50', borderColor: 'border-indigo-200' };
+    }
+    if (descNorm.includes('téléphone') || descNorm.includes('telephone') || descNorm.includes('mobile')) {
+      return { icon: PhoneOutlineIcon, color: 'bg-[#0ea5e9]', textColor: 'text-[#0284c7]', badgeBg: 'bg-[#e0f2fe]', borderColor: 'border-sky-200' };
+    }
+    if (descNorm.includes('eau') || descNorm.includes('energie') || descNorm.includes('énergie') || descNorm.includes('ceo')) {
+      return { icon: CeoIcon, color: 'bg-sky-500', textColor: 'text-sky-600', badgeBg: 'bg-sky-50', borderColor: 'border-sky-200' };
+    }
+    if (descNorm.includes('assurance') || descNorm.includes('mutuelle')) {
+      return { icon: ShieldIcon, color: 'bg-emerald-500', textColor: 'text-emerald-600', badgeBg: 'bg-emerald-50', borderColor: 'border-emerald-200' };
     }
   }
 
@@ -241,7 +375,7 @@ export function resolveCategoryVisual(categoryName: string, customIcons: CustomC
     return PRESET_CATEGORY_VISUALS["Chauffage"];
   }
   if (norm.includes('voiture') || norm.includes('garage') || norm.includes('auto') || norm.includes('reparation') || norm.includes('réparation')) {
-    return PRESET_CATEGORY_VISUALS["Réparation voitures"];
+    return PRESET_CATEGORY_VISUALS["Voiture"];
   }
   if (norm.includes('vacance') || norm.includes('voyage') || norm.includes('hotel') || norm.includes('hôtel')) {
     return PRESET_CATEGORY_VISUALS["Vacances"];
@@ -276,7 +410,7 @@ export function resolveCategoryVisual(categoryName: string, customIcons: CustomC
     return { icon: WifiIcon, color: 'bg-indigo-500', textColor: 'text-indigo-600', badgeBg: 'bg-indigo-50', borderColor: 'border-indigo-200' };
   }
   if (norm.includes('téléphone') || norm.includes('telephone') || norm.includes('mobile')) {
-    return { icon: DevicePhoneMobileIcon, color: 'bg-sky-500', textColor: 'text-sky-600', badgeBg: 'bg-sky-50', borderColor: 'border-sky-200' };
+    return { icon: PhoneOutlineIcon, color: 'bg-[#0ea5e9]', textColor: 'text-[#0284c7]', badgeBg: 'bg-[#e0f2fe]', borderColor: 'border-sky-200' };
   }
   if (norm.includes('eau') || norm.includes('energie') || norm.includes('énergie') || norm.includes('ceo')) {
     return { icon: CeoIcon, color: 'bg-sky-500', textColor: 'text-sky-600', badgeBg: 'bg-sky-50', borderColor: 'border-sky-200' };
@@ -292,8 +426,8 @@ export function resolveCategoryVisual(categoryName: string, customIcons: CustomC
 export function useCategoryVisuals() {
   const { customIcons } = useCustomCategoryIcons();
 
-  const getVisual = React.useCallback((categoryName: string): CategoryVisual => {
-    return resolveCategoryVisual(categoryName, customIcons);
+  const getVisual = React.useCallback((categoryName: string, description?: string): CategoryVisual => {
+    return resolveCategoryVisual(categoryName, customIcons, description);
   }, [customIcons]);
 
   return {

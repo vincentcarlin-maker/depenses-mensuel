@@ -79,6 +79,17 @@ export interface MoneyPotTransaction {
   created_at: string;
 }
 
+export interface CustomCategoryIcon {
+  id: string;
+  name: string;
+  category: string;
+  type: 'svg' | 'image';
+  svgContent?: string;
+  imageUrl?: string;
+  color?: string;
+  createdAt: string;
+}
+
 export type Activity = {
     id: string; // unique id for the activity
     type: 'add' | 'update' | 'delete';

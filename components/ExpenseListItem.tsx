@@ -1,51 +1,13 @@
 
 import React from 'react';
-import { type Expense, User, type Category } from '../types';
-import { 
-    MandatoryIcon, 
-    FuelIcon, 
-    HeatingIcon, 
-    GroceriesIcon, 
-    RestaurantIcon, 
-    CarRepairsIcon, 
-    MiscIcon,
-    GiftIcon,
-    ClothingIcon,
-    PalmTreeIcon,
-    BirthdayIcon,
-    ShieldIcon,
-    WifiIcon,
-    MusicNoteIcon,
-    SfrIcon,
-    CeoIcon,
-    TotalEnergiesIcon,
-    TrashBinIcon,
-    NetflixIcon,
-    PillIcon
-} from './icons/CategoryIcons';
+import { type Expense, User } from '../types';
+import { GiftIcon } from './icons/CategoryIcons';
 import PiggyBankIcon from './icons/PiggyBankIcon';
-import ArrowRightIcon from './icons/ArrowRightIcon';
 import HistoryIcon from './icons/HistoryIcon';
 import EditIcon from './icons/EditIcon';
 import { type ModificationType } from '../App';
 import EuroIcon from './icons/EuroIcon';
 import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
-
-const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string } } = {
-  "Dép. récurrentes": { icon: MandatoryIcon, color: 'bg-slate-500' },
-  "Dép. recurentes": { icon: MandatoryIcon, color: 'bg-slate-500' },
-  "Dépenses obligatoires": { icon: MandatoryIcon, color: 'bg-slate-500' },
-  "Carburant": { icon: FuelIcon, color: 'bg-orange-500' },
-  "Chauffage": { icon: HeatingIcon, color: 'bg-red-500' },
-  "Courses": { icon: GroceriesIcon, color: 'bg-green-500' },
-  "Restaurant": { icon: RestaurantIcon, color: 'bg-purple-500' },
-  "Vacances": { icon: PalmTreeIcon, color: 'bg-teal-500' },
-  "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-yellow-400' },
-  "Vêtements": { icon: ClothingIcon, color: 'bg-indigo-500' },
-  "Cadeau": { icon: GiftIcon, color: 'bg-fuchsia-500' },
-  "Complément alimentaire": { icon: PillIcon, color: 'bg-emerald-500' },
-  "Divers": { icon: MiscIcon, color: 'bg-cyan-500' },
-};
 
 const parseDescription = (fullDescription: string) => {
     const tagRegex = /(#\w+)/g;
@@ -74,50 +36,34 @@ const ExpenseListItem: React.FC<{
     const isVincent = expense.user === User.Vincent;
     const isCommun = expense.user === User.Commun;
 
-    let barColorClass = 'bg-slate-400';
     let cardStyleClass = 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-700';
     let amountColorClass = 'text-slate-800 dark:text-slate-100';
 
     if (expense.amount < 0) {
         amountColorClass = 'text-emerald-600 dark:text-emerald-400';
     } else if (isSophie) {
-        barColorClass = 'bg-pink-500';
         cardStyleClass = 'bg-pink-50/50 dark:bg-pink-950/20 border-pink-100/90 dark:border-pink-900/30 hover:bg-pink-50 dark:hover:bg-pink-950/30';
         amountColorClass = 'text-pink-600 dark:text-pink-400';
     } else if (isVincent) {
-        barColorClass = 'bg-blue-500';
         cardStyleClass = 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-100/90 dark:border-blue-900/30 hover:bg-blue-50 dark:hover:bg-blue-950/30';
         amountColorClass = 'text-blue-600 dark:text-blue-400';
     } else if (isCommun) {
-        barColorClass = 'bg-purple-500';
         cardStyleClass = 'bg-purple-50/50 dark:bg-purple-950/20 border-purple-100/90 dark:border-purple-900/30 hover:bg-purple-50 dark:hover:bg-purple-950/30';
         amountColorClass = 'text-purple-600 dark:text-purple-400';
     }
 
     // Logique spéciale pour Noël
     const isChristmas = (expense.category === 'Divers' && /no[uëe]l/i.test(expense.description)) || (expense.category === 'Cadeau' && /no[uëe]l/i.test(expense.description));
-    const isBirthday = /anniversaire/i.test(expense.description);
     
-    const lowerCaseDesc = expense.description.toLowerCase();
-    const isMutuelle = lowerCaseDesc.includes('mutuelle');
-    const isInternet = lowerCaseDesc.includes('internet');
-    const isDeezer = lowerCaseDesc.includes('deezer');
-    const isSfr = lowerCaseDesc.includes('sfr nathan');
-    const isCeo = lowerCaseDesc.includes('ceo');
-    const isTotalEnergies = lowerCaseDesc.includes('total energies');
-    const isPoubelles = lowerCaseDesc.includes('poubelles');
-    const isNetflix = lowerCaseDesc.includes('netflix');
-
-    const resolvedVisual = getVisual(expense.category);
-    const visual = resolvedVisual || CategoryVisuals[expense.category] || CategoryVisuals["Divers"];
+    const visual = getVisual(expense.category, expense.description);
     let IconComponent = visual.icon;
     let iconBgClass = visual.color;
+    let isFullBadge = visual.isFullBadge;
 
     if (isChristmas) {
         IconComponent = GiftIcon;
         iconBgClass = 'bg-red-600';
-    } else if (isInternet) {
-        IconComponent = WifiIcon;
+        isFullBadge = false;
     }
     
     const hasSubtractions = expense.category === 'Courses' && expense.subtracted_items && expense.subtracted_items.length > 0;
@@ -145,41 +91,9 @@ const ExpenseListItem: React.FC<{
             <div className="flex items-center gap-3.5 min-w-0 flex-1 pr-2">
                 {/* Category Icon (UNTOUCHED / PRESERVED EXACTLY AS BEFORE) */}
                 <div className="shrink-0">
-                    {isPoubelles ? (
+                    {isFullBadge ? (
                         <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full shadow-xs">
-                            <TrashBinIcon className="w-full h-full rounded-full" />
-                        </div>
-                    ) : isBirthday ? (
-                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full shadow-xs">
-                            <BirthdayIcon className="w-full h-full rounded-full" />
-                        </div>
-                    ) : isDeezer ? (
-                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full shadow-xs">
-                            <MusicNoteIcon className="w-full h-full rounded-full" />
-                        </div>
-                    ) : isSfr ? (
-                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full shadow-xs">
-                            <SfrIcon className="w-full h-full rounded-full" />
-                        </div>
-                    ) : isMutuelle ? (
-                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full shadow-xs">
-                            <ShieldIcon className="w-full h-full rounded-full" />
-                        </div>
-                    ) : isCeo ? (
-                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full shadow-xs">
-                            <CeoIcon className="w-full h-full rounded-full" />
-                        </div>
-                    ) : isTotalEnergies ? (
-                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full shadow-xs">
-                            <TotalEnergiesIcon className="w-full h-full rounded-full" />
-                        </div>
-                    ) : isNetflix ? (
-                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full shadow-xs">
-                            <NetflixIcon className="w-full h-full rounded-full" />
-                        </div>
-                    ) : isInternet ? (
-                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full shadow-xs">
-                            <WifiIcon className="w-full h-full rounded-full" />
+                            <IconComponent className="w-full h-full rounded-full" />
                         </div>
                     ) : (
                         <div className={`w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-full ${iconBgClass} shadow-xs`}>

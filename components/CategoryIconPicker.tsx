@@ -1,76 +1,13 @@
 import React from 'react';
 import {
-  MandatoryIcon,
-  FuelIcon,
-  HeatingIcon,
-  GroceriesIcon,
-  RestaurantIcon,
-  CarRepairsIcon,
-  MiscIcon,
-  GiftIcon,
-  ClothingIcon,
-  PalmTreeIcon,
-  BirthdayIcon,
-  ShieldIcon,
-  WifiIcon,
-  MusicNoteIcon,
-  DevicePhoneMobileIcon,
-  CeoIcon,
-  SfrIcon,
-  TotalEnergiesIcon,
-  TrashBinIcon,
-  NetflixIcon,
-  PillIcon
-} from './icons/CategoryIcons';
+  PRESET_CATEGORY_ICONS,
+  CATEGORY_COLORS,
+  getColorDef,
+  CategoryIconDef
+} from './CategoryEditModal';
 import { CustomCategoryIcon } from '../hooks/useCustomCategoryIcons';
 
-export interface CategoryIconDefinition {
-  id: string;
-  name: string;
-  label: string;
-  icon: React.FC<{ className?: string }>;
-  color: string; // Tailwind background or text class
-  badgeBg: string; // Tailwind background class for badges
-  textColor: string;
-}
-
-export const PRESET_CATEGORY_ICONS: CategoryIconDefinition[] = [
-  { id: 'mandatory', name: 'MandatoryIcon', label: 'Dép. récurrentes', icon: MandatoryIcon, color: 'bg-slate-500', badgeBg: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300' },
-  { id: 'groceries', name: 'GroceriesIcon', label: 'Courses', icon: GroceriesIcon, color: 'bg-emerald-500', badgeBg: 'bg-[#dbeafe] dark:bg-sky-950/70', textColor: 'text-[#2563eb] dark:text-sky-400' },
-  { id: 'fuel', name: 'FuelIcon', label: 'Carburant', icon: FuelIcon, color: 'bg-orange-500', badgeBg: 'bg-[#ffe4e6] dark:bg-rose-950/70', textColor: 'text-[#f43f5e] dark:text-rose-400' },
-  { id: 'restaurant', name: 'RestaurantIcon', label: 'Restaurant', icon: RestaurantIcon, color: 'bg-purple-500', badgeBg: 'bg-[#f3e8ff] dark:bg-purple-950/70', textColor: 'text-[#a855f7] dark:text-purple-400' },
-  { id: 'heating', name: 'HeatingIcon', label: 'Chauffage', icon: HeatingIcon, color: 'bg-red-500', badgeBg: 'bg-[#dcfce7] dark:bg-emerald-950/70', textColor: 'text-[#10b981] dark:text-emerald-400' },
-  { id: 'carrepairs', name: 'CarRepairsIcon', label: 'Voiture', icon: CarRepairsIcon, color: 'bg-amber-500', badgeBg: 'bg-[#dbeafe] dark:bg-sky-950/70', textColor: 'text-[#0284c7] dark:text-sky-400' },
-  { id: 'vacation', name: 'PalmTreeIcon', label: 'Vacances', icon: PalmTreeIcon, color: 'bg-teal-500', badgeBg: 'bg-[#dcfce7] dark:bg-emerald-950/70', textColor: 'text-[#10b981] dark:text-emerald-400' },
-  { id: 'clothing', name: 'ClothingIcon', label: 'Vêtements', icon: ClothingIcon, color: 'bg-indigo-500', badgeBg: 'bg-[#ffe4e6] dark:bg-rose-950/70', textColor: 'text-[#f43f5e] dark:text-rose-400' },
-  { id: 'gift', name: 'GiftIcon', label: 'Cadeau', icon: GiftIcon, color: 'bg-fuchsia-500', badgeBg: 'bg-[#ffe4e6] dark:bg-pink-950/70', textColor: 'text-[#ec4899] dark:text-pink-400' },
-  { id: 'pill', name: 'PillIcon', label: 'Santé / Compl.', icon: PillIcon, color: 'bg-emerald-500', badgeBg: 'bg-[#dcfce7] dark:bg-emerald-950/70', textColor: 'text-[#10b981] dark:text-emerald-400' },
-  { id: 'birthday', name: 'BirthdayIcon', label: 'Anniversaire', icon: BirthdayIcon, color: 'bg-emerald-500', badgeBg: 'bg-[#fef3c7] dark:bg-amber-950/70', textColor: 'text-[#d97706] dark:text-amber-400' },
-  { id: 'shield', name: 'ShieldIcon', label: 'Assurance', icon: ShieldIcon, color: 'bg-emerald-500', badgeBg: 'bg-[#dcfce7] dark:bg-emerald-950/70', textColor: 'text-[#059669] dark:text-emerald-400' },
-  { id: 'wifi', name: 'WifiIcon', label: 'Internet', icon: WifiIcon, color: 'bg-indigo-500', badgeBg: 'bg-[#e0e7ff] dark:bg-indigo-950/70', textColor: 'text-[#4f46e5] dark:text-indigo-400' },
-  { id: 'phone', name: 'DevicePhoneMobileIcon', label: 'Téléphone', icon: DevicePhoneMobileIcon, color: 'bg-sky-500', badgeBg: 'bg-[#e0f2fe] dark:bg-sky-950/70', textColor: 'text-[#0284c7] dark:text-sky-400' },
-  { id: 'music', name: 'MusicNoteIcon', label: 'Musique / Deezer', icon: MusicNoteIcon, color: 'bg-purple-500', badgeBg: 'bg-[#fae8ff] dark:bg-fuchsia-950/70', textColor: 'text-[#a21caf] dark:text-fuchsia-400' },
-  { id: 'water', name: 'CeoIcon', label: 'Eau / Énergie', icon: CeoIcon, color: 'bg-sky-500', badgeBg: 'bg-[#e0f2fe] dark:bg-sky-950/70', textColor: 'text-[#0284c7] dark:text-sky-400' },
-  { id: 'energy', name: 'TotalEnergiesIcon', label: 'TotalEnergies', icon: TotalEnergiesIcon, color: 'bg-amber-400', badgeBg: 'bg-[#fef9c3] dark:bg-yellow-950/70', textColor: 'text-[#ca8a04] dark:text-yellow-400' },
-  { id: 'trash', name: 'TrashBinIcon', label: 'Poubelles', icon: TrashBinIcon, color: 'bg-rose-500', badgeBg: 'bg-[#fee2e2] dark:bg-rose-950/70', textColor: 'text-[#e11d48] dark:text-rose-400' },
-  { id: 'streaming', name: 'NetflixIcon', label: 'Streaming', icon: NetflixIcon, color: 'bg-black', badgeBg: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-800 dark:text-slate-200' },
-  { id: 'misc', name: 'MiscIcon', label: 'Divers', icon: MiscIcon, color: 'bg-cyan-500', badgeBg: 'bg-[#dbeafe] dark:bg-blue-950/70', textColor: 'text-[#3b82f6] dark:text-blue-400' },
-];
-
-export const COLOR_SWATCHES = [
-  { label: 'Bleu', value: 'bg-blue-500' },
-  { label: 'Vert / Émeraude', value: 'bg-emerald-500' },
-  { label: 'Orange', value: 'bg-orange-500' },
-  { label: 'Rose / Fushia', value: 'bg-pink-500' },
-  { label: 'Violet', value: 'bg-purple-500' },
-  { label: 'Rouge', value: 'bg-red-500' },
-  { label: 'Ambre / Jaune', value: 'bg-amber-500' },
-  { label: 'Teal / Turquoise', value: 'bg-teal-500' },
-  { label: 'Indigo', value: 'bg-indigo-500' },
-  { label: 'Cyan / Ciel', value: 'bg-cyan-500' },
-  { label: 'Gris / Ardoise', value: 'bg-slate-500' },
-  { label: 'Noir', value: 'bg-black' },
-];
+export { PRESET_CATEGORY_ICONS, CATEGORY_COLORS, getColorDef };
 
 interface CategoryIconPickerProps {
   selectedIconId: string;
@@ -83,47 +20,78 @@ interface CategoryIconPickerProps {
 export const CategoryIconPicker: React.FC<CategoryIconPickerProps> = ({
   selectedIconId,
   onSelectIcon,
-  selectedColor,
+  selectedColor = 'bg-[#3b82f6]',
   onSelectColor,
   customIcons = [],
 }) => {
+  const totalCount = PRESET_CATEGORY_ICONS.length + customIcons.length;
+
+  const selectedPreset = PRESET_CATEGORY_ICONS.find(
+    p => p.id === selectedIconId || p.name === selectedIconId || p.name.toLowerCase().replace(/icon$/, '') === selectedIconId.toLowerCase()
+  );
+  const selectedCustom = customIcons.find(
+    ci => ci.id === selectedIconId || ci.name === selectedIconId || ci.name.toLowerCase().replace(/icon$/, '') === selectedIconId.toLowerCase()
+  );
+  const selectedLabel = selectedPreset
+    ? selectedPreset.label
+    : selectedCustom
+    ? selectedCustom.name.replace(/Icon$/, '')
+    : 'Divers';
+
+  const renderIconContent = (iconDef?: CategoryIconDef, custom?: CustomCategoryIcon) => {
+    if (custom) {
+      if (custom.type === 'svg' && custom.svgContent) {
+        return (
+          <div
+            className="w-5 h-5 flex items-center justify-center [&>svg]:w-5 [&>svg]:h-5"
+            dangerouslySetInnerHTML={{ __html: custom.svgContent }}
+          />
+        );
+      }
+      if (custom.imageUrl) {
+        return <img src={custom.imageUrl} className="w-5 h-5 object-contain" alt={custom.name} />;
+      }
+      return <span className="text-sm">✨</span>;
+    }
+
+    if (iconDef) {
+      const IconComp = iconDef.icon;
+      return <IconComp className="w-5 h-5" />;
+    }
+
+    return <span className="text-sm">📌</span>;
+  };
+
   return (
     <div className="space-y-3">
+      {/* Header with counter */}
       <div className="flex items-center justify-between">
-        <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+        <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           Choisir une icône
         </label>
-        <span className="text-[11px] text-slate-400 font-medium">
-          {PRESET_CATEGORY_ICONS.length + customIcons.length} disponibles
+        <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+          {totalCount} icônes disponibles
         </span>
       </div>
 
       {/* Grid of Icons */}
-      <div className="grid grid-cols-5 sm:grid-cols-6 gap-2 max-h-52 overflow-y-auto p-1.5 rounded-2xl bg-slate-50 dark:bg-slate-700/40 border border-slate-200/80 dark:border-slate-700">
-        {/* Presets */}
+      <div className="grid grid-cols-6 gap-2 max-h-48 overflow-y-auto p-1.5 rounded-2xl bg-slate-50/50 dark:bg-slate-700/30 border border-slate-200/70 dark:border-slate-700/70">
+        {/* Built-ins */}
         {PRESET_CATEGORY_ICONS.map((item) => {
           const isSelected = selectedIconId === item.id || selectedIconId === item.name;
-          const Icon = item.icon;
           return (
             <button
               key={item.id}
               type="button"
               onClick={() => onSelectIcon(item.id)}
-              className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer group ${
+              className={`w-full aspect-square rounded-2xl flex items-center justify-center transition-all cursor-pointer ${
                 isSelected
-                  ? 'bg-white dark:bg-slate-800 ring-2 ring-[#4f83f8] shadow-sm scale-105'
-                  : 'hover:bg-white/60 dark:hover:bg-slate-800/50 opacity-80 hover:opacity-100'
+                  ? 'bg-[#e0f2fe] dark:bg-sky-950/60 border-2 border-[#0284c7] dark:border-sky-500 text-[#0284c7] dark:text-sky-400 shadow-xs scale-105'
+                  : 'bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white'
               }`}
               title={item.label}
             >
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? item.badgeBg : 'bg-slate-200/60 dark:bg-slate-600/50'}`}>
-                <div className={isSelected ? item.textColor : 'text-slate-600 dark:text-slate-300'}>
-                  <Icon className="w-4 h-4" />
-                </div>
-              </div>
-              <span className="text-[9px] font-bold text-slate-700 dark:text-slate-300 truncate w-full text-center mt-1">
-                {item.label}
-              </span>
+              {renderIconContent(item)}
             </button>
           );
         })}
@@ -136,51 +104,60 @@ export const CategoryIconPicker: React.FC<CategoryIconPickerProps> = ({
               key={ci.id}
               type="button"
               onClick={() => onSelectIcon(ci.id, ci)}
-              className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all cursor-pointer group ${
+              className={`w-full aspect-square rounded-2xl flex items-center justify-center transition-all cursor-pointer ${
                 isSelected
-                  ? 'bg-white dark:bg-slate-800 ring-2 ring-[#4f83f8] shadow-sm scale-105'
-                  : 'hover:bg-white/60 dark:hover:bg-slate-800/50 opacity-80 hover:opacity-100'
+                  ? 'bg-[#e0f2fe] dark:bg-sky-950/60 border-2 border-[#0284c7] dark:border-sky-500 text-[#0284c7] dark:text-sky-400 shadow-xs scale-105'
+                  : 'bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white'
               }`}
               title={ci.name}
             >
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 overflow-hidden ${ci.color || 'bg-fuchsia-500'} text-white`}>
-                {ci.type === 'svg' && ci.svgContent ? (
-                  <div
-                    className="w-4 h-4 flex items-center justify-center [&>svg]:w-4 [&>svg]:h-4"
-                    dangerouslySetInnerHTML={{ __html: ci.svgContent }}
-                  />
-                ) : ci.imageUrl ? (
-                  <img src={ci.imageUrl} className="w-4 h-4 object-contain" alt={ci.name} />
-                ) : (
-                  <span className="text-xs">✨</span>
-                )}
-              </div>
-              <span className="text-[9px] font-bold text-slate-700 dark:text-slate-300 truncate w-full text-center mt-1">
-                {ci.name.replace(/Icon$/, '')}
-              </span>
+              {renderIconContent(undefined, ci)}
             </button>
           );
         })}
       </div>
 
-      {/* Color selection if provided */}
+      {/* Selected icon name */}
+      <div className="text-center pt-0.5">
+        <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+          Icône sélectionnée
+        </p>
+        <p className="text-sm font-bold text-slate-900 dark:text-white capitalize mt-0.5">
+          {selectedLabel}
+        </p>
+      </div>
+
+      {/* Color Swatches */}
       {onSelectColor && (
-        <div className="space-y-1.5 pt-1">
-          <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+        <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-700/60">
+          <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             Couleur du macaron
           </label>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {COLOR_SWATCHES.map((c) => (
-              <button
-                key={c.value}
-                type="button"
-                onClick={() => onSelectColor(c.value)}
-                className={`w-6 h-6 rounded-lg ${c.value} transition-transform cursor-pointer ${
-                  selectedColor === c.value ? 'ring-2 ring-offset-2 ring-[#4f83f8] scale-110' : 'opacity-75 hover:opacity-100'
-                }`}
-                title={c.label}
-              />
-            ))}
+          <div className="grid grid-cols-6 sm:grid-cols-8 gap-2.5 py-1">
+            {CATEGORY_COLORS.map((c) => {
+              const isSelected =
+                selectedColor === c.bgClass ||
+                selectedColor === c.id ||
+                selectedColor === c.hex;
+
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => onSelectColor(c.bgClass)}
+                  className={`w-9 h-9 rounded-full ${c.bgClass} flex items-center justify-center transition-all cursor-pointer ${
+                    isSelected
+                      ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-slate-800 scale-110 shadow-xs'
+                      : 'opacity-85 hover:opacity-100 hover:scale-105'
+                  }`}
+                  title={c.label}
+                >
+                  {isSelected && (
+                    <span className="w-2 h-2 rounded-full bg-white dark:bg-slate-900" />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

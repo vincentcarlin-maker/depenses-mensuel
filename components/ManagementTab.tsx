@@ -7,8 +7,9 @@ import ArrowDownTrayIcon from './icons/ArrowDownTrayIcon';
 import SupabaseInstructionsModal from './SupabaseInstructionsModal';
 import WrenchScrewdriverIcon from './icons/WrenchScrewdriverIcon';
 import DataAndBackupTab from './DataAndBackupTab';
-import { CategoryIconPicker } from './CategoryIconPicker';
+import { CategoryEditModal } from './CategoryEditModal';
 import { useCustomCategoryIcons } from '../hooks/useCustomCategoryIcons';
+import { resolveCategoryVisual } from '../hooks/useCategoryVisuals';
 
 // --- Section Header Component ---
 const SectionHeader: React.FC<{ title: string; description: string }> = ({ title, description }) => (
@@ -457,182 +458,6 @@ const UserManagement: React.FC<{
     );
 };
 
-// --- Category Visuals Helper ---
-const getCategoryVisuals = (catName: string, customIcons: CustomCategoryIcon[] = []) => {
-    const norm = catName.toLowerCase().trim();
-
-    // 0. Check custom icons
-    const matchedCustom = customIcons.find(ci =>
-        ci.category?.trim().toLowerCase() === norm ||
-        ci.name.toLowerCase() === norm ||
-        ci.name.toLowerCase().replace(/icon$/, '') === norm
-    );
-
-    if (matchedCustom) {
-        if (matchedCustom.type === 'svg' && matchedCustom.svgContent) {
-            return {
-                bg: 'bg-[#dbeafe] dark:bg-sky-950/70',
-                icon: (
-                    <div
-                        className="w-6 h-6 flex items-center justify-center [&>svg]:w-6 [&>svg]:h-6"
-                        dangerouslySetInnerHTML={{ __html: matchedCustom.svgContent }}
-                    />
-                )
-            };
-        } else if (matchedCustom.imageUrl) {
-            return {
-                bg: 'bg-[#dbeafe] dark:bg-sky-950/70',
-                icon: (
-                    <img src={matchedCustom.imageUrl} className="w-6 h-6 object-contain" alt={matchedCustom.name} />
-                )
-            };
-        }
-    }
-
-    // 1. Complément alimentaire / Santé / Pharmacie (green badge, pill icon)
-    if (norm.includes('complément') || norm.includes('complement') || norm.includes('pill') || norm.includes('santé') || norm.includes('pharmacie')) {
-        return {
-            bg: 'bg-[#dcfce7] dark:bg-emerald-950/70',
-            icon: (
-                <svg viewBox="44 40 120 120" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-[#10b981] dark:text-emerald-400" fill="none" stroke="currentColor" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="60" y="75" width="45" height="65" rx="8" />
-                    <rect x="65" y="58" width="35" height="12" rx="4" />
-                    <rect x="70" y="95" width="25" height="15" rx="2" fill="currentColor" stroke="none" />
-                    <g transform="translate(135 115) rotate(30)">
-                        <rect x="-12" y="-25" width="24" height="50" rx="12" />
-                        <line x1="-12" y1="0" x2="12" y2="0" />
-                    </g>
-                </svg>
-            )
-        };
-    }
-
-    // 2. Dép. récurrentes / Dépenses obligatoires (light blue badge, circular sync/refresh icon)
-    if (norm.includes('recurent') || norm.includes('récurrent') || norm.includes('obligatoire') || norm.includes('dép.') || norm.includes('dep.') || norm.includes('loyer')) {
-        return {
-            bg: 'bg-[#dbeafe] dark:bg-sky-950/70',
-            icon: (
-                <svg className="w-6 h-6 text-[#2563eb] dark:text-sky-400 stroke-[2.4]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-                </svg>
-            )
-        };
-    }
-
-    // 3. Carburant (light pink/rose badge, gas pump icon)
-    if (norm.includes('carburant') || norm.includes('essence') || norm.includes('diesel') || norm.includes('gasoil')) {
-        return {
-            bg: 'bg-[#ffe4e6] dark:bg-rose-950/70',
-            icon: (
-                <svg className="w-6 h-6 text-[#f43f5e] dark:text-rose-400 fill-current" viewBox="0 0 24 24">
-                    <path d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1v4.5c0 1.65 1.35 3 3 3s3-1.35 3-3V9c0-.69-.28-1.32-.73-1.77zM12 10H6V5h6v5z" />
-                </svg>
-            )
-        };
-    }
-
-    // 4. Chauffage (light mint green badge, green house icon as shown in mockup)
-    if (norm.includes('chauffage') || norm.includes('bois') || norm.includes('gaz') || norm.includes('pellet') || norm.includes('fioul')) {
-        return {
-            bg: 'bg-[#dcfce7] dark:bg-emerald-950/70',
-            icon: (
-                <svg className="w-6 h-6 text-[#10b981] dark:text-emerald-400 fill-current" viewBox="0 0 24 24">
-                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-                </svg>
-            )
-        };
-    }
-
-    // 5. Courses (light blue badge, shopping cart icon)
-    if (norm.includes('course') || norm.includes('supermarché') || norm.includes('supermarche') || norm.includes('hyper')) {
-        return {
-            bg: 'bg-[#dbeafe] dark:bg-sky-950/70',
-            icon: (
-                <svg className="w-6 h-6 text-[#2563eb] dark:text-sky-400 fill-current" viewBox="0 0 24 24">
-                    <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
-                </svg>
-            )
-        };
-    }
-
-    // 6. Restaurant (light lavender/purple badge, fork & knife icon)
-    if (norm.includes('restaurant') || norm.includes('resto') || norm.includes('bar') || norm.includes('brasserie')) {
-        return {
-            bg: 'bg-[#f3e8ff] dark:bg-purple-950/70',
-            icon: (
-                <svg className="w-6 h-6 text-[#a855f7] dark:text-purple-400 fill-current" viewBox="0 0 24 24">
-                    <path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z" />
-                </svg>
-            )
-        };
-    }
-
-    // 7. Vacances (light mint green badge, palm tree icon)
-    if (norm.includes('vacance') || norm.includes('voyage') || norm.includes('hotel') || norm.includes('hôtel')) {
-        return {
-            bg: 'bg-[#dcfce7] dark:bg-emerald-950/70',
-            icon: (
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-[#10b981] dark:text-emerald-400">
-                    <path d="M12 22V11" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"/>
-                    <path d="M12 11C12 11 15 6 21 7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M12 11C12 11 9 6 3 7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M12 11C12 11 17 9 19 14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M12 11C12 11 7 9 5 14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-            )
-        };
-    }
-
-    // 8. Réparation voitures (light blue badge, car icon)
-    if (norm.includes('voiture') || norm.includes('auto') || norm.includes('garage') || norm.includes('réparation') || norm.includes('reparation')) {
-        return {
-            bg: 'bg-[#dbeafe] dark:bg-sky-950/70',
-            icon: (
-                <svg className="w-6 h-6 text-[#0284c7] dark:text-sky-400 fill-current" viewBox="0 0 24 24">
-                    <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-                </svg>
-            )
-        };
-    }
-
-    // 9. Vêtements (light pink/rose badge, t-shirt icon)
-    if (norm.includes('vêtement') || norm.includes('vetement') || norm.includes('habit') || norm.includes('mode') || norm.includes('fringue')) {
-        return {
-            bg: 'bg-[#ffe4e6] dark:bg-rose-950/70',
-            icon: (
-                <svg className="w-6 h-6 text-[#f43f5e] dark:text-rose-400 fill-current" viewBox="0 0 24 24">
-                    <path d="M16 2l3 3-2 3h1v14H6V8h1L5 5l3-3 4 2 4-2zm-4 3a2 2 0 0 0-2-2c0 1.1.9 2 2 2s2-.9 2-2a2 2 0 0 0-2 2z"/>
-                </svg>
-            )
-        };
-    }
-
-    // 10. Cadeau (light pink badge, gift icon)
-    if (norm.includes('cadeau') || norm.includes('anniversaire') || norm.includes('fête') || norm.includes('fete')) {
-        return {
-            bg: 'bg-[#ffe4e6] dark:bg-pink-950/70',
-            icon: (
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-[#ec4899] dark:text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <rect x="3" y="8" width="18" height="4" rx="1" strokeLinecap="round" strokeLinejoin="round" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" />
-                </svg>
-            )
-        };
-    }
-
-    // 11. Divers / Autre (light blue badge, cube icon)
-    return {
-        bg: 'bg-[#dbeafe] dark:bg-blue-950/70',
-        icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-[#3b82f6] dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
-            </svg>
-        )
-    };
-};
-
 const formatCategoryDisplayName = (cat: string) => {
     const norm = cat.toLowerCase().trim();
     if (norm.includes('obligatoire') || norm.includes('dépenses récurrentes') || norm.includes('depenses recurrentes') || norm.includes('dép. recurentes')) {
@@ -650,58 +475,29 @@ const CategoryManagement: React.FC<{
 }> = ({ categories, onAddCategory, onUpdateCategory, onDeleteCategory }) => {
     const { customIcons, saveCategoryIconMapping } = useCustomCategoryIcons();
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [newCategory, setNewCategory] = useState('');
-    const [selectedIconId, setSelectedIconId] = useState<string>('misc');
-    const [selectedColor, setSelectedColor] = useState<string>('bg-blue-500');
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-    const [editingName, setEditingName] = useState('');
-    const [editIconId, setEditIconId] = useState<string>('misc');
-    const [editColor, setEditColor] = useState<string>('bg-blue-500');
     const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
-    const [addError, setAddError] = useState('');
 
     const handleOpenAddModal = () => {
-        setNewCategory('');
-        setSelectedIconId('misc');
-        setSelectedColor('bg-blue-500');
-        setAddError('');
         setIsAddModalOpen(true);
     };
 
     const handleOpenEditModal = (cat: Category) => {
         setEditingCategory(cat);
-        setEditingName(cat);
-        // Look up existing icon mapping if any
-        const existing = customIcons.find(ci => ci.category?.toLowerCase() === cat.toLowerCase());
-        setEditIconId(existing?.name || 'misc');
-        setEditColor(existing?.color || 'bg-blue-500');
     };
 
-    const handleAddCategory = (e: React.FormEvent) => {
-        e.preventDefault();
-        const trimmed = newCategory.trim();
-        if (!trimmed) {
-            setAddError('Le nom de la catégorie est requis.');
-            return;
-        }
-        if (onAddCategory(trimmed)) {
-            // Save selected icon and color mapping
-            saveCategoryIconMapping(trimmed, selectedIconId, selectedColor);
-            setNewCategory('');
-            setAddError('');
+    const handleSaveAdd = (newName: string, iconId: string, color: string) => {
+        if (onAddCategory(newName)) {
+            saveCategoryIconMapping(newName, iconId, color);
             setIsAddModalOpen(false);
-        } else {
-            setAddError('Cette catégorie existe déjà.');
         }
     };
-    
-    const handleUpdateCategory = () => {
-        if(editingCategory && editingName.trim()) {
-            const trimmed = editingName.trim();
-            if (onUpdateCategory(editingCategory, trimmed)) {
-                saveCategoryIconMapping(trimmed, editIconId, editColor);
+
+    const handleSaveEdit = (newName: string, iconId: string, color: string) => {
+        if (editingCategory) {
+            if (onUpdateCategory(editingCategory, newName)) {
+                saveCategoryIconMapping(newName, iconId, color);
                 setEditingCategory(null);
-                setEditingName('');
             }
         }
     };
@@ -712,6 +508,61 @@ const CategoryManagement: React.FC<{
             setDeletingCategory(null);
         }
     };
+
+    // Resolve initial icon & color for edit modal so real icon is displayed
+    const resolveEditInitialVisual = (categoryName: string) => {
+        const mapping = customIcons.find(ci => ci.category?.toLowerCase() === categoryName.toLowerCase());
+        if (mapping) {
+            return {
+                iconId: mapping.id || mapping.name,
+                color: mapping.color || 'bg-[#3b82f6]'
+            };
+        }
+        const norm = categoryName.toLowerCase().trim();
+        if (norm.includes('obligatoire') || norm.includes('dépenses récurrentes') || norm.includes('depenses recurrentes') || norm.includes('dép. recurentes') || norm.includes('dép. récurrentes')) {
+            return { iconId: 'mandatory', color: 'bg-[#3b82f6]' };
+        }
+        if (norm.includes('essence') || norm.includes('gasoil') || norm.includes('carburant') || norm.includes('diesel')) {
+            return { iconId: 'fuel', color: 'bg-[#f97316]' };
+        }
+        if (norm.includes('course') || norm.includes('supermarch') || norm.includes('hyper')) {
+            return { iconId: 'groceries', color: 'bg-[#3b82f6]' };
+        }
+        if (norm.includes('restaurant') || norm.includes('resto') || norm.includes('bar') || norm.includes('brasserie')) {
+            return { iconId: 'restaurant', color: 'bg-[#a855f7]' };
+        }
+        if (norm.includes('chauffage') || norm.includes('bois') || norm.includes('gaz') || norm.includes('pellet') || norm.includes('fioul')) {
+            return { iconId: 'heating', color: 'bg-[#10b981]' };
+        }
+        if (norm.includes('voiture') || norm.includes('garage') || norm.includes('auto') || norm.includes('reparation') || norm.includes('réparation')) {
+            return { iconId: 'carrepairs', color: 'bg-[#0ea5e9]' };
+        }
+        if (norm.includes('vacance') || norm.includes('voyage') || norm.includes('hotel') || norm.includes('hôtel')) {
+            return { iconId: 'vacation', color: 'bg-[#10b981]' };
+        }
+        if (norm.includes('vêtement') || norm.includes('vetement') || norm.includes('habit') || norm.includes('mode')) {
+            return { iconId: 'clothing', color: 'bg-[#ec4899]' };
+        }
+        if (norm.includes('cadeau') || norm.includes('anniversaire') || norm.includes('fête')) {
+            return { iconId: 'gift', color: 'bg-[#ec4899]' };
+        }
+        if (norm.includes('complément') || norm.includes('complement') || norm.includes('santé') || norm.includes('pharmacie') || norm.includes('pill')) {
+            return { iconId: 'pill', color: 'bg-[#10b981]' };
+        }
+        if (norm.includes('sfr')) return { iconId: 'sfr', color: 'bg-[#ef4444]' };
+        if (norm.includes('netflix')) return { iconId: 'streaming', color: 'bg-black' };
+        if (norm.includes('total')) return { iconId: 'energy', color: 'bg-[#f59e0b]' };
+        if (norm.includes('deezer') || norm.includes('musique') || norm.includes('spotify')) return { iconId: 'music', color: 'bg-[#a855f7]' };
+        if (norm.includes('poubelle') || norm.includes('dechet')) return { iconId: 'trash', color: 'bg-[#ef4444]' };
+        if (norm.includes('wifi') || norm.includes('internet')) return { iconId: 'wifi', color: 'bg-[#6366f1]' };
+        if (norm.includes('téléphone') || norm.includes('mobile')) return { iconId: 'phone', color: 'bg-[#0ea5e9]' };
+        if (norm.includes('eau') || norm.includes('ceo')) return { iconId: 'water', color: 'bg-[#0ea5e9]' };
+        if (norm.includes('assurance')) return { iconId: 'shield', color: 'bg-[#10b981]' };
+
+        return { iconId: 'misc', color: 'bg-[#3b82f6]' };
+    };
+
+    const initialEditVisual = editingCategory ? resolveEditInitialVisual(editingCategory) : { iconId: 'misc', color: 'bg-[#3b82f6]' };
 
     return (
         <div className="space-y-4 sm:space-y-5">
@@ -741,7 +592,7 @@ const CategoryManagement: React.FC<{
             <button
                 type="button"
                 onClick={handleOpenAddModal}
-                className="w-full py-3.5 px-4 rounded-2xl bg-[#4f83f8] hover:bg-[#3b72ea] active:bg-[#2d63dc] text-white font-bold text-base flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.99] cursor-pointer"
+                className="w-full py-3.5 px-4 rounded-2xl bg-[#3b82f6] hover:bg-[#2563eb] active:bg-[#1d4ed8] text-white font-bold text-base flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.99] cursor-pointer"
             >
                 <svg className="w-5 h-5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -752,8 +603,9 @@ const CategoryManagement: React.FC<{
             {/* List of Category Cards */}
             <div className="space-y-2.5 sm:space-y-3 pt-1">
                 {categories.map(c => {
-                    const visual = getCategoryVisuals(c, customIcons);
+                    const visual = resolveCategoryVisual(c, customIcons);
                     const displayName = formatCategoryDisplayName(c);
+                    const VisualIcon = visual.icon;
 
                     return (
                         <div 
@@ -762,8 +614,8 @@ const CategoryManagement: React.FC<{
                         >
                             {/* Left: Icon badge + Label & Subtitle */}
                             <div className="flex items-center gap-3.5 min-w-0">
-                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${visual.bg}`}>
-                                    {visual.icon}
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${visual.badgeBg} ${visual.textColor} transition-colors shadow-2xs`}>
+                                    <VisualIcon className="w-6 h-6" />
                                 </div>
                                 <div className="min-w-0">
                                     <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base truncate">
@@ -809,119 +661,25 @@ const CategoryManagement: React.FC<{
                 })}
             </div>
 
-            {/* Add Category Modal */}
-            {isAddModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 animate-fade-in overflow-y-auto">
-                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-5 sm:p-6 w-full max-w-md space-y-4 border border-slate-100 dark:border-slate-700 max-h-[92vh] flex flex-col">
-                        <div className="space-y-1 shrink-0">
-                            <h4 className="font-extrabold text-lg text-slate-900 dark:text-white">Ajouter une catégorie</h4>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">Entrez le nom et choisissez l'icône de votre choix.</p>
-                        </div>
-                        <form onSubmit={handleAddCategory} className="space-y-4 flex-1 overflow-y-auto pr-1">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                                    Nom de la catégorie
-                                </label>
-                                <input 
-                                    type="text" 
-                                    placeholder="Nom de la catégorie (ex: Loisirs, Shopping...)" 
-                                    value={newCategory} 
-                                    onChange={e => setNewCategory(e.target.value)} 
-                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                                    autoFocus
-                                />
-                                {addError && <p className="text-xs text-rose-500 font-bold mt-1">{addError}</p>}
-                            </div>
+            {/* Add Category Modal (Modal matching user specification & IMG_3186) */}
+            <CategoryEditModal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                onSave={handleSaveAdd}
+                isCreateMode={true}
+            />
 
-                            {/* Icon Picker Component */}
-                            <div className="pt-2 border-t border-slate-100 dark:border-slate-700/60">
-                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                                    Choisir une icône
-                                </label>
-                                <CategoryIconPicker
-                                    selectedIconId={selectedIconId}
-                                    selectedColor={selectedColor}
-                                    onSelectIcon={(iconId) => setSelectedIconId(iconId)}
-                                    onSelectColor={(color) => setSelectedColor(color)}
-                                    customIcons={customIcons}
-                                />
-                            </div>
-
-                            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-700/60 shrink-0">
-                                <button 
-                                    type="button" 
-                                    onClick={() => { setIsAddModalOpen(false); setAddError(''); }} 
-                                    className="px-4 py-2.5 rounded-xl font-bold text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                                >
-                                    Annuler
-                                </button>
-                                <button 
-                                    type="submit" 
-                                    className="px-5 py-2.5 rounded-xl font-bold text-sm bg-[#4f83f8] hover:bg-[#3b72ea] text-white shadow-xs transition-colors"
-                                >
-                                    Ajouter
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Edit Category Modal */}
+            {/* Edit Category Modal (Modal matching user specification & IMG_3186) */}
             {editingCategory && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 animate-fade-in overflow-y-auto">
-                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-5 sm:p-6 w-full max-w-md space-y-4 border border-slate-100 dark:border-slate-700 max-h-[92vh] flex flex-col">
-                        <div className="space-y-1 shrink-0">
-                            <h4 className="font-extrabold text-lg text-slate-900 dark:text-white">Modifier la catégorie</h4>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">Modifier le nom et l'icône de « {editingCategory} ».</p>
-                        </div>
-                        <div className="space-y-4 flex-1 overflow-y-auto pr-1">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                                    Nom de la catégorie
-                                </label>
-                                <input 
-                                    type="text" 
-                                    value={editingName} 
-                                    onChange={e => setEditingName(e.target.value)} 
-                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                                    autoFocus
-                                />
-                            </div>
-
-                            {/* Icon Picker Component */}
-                            <div className="pt-2 border-t border-slate-100 dark:border-slate-700/60">
-                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                                    Changer l'icône
-                                </label>
-                                <CategoryIconPicker
-                                    selectedIconId={editIconId}
-                                    selectedColor={editColor}
-                                    onSelectIcon={(iconId) => setEditIconId(iconId)}
-                                    onSelectColor={(color) => setEditColor(color)}
-                                    customIcons={customIcons}
-                                />
-                            </div>
-
-                            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-700/60 shrink-0">
-                                <button 
-                                    type="button" 
-                                    onClick={() => setEditingCategory(null)} 
-                                    className="px-4 py-2.5 rounded-xl font-bold text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                                >
-                                    Annuler
-                                </button>
-                                <button 
-                                    type="button" 
-                                    onClick={handleUpdateCategory} 
-                                    className="px-5 py-2.5 rounded-xl font-bold text-sm bg-[#4f83f8] hover:bg-[#3b72ea] text-white shadow-xs transition-colors"
-                                >
-                                    Enregistrer
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <CategoryEditModal
+                    isOpen={!!editingCategory}
+                    onClose={() => setEditingCategory(null)}
+                    categoryName={editingCategory}
+                    initialIconId={initialEditVisual.iconId}
+                    initialColor={initialEditVisual.color}
+                    onSave={handleSaveEdit}
+                    isCreateMode={false}
+                />
             )}
             
             {/* Delete Confirmation Modal */}

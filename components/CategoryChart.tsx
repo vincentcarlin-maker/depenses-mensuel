@@ -255,7 +255,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
         {/* Horizontal Bar Chart Container */}
         <div className="space-y-3.5 pt-1">
           {chartData.map((entry) => {
-            const visual = getVisual(entry.name) || CategoryVisuals[entry.name as Category] || { icon: MiscIcon, color: 'bg-slate-500' };
+            const visual = getVisual(entry.name);
             const IconComponent = visual.icon;
             const percentage = totalExpenses > 0 ? (entry.value / totalExpenses) * 100 : 0;
             const widthPercent = Math.min(100, Math.max(3, (entry.value / niceMax) * 100));
@@ -264,8 +264,8 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
               <div key={entry.name} className="flex items-center gap-2 sm:gap-4 text-sm">
                 {/* Left Category Name + Icon */}
                 <div className="w-24 xs:w-28 sm:w-44 shrink-0 flex items-center gap-1.5 sm:gap-2 min-w-0">
-                  <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center shrink-0 ${visual.color} text-white`}>
-                    <IconComponent className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center shrink-0 ${visual.isFullBadge ? '' : visual.color} text-white overflow-hidden`}>
+                    <IconComponent className={visual.isFullBadge ? "w-full h-full" : "w-3.5 h-3.5 sm:w-4 sm:h-4"} />
                   </div>
                   <span className="font-semibold text-slate-800 dark:text-slate-200 text-[11px] sm:text-sm truncate" title={getCategoryDisplayName(entry.name)}>
                     {getCategoryDisplayName(entry.name)}
@@ -329,7 +329,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
 
         <div className="space-y-3">
           {chartData.map((entry) => {
-            const visual = getVisual(entry.name) || CategoryVisuals[entry.name as Category] || { icon: MiscIcon, color: 'bg-slate-500' };
+            const visual = getVisual(entry.name);
             const IconComponent = visual.icon;
             const percentage = totalExpenses > 0 ? (entry.value / totalExpenses) * 100 : 0;
 
@@ -340,8 +340,8 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
                 className="w-full flex items-center justify-between p-3 sm:p-3.5 bg-slate-50/60 dark:bg-slate-700/30 hover:bg-slate-100/80 dark:hover:bg-slate-700/60 border border-slate-100/80 dark:border-slate-700/60 rounded-2xl transition-all text-left group min-w-0"
               >
                 <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1 pr-1">
-                  <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 ${visual.color} text-white shadow-2xs`}>
-                    <IconComponent className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 ${visual.isFullBadge ? '' : visual.color} text-white shadow-2xs overflow-hidden`}>
+                    <IconComponent className={visual.isFullBadge ? "w-full h-full" : "w-4 h-4 sm:w-5 sm:h-5"} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-extrabold text-slate-900 dark:text-slate-100 text-xs sm:text-base line-clamp-1" title={getCategoryDisplayName(entry.name)}>
@@ -381,11 +381,11 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
             <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-700/30">
               <div className="flex items-center gap-3">
                 {(() => {
-                  const modalVisual = getVisual(selectedCategory) || CategoryVisuals[selectedCategory] || { icon: MiscIcon, color: 'bg-slate-500' };
+                  const modalVisual = getVisual(selectedCategory);
                   const ModalIcon = modalVisual.icon;
                   return (
-                    <div className={`w-10 h-10 flex items-center justify-center rounded-2xl ${modalVisual.color} text-white`}>
-                      <ModalIcon className="h-5 w-5" />
+                    <div className={`w-10 h-10 flex items-center justify-center rounded-2xl ${modalVisual.isFullBadge ? '' : modalVisual.color} text-white overflow-hidden`}>
+                      <ModalIcon className={modalVisual.isFullBadge ? "w-full h-full" : "h-5 w-5"} />
                     </div>
                   );
                 })()}
