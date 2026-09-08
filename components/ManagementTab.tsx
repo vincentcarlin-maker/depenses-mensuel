@@ -471,7 +471,7 @@ const UserManagement: React.FC<{
                         const res = await onLeaveFoyer();
                         if (res.success) {
                             if (setToastInfo) {
-                                setToastInfo({ message: 'Vous avez quitté le foyer avec succès.', type: 'info' });
+                                setToastInfo({ message: isFoyerAdmin ? 'Le foyer a été définitivement fermé.' : 'Vous avez quitté le foyer avec succès.', type: 'info' });
                             }
                         } else {
                             if (setToastInfo) {
@@ -480,8 +480,11 @@ const UserManagement: React.FC<{
                         }
                     }
                 }}
-                title="Quitter le foyer"
-                message="Êtes-vous sûr de vouloir quitter ce foyer ? Vos dépenses personnelles ne seront plus associées à ce foyer et vous serez redirigé vers le foyer principal par défaut."
+                title={isFoyerAdmin ? "⚠️ Fermeture & Sortie du Foyer" : "Quitter le foyer"}
+                message={isFoyerAdmin 
+                    ? "Attention danger : En tant qu'administrateur, quitter ce foyer entraînera sa fermeture définitive ainsi que la suppression complète et irréversible de l'ensemble de ses données (dépenses, cagnottes, rappels et comptes membres). Souhaitez-vous continuer ?"
+                    : "Êtes-vous sûr de vouloir quitter ce foyer ? Vos dépenses personnelles ne seront plus associées à ce foyer et vous serez redirigé vers le foyer principal par défaut."
+                }
             />
 
             <ConfirmationModal

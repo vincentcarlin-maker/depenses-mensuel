@@ -851,59 +851,6 @@ export const useAuth = () => {
         return true;
     }, [profiles, setProfiles, syncProfilesToCloud, currentFoyer]);
 
-    // Quitter le foyer actif courant
-    const leaveFoyer = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
-        if (!user || !currentFoyer) {
-            return { success: false, error: 'Non authentifié ou aucun foyer actif.' };
-        }
-        const currentUsername = String(user).toLowerCase().trim();
-        
-        if (currentFoyer.id === DEFAULT_FOYER_ID) {
-            return { success: false, error: 'Le foyer principal par défaut (Vincent & Sophie) ne peut pas être quitté.' };
-        }
-
-        // Check if last member
-        if (currentFoyer.members.length <= 1) {
-            return { success: false, error: 'Vous êtes le dernier membre de ce foyer. Pour le quitter, vous devez le fermer définitivement depuis l’onglet Foyer ou supprimer votre compte.' };
-        }
-
-        // Check if sole admin
-        const myMember = currentFoyer.members.find(m => m.username === currentUsername);
-        if (myMember?.role === 'admin') {
-            const otherAdmins = currentFoyer.members.filter(m => m.username !== currentUsername && m.role === 'admin');
-            if (otherAdmins.length === 0) {
-                return { success: false, error: 'Vous êtes le seul administrateur de ce foyer. Veuillez désigner un autre membre comme administrateur avant de quitter le foyer, ou fermez définitivement le foyer.' };
-            }
-        }
-
-        // 1. Remove from foyer members list
-        const res = await removeMemberFromFoyer(currentFoyer.id, currentUsername);
-        if (!res.success) {
-            return { success: false, error: res.error || 'Impossible de quitter le foyer.' };
-        }
-
-        // 2. Update profile to be associated with DEFAULT_FOYER
-        const updatedProfiles = profiles.map(p => {
-            if (p.username.toLowerCase().trim() === currentUsername) {
-                return {
-                    ...p,
-                    foyer_id: DEFAULT_FOYER_ID,
-                    foyer_name: DEFAULT_FOYER.name,
-                    foyer_code: DEFAULT_FOYER.code
-                };
-            }
-            return p;
-        });
-        setProfiles(updatedProfiles);
-        await syncProfilesToCloud(updatedProfiles);
-
-        // 3. Switch active foyer back to DEFAULT_FOYER
-        setCurrentFoyer(DEFAULT_FOYER);
-        setStoredActiveFoyerId(DEFAULT_FOYER_ID);
-
-        return { success: true };
-    }, [user, currentFoyer, profiles, setProfiles, syncProfilesToCloud]);
-
     // Fermer définitivement le foyer courant et supprimer toutes ses données
     const closeFoyer = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
         if (!user || !currentFoyer) {
@@ -973,6 +920,51 @@ export const useAuth = () => {
             return { success: false, error: e?.message || 'Erreur lors de la suppression du foyer.' };
         }
     }, [user, currentFoyer, profiles, setProfiles, syncProfilesToCloud, logout]);
+
+    // Quitter le foyer actif courant
+    const leaveFoyer = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+        if (!user || !currentFoyer) {
+            return { success: false, error: 'Non authentifié ou aucun foyer actif.' };
+        }
+        const currentUsername = String(user).toLowerCase().trim();
+        
+        if (currentFoyer.id === DEFAULT_FOYER_ID) {
+            return { success: false, error: 'Le foyer principal par défaut (Vincent & Sophie) ne peut pas être quitté.' };
+        }
+
+        // Si l'utilisateur est administrateur, quitter le foyer le ferme définitivement et supprime les données
+        const myMember = currentFoyer.members.find(m => m.username === currentUsername);
+        if (myMember?.role === 'admin') {
+            return await closeFoyer();
+        }
+
+        // 1. Remove from foyer members list
+        const res = await removeMemberFromFoyer(currentFoyer.id, currentUsername);
+        if (!res.success) {
+            return { success: false, error: res.error || 'Impossible de quitter le foyer.' };
+        }
+
+        // 2. Update profile to be associated with DEFAULT_FOYER
+        const updatedProfiles = profiles.map(p => {
+            if (p.username.toLowerCase().trim() === currentUsername) {
+                return {
+                    ...p,
+                    foyer_id: DEFAULT_FOYER_ID,
+                    foyer_name: DEFAULT_FOYER.name,
+                    foyer_code: DEFAULT_FOYER.code
+                };
+            }
+            return p;
+        });
+        setProfiles(updatedProfiles);
+        await syncProfilesToCloud(updatedProfiles);
+
+        // 3. Switch active foyer back to DEFAULT_FOYER
+        setCurrentFoyer(DEFAULT_FOYER);
+        setStoredActiveFoyerId(DEFAULT_FOYER_ID);
+
+        return { success: true };
+    }, [user, currentFoyer, profiles, setProfiles, syncProfilesToCloud, closeFoyer]);
 
     // Only the exact account "vincent" is Super Administrator (never Vincent1, VincentA, etc.)
     const normalizedUsername = username ? username.toLowerCase().trim() : '';
