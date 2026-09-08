@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { type Expense, User } from '../types';
+import { type Expense, User, type FoyerMember } from '../types';
 import { GiftIcon } from './icons/CategoryIcons';
 import PiggyBankIcon from './icons/PiggyBankIcon';
 import HistoryIcon from './icons/HistoryIcon';
@@ -8,6 +8,8 @@ import EditIcon from './icons/EditIcon';
 import { type ModificationType } from '../App';
 import EuroIcon from './icons/EuroIcon';
 import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
+import { resolveUserTheme } from '../utils/userColors';
+import { type Profile } from '../hooks/useAuth';
 
 const parseDescription = (fullDescription: string) => {
     const tagRegex = /(#\w+)/g;
@@ -20,7 +22,9 @@ const ExpenseListItem: React.FC<{
     onExpenseClick: (expense: Expense) => void;
     isHighlighted: boolean;
     modificationTypes?: ModificationType[];
-}> = ({ expense, onExpenseClick, isHighlighted, modificationTypes }) => {
+    foyerMembers?: FoyerMember[];
+    profiles?: Profile[];
+}> = ({ expense, onExpenseClick, isHighlighted, modificationTypes, foyerMembers, profiles }) => {
     const { getVisual } = useCategoryVisuals();
     const { description } = parseDescription(expense.description);
 
@@ -31,29 +35,15 @@ const ExpenseListItem: React.FC<{
         minute: '2-digit',
     }).replace(' ', ' - ');
 
-    // Logic for styling based on User
-    const isSophie = expense.user === User.Sophie;
-    const isVincent = expense.user === User.Vincent;
-    const isCommun = expense.user === User.Commun;
-    const isOtherUser = !isSophie && !isVincent && !isCommun && !!expense.user;
+    // Logic for styling based on User and their assigned color
+    const isCommun = expense.user === User.Commun || String(expense.user).toLowerCase() === 'commun' || String(expense.user).toLowerCase() === 'cagnotte';
+    const userTheme = resolveUserTheme(expense.user, foyerMembers, profiles);
 
-    let cardStyleClass = 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-700';
-    let amountColorClass = 'text-slate-800 dark:text-slate-100';
+    let cardStyleClass = `${userTheme.lightBgClass} ${userTheme.borderClass} hover:opacity-95`;
+    let amountColorClass = userTheme.textClass;
 
     if (expense.amount < 0) {
         amountColorClass = 'text-emerald-600 dark:text-emerald-400';
-    } else if (isSophie) {
-        cardStyleClass = 'bg-pink-50/50 dark:bg-pink-950/20 border-pink-100/90 dark:border-pink-900/30 hover:bg-pink-50 dark:hover:bg-pink-950/30';
-        amountColorClass = 'text-pink-600 dark:text-pink-400';
-    } else if (isVincent) {
-        cardStyleClass = 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-100/90 dark:border-blue-900/30 hover:bg-blue-50 dark:hover:bg-blue-950/30';
-        amountColorClass = 'text-blue-600 dark:text-blue-400';
-    } else if (isCommun) {
-        cardStyleClass = 'bg-purple-50/50 dark:bg-purple-950/20 border-purple-100/90 dark:border-purple-900/30 hover:bg-purple-50 dark:hover:bg-purple-950/30';
-        amountColorClass = 'text-purple-600 dark:text-purple-400';
-    } else if (isOtherUser) {
-        cardStyleClass = 'bg-sky-50/50 dark:bg-sky-950/20 border-sky-100/90 dark:border-sky-900/30 hover:bg-sky-50 dark:hover:bg-sky-950/30';
-        amountColorClass = 'text-sky-600 dark:text-sky-400';
     }
 
     // Logique spéciale pour Noël
@@ -122,30 +112,13 @@ const ExpenseListItem: React.FC<{
                         <span className="text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300">
                             {(expense.category === 'Dépenses obligatoires' || expense.category === 'Dép. récurrentes') ? 'Dép. recurentes' : expense.category}
                         </span>
-                        {isSophie && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-950/80 text-pink-700 dark:text-pink-300 text-[11px] sm:text-xs font-bold shrink-0">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                                </svg>
-                                <span>Sophie</span>
-                            </span>
-                        )}
-                        {isVincent && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 text-[11px] sm:text-xs font-bold shrink-0">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                                </svg>
-                                <span>Vincent</span>
-                            </span>
-                        )}
-                        {isCommun && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-[11px] sm:text-xs font-bold shrink-0">
+                        {isCommun ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 text-[11px] sm:text-xs font-bold shrink-0">
                                 <PiggyBankIcon className="w-3 h-3" />
                                 <span>Cagnotte</span>
                             </span>
-                        )}
-                        {isOtherUser && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 text-[11px] sm:text-xs font-bold shrink-0">
+                        ) : (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] sm:text-xs font-bold shrink-0 ${userTheme.badgeClass}`}>
                                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                                 </svg>

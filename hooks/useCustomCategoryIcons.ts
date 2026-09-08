@@ -12,12 +12,14 @@ export interface CustomCategoryIcon {
   createdAt: string;
 }
 
-const STORAGE_KEY = 'custom_category_icons';
+const DEFAULT_STORAGE_KEY = 'custom_category_icons';
 
-export function useCustomCategoryIcons() {
+export function useCustomCategoryIcons(foyerId?: string) {
+  const storageKey = foyerId ? `custom_category_icons_${foyerId}` : DEFAULT_STORAGE_KEY;
+
   const [customIcons, setCustomIcons] = useState<CustomCategoryIcon[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(storageKey);
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -26,26 +28,36 @@ export function useCustomCategoryIcons() {
 
   const channelRef = useRef<any>(null);
 
+  // Keep state in sync when foyerId / storageKey changes
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      setCustomIcons(saved ? JSON.parse(saved) : []);
+    } catch {
+      setCustomIcons([]);
+    }
+  }, [storageKey]);
+
   // Sync to Supabase & Broadcast
   const syncToCloud = useCallback(async (icons: CustomCategoryIcon[]) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(icons));
+    localStorage.setItem(storageKey, JSON.stringify(icons));
     if (channelRef.current) {
       channelRef.current.send({
         type: 'broadcast',
         event: 'custom_category_icons_changed',
-        payload: { icons }
+        payload: { icons, foyerId }
       });
     }
     try {
       await (supabase.from('app_settings') as any).upsert({
-        key: 'custom_category_icons',
+        key: storageKey,
         value: JSON.stringify(icons),
         updated_at: new Date().toISOString()
       });
     } catch (e) {
-      console.warn('Could not sync custom_category_icons to Supabase app_settings:', e);
+      console.warn(`Could not sync ${storageKey} to Supabase app_settings:`, e);
     }
-  }, []);
+  }, [storageKey, foyerId]);
 
   // Fetch initial from Cloud
   useEffect(() => {
@@ -53,15 +65,17 @@ export function useCustomCategoryIcons() {
       try {
         const { data, error } = await (supabase.from('app_settings') as any)
           .select('value')
-          .eq('key', 'custom_category_icons')
+          .eq('key', storageKey)
           .maybeSingle();
 
         if (!error && data && (data as any).value) {
           const parsed = JSON.parse((data as any).value);
           if (Array.isArray(parsed)) {
             setCustomIcons(parsed);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+            localStorage.setItem(storageKey, JSON.stringify(parsed));
           }
+        } else if (!error && !data) {
+          setCustomIcons([]);
         }
       } catch {
         // ignore
@@ -70,7 +84,7 @@ export function useCustomCategoryIcons() {
 
     fetchFromCloud();
 
-    const channel = supabase.channel('duobudget_icons_channel', {
+    const channel = supabase.channel(`duobudget_icons_${storageKey}`, {
       config: { broadcast: { ack: false, self: true } }
     });
 
@@ -79,18 +93,18 @@ export function useCustomCategoryIcons() {
     channel
       .on('broadcast', { event: 'custom_category_icons_changed' }, (payload: any) => {
         const data = payload?.payload || payload;
-        if (data && Array.isArray(data.icons)) {
+        if (data && Array.isArray(data.icons) && (!data.foyerId || data.foyerId === foyerId)) {
           setCustomIcons(data.icons);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data.icons));
+          localStorage.setItem(storageKey, JSON.stringify(data.icons));
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'app_settings' }, (payload: any) => {
-        if (payload.new && payload.new.key === 'custom_category_icons' && payload.new.value) {
+        if (payload.new && payload.new.key === storageKey && payload.new.value) {
           try {
             const parsed = JSON.parse(payload.new.value);
             if (Array.isArray(parsed)) {
               setCustomIcons(parsed);
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+              localStorage.setItem(storageKey, JSON.stringify(parsed));
             }
           } catch {
             // ignore
@@ -102,7 +116,7 @@ export function useCustomCategoryIcons() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [storageKey, foyerId]);
 
   const addCustomIcon = useCallback((iconData: Omit<CustomCategoryIcon, 'id' | 'createdAt'>) => {
     const newIcon: CustomCategoryIcon = {

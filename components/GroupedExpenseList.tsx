@@ -1,17 +1,20 @@
 
 import React from 'react';
-import { type Expense } from '../types';
+import { type Expense, type FoyerMember } from '../types';
 import ExpenseListItem from './ExpenseListItem';
 import { type ModificationType } from '../App';
+import { type Profile } from '../hooks/useAuth';
 
 interface GroupedExpenseListProps {
   expenses: Expense[];
   onExpenseClick: (expense: Expense) => void;
   highlightedIds: Set<string>;
   modifiedInfo?: Map<string, ModificationType[]>;
+  foyerMembers?: FoyerMember[];
+  profiles?: Profile[];
 }
 
-const GroupedExpenseList: React.FC<GroupedExpenseListProps> = ({ expenses, onExpenseClick, highlightedIds, modifiedInfo = new Map() }) => {
+const GroupedExpenseList: React.FC<GroupedExpenseListProps> = ({ expenses, onExpenseClick, highlightedIds, modifiedInfo = new Map(), foyerMembers, profiles }) => {
   const groupedExpenses = expenses.reduce((acc, expense) => {
     const date = new Date(expense.date);
     const monthYear = date.toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
@@ -45,6 +48,8 @@ const GroupedExpenseList: React.FC<GroupedExpenseListProps> = ({ expenses, onExp
                   onExpenseClick={onExpenseClick}
                   isHighlighted={highlightedIds.has(expense.id)}
                   modificationTypes={modifiedInfo.get(expense.id)}
+                  foyerMembers={foyerMembers}
+                  profiles={profiles}
                 />
               ))}
           </div>

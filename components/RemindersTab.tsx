@@ -1,8 +1,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { type Reminder, type Category, User } from '../types';
+import { type Reminder, type Category, User, type FoyerMember } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import EditReminderModal from './EditReminderModal';
+import { resolveUserTheme } from '../utils/userColors';
 import { 
     MandatoryIcon, 
     FuelIcon, 
@@ -30,7 +31,7 @@ interface RemindersTabProps {
   onUpdateReminder: (reminder: Reminder) => Promise<void>;
   onDeleteReminder: (id: string) => Promise<void>;
   categories: Category[];
-  foyerMembers?: { id: string; name: string }[];
+  foyerMembers?: FoyerMember[];
 }
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; bgColor: string } } = {
@@ -267,23 +268,27 @@ const ReminderForm: React.FC<{
                         Personne concernée
                     </label>
                     <div className="bg-[#f1f5f9] dark:bg-slate-700/50 p-1 rounded-full flex gap-1">
-                        {(foyerMembers && foyerMembers.length > 0 ? foyerMembers : [{ id: '1', name: User.Sophie }, { id: '2', name: User.Vincent }]).map((m, idx) => {
+                        {(foyerMembers && foyerMembers.length > 0 ? foyerMembers : [{ id: '1', name: User.Sophie }, { id: '2', name: User.Vincent }]).map((m) => {
                             const isSelected = user === m.name;
-                            const isPink = idx % 2 === 0;
-                            const selectedColor = isPink ? 'text-[#e11d48] dark:text-rose-400' : 'text-[#0284c7] dark:text-sky-400';
-                            const fillColor = isPink ? 'fill-[#e11d48] text-[#e11d48]' : 'fill-[#0284c7] text-[#0284c7]';
+                            const theme = resolveUserTheme(m.name, foyerMembers);
                             return (
                                 <button
                                     key={m.id || m.name}
                                     type="button"
                                     onClick={() => setUser(m.name)}
+                                    style={isSelected ? { color: theme.hex } : {}}
                                     className={`flex-1 py-2.5 px-4 rounded-full text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                                         isSelected
-                                            ? `bg-white dark:bg-slate-800 ${selectedColor} shadow-xs`
+                                            ? `bg-white dark:bg-slate-800 shadow-xs`
                                             : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
                                     }`}
                                 >
-                                    <svg className={`w-4 h-4 ${isSelected ? fillColor : 'text-slate-400'}`} viewBox="0 0 20 20" fill="currentColor">
+                                    <svg 
+                                      className="w-4 h-4" 
+                                      style={isSelected ? { fill: theme.hex, color: theme.hex } : {}} 
+                                      viewBox="0 0 20 20" 
+                                      fill={isSelected ? theme.hex : 'currentColor'}
+                                    >
                                         <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                                     </svg>
                                     {m.name}
@@ -437,7 +442,8 @@ const ReminderItem: React.FC<{
     onUpdateReminder: (reminder: Reminder) => void;
     onDeleteReminder: (id: string) => void;
     onEditReminder: (reminder: Reminder) => void;
-}> = ({ reminder, onUpdateReminder, onDeleteReminder, onEditReminder }) => {
+    foyerMembers?: FoyerMember[];
+}> = ({ reminder, onUpdateReminder, onDeleteReminder, onEditReminder, foyerMembers }) => {
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
     const handleToggleActive = () => {
@@ -456,6 +462,7 @@ const ReminderItem: React.FC<{
     const isActive = reminder.is_active !== false;
     const visual = getReminderVisual(reminder);
     const IconComponent = visual.icon;
+    const userTheme = resolveUserTheme(reminder.user, foyerMembers);
 
     return (
         <>
@@ -477,6 +484,14 @@ const ReminderItem: React.FC<{
                                 }`}>
                                     {reminder.description}
                                 </span>
+                                {reminder.user && (
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${userTheme.badgeClass}`}>
+                                        <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                        </svg>
+                                        <span>{reminder.user}</span>
+                                    </span>
+                                )}
                                 {isActive ? (
                                     <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#ecfdf5] dark:bg-emerald-950/60 text-[#10b981] dark:text-emerald-400 shrink-0">
                                         Actif
@@ -552,7 +567,8 @@ const ReminderList: React.FC<{
     onUpdateReminder: RemindersTabProps['onUpdateReminder'], 
     onDeleteReminder: RemindersTabProps['onDeleteReminder'],
     onEditReminder: (reminder: Reminder) => void,
-}> = ({ reminders, onUpdateReminder, onDeleteReminder, onEditReminder }) => {
+    foyerMembers?: FoyerMember[];
+}> = ({ reminders, onUpdateReminder, onDeleteReminder, onEditReminder, foyerMembers }) => {
     return (
         <div className="bg-white dark:bg-slate-800 p-5 sm:p-6 rounded-[28px] shadow-xs border border-slate-100 dark:border-slate-700/60">
             {/* Header: Blue circular list badge */}
@@ -589,6 +605,7 @@ const ReminderList: React.FC<{
                                 onUpdateReminder={onUpdateReminder}
                                 onDeleteReminder={onDeleteReminder}
                                 onEditReminder={onEditReminder}
+                                foyerMembers={foyerMembers}
                             />
                         ))}
                 </div>
@@ -613,6 +630,7 @@ const RemindersTab: React.FC<RemindersTabProps> = ({ reminders, onAddReminder, o
                 onUpdateReminder={onUpdateReminder} 
                 onDeleteReminder={onDeleteReminder}
                 onEditReminder={setReminderToEdit}
+                foyerMembers={foyerMembers}
             />
             {reminderToEdit && (
                 <EditReminderModal

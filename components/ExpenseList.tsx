@@ -1,17 +1,20 @@
 
 import React from 'react';
-import { type Expense } from '../types';
+import { type Expense, type FoyerMember } from '../types';
 import ExpenseListItem from './ExpenseListItem';
 import { type ModificationType } from '../App';
+import { type Profile } from '../hooks/useAuth';
 
 interface ExpenseListProps {
   expenses: Expense[];
   onExpenseClick: (expense: Expense) => void;
   highlightedIds: Set<string>;
   modifiedInfo?: Map<string, ModificationType[]>;
+  foyerMembers?: FoyerMember[];
+  profiles?: Profile[];
 }
 
-const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onExpenseClick, highlightedIds, modifiedInfo = new Map() }) => {
+const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onExpenseClick, highlightedIds, modifiedInfo = new Map(), foyerMembers, profiles }) => {
   if (expenses.length === 0) {
     return (
       <div className="text-center py-10">
@@ -31,6 +34,8 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onExpenseClick, hig
                 onExpenseClick={onExpenseClick}
                 isHighlighted={highlightedIds.has(expense.id)}
                 modificationTypes={modifiedInfo.get(expense.id)}
+                foyerMembers={foyerMembers}
+                profiles={profiles}
             />
         ))}
     </div>

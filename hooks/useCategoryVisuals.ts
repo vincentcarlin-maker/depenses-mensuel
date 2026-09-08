@@ -491,9 +491,9 @@ interface CategoryVisualsContextType {
 
 const CategoryVisualsContext = createContext<CategoryVisualsContextType | null>(null);
 
-export const CategoryVisualsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { customIcons, addCustomIcon, deleteCustomIcon, saveCategoryIconMapping } = useCustomCategoryIcons();
-  const { rules, addRule, deleteRule, updateRule } = useKeywordRules();
+export const CategoryVisualsProvider: React.FC<{ children: React.ReactNode; foyerId?: string }> = ({ children, foyerId }) => {
+  const { customIcons, addCustomIcon, deleteCustomIcon, saveCategoryIconMapping } = useCustomCategoryIcons(foyerId);
+  const { rules, addRule, deleteRule, updateRule } = useKeywordRules(foyerId);
 
   const getVisual = React.useCallback((categoryName: string, description?: string): CategoryVisual => {
     return resolveCategoryVisual(categoryName, customIcons, description, rules);

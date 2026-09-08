@@ -1,9 +1,10 @@
 
 import React, { useEffect, useMemo } from 'react';
-import { type Expense, User, type Activity } from '../types';
+import { type Expense, User, type Activity, type FoyerMember } from '../types';
 import CloseIcon from './icons/CloseIcon';
 import EditIcon from './icons/EditIcon';
 import ScissorsIcon from './icons/ScissorsIcon';
+import { resolveUserTheme } from '../utils/userColors';
 import { 
     MandatoryIcon, 
     FuelIcon, 
@@ -50,10 +51,12 @@ interface ExpenseDetailModalProps {
   history?: Activity[];
   onClose: () => void;
   onEdit: () => void;
+  foyerMembers?: FoyerMember[];
 }
 
-const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, history = [], onClose, onEdit }) => {
+const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, history = [], onClose, onEdit, foyerMembers }) => {
   const { getVisual } = useCategoryVisuals();
+  const userTheme = resolveUserTheme(expense.user, foyerMembers);
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handleEsc);
@@ -233,14 +236,17 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
           </div>
 
           {/* Card: PAYÉ PAR */}
-          <div className="p-3.5 bg-sky-50/70 dark:bg-sky-950/30 border border-sky-100/80 dark:border-sky-900/40 rounded-2xl flex items-center justify-between my-4">
+          <div className={`p-3.5 ${userTheme.lightBgClass} border ${userTheme.borderClass} rounded-2xl flex items-center justify-between my-4`}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-sky-500 text-white font-extrabold flex items-center justify-center text-base shrink-0 shadow-xs">
+              <div 
+                className="w-10 h-10 rounded-full text-white font-extrabold flex items-center justify-center text-base shrink-0 shadow-xs"
+                style={{ backgroundColor: userTheme.hex }}
+              >
                 {expense.user.charAt(0)}
               </div>
               <div>
                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">PAYÉ PAR</p>
-                <p className="font-extrabold text-slate-900 dark:text-slate-100 text-base">{expense.user}</p>
+                <p className={`font-extrabold text-base ${userTheme.textClass}`}>{expense.user}</p>
               </div>
             </div>
             <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

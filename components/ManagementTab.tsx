@@ -171,7 +171,7 @@ const UserManagement: React.FC<{
     loggedInUser: User;
     onAddProfile?: (profile: Profile) => boolean;
     onUpdateProfilePassword: (username: string, newPassword: string) => boolean;
-    onDeleteProfile?: (username: string) => boolean;
+    onDeleteProfile?: (username: string) => Promise<boolean> | boolean;
     currentFoyer?: Foyer;
     onDeleteOwnAccount?: () => Promise<boolean>;
     setToastInfo?: (info: { message: string; type: 'info' | 'error' }) => void;
@@ -1045,7 +1045,7 @@ interface ManagementTabProps {
     loggedInUser: User;
     onAddProfile: (profile: Profile) => boolean;
     onUpdateProfilePassword: (username: string, newPassword: string) => boolean;
-    onDeleteProfile: (username: string) => boolean;
+    onDeleteProfile: (username: string) => Promise<boolean> | boolean;
     categories: Category[];
     onAddCategory: (name: string) => boolean;
     onUpdateCategory: (oldName: string, newName: string) => boolean;

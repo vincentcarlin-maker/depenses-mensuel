@@ -575,11 +575,13 @@ interface AdminAndDevTabProps {
   profiles?: Profile[];
   loginHistory?: LoginEvent[];
   loggedInUser: User;
+  loggedInUsername?: string;
+  isAdmin?: boolean;
   currentFoyer?: Foyer;
   setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
   onSyncData?: () => Promise<void>;
   onToggleBlockProfile?: (username: string) => { success: boolean; message: string };
-  onDeleteProfile?: (username: string) => boolean;
+  onDeleteProfile?: (username: string) => Promise<boolean> | boolean;
   onAddProfile?: (profile: Profile) => boolean;
   onUpdateProfilePassword?: (username: string, newPassword: string) => boolean;
   onSwitchFoyer?: (foyerId: string) => void;
@@ -595,19 +597,27 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
   profiles = [],
   loginHistory = [],
   loggedInUser,
+  loggedInUsername,
+  isAdmin,
   currentFoyer,
   setToastInfo,
   onSyncData,
-  onToggleBlockProfile,
-  onDeleteProfile,
-  onAddProfile,
+  onToggleBlockProfile: _onToggleBlockProfile,
+  onDeleteProfile: _onDeleteProfile,
+  onAddProfile: _onAddProfile,
   onUpdateProfilePassword,
   onSwitchFoyer,
   isMaintenanceMode = false,
   onToggleMaintenanceMode,
 }) => {
-  // Only Vincent is authorized
-  const isAuthorized = loggedInUser === User.Vincent || (typeof loggedInUser === 'string' && loggedInUser.toLowerCase() === 'vincent');
+  // Only the exact primary account "vincent" is authorized (never Vincent1, VincentA, etc.)
+  const isAuthorized = Boolean(
+    isAdmin !== undefined 
+      ? isAdmin 
+      : (loggedInUsername 
+          ? loggedInUsername.toLowerCase().trim() === 'vincent' 
+          : ((loggedInUser as any) === User.Vincent || (loggedInUser as any) === 'Vincent' || (loggedInUser as any) === 'vincent'))
+  );
 
   // --- States ---
   // User Management
@@ -620,7 +630,7 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
 
   // Push notifications
   const [pushPermission, setPushPermission] = useState<NotificationPermission>('default');
-  const [deviceTokenSnippet, setDeviceTokenSnippet] = useState<string>('********9A2F');
+  const [deviceTokenSnippet] = useState<string>('********9A2F');
   const [isSendingPushTest, setIsSendingPushTest] = useState(false);
 
   // Sync state
@@ -652,10 +662,14 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
 
   // Critical Danger Zone
   const [dangerModalMode, setDangerModalMode] = useState<'reset_test' | 'clear_tech_cache' | null>(null);
-  const [dangerConfirmText, setDangerConfirmText] = useState('');
+  const [_dangerConfirmText, setDangerConfirmText] = useState('');
 
   // Expandable sections
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+
+  // Active Admin Sub-tab
+  const [activeAdminTab, setActiveAdminTab] = useState<'foyers' | 'database' | 'config' | 'diagnostics' | 'all'>('foyers');
+  const [userSearchTerm, setUserSearchTerm] = useState('');
 
   // Initialize environment detection
   useEffect(() => {
@@ -749,7 +763,7 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
     setDbStatus('checking');
     const startTime = performance.now();
     try {
-      const { data, error } = await supabase.from('expenses').select('id', { head: true, count: 'exact' });
+      const { error } = await supabase.from('expenses').select('id', { head: true, count: 'exact' });
       const duration = Math.round(performance.now() - startTime);
       setLatencyMs(duration > 0 ? duration : 42);
 
@@ -993,15 +1007,31 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
     );
   }
 
+  // Filter profiles for user management search
+  const filteredProfiles = profiles.filter(p => {
+    if (!userSearchTerm.trim()) return true;
+    const term = userSearchTerm.toLowerCase();
+    return (
+      p.username.toLowerCase().includes(term) ||
+      (p.user && p.user.toLowerCase().includes(term)) ||
+      (p.foyer_id && p.foyer_id.toLowerCase().includes(term))
+    );
+  });
+
   return (
     <div className="space-y-5 animate-fade-in pb-12">
       {/* Header matching Apparence & Utilisateurs style */}
       <div className="space-y-1 pt-1 pb-1">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-          Administration & Développement
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            Administration & Développement
+          </h1>
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+            ADMIN
+          </span>
+        </div>
         <p className="text-slate-500 dark:text-slate-400 font-medium text-xs sm:text-sm">
-          Outils techniques et avancés de DuoBudget
+          Centre de supervision technique et gestion multi-foyers réservé à Vincent
         </p>
       </div>
 
@@ -1009,663 +1039,842 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
       {/* TOP QUICK STATUS PILL BAR                                 */}
       {/* ========================================================= */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-2.5 sm:p-3 border border-slate-100/90 dark:border-slate-700/60 shadow-xs">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-bold">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs font-bold">
           {/* Supabase status */}
-          <div className="flex items-center justify-center sm:justify-start gap-2 px-3 py-2 rounded-xl bg-slate-50/80 dark:bg-slate-700/40 text-slate-700 dark:text-slate-200">
-            <span className="text-base">🗄️</span>
-            <span className={`w-2 h-2 rounded-full ${dbStatus === 'connected' ? 'bg-emerald-500' : dbStatus === 'checking' ? 'bg-amber-500 animate-ping' : 'bg-rose-500'}`} />
-            <span>{dbStatus === 'connected' ? 'Supabase connecté' : dbStatus === 'checking' ? 'Vérification...' : 'Supabase hors-ligne'}</span>
+          <div className="flex items-center justify-between sm:justify-start gap-2 px-3 py-2 rounded-xl bg-slate-50/80 dark:bg-slate-700/40 text-slate-700 dark:text-slate-200">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🗄️</span>
+              <span className={`w-2 h-2 rounded-full ${dbStatus === 'connected' ? 'bg-emerald-500' : dbStatus === 'checking' ? 'bg-amber-500 animate-ping' : 'bg-rose-500'}`} />
+              <span>{dbStatus === 'connected' ? 'Supabase' : dbStatus === 'checking' ? 'Vérif...' : 'Supabase HS'}</span>
+            </div>
+            {latencyMs !== null && dbStatus === 'connected' && (
+              <span className="text-[10px] text-slate-400 font-mono ml-auto">{latencyMs}ms</span>
+            )}
           </div>
 
           {/* Push status */}
-          <div className="flex items-center justify-center sm:justify-start gap-2 px-3 py-2 rounded-xl bg-slate-50/80 dark:bg-slate-700/40 text-slate-700 dark:text-slate-200">
-            <span className="text-base">📡</span>
-            <span className={`w-2 h-2 rounded-full ${pushPermission === 'granted' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-            <span>{pushPermission === 'granted' ? 'Push actif' : 'Push en attente'}</span>
+          <div className="flex items-center justify-between sm:justify-start gap-2 px-3 py-2 rounded-xl bg-slate-50/80 dark:bg-slate-700/40 text-slate-700 dark:text-slate-200">
+            <div className="flex items-center gap-2">
+              <span className="text-base">📡</span>
+              <span className={`w-2 h-2 rounded-full ${pushPermission === 'granted' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              <span>{pushPermission === 'granted' ? 'Push actif' : 'Push en attente'}</span>
+            </div>
           </div>
 
           {/* Synchro status */}
-          <div className="flex items-center justify-center sm:justify-start gap-2 px-3 py-2 rounded-xl bg-slate-50/80 dark:bg-slate-700/40 text-slate-700 dark:text-slate-200">
-            <span className="text-base">🔄</span>
-            <span>Synchro à jour</span>
+          <div className="flex items-center justify-between sm:justify-start gap-2 px-3 py-2 rounded-xl bg-slate-50/80 dark:bg-slate-700/40 text-slate-700 dark:text-slate-200">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🔄</span>
+              <span>Synchro Cloud</span>
+            </div>
             <span className="w-2 h-2 rounded-full bg-emerald-500 ml-auto" />
           </div>
+
+          {/* Maintenance status */}
+          <div className="flex items-center justify-between sm:justify-start gap-2 px-3 py-2 rounded-xl bg-slate-50/80 dark:bg-slate-700/40 text-slate-700 dark:text-slate-200">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🛠️</span>
+              <span>{isMaintenanceMode ? 'Maintenance ON' : 'Accès public'}</span>
+            </div>
+            <span className={`w-2 h-2 rounded-full ml-auto ${isMaintenanceMode ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
+          </div>
         </div>
       </div>
 
       {/* ========================================================= */}
-      {/* 1. BASE DE DONNÉES SUPABASE                               */}
+      {/* SUB-NAVIGATION TAB BAR                                     */}
       {/* ========================================================= */}
-      <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center text-[#3b82f6] dark:text-blue-400 shrink-0">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
-                Base de données Supabase
-              </h3>
-              <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                Connexion, schéma et état du projet
-              </p>
-            </div>
-          </div>
-
-          <button 
-            type="button"
-            onClick={() => setExpandedSection(expandedSection === 'db' ? null : 'db')}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1"
-          >
-            <svg className={`w-5 h-5 transform transition-transform ${expandedSection === 'db' ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Badges row */}
-        <div className="flex flex-wrap items-center gap-2 pt-0.5">
-          <span className="px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 text-xs font-bold">
-            Projet : duobudget-prod
+      <div className="flex items-center gap-1.5 p-1.5 bg-slate-100/90 dark:bg-slate-800/90 rounded-2xl border border-slate-200/70 dark:border-slate-700/60 overflow-x-auto scrollbar-none">
+        <button
+          type="button"
+          onClick={() => setActiveAdminTab('foyers')}
+          className={`px-3.5 py-2.5 rounded-xl font-extrabold text-xs flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
+            activeAdminTab === 'foyers'
+              ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <span>🏠</span>
+          <span>Foyers & Utilisateurs</span>
+          <span className="px-1.5 py-0.5 rounded-md text-[10px] bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300">
+            {profiles.length}
           </span>
-          <span className="px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-bold">
-            Schéma : v12
-          </span>
-          <span className="px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 text-xs font-bold">
-            12 tables
-          </span>
-          <span className="px-3 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold">
-            {expenses.length} dépenses • {reminders.length} rappels
-          </span>
-        </div>
+        </button>
 
-        {/* Action buttons */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-          <button
-            type="button"
-            onClick={handleTestConnection}
-            disabled={dbStatus === 'checking'}
-            className="py-2.5 px-4 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer border border-blue-200/60 dark:border-blue-800/60"
-          >
-            <span className="text-base">🔌</span>
-            <span>{dbStatus === 'checking' ? 'Test en cours...' : 'Tester la connexion'}</span>
-            {latencyMs !== null && dbStatus === 'connected' && (
-              <span className="text-[11px] bg-blue-200/70 dark:bg-blue-800/70 px-1.5 py-0.5 rounded-md">
-                {latencyMs} ms
-              </span>
-            )}
-          </button>
+        <button
+          type="button"
+          onClick={() => setActiveAdminTab('database')}
+          className={`px-3.5 py-2.5 rounded-xl font-extrabold text-xs flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
+            activeAdminTab === 'database'
+              ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-300 shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <span>🗄️</span>
+          <span>Base & Synchro</span>
+          <span className={`w-2 h-2 rounded-full ${dbStatus === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+        </button>
 
-          <button
-            type="button"
-            onClick={() => setIsSqlModalOpen(true)}
-            className="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer border border-slate-200/80 dark:border-slate-600/80"
-          >
-            <span className="text-base">📄</span>
-            <span>Instructions SQL</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setActiveAdminTab('config')}
+          className={`px-3.5 py-2.5 rounded-xl font-extrabold text-xs flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
+            activeAdminTab === 'config'
+              ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-300 shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <span>🛠️</span>
+          <span>Outils & Config</span>
+          {isMaintenanceMode && (
+            <span className="px-1.5 py-0.5 rounded-md text-[10px] bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-bold">
+              Maint.
+            </span>
+          )}
+        </button>
 
-        {/* Expandable details */}
-        {expandedSection === 'db' && (
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700/60 space-y-2 text-xs">
-            <div className="flex justify-between py-1 border-b border-slate-200/60 dark:border-slate-600/60">
-              <span className="text-slate-500 dark:text-slate-400 font-medium">Hôte Supabase</span>
-              <span className="font-mono text-slate-800 dark:text-slate-200">xcdyshzyxpngbpceilym.supabase.co</span>
-            </div>
-            <div className="flex justify-between py-1 border-b border-slate-200/60 dark:border-slate-600/60">
-              <span className="text-slate-500 dark:text-slate-400 font-medium">Dernière vérification</span>
-              <span className="text-slate-800 dark:text-slate-200">{formatTimeFrench(lastCheckTime)}</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-slate-500 dark:text-slate-400 font-medium">Sécurité RLS</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold">Activée (Policies Publiques)</span>
-            </div>
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => setActiveAdminTab('diagnostics')}
+          className={`px-3.5 py-2.5 rounded-xl font-extrabold text-xs flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
+            activeAdminTab === 'diagnostics'
+              ? 'bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-300 shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <span>🩺</span>
+          <span>Diagnostics & Sécurité</span>
+          {errorLogs.length > 0 && (
+            <span className="px-1.5 py-0.5 rounded-md text-[10px] bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 font-bold">
+              {errorLogs.length}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveAdminTab('all')}
+          className={`px-3 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all whitespace-nowrap ml-auto cursor-pointer ${
+            activeAdminTab === 'all'
+              ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-xs'
+              : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+          }`}
+          title="Afficher toutes les sections"
+        >
+          <span>📋</span>
+          <span>Tout voir</span>
+        </button>
       </div>
 
       {/* ========================================================= */}
-      {/* 2. MIGRATIONS & STRUCTURE SQL                             */}
+      {/* 1. SECTION : FOYERS & UTILISATEURS                        */}
       {/* ========================================================= */}
-      <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center text-[#f43f5e] dark:text-rose-400 shrink-0">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
-                Migrations & structure SQL
-              </h3>
-              <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                Vérifier ou mettre à jour la structure
-              </p>
-            </div>
-          </div>
+      {(activeAdminTab === 'foyers' || activeAdminTab === 'all') && (
+        <div className="space-y-4 animate-fade-in">
+          {/* 1.A. ADMINISTRATION DES FOYERS */}
+          <AdminFoyersSection
+            expenses={expenses}
+            reminders={reminders}
+            currentFoyer={currentFoyer}
+            setToastInfo={setToastInfo}
+            onSwitchFoyer={onSwitchFoyer}
+          />
 
-          <button 
-            type="button"
-            onClick={() => setExpandedSection(expandedSection === 'migrations' ? null : 'migrations')}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1"
-          >
-            <svg className={`w-5 h-5 transform transition-transform ${expandedSection === 'migrations' ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Table status if verified */}
-        {tableStatus && (
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700/60 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-            {Object.entries(tableStatus).map(([tbl, st]) => (
-              <div key={tbl} className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-800 shadow-2xs">
-                <span className="font-mono text-[11px] text-slate-700 dark:text-slate-300 truncate">{tbl}</span>
-                <span className={`w-2 h-2 rounded-full shrink-0 ${st === 'ok' ? 'bg-emerald-500' : st === 'checking' ? 'bg-amber-400 animate-pulse' : 'bg-rose-500'}`} />
+          {/* 1.B. GESTION DES COMPTES & MOTS DE PASSE */}
+          <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                    Gestion globale des comptes
+                  </h3>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate">
+                    {profiles.length} comptes enregistrés au total • Modification des mots de passe
+                  </p>
+                </div>
               </div>
-            ))}
-          </div>
-        )}
 
-        {/* Three buttons row matching screenshot */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-          <button
-            type="button"
-            onClick={handleVerifyTables}
-            disabled={isCheckingTables}
-            className="py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-700/50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer border border-slate-200/70 dark:border-slate-600/70"
-          >
-            <span className="text-sm">🔍</span>
-            <span>{isCheckingTables ? 'Vérification...' : 'Vérifier les tables'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsSqlModalOpen(true)}
-            className="py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-700/50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer border border-slate-200/70 dark:border-slate-600/70"
-          >
-            <span className="text-sm">📄</span>
-            <span>Afficher le SQL</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsMigrationDetailsOpen(!isMigrationDetailsOpen)}
-            className="py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer border border-amber-200/70 dark:border-amber-800/70"
-          >
-            <span className="text-sm">🔀</span>
-            <span>Migration contrôlée</span>
-          </button>
-        </div>
-
-        {/* Controlled Migration Drawer */}
-        {isMigrationDetailsOpen && (
-          <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/60 space-y-3 text-xs animate-fade-in">
-            <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200 font-bold">
-              <span>💡</span>
-              <span>Recommandation de migration de structure :</span>
+              {/* Quick Search */}
+              <div className="w-full sm:w-64">
+                <input
+                  type="text"
+                  placeholder="Rechercher un compte..."
+                  value={userSearchTerm}
+                  onChange={(e) => setUserSearchTerm(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
             </div>
-            <p className="text-amber-800/90 dark:text-amber-300 leading-relaxed font-medium">
-              Les modifications de colonnes (ex : ajout de <code className="bg-white/80 dark:bg-slate-800 px-1 py-0.5 rounded">subtracted_items</code> ou <code className="bg-white/80 dark:bg-slate-800 px-1 py-0.5 rounded">performedBy</code>) sont sécurisées avec des blocs <code className="bg-white/80 dark:bg-slate-800 px-1 py-0.5 rounded">DO $$ BEGIN ... END $$</code> idempotents.
-            </p>
-            <div className="flex gap-2">
+
+            {/* User Profiles List */}
+            <div className="divide-y divide-slate-100/90 dark:divide-slate-700/60 pt-1">
+              {filteredProfiles.length === 0 ? (
+                <div className="py-6 text-center text-xs text-slate-400">
+                  Aucun compte ne correspond à votre recherche.
+                </div>
+              ) : (
+                filteredProfiles.map((p) => {
+                  const isVincent = p.username.toLowerCase().trim() === 'vincent';
+                  const isBlocked = !!p.blocked;
+                  const isFoyerPrincipal = !p.foyer_id || p.foyer_id === 'foyer_vincent_sophie';
+
+                  return (
+                    <div key={p.username} className="py-3.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div 
+                          className="w-10 h-10 rounded-2xl font-extrabold text-base flex items-center justify-center shrink-0 border text-white shadow-2xs"
+                          style={{ backgroundColor: p.color || (p.user === User.Sophie ? '#ec4899' : '#0284c7') }}
+                        >
+                          {p.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 space-y-0.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-extrabold text-slate-900 dark:text-white text-sm truncate">
+                              {p.username}
+                            </p>
+                            {isVincent && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                                ADMIN
+                              </span>
+                            )}
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                              isBlocked 
+                                ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
+                                : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                            }`}>
+                              {isBlocked ? 'Bloqué' : 'Actif'}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                              {isFoyerPrincipal ? '🏠 Principal' : `Foyer: ${p.foyer_id?.slice(0, 10)}...`}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate">
+                            Rôle : {p.user || p.username}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* User actions: password modification & account deletion */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingPasswordUser(p.username);
+                            setEditPasswordValue('');
+                          }}
+                          className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                          title="Modifier le mot de passe"
+                        >
+                          <span>🔑</span>
+                          <span>Modifier mot de passe</span>
+                        </button>
+
+                        {!isVincent && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (window.confirm(`Êtes-vous sûr de vouloir supprimer définitivement le compte de « ${p.username} » ? Cette action est irréversible et supprimera le compte du Cloud.`)) {
+                                if (_onDeleteProfile) {
+                                  const res = await _onDeleteProfile(p.username);
+                                  if (res) {
+                                    setToastInfo({ message: `Le compte ${p.username} a été définitivement supprimé.`, type: 'info' });
+                                  } else {
+                                    setToastInfo({ message: `Impossible de supprimer le compte ${p.username}.`, type: 'error' });
+                                  }
+                                }
+                              }
+                            }}
+                            className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 dark:hover:bg-rose-900/60 border border-rose-100/60 dark:border-rose-800/40 text-rose-600 dark:text-rose-300 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                            title="Supprimer définitivement ce compte"
+                          >
+                            <span>🗑️</span>
+                            <span>Supprimer</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* 1.C. SESSIONS & CONNEXIONS RÉCENTES */}
+          <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-teal-50 dark:bg-teal-950/60 flex items-center justify-center text-[#0d9488] dark:text-teal-400 shrink-0">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                    Sessions & connexions récentes
+                  </h3>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                    {loginHistory.length} connexions récentes enregistrées
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowSessionsModal(!showSessionsModal)}
+                className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-xs transition-all cursor-pointer shrink-0"
+              >
+                {showSessionsModal ? 'Masquer' : 'Voir les sessions'}
+              </button>
+            </div>
+
+            {showSessionsModal && (
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700/60 space-y-2 text-xs divide-y divide-slate-200/50 dark:divide-slate-700/50">
+                {loginHistory.slice(0, 8).map((evt, idx) => (
+                  <div key={idx} className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${evt.user === User.Sophie ? 'bg-pink-500' : 'bg-sky-500'}`} />
+                      <span className="font-bold text-slate-800 dark:text-slate-200">{evt.user}</span>
+                    </div>
+                    <span className="text-slate-400 dark:text-slate-500">{formatTimeFrench(evt.timestamp)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 2. SECTION : BASE DE DONNÉES & SYNCHRONISATION            */}
+      {/* ========================================================= */}
+      {(activeAdminTab === 'database' || activeAdminTab === 'all') && (
+        <div className="space-y-4 animate-fade-in">
+          {/* 2.A. BASE DE DONNÉES SUPABASE */}
+          <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center text-[#3b82f6] dark:text-blue-400 shrink-0">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                    Base de données Supabase
+                  </h3>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                    Connexion, schéma et état du projet
+                  </p>
+                </div>
+              </div>
+
+              <button 
+                type="button"
+                onClick={() => setExpandedSection(expandedSection === 'db' ? null : 'db')}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 cursor-pointer"
+              >
+                <svg className={`w-5 h-5 transform transition-transform ${expandedSection === 'db' ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Badges row */}
+            <div className="flex flex-wrap items-center gap-2 pt-0.5">
+              <span className="px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 text-xs font-bold">
+                Projet : duobudget-prod
+              </span>
+              <span className="px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-bold">
+                Schéma : v12
+              </span>
+              <span className="px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 text-xs font-bold">
+                12 tables
+              </span>
+              <span className="px-3 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold">
+                {expenses.length} dépenses • {reminders.length} rappels
+              </span>
+            </div>
+
+            {/* Action buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={handleTestConnection}
+                disabled={dbStatus === 'checking'}
+                className="py-2.5 px-4 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer border border-blue-200/60 dark:border-blue-800/60"
+              >
+                <span className="text-base">🔌</span>
+                <span>{dbStatus === 'checking' ? 'Test en cours...' : 'Tester la connexion'}</span>
+                {latencyMs !== null && dbStatus === 'connected' && (
+                  <span className="text-[11px] bg-blue-200/70 dark:bg-blue-800/70 px-1.5 py-0.5 rounded-md">
+                    {latencyMs} ms
+                  </span>
+                )}
+              </button>
+
               <button
                 type="button"
                 onClick={() => setIsSqlModalOpen(true)}
-                className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition-all cursor-pointer"
+                className="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer border border-slate-200/80 dark:border-slate-600/80"
               >
-                Copier le script SQL complet
+                <span className="text-base">📄</span>
+                <span>Instructions SQL</span>
               </button>
             </div>
-          </div>
-        )}
-      </div>
 
-      {/* ========================================================= */}
-      {/* 3. SYNCHRONISATION                                        */}
-      {/* ========================================================= */}
-      <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start sm:items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center text-[#10b981] dark:text-emerald-400 shrink-0">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </div>
-            <div className="space-y-0.5">
-              <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
-                Synchronisation
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                Dernière synchro : {formatTimeFrench(lastSyncTime)}
-              </p>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-                Éléments en attente : 0
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleForceSync}
-            disabled={isSyncing}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#e0f2fe] hover:bg-sky-200 dark:bg-sky-950/70 dark:hover:bg-sky-900/80 text-[#0284c7] dark:text-sky-300 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer shrink-0 border border-sky-200 dark:border-sky-800/60"
-          >
-            <svg className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span>{isSyncing ? 'Synchronisation...' : 'Forcer la synchro'}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ========================================================= */}
-      {/* 4. PUSH & NOTIFICATIONS                                   */}
-      {/* ========================================================= */}
-      <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start sm:items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-pink-50 dark:bg-pink-950/60 flex items-center justify-center text-[#f43f5e] dark:text-pink-400 shrink-0">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
-                Push & notifications
-              </h3>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100/80 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Permission : {pushPermission === 'granted' ? 'Accordée' : pushPermission === 'denied' ? 'Refusée' : 'Non demandée'}
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                  Token : {deviceTokenSnippet}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleSendTestPush}
-            disabled={isSendingPushTest}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900 text-blue-700 dark:text-blue-300 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer shrink-0 border border-blue-200 dark:border-blue-800"
-          >
-            <span className="text-base">✈️</span>
-            <span>{isSendingPushTest ? 'Envoi...' : 'Envoyer un test'}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ========================================================= */}
-      {/* 5. JOURNAUX & DIAGNOSTICS                                 */}
-      {/* ========================================================= */}
-      <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start sm:items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center text-[#3b82f6] dark:text-blue-400 shrink-0">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
-                Journaux & diagnostics
-              </h3>
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100/80 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  {errorLogs.length === 0 ? 'Aucune erreur récente' : `${errorLogs.length} alertes`}
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                  Latence : {latencyMs || 84} ms
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                  Version app : 1.0.0
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleCopyDiagnostic}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900 text-blue-700 dark:text-blue-300 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer shrink-0 border border-blue-200 dark:border-blue-800"
-          >
-            <span className="text-base">📋</span>
-            <span>Copier le diagnostic</span>
-          </button>
-        </div>
-
-        {/* Error logs display if any */}
-        {errorLogs.length > 0 && (
-          <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 space-y-1.5 text-xs">
-            <p className="font-bold text-rose-800 dark:text-rose-200">Dernières anomalies capturées :</p>
-            {errorLogs.slice(0, 3).map((log, i) => (
-              <div key={i} className="flex items-center gap-2 text-rose-700 dark:text-rose-300 font-mono text-[11px]">
-                <span>[{log.time}]</span>
-                <span>{log.message}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ========================================================= */}
-      {/* 6. CACHE & STOCKAGE TECHNIQUE                             */}
-      {/* ========================================================= */}
-      <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start sm:items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center text-[#10b981] dark:text-emerald-400 shrink-0">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
-                Cache & stockage technique
-              </h3>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-                  Cache : {cacheSizeMb}
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100/80 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Service worker : {isSwActive ? 'Actif' : 'En veille'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleClearTechnicalCache}
-              className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer border border-rose-200/80 dark:border-rose-800/60"
-            >
-              <span className="text-sm">🗑️</span>
-              <span>Vider le cache</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleUpdateServiceWorker}
-              disabled={isRefreshingSw}
-              className="px-3.5 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/60 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer border border-sky-200/80 dark:border-sky-800/60"
-            >
-              <span className={`text-sm ${isRefreshingSw ? 'animate-spin' : ''}`}>🔄</span>
-              <span>Actualiser</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ========================================================= */}
-      {/* 6.5. AJOUT & GESTION D'ICÔNES DE CATÉGORIE                */}
-      {/* ========================================================= */}
-      <CategoryIconManagementSection categories={categories} setToastInfo={setToastInfo} />
-
-      {/* ========================================================= */}
-      {/* 7. MODE MAINTENANCE DE L'APPLICATION                      */}
-      {/* ========================================================= */}
-      <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
-              <span className="text-2xl">🛠️</span>
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
-                  Mode Maintenance
-                </h3>
-                <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider ${
-                  isMaintenanceMode 
-                    ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700' 
-                    : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
-                }`}>
-                  {isMaintenanceMode ? 'Actif' : 'Accessible à tous'}
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
-                Restreindre l'accès à l'application pendant les mises à jour
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => onToggleMaintenanceMode && onToggleMaintenanceMode(!isMaintenanceMode)}
-            className={`w-12 h-7 rounded-full transition-colors relative flex items-center p-1 cursor-pointer shrink-0 ${
-              isMaintenanceMode ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-600'
-            }`}
-            aria-label="Basculer le mode maintenance"
-          >
-            <div className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform transform ${
-              isMaintenanceMode ? 'translate-x-5' : 'translate-x-0'
-            }`} />
-          </button>
-        </div>
-
-        <div className={`p-4 rounded-2xl border text-xs space-y-2.5 transition-colors ${
-          isMaintenanceMode
-            ? 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200'
-            : 'bg-slate-50/80 dark:bg-slate-700/30 border-slate-200/80 dark:border-slate-700/60 text-slate-600 dark:text-slate-400'
-        }`}>
-          <div className="flex items-center gap-2 font-bold text-sm">
-            <span>{isMaintenanceMode ? '⚠️' : 'ℹ️'}</span>
-            <span>
-              {isMaintenanceMode 
-                ? 'Mode maintenance activé : Seul l’administrateur Vincent peut naviguer.' 
-                : 'L’application est en fonctionnement normal.'}
-            </span>
-          </div>
-          <p className="leading-relaxed">
-            {isMaintenanceMode
-              ? 'Sophie et tous les autres utilisateurs ouvrant l’application verront un écran d’information de maintenance. Seul Vincent peut accéder aux données.'
-              : 'Activez ce mode si vous vous préparez à exécuter des scripts de migration SQL, purger des données ou modifier la structure.'}
-          </p>
-        </div>
-      </div>
-
-      {/* ========================================================= */}
-      {/* 8. ADMINISTRATION DES FOYERS (VOIR ET ADMINISTRER)       */}
-      {/* ========================================================= */}
-      <AdminFoyersSection
-        expenses={expenses}
-        reminders={reminders}
-        currentFoyer={currentFoyer}
-        setToastInfo={setToastInfo}
-        onSwitchFoyer={onSwitchFoyer}
-      />
-
-      {/* ========================================================= */}
-      {/* 9. GESTION DES UTILISATEURS (BLOQUER / SUPPRIMER)         */}
-      {/* ========================================================= */}
-      <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            </div>
-            <div className="min-w-0">
-              <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
-                Gestion des comptes & mots de passe
-              </h3>
-              <p className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate">
-                {profiles.length} comptes enregistrés — Modification des mots de passe
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* User Profiles List */}
-        <div className="divide-y divide-slate-100/90 dark:divide-slate-700/60 pt-1">
-          {profiles.map((p) => {
-            const isVincent = p.user === User.Vincent;
-            const isBlocked = !!p.blocked;
-
-            return (
-              <div key={p.username} className="py-3.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div 
-                    className="w-10 h-10 rounded-2xl font-extrabold text-base flex items-center justify-center shrink-0 border text-white"
-                    style={{ backgroundColor: p.color || (p.user === User.Sophie ? '#ec4899' : '#0284c7') }}
-                  >
-                    {p.username.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-extrabold text-slate-900 dark:text-white text-sm truncate">
-                        {p.username}
-                      </p>
-                      {isVincent && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
-                          ADMIN
-                        </span>
-                      )}
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                        isBlocked 
-                          ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
-                          : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
-                      }`}>
-                        {isBlocked ? 'Bloqué' : 'Actif'}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
-                      Rôle : {p.user}
-                    </p>
-                  </div>
+            {/* Expandable details */}
+            {expandedSection === 'db' && (
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700/60 space-y-2 text-xs">
+                <div className="flex justify-between py-1 border-b border-slate-200/60 dark:border-slate-600/60">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">Hôte Supabase</span>
+                  <span className="font-mono text-slate-800 dark:text-slate-200">xcdyshzyxpngbpceilym.supabase.co</span>
                 </div>
+                <div className="flex justify-between py-1 border-b border-slate-200/60 dark:border-slate-600/60">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">Dernière vérification</span>
+                  <span className="text-slate-800 dark:text-slate-200">{formatTimeFrench(lastCheckTime)}</span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">Sécurité RLS</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">Activée (Policies Publiques)</span>
+                </div>
+              </div>
+            )}
+          </div>
 
-                {/* User actions: only password modification */}
-                <div className="flex items-center gap-2 shrink-0">
+          {/* 2.B. MIGRATIONS & STRUCTURE SQL */}
+          <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center text-[#f43f5e] dark:text-rose-400 shrink-0">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                    Migrations & structure SQL
+                  </h3>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                    Vérifier ou mettre à jour la structure
+                  </p>
+                </div>
+              </div>
+
+              <button 
+                type="button"
+                onClick={() => setExpandedSection(expandedSection === 'migrations' ? null : 'migrations')}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 cursor-pointer"
+              >
+                <svg className={`w-5 h-5 transform transition-transform ${expandedSection === 'migrations' ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Table status if verified */}
+            {tableStatus && (
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700/60 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                {Object.entries(tableStatus).map(([tbl, st]) => (
+                  <div key={tbl} className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-800 shadow-2xs">
+                    <span className="font-mono text-[11px] text-slate-700 dark:text-slate-300 truncate">{tbl}</span>
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${st === 'ok' ? 'bg-emerald-500' : st === 'checking' ? 'bg-amber-400 animate-pulse' : 'bg-rose-500'}`} />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Three buttons row */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleVerifyTables}
+                disabled={isCheckingTables}
+                className="py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-700/50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer border border-slate-200/70 dark:border-slate-600/70"
+              >
+                <span className="text-sm">🔍</span>
+                <span>{isCheckingTables ? 'Vérification...' : 'Vérifier les tables'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsSqlModalOpen(true)}
+                className="py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-700/50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer border border-slate-200/70 dark:border-slate-600/70"
+              >
+                <span className="text-sm">📄</span>
+                <span>Afficher le SQL</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsMigrationDetailsOpen(!isMigrationDetailsOpen)}
+                className="py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer border border-amber-200/70 dark:border-amber-800/70"
+              >
+                <span className="text-sm">🔀</span>
+                <span>Migration contrôlée</span>
+              </button>
+            </div>
+
+            {/* Controlled Migration Drawer */}
+            {isMigrationDetailsOpen && (
+              <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/60 space-y-3 text-xs animate-fade-in">
+                <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200 font-bold">
+                  <span>💡</span>
+                  <span>Recommandation de migration de structure :</span>
+                </div>
+                <p className="text-amber-800/90 dark:text-amber-300 leading-relaxed font-medium">
+                  Les modifications de colonnes (ex : ajout de <code className="bg-white/80 dark:bg-slate-800 px-1 py-0.5 rounded">subtracted_items</code> ou <code className="bg-white/80 dark:bg-slate-800 px-1 py-0.5 rounded">performedBy</code>) sont sécurisées avec des blocs <code className="bg-white/80 dark:bg-slate-800 px-1 py-0.5 rounded">DO $$ BEGIN ... END $$</code> idempotents.
+                </p>
+                <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      setEditingPasswordUser(p.username);
-                      setEditPasswordValue('');
-                    }}
-                    className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-                    title="Modifier le mot de passe"
+                    onClick={() => setIsSqlModalOpen(true)}
+                    className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition-all cursor-pointer"
                   >
-                    <span>🔑</span>
-                    <span>Modifier mot de passe</span>
+                    Copier le script SQL complet
                   </button>
                 </div>
               </div>
-            );
-          })}
+            )}
+          </div>
+
+          {/* 2.C. SYNCHRONISATION */}
+          <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center text-[#10b981] dark:text-emerald-400 shrink-0">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </div>
+                <div className="space-y-0.5">
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                    Synchronisation Cloud
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    Dernière synchro : {formatTimeFrench(lastSyncTime)}
+                  </p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                    Éléments en attente : 0
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleForceSync}
+                disabled={isSyncing}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#e0f2fe] hover:bg-sky-200 dark:bg-sky-950/70 dark:hover:bg-sky-900/80 text-[#0284c7] dark:text-sky-300 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer shrink-0 border border-sky-200 dark:border-sky-800/60"
+              >
+                <svg className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>{isSyncing ? 'Synchronisation...' : 'Forcer la synchro'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 2.D. PUSH & NOTIFICATIONS */}
+          <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-pink-50 dark:bg-pink-950/60 flex items-center justify-center text-[#f43f5e] dark:text-pink-400 shrink-0">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                    Push & notifications
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100/80 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      Permission : {pushPermission === 'granted' ? 'Accordée' : pushPermission === 'denied' ? 'Refusée' : 'Non demandée'}
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                      Token : {deviceTokenSnippet}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSendTestPush}
+                disabled={isSendingPushTest}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900 text-blue-700 dark:text-blue-300 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer shrink-0 border border-blue-200 dark:border-blue-800"
+              >
+                <span className="text-base">✈️</span>
+                <span>{isSendingPushTest ? 'Envoi...' : 'Envoyer un test'}</span>
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ========================================================= */}
-      {/* 7. SESSIONS & SÉCURITÉ (SAFE TOOLS)                       */}
+      {/* 3. SECTION : CONFIGURATION & OUTILS                       */}
       {/* ========================================================= */}
-      <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-teal-50 dark:bg-teal-950/60 flex items-center justify-center text-[#0d9488] dark:text-teal-400 shrink-0">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
+      {(activeAdminTab === 'config' || activeAdminTab === 'all') && (
+        <div className="space-y-4 animate-fade-in">
+          {/* 3.A. MODE MAINTENANCE */}
+          <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                  <span className="text-2xl">🛠️</span>
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                      Mode Maintenance
+                    </h3>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider ${
+                      isMaintenanceMode 
+                        ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700' 
+                        : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
+                    }`}>
+                      {isMaintenanceMode ? 'Actif' : 'Accessible à tous'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
+                    Restreindre l'accès à l'application pendant les mises à jour
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onToggleMaintenanceMode && onToggleMaintenanceMode(!isMaintenanceMode)}
+                className={`w-12 h-7 rounded-full transition-colors relative flex items-center p-1 cursor-pointer shrink-0 ${
+                  isMaintenanceMode ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-600'
+                }`}
+                aria-label="Basculer le mode maintenance"
+              >
+                <div className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform transform ${
+                  isMaintenanceMode ? 'translate-x-5' : 'translate-x-0'
+                }`} />
+              </button>
             </div>
-            <div>
-              <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
-                Sessions & sécurité
-              </h3>
-              <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                {loginHistory.length} connexions récentes enregistrées
+
+            <div className={`p-4 rounded-2xl border text-xs space-y-2.5 transition-colors ${
+              isMaintenanceMode
+                ? 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200'
+                : 'bg-slate-50/80 dark:bg-slate-700/30 border-slate-200/80 dark:border-slate-700/60 text-slate-600 dark:text-slate-400'
+            }`}>
+              <div className="flex items-center gap-2 font-bold text-sm">
+                <span>{isMaintenanceMode ? '⚠️' : 'ℹ️'}</span>
+                <span>
+                  {isMaintenanceMode 
+                    ? 'Mode maintenance activé : Seul l’administrateur Vincent peut naviguer.' 
+                    : 'L’application est en fonctionnement normal.'}
+                </span>
+              </div>
+              <p className="leading-relaxed">
+                {isMaintenanceMode
+                  ? 'Sophie et tous les autres utilisateurs ouvrant l’application verront un écran d’information de maintenance. Seul Vincent peut accéder aux données.'
+                  : 'Activez ce mode si vous vous préparez à exécuter des scripts de migration SQL, purger des données ou modifier la structure.'}
               </p>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setShowSessionsModal(!showSessionsModal)}
-            className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-xs transition-all cursor-pointer shrink-0"
-          >
-            {showSessionsModal ? 'Masquer' : 'Voir les sessions'}
-          </button>
-        </div>
+          {/* 3.B. GESTION DES ICÔNES DE CATÉGORIE */}
+          <CategoryIconManagementSection categories={categories} setToastInfo={setToastInfo} />
 
-        {showSessionsModal && (
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700/60 space-y-2 text-xs divide-y divide-slate-200/50 dark:divide-slate-700/50">
-            {loginHistory.slice(0, 5).map((evt, idx) => (
-              <div key={idx} className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${evt.user === User.Sophie ? 'bg-pink-500' : 'bg-sky-500'}`} />
-                  <span className="font-bold text-slate-800 dark:text-slate-200">{evt.user}</span>
+          {/* 3.C. CACHE & STOCKAGE TECHNIQUE */}
+          <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center text-[#10b981] dark:text-emerald-400 shrink-0">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
                 </div>
-                <span className="text-slate-400 dark:text-slate-500">{formatTimeFrench(evt.timestamp)}</span>
+                <div className="space-y-1">
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                    Cache & stockage technique
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                      Cache : {cacheSizeMb}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100/80 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      Service worker : {isSwActive ? 'Actif' : 'En veille'}
+                    </span>
+                  </div>
+                </div>
               </div>
-            ))}
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleClearTechnicalCache}
+                  className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer border border-rose-200/80 dark:border-rose-800/60"
+                >
+                  <span className="text-sm">🗑️</span>
+                  <span>Vider le cache</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleUpdateServiceWorker}
+                  disabled={isRefreshingSw}
+                  className="px-3.5 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/60 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer border border-sky-200/80 dark:border-sky-800/60"
+                >
+                  <span className={`text-sm ${isRefreshingSw ? 'animate-spin' : ''}`}>🔄</span>
+                  <span>Actualiser</span>
+                </button>
+              </div>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ========================================================= */}
-      {/* 9. ZONE CRITIQUE (DESTRUCTIVE TOOLS - RED HIGHLIGHT)       */}
+      {/* 4. SECTION : DIAGNOSTICS & SÉCURITÉ                       */}
       {/* ========================================================= */}
-      <div className="bg-[#fef2f2] dark:bg-rose-950/25 border border-rose-200/90 dark:border-rose-900/60 rounded-[26px] p-5 sm:p-6 space-y-4 shadow-2xs">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-900/70 flex items-center justify-center text-[#ef4444] dark:text-rose-400 shrink-0">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
+      {(activeAdminTab === 'diagnostics' || activeAdminTab === 'all') && (
+        <div className="space-y-4 animate-fade-in">
+          {/* 4.A. JOURNAUX & DIAGNOSTICS */}
+          <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center text-[#3b82f6] dark:text-blue-400 shrink-0">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                    Journaux & diagnostics
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100/80 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      {errorLogs.length === 0 ? 'Aucune erreur récente' : `${errorLogs.length} alertes`}
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                      Latence : {latencyMs || 84} ms
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                      Version app : 1.0.0
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCopyDiagnostic}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900 text-blue-700 dark:text-blue-300 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer shrink-0 border border-blue-200 dark:border-blue-800"
+              >
+                <span className="text-base">📋</span>
+                <span>Copier le diagnostic</span>
+              </button>
+            </div>
+
+            {/* Error logs display if any */}
+            {errorLogs.length > 0 && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 space-y-1.5 text-xs">
+                <p className="font-bold text-rose-800 dark:text-rose-200">Dernières anomalies capturées :</p>
+                {errorLogs.slice(0, 3).map((log, i) => (
+                  <div key={i} className="flex items-center gap-2 text-rose-700 dark:text-rose-300 font-mono text-[11px]">
+                    <span>[{log.time}]</span>
+                    <span>{log.message}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          <div>
-            <h3 className="font-extrabold text-rose-900 dark:text-rose-200 text-base sm:text-lg leading-tight">
-              Zone critique
-            </h3>
-            <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">
-              Actions sensibles pouvant affecter les données de l’application
-            </p>
+
+          {/* 4.B. ENVIRONNEMENT & MÉTRIQUES SYSTÈME */}
+          <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-3">
+            <h4 className="font-extrabold text-slate-900 dark:text-white text-sm">
+              Environnement d'exécution
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700/60 space-y-1">
+                <span className="text-slate-400 font-medium">Connectivité</span>
+                <p className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                  {isOnline ? 'En ligne' : 'Hors-ligne'}
+                </p>
+              </div>
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700/60 space-y-1">
+                <span className="text-slate-400 font-medium">Affichage PWA</span>
+                <p className="font-bold text-slate-900 dark:text-white">
+                  {isPwa ? 'Standalone (Installée)' : 'Navigateur Web'}
+                </p>
+              </div>
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700/60 space-y-1">
+                <span className="text-slate-400 font-medium">Stockage local</span>
+                <p className="font-bold text-slate-900 dark:text-white">
+                  LocalStorage actif
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 4.C. ZONE CRITIQUE */}
+          <div className="bg-[#fef2f2] dark:bg-rose-950/25 border border-rose-200/90 dark:border-rose-900/60 rounded-[26px] p-5 sm:p-6 space-y-4 shadow-2xs">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-900/70 flex items-center justify-center text-[#ef4444] dark:text-rose-400 shrink-0">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-extrabold text-rose-900 dark:text-rose-200 text-base sm:text-lg leading-tight">
+                  Zone critique
+                </h3>
+                <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">
+                  Actions sensibles pouvant affecter les données de l’application
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+              {/* Action 1: Réinitialiser les données de test */}
+              <button
+                type="button"
+                onClick={() => {
+                  setDangerConfirmText('');
+                  setDangerModalMode('reset_test');
+                }}
+                className="py-3 px-4 rounded-xl bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-900/70 hover:bg-rose-50/70 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer shadow-2xs"
+              >
+                <span>🗑️</span>
+                <span>Purger les données de test</span>
+              </button>
+
+              {/* Action 2: Effacer le cache technique */}
+              <button
+                type="button"
+                onClick={() => {
+                  setDangerConfirmText('');
+                  setDangerModalMode('clear_tech_cache');
+                }}
+                className="py-3 px-4 rounded-xl bg-rose-100 hover:bg-rose-200 dark:bg-rose-900/50 dark:hover:bg-rose-900/80 text-rose-700 dark:text-rose-200 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
+              >
+                <span>🗑️</span>
+                <span>Effacer le cache technique</span>
+              </button>
+            </div>
+
+            {/* Footer note */}
+            <div className="flex items-center justify-center gap-1.5 text-xs text-rose-600/90 dark:text-rose-400 font-medium pt-1">
+              <span>⚠️</span>
+              <span>Confirmation requise avant toute action</span>
+            </div>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-          {/* Action 1: Réinitialiser les données de test */}
-          <button
-            type="button"
-            onClick={() => {
-              setDangerConfirmText('');
-              setDangerModalMode('reset_test');
-            }}
-            className="py-3 px-4 rounded-xl bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-900/70 hover:bg-rose-50/70 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer shadow-2xs"
-          >
-            <span>🗑️</span>
-            <span>Réinitialiser les données de test</span>
-          </button>
-
-          {/* Action 2: Effacer le cache technique */}
-          <button
-            type="button"
-            onClick={() => {
-              setDangerConfirmText('');
-              setDangerModalMode('clear_tech_cache');
-            }}
-            className="py-3 px-4 rounded-xl bg-rose-100 hover:bg-rose-200 dark:bg-rose-900/50 dark:hover:bg-rose-900/80 text-rose-700 dark:text-rose-200 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
-          >
-            <span>🗑️</span>
-            <span>Effacer le cache technique</span>
-          </button>
-        </div>
-
-        {/* Footer note */}
-        <div className="flex items-center justify-center gap-1.5 text-xs text-rose-600/90 dark:text-rose-400 font-medium pt-1">
-          <span>⚠️</span>
-          <span>Confirmation requise</span>
-        </div>
-      </div>
+      )}
 
       {/* ========================================================= */}
       {/* USER MANAGEMENT MODALS (EDIT PASSWORD)                    */}
@@ -1690,13 +1899,13 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
                 <button
                   type="button"
                   onClick={() => setEditingPasswordUser(null)}
-                  className="px-4 py-2.5 rounded-xl font-bold text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                  className="px-4 py-2.5 rounded-xl font-bold text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors"
+                  className="px-5 py-2.5 rounded-xl font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors cursor-pointer"
                 >
                   Enregistrer
                 </button>

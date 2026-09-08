@@ -7,6 +7,7 @@ import CloseIcon from './icons/CloseIcon';
 import ChevronRightIcon from './icons/ChevronRightIcon';
 import TrendingUpIcon from './icons/TrendingUpIcon';
 import PiggyBankIcon from './icons/PiggyBankIcon';
+import { resolveUserTheme } from '../utils/userColors';
 import bannerRetardImg from '../src/assets/banner-retard.png';
 import bannerAvanceImg from '../src/assets/banner-avance.png';
 
@@ -243,37 +244,21 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                 </div>
 
                 {/* Member Totals */}
-                {memberStats.map(({ member, monthTotal, expenses }, index) => {
-                  const isSophie = member.name === User.Sophie;
-                  const isVincent = member.name === User.Vincent;
-                  
-                  const bgClass = isSophie 
-                    ? 'bg-pink-50/60 dark:bg-pink-950/30 border-pink-100/80 dark:border-pink-900/40' 
-                    : isVincent 
-                    ? 'bg-blue-50/60 dark:bg-blue-950/30 border-blue-100/80 dark:border-blue-900/40'
-                    : 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-100/80 dark:border-emerald-900/40';
-
-                  const iconBg = isSophie
-                    ? 'bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-400'
-                    : isVincent
-                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                    : 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400';
-
-                  const textColor = isSophie
-                    ? 'text-pink-600 dark:text-pink-400'
-                    : isVincent
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-emerald-600 dark:text-emerald-400';
+                {memberStats.map(({ member, monthTotal, expenses }) => {
+                  const theme = resolveUserTheme(member.name, members);
 
                   return (
                     <div 
                         key={member.id || member.name}
-                        className={`flex items-center justify-between p-3.5 sm:p-5 border rounded-2xl sm:rounded-3xl transition-all shadow-xs cursor-pointer hover:shadow-md hover:scale-[1.005] active:scale-[0.99] min-w-0 ${bgClass}`}
+                        className={`flex items-center justify-between p-3.5 sm:p-5 border rounded-2xl sm:rounded-3xl transition-all shadow-xs cursor-pointer hover:shadow-md hover:scale-[1.005] active:scale-[0.99] min-w-0 ${theme.lightBgClass} ${theme.borderClass}`}
                         onClick={() => setUserExpensesModal({ user: member.name, expenses })}
                     >
                         <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1 pr-2">
-                          <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ${iconBg} flex items-center justify-center font-extrabold text-base sm:text-lg shrink-0`}>
-                            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
+                          <div 
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center font-extrabold text-base sm:text-lg shrink-0 text-white shadow-2xs"
+                            style={{ backgroundColor: (member as any).color || theme.hex }}
+                          >
+                            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                             </svg>
                           </div>
@@ -283,7 +268,7 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                          <span className={`font-extrabold text-base sm:text-2xl ${textColor} whitespace-nowrap`}>
+                          <span className={`font-extrabold text-base sm:text-2xl ${theme.textClass} whitespace-nowrap`}>
                               {monthTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                           </span>
                           <ChevronRightIcon />
@@ -326,7 +311,7 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                         </button>
                     </div>
                     <div className="p-5 overflow-y-auto">
-                        <ExpenseList expenses={userExpensesModal.expenses} onExpenseClick={() => {}} highlightedIds={new Set()} />
+                        <ExpenseList expenses={userExpensesModal.expenses} onExpenseClick={() => {}} highlightedIds={new Set()} foyerMembers={foyerMembers} />
                     </div>
                 </div>
             </div>

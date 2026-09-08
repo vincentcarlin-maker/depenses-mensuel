@@ -9,12 +9,14 @@ export interface KeywordRule {
   createdAt: string;
 }
 
-const STORAGE_KEY = 'keyword_icon_rules';
+const DEFAULT_STORAGE_KEY = 'keyword_icon_rules';
 
-export function useKeywordRules() {
+export function useKeywordRules(foyerId?: string) {
+  const storageKey = foyerId ? `keyword_icon_rules_${foyerId}` : DEFAULT_STORAGE_KEY;
+
   const [rules, setRules] = useState<KeywordRule[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(storageKey);
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -23,26 +25,36 @@ export function useKeywordRules() {
 
   const channelRef = useRef<any>(null);
 
+  // Keep state in sync when foyerId / storageKey changes
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      setRules(saved ? JSON.parse(saved) : []);
+    } catch {
+      setRules([]);
+    }
+  }, [storageKey]);
+
   // Sync to Supabase & Broadcast
   const syncToCloud = useCallback(async (updatedRules: KeywordRule[]) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedRules));
+    localStorage.setItem(storageKey, JSON.stringify(updatedRules));
     if (channelRef.current) {
       channelRef.current.send({
         type: 'broadcast',
         event: 'keyword_icon_rules_changed',
-        payload: { rules: updatedRules }
+        payload: { rules: updatedRules, foyerId }
       });
     }
     try {
       await (supabase.from('app_settings') as any).upsert({
-        key: 'keyword_icon_rules',
+        key: storageKey,
         value: JSON.stringify(updatedRules),
         updated_at: new Date().toISOString()
       });
     } catch (e) {
-      console.warn('Could not sync keyword_icon_rules to Supabase app_settings:', e);
+      console.warn(`Could not sync ${storageKey} to Supabase app_settings:`, e);
     }
-  }, []);
+  }, [storageKey, foyerId]);
 
   // Fetch initial from Cloud
   useEffect(() => {
@@ -50,15 +62,18 @@ export function useKeywordRules() {
       try {
         const { data, error } = await (supabase.from('app_settings') as any)
           .select('value')
-          .eq('key', 'keyword_icon_rules')
+          .eq('key', storageKey)
           .maybeSingle();
 
         if (!error && data && (data as any).value) {
           const parsed = JSON.parse((data as any).value);
           if (Array.isArray(parsed)) {
             setRules(parsed);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+            localStorage.setItem(storageKey, JSON.stringify(parsed));
           }
+        } else if (!error && !data) {
+          // No cloud data yet for this foyer: ensure state is empty
+          setRules([]);
         }
       } catch {
         // ignore
@@ -67,7 +82,7 @@ export function useKeywordRules() {
 
     fetchFromCloud();
 
-    const channel = supabase.channel('duobudget_keyword_rules_channel', {
+    const channel = supabase.channel(`duobudget_keyword_rules_${storageKey}`, {
       config: { broadcast: { ack: false, self: true } }
     });
 
@@ -76,18 +91,18 @@ export function useKeywordRules() {
     channel
       .on('broadcast', { event: 'keyword_icon_rules_changed' }, (payload: any) => {
         const data = payload?.payload || payload;
-        if (data && Array.isArray(data.rules)) {
+        if (data && Array.isArray(data.rules) && (!data.foyerId || data.foyerId === foyerId)) {
           setRules(data.rules);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data.rules));
+          localStorage.setItem(storageKey, JSON.stringify(data.rules));
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'app_settings' }, (payload: any) => {
-        if (payload.new && payload.new.key === 'keyword_icon_rules' && payload.new.value) {
+        if (payload.new && payload.new.key === storageKey && payload.new.value) {
           try {
             const parsed = JSON.parse(payload.new.value);
             if (Array.isArray(parsed)) {
               setRules(parsed);
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+              localStorage.setItem(storageKey, JSON.stringify(parsed));
             }
           } catch {
             // ignore
@@ -101,7 +116,7 @@ export function useKeywordRules() {
         supabase.removeChannel(channel);
       }
     };
-  }, []);
+  }, [storageKey, foyerId]);
 
   const addRule = useCallback((keyword: string, iconId: string, color: string) => {
     const trimmed = keyword.trim();

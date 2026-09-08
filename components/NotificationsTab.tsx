@@ -12,8 +12,7 @@ import {
     GiftIcon,
     ClothingIcon,
     PalmTreeIcon,
-    PillIcon,
-    MandatoryIcon
+    PillIcon
 } from './icons/CategoryIcons';
 
 const VAPID_PUBLIC_KEY = 'BN0Z3nqz3OLK1q2RuvukfLMAffOncCrBsvMw7GncY_9EK8u6-W0OzfIsRElejTlC-TM2uNDXCZkicnJX47pNGdc';
@@ -132,8 +131,12 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
             checkSubscription();
         }
 
-        // Charger la liste actuelle des catégories de dépenses
-        const savedCats = JSON.parse(localStorage.getItem('expenseCategories') || '[]');
+        const foyerId = currentFoyer?.id;
+        const catKey = foyerId ? (foyerId === 'foyer_vincent_sophie' ? 'expenseCategories' : `expenseCategories_${foyerId}`) : 'expenseCategories';
+        const prefsKey = foyerId ? `notificationPreferences_${foyerId}` : 'notificationPreferences';
+
+        // Charger la liste actuelle des catégories de dépenses du foyer
+        const savedCats = JSON.parse(localStorage.getItem(catKey) || localStorage.getItem('expenseCategories') || '[]');
         const cats = savedCats.length > 0 ? savedCats : [
             "Dépenses obligatoires",
             "Carburant",
@@ -150,7 +153,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
         setAvailableCategories(cats);
 
         // Charger les préférences de notifications locales
-        const savedPrefs = localStorage.getItem('notificationPreferences');
+        const savedPrefs = localStorage.getItem(prefsKey) || localStorage.getItem('notificationPreferences');
         if (savedPrefs) {
             try {
                 const parsed = JSON.parse(savedPrefs);
@@ -174,7 +177,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
         } else {
             setPrefCategories(cats);
         }
-    }, []);
+    }, [currentFoyer?.id]);
 
     const checkSubscription = async () => {
         try {
@@ -224,7 +227,8 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
                             if (prefs.quietHoursEnd) setPrefQuietHoursEnd(prefs.quietHoursEnd);
                             if (typeof prefs.privacyMode === 'boolean') setPrefPrivacyMode(prefs.privacyMode);
                             
-                            localStorage.setItem('notificationPreferences', JSON.stringify(prefs));
+                            const prefsKey = currentFoyer?.id ? `notificationPreferences_${currentFoyer.id}` : 'notificationPreferences';
+                            localStorage.setItem(prefsKey, JSON.stringify(prefs));
                         }
                     }
                 } catch (e) {
@@ -307,7 +311,8 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
         if (newFields.quietHoursEnd !== undefined) setPrefQuietHoursEnd(newFields.quietHoursEnd);
         if (newFields.privacyMode !== undefined) setPrefPrivacyMode(newFields.privacyMode);
 
-        localStorage.setItem('notificationPreferences', JSON.stringify(fullPrefs));
+        const prefsKey = currentFoyer?.id ? `notificationPreferences_${currentFoyer.id}` : 'notificationPreferences';
+        localStorage.setItem(prefsKey, JSON.stringify(fullPrefs));
         syncPrefsToSupabase(fullPrefs);
     };
 

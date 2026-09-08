@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { type Reminder, type Category, User } from '../types';
+import { type Reminder, type Category, User, type FoyerMember } from '../types';
+import { resolveUserTheme } from '../utils/userColors';
 import { 
     MandatoryIcon, 
     FuelIcon, 
@@ -20,7 +21,7 @@ interface EditReminderModalProps {
     onUpdateReminder: (reminder: Reminder) => void;
     onClose: () => void;
     categories: Category[];
-    foyerMembers?: { id: string; name: string }[];
+    foyerMembers?: FoyerMember[];
 }
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; bgColor: string } } = {
@@ -145,23 +146,27 @@ const EditReminderModal: React.FC<EditReminderModalProps> = ({ reminder, onUpdat
                             Personne concernée
                         </label>
                         <div className="bg-[#f1f5f9] dark:bg-slate-700/50 p-1 rounded-full flex gap-1">
-                            {(foyerMembers && foyerMembers.length > 0 ? foyerMembers : [{ id: '1', name: User.Sophie }, { id: '2', name: User.Vincent }]).map((m: { id: string; name: string }, idx: number) => {
+                            {(foyerMembers && foyerMembers.length > 0 ? foyerMembers : [{ id: '1', name: User.Sophie }, { id: '2', name: User.Vincent }]).map((m) => {
                                 const isSelected = user === m.name;
-                                const isPink = idx % 2 === 0;
-                                const selectedColor = isPink ? 'text-[#e11d48] dark:text-rose-400' : 'text-[#0284c7] dark:text-sky-400';
-                                const fillColor = isPink ? 'fill-[#e11d48] text-[#e11d48]' : 'fill-[#0284c7] text-[#0284c7]';
+                                const theme = resolveUserTheme(m.name, foyerMembers);
                                 return (
                                     <button
                                         key={m.id || m.name}
                                         type="button"
                                         onClick={() => setUser(m.name)}
+                                        style={isSelected ? { color: theme.hex } : {}}
                                         className={`flex-1 py-2 px-3 rounded-full text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                                             isSelected
-                                                ? `bg-white dark:bg-slate-800 ${selectedColor} shadow-xs`
+                                                ? `bg-white dark:bg-slate-800 shadow-xs`
                                                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
                                         }`}
                                     >
-                                        <svg className={`w-4 h-4 ${isSelected ? fillColor : 'text-slate-400'}`} viewBox="0 0 20 20" fill="currentColor">
+                                        <svg 
+                                          className="w-4 h-4" 
+                                          style={isSelected ? { fill: theme.hex, color: theme.hex } : {}} 
+                                          viewBox="0 0 20 20" 
+                                          fill={isSelected ? theme.hex : 'currentColor'}
+                                        >
                                             <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                                         </svg>
                                         {m.name}

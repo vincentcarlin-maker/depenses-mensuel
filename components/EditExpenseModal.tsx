@@ -543,21 +543,9 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Sélectionnez la personne qui a effectué le paiement.</p>
                             </div>
                             <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5">
-                                {members.map((m, idx) => {
+                                {members.map((m) => {
                                     const isSelected = user === m.name;
-                                    const isSophie = m.name === User.Sophie || idx === 0;
-                                    const isVincent = m.name === User.Vincent || idx === 1;
-                                    
-                                    let activeBgClass = 'bg-sky-50/90 dark:bg-sky-950/40 border-2 border-sky-500 dark:border-sky-500 text-sky-700 dark:text-sky-300 shadow-xs';
-                                    let avatarBg = 'bg-sky-500 text-white';
-
-                                    if (isSophie) {
-                                        activeBgClass = 'bg-pink-50/90 dark:bg-pink-950/40 border-2 border-pink-500 dark:border-pink-500 text-pink-700 dark:text-pink-300 shadow-xs';
-                                        avatarBg = 'bg-[#f43f5e] text-white';
-                                    } else if (isVincent) {
-                                        activeBgClass = 'bg-blue-50/90 dark:bg-blue-950/40 border-2 border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-300 shadow-xs';
-                                        avatarBg = 'bg-[#2563eb] text-white';
-                                    }
+                                    const userColor = m.color || (m.name === User.Sophie ? '#ec4899' : '#0ea5e9');
 
                                     const isOnline = (onlineUsers || []).some(
                                         u => String(u).trim().toLowerCase() === String(m.name).trim().toLowerCase()
@@ -568,14 +556,18 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                             key={m.id || m.name}
                                             type="button"
                                             onClick={() => setUser(m.name)}
+                                            style={isSelected ? { borderColor: userColor, backgroundColor: `${userColor}15` } : {}}
                                             className={`p-1.5 sm:p-3 rounded-2xl font-bold text-[11px] sm:text-xs md:text-sm flex items-center justify-center gap-1 sm:gap-2 transition-all cursor-pointer min-w-0 ${
                                                 isSelected
-                                                    ? activeBgClass
+                                                    ? 'border-2 shadow-xs'
                                                     : 'bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'
                                             }`}
                                         >
                                             <div className="relative shrink-0">
-                                                <span className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center ${avatarBg}`}>
+                                                <span 
+                                                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white shadow-2xs"
+                                                    style={{ backgroundColor: userColor }}
+                                                >
                                                     <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                                     </svg>
@@ -587,7 +579,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                                     }`} 
                                                 />
                                             </div>
-                                            <span className="truncate">{m.name}</span>
+                                            <span className="truncate" style={isSelected ? { color: userColor } : {}}>{m.name}</span>
                                         </button>
                                     );
                                 })}

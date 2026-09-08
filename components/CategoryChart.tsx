@@ -1,8 +1,8 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { type Expense, type Category } from '../types';
-import { useTheme } from '../hooks/useTheme';
+import { type Expense, type Category, type FoyerMember } from '../types';
+import { type Profile } from '../hooks/useAuth';
 import { 
     MandatoryIcon, 
     FuelIcon, 
@@ -85,9 +85,11 @@ interface CategoryTotalsProps {
   previousYearMonthExpenses: Expense[];
   last3MonthsExpenses: Expense[];
   onExpenseClick: (expense: Expense) => void;
+  foyerMembers?: FoyerMember[];
+  profiles?: Profile[];
 }
 
-const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonthExpenses, last3MonthsExpenses, onExpenseClick }) => {
+const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonthExpenses, last3MonthsExpenses, onExpenseClick, foyerMembers, profiles }) => {
   const { getVisual } = useCategoryVisuals();
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
@@ -414,6 +416,8 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
                           setSelectedCategory(null);
                         }} 
                         isHighlighted={false}
+                        foyerMembers={foyerMembers}
+                        profiles={profiles}
                       />
                     ))
                 ) : (

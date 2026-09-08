@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { type Reminder, type Category, type Expense, type MoneyPotTransaction, User, type Foyer } from '../types';
 import RemindersTab from './RemindersTab';
 import ThemeSelector from './ThemeSelector';
-import VibeSelector from './VibeSelector';
 import DataAndBackupTab from './DataAndBackupTab';
 import AdminAndDevTab from './AdminAndDevTab';
 import ArrowLeftIcon from './icons/ArrowLeftIcon';
@@ -32,10 +31,13 @@ interface SettingsTabProps {
   onUpdateCategory: (oldName: string, newName: string) => boolean;
   onDeleteCategory: (name: string) => void;
   profiles: Profile[];
+  allProfiles?: Profile[];
   loggedInUser: User;
+  loggedInUsername?: string;
+  isAdmin?: boolean;
   onAddProfile: (profile: Profile) => boolean;
   onUpdateProfilePassword: (username: string, newPassword: string) => boolean;
-  onDeleteProfile: (username: string) => boolean;
+  onDeleteProfile: (username: string) => Promise<boolean> | boolean;
   onToggleBlockProfile?: (username: string) => { success: boolean; message: string };
   isMaintenanceMode?: boolean;
   onToggleMaintenanceMode?: (newState?: boolean) => void;
@@ -111,7 +113,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
 
   useEffect(() => {
     if (props.initialView) {
-      setActiveView(props.initialView);
+      setActiveView(prev => (prev !== props.initialView ? props.initialView : prev));
     }
   }, [props.initialView]);
 
@@ -145,6 +147,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
   const activeRemindersCount = reminders.filter(r => r.is_active !== false).length;
   const themeLabel = themeSetting === 'light' ? 'Clair' : themeSetting === 'dark' ? 'Sombre' : 'Système';
   const hasPushEnabled = typeof Notification !== 'undefined' && Notification.permission === 'granted';
+
+  const isVincentAdmin = Boolean(
+    props.isAdmin !== undefined
+      ? props.isAdmin
+      : (props.loggedInUsername
+          ? props.loggedInUsername.toLowerCase().trim() === 'vincent'
+          : ((props.loggedInUser as any) === User.Vincent || (props.loggedInUser as any) === 'Vincent' || (props.loggedInUser as any) === 'vincent'))
+  );
 
   return (
     <div className="space-y-5 animate-fade-in max-w-2xl mx-auto w-full">
@@ -237,7 +247,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
                   </svg>
                 }
                 title="Apparence"
-                description="Thème et couleurs d'ambiance"
+                description="Thème et mode sombre"
                 value={themeLabel}
                 onClick={() => setView('appearance')}
               />
@@ -346,7 +356,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
                 description="Sauvegarder et restaurer vos données"
                 onClick={() => setView('data')}
               />
-              {(props.loggedInUser === User.Vincent || (props.loggedInUser as string) === 'Vincent') && (
+              {isVincentAdmin && (
                 <SettingsItemRow
                   iconBg="bg-[#eef2ff] dark:bg-indigo-950/60"
                   iconColor="text-[#6366f1] dark:text-indigo-400"
@@ -418,28 +428,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
               </div>
             </div>
             <ThemeSelector />
-          </div>
-
-          <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] p-4 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center text-[#3b82f6] dark:text-blue-400 shrink-0">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 21a9 9 0 0 1-9-9c0-4.97 4.03-9 9-9 4.14 0 7.6 2.8 8.68 6.64.38 1.34-.63 2.36-1.98 2.36h-1.7a2 2 0 0 0-2 2v1c0 1.66-1.34 3-3 3z" />
-                  <circle cx="7.5" cy="10.5" r="1.5" fill="currentColor" />
-                  <circle cx="12" cy="7.5" r="1.5" fill="currentColor" />
-                  <circle cx="16.5" cy="10.5" r="1.5" fill="currentColor" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base leading-tight">
-                  Ambiance de l'application
-                </h3>
-                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                  Choisissez le fond et la couleur d'accentuation.
-                </p>
-              </div>
-            </div>
-            <VibeSelector />
           </div>
 
           {/* Subview: Couleur des profils / avatars */}
@@ -666,16 +654,18 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
       )}
 
       {/* Subview: Administration */}
-      {activeView === 'admin' && (
+      {activeView === 'admin' && isVincentAdmin && (
         <div className="space-y-4 sm:space-y-5 animate-fade-in">
           <AdminAndDevTab 
             expenses={props.expenses}
             reminders={props.reminders}
             moneyPotTransactions={props.moneyPotTransactions}
             categories={props.categories}
-            profiles={props.profiles}
+            profiles={props.allProfiles || props.profiles}
             loginHistory={props.loginHistory}
             loggedInUser={props.loggedInUser}
+            loggedInUsername={props.loggedInUsername}
+            isAdmin={isVincentAdmin}
             currentFoyer={props.currentFoyer}
             setToastInfo={props.setToastInfo}
             onSyncData={props.onSyncData}

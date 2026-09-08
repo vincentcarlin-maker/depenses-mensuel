@@ -12,7 +12,9 @@ import {
     getStoredActiveFoyerId,
     setStoredActiveFoyerId,
     isUsernameAlreadyUsed,
-    updateMemberColor
+    updateMemberColor,
+    fetchAllFoyers,
+    removeMemberFromFoyer
 } from '../utils/foyerService';
 
 const SESSION_KEY = 'expense-app-session-v2';
@@ -66,12 +68,18 @@ const INITIAL_PROFILES: Profile[] = [
 
 export const useAuth = () => {
     const [user, setUser] = useState<User | string | null>(null);
+    const [username, setUsername] = useState<string | null>(null);
     const [currentFoyer, setCurrentFoyer] = useState<Foyer>(DEFAULT_FOYER);
     const [isLoading, setIsLoading] = useState(true);
     const [profiles, setProfiles] = useLocalStorage<Profile[]>(PROFILES_KEY, INITIAL_PROFILES);
     const [loginHistory, setLoginHistory] = useState<LoginEvent[]>([]);
 
     // Helper pour logger une visite en base de données
+    const currentFoyerRef = useRef<Foyer | null>(currentFoyer);
+    useEffect(() => {
+        currentFoyerRef.current = currentFoyer;
+    }, [currentFoyer]);
+
     const logVisit = useCallback(async (userName: User | string) => {
         const LOG_COOLDOWN = 60 * 1000; 
         const storageKey = `last_visit_log_v3_${userName}`;
@@ -82,7 +90,7 @@ export const useAuth = () => {
             return;
         }
 
-        const activeFoyerId = currentFoyer?.id || getStoredActiveFoyerId() || DEFAULT_FOYER_ID;
+        const activeFoyerId = currentFoyerRef.current?.id || getStoredActiveFoyerId() || DEFAULT_FOYER_ID;
 
         try {
             // First attempt with foyer_id
@@ -104,7 +112,7 @@ export const useAuth = () => {
         } catch {
             // Ignore logging errors
         }
-    }, [currentFoyer]);
+    }, []);
 
     // Charge l'historique global depuis Supabase
     useEffect(() => {
@@ -199,6 +207,8 @@ export const useAuth = () => {
                     const session = JSON.parse(sessionItem);
                     if (session.expiresAt > Date.now()) {
                         setUser(session.user);
+                        const fallbackUsername = session.user === User.Vincent ? 'vincent' : (session.user === User.Sophie ? 'sophie' : String(session.user).toLowerCase());
+                        setUsername(session.username || fallbackUsername);
                         const foyerId = session.foyer_id || getStoredActiveFoyerId() || DEFAULT_FOYER_ID;
                         const loadedFoyer = await fetchFoyerById(foyerId);
                         if (loadedFoyer) {
@@ -229,6 +239,7 @@ export const useAuth = () => {
              sessionStorage.removeItem(`last_visit_log_v3_${user}`);
         }
         setUser(null);
+        setUsername(null);
     }, [user]);
 
     // Realtime sync for profiles across devices
@@ -243,7 +254,23 @@ export const useAuth = () => {
             });
         }
         try {
-            // 1. Save each profile individually to prevent overwriting between users/foyers
+            const activeUsernames = updatedProfiles.map(p => p.username.toLowerCase().trim());
+
+            // 1. Delete any individual profile record in Supabase for users that no longer exist
+            const { data: existingIndividual } = await (supabase.from('push_subscriptions') as any)
+                .select('user_id')
+                .like('user_id', 'profile_%');
+
+            if (Array.isArray(existingIndividual)) {
+                for (const row of existingIndividual) {
+                    const uName = row.user_id.replace(/^profile_/, '').toLowerCase().trim();
+                    if (!activeUsernames.includes(uName)) {
+                        await (supabase.from('push_subscriptions') as any).delete().eq('user_id', row.user_id);
+                    }
+                }
+            }
+
+            // 2. Save active profiles individually
             for (const p of updatedProfiles) {
                 const normUser = p.username.toLowerCase().trim();
                 await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_${normUser}`);
@@ -253,7 +280,7 @@ export const useAuth = () => {
                 });
             }
 
-            // 2. Also keep merged app_user_profiles_v2 up to date
+            // 3. Keep merged app_user_profiles_v2 up to date
             await (supabase.from('push_subscriptions') as any).delete().eq('user_id', 'app_user_profiles_v2');
             await (supabase.from('push_subscriptions') as any).insert({
                 user_id: 'app_user_profiles_v2',
@@ -297,14 +324,8 @@ export const useAuth = () => {
                 }
 
                 if (discoveredProfiles.length > 0) {
-                    setProfiles(prev => {
+                    setProfiles(() => {
                         const merged = [...discoveredProfiles];
-                        // Merge with existing local profiles so we don't lose any
-                        for (const localP of prev) {
-                            if (!merged.some(p => p.username === localP.username)) {
-                                merged.push(localP);
-                            }
-                        }
                         // Merge ensuring Vincent & Sophie always exist
                         for (const initP of INITIAL_PROFILES) {
                             if (!merged.some(p => p.username === initP.username)) {
@@ -331,11 +352,11 @@ export const useAuth = () => {
             .on('broadcast', { event: 'user_profiles_changed' }, (payload: any) => {
                 const data = payload?.payload || payload;
                 if (data && Array.isArray(data.profiles)) {
-                    setProfiles(prev => {
+                    setProfiles(() => {
                         const merged = [...data.profiles];
-                        for (const p of prev) {
-                            if (!merged.some(m => m.username === p.username)) {
-                                merged.push(p);
+                        for (const initP of INITIAL_PROFILES) {
+                            if (!merged.some(m => m.username === initP.username)) {
+                                merged.push(initP);
                             }
                         }
                         return merged;
@@ -427,6 +448,7 @@ export const useAuth = () => {
             };
             window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
             setUser(profile.user);
+            setUsername(profile.username);
             setCurrentFoyer(foyer);
             setStoredActiveFoyerId(foyer.id);
             
@@ -526,6 +548,7 @@ export const useAuth = () => {
         };
         window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
         setUser(newProfile.user);
+        setUsername(newProfile.username);
         setCurrentFoyer(createRes.foyer);
         setStoredActiveFoyerId(createRes.foyer.id);
 
@@ -580,6 +603,7 @@ export const useAuth = () => {
         };
         window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
         setUser(newProfile.user);
+        setUsername(newProfile.username);
         setCurrentFoyer(joinRes.foyer);
         setStoredActiveFoyerId(joinRes.foyer.id);
 
@@ -632,20 +656,58 @@ export const useAuth = () => {
         return true;
     }, [profiles, setProfiles, syncProfilesToCloud]);
 
-    const deleteProfile = useCallback((username: string): boolean => {
+    const deleteProfile = useCallback(async (username: string): Promise<boolean> => {
         const normalizedUsername = username.toLowerCase().trim();
-        if (profiles.length <= 1) {
-            return false;
+        if (normalizedUsername === 'vincent') {
+            return false; // Impossible de supprimer l'administrateur principal
         }
-        const profileToDelete = profiles.find(p => p.username === normalizedUsername);
-        if (profileToDelete?.user === user) {
-            return false;
+        
+        // 1. Delete individual profile row from Supabase push_subscriptions
+        try {
+            await (supabase.from('push_subscriptions') as any)
+                .delete()
+                .eq('user_id', `profile_${normalizedUsername}`);
+        } catch (e) {
+            console.warn(`Could not delete profile_${normalizedUsername} from Supabase:`, e);
         }
-        const updated = profiles.filter(p => p.username !== normalizedUsername);
+
+        // 2. Remove member from current foyer if applicable
+        if (currentFoyer && currentFoyer.members) {
+            const remainingMembers = currentFoyer.members.filter(m => 
+                m.username?.toLowerCase().trim() !== normalizedUsername &&
+                m.name.toLowerCase().trim() !== normalizedUsername
+            );
+            if (remainingMembers.length > 0) {
+                const updatedFoyer: Foyer = {
+                    ...currentFoyer,
+                    members: remainingMembers
+                };
+                setCurrentFoyer(updatedFoyer);
+                await saveFoyerToCloudAndLocal(updatedFoyer);
+            }
+        }
+
+        // 3. Remove member from all foyers in foyerService
+        try {
+            const allFoyers = await fetchAllFoyers();
+            for (const f of allFoyers) {
+                if (f.members.some(m => m.username?.toLowerCase().trim() === normalizedUsername || m.name.toLowerCase().trim() === normalizedUsername)) {
+                    await removeMemberFromFoyer(f.id, normalizedUsername);
+                }
+            }
+        } catch (e) {
+            console.warn('Error removing member from foyers:', e);
+        }
+
+        // 4. Update profiles state
+        const updated = profiles.filter(p => p.username.toLowerCase().trim() !== normalizedUsername);
         setProfiles(updated);
-        syncProfilesToCloud(updated);
+        await syncProfilesToCloud(updated);
+
+        // 5. Clean up local storage
+        localStorage.removeItem(`profile_${normalizedUsername}`);
         return true;
-    }, [profiles, setProfiles, user, syncProfilesToCloud]);
+    }, [profiles, setProfiles, currentFoyer, syncProfilesToCloud]);
 
     // Password change for the currently logged-in user
     const changeMyPassword = useCallback(async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
@@ -680,37 +742,53 @@ export const useAuth = () => {
     const deleteOwnAccount = useCallback(async (confirmPassword?: string): Promise<{ success: boolean; error?: string }> => {
         if (!user) return { success: false, error: 'Non authentifié.' };
         const currentUsername = String(user).toLowerCase().trim();
-        const profile = profiles.find(p => p.username === currentUsername || p.user === user);
+        const profile = profiles.find(p => p.username.toLowerCase().trim() === currentUsername || p.user === user);
 
         if (confirmPassword && profile && profile.password !== confirmPassword) {
             return { success: false, error: 'Mot de passe de confirmation incorrect.' };
         }
 
-        // 1. Update foyer members if applicable
-        if (currentFoyer && currentFoyer.members) {
-            const remainingMembers = currentFoyer.members.filter(m => 
-                m.name.toLowerCase() !== String(user).toLowerCase() && 
-                m.username?.toLowerCase() !== currentUsername
-            );
-            if (remainingMembers.length > 0) {
-                const updatedFoyer: Foyer = {
-                    ...currentFoyer,
-                    members: remainingMembers
-                };
-                setCurrentFoyer(updatedFoyer);
-                await saveFoyerToCloudAndLocal(updatedFoyer);
-            }
+        const normToDelete = profile?.username?.toLowerCase().trim() || currentUsername;
+
+        if (normToDelete === 'vincent') {
+            return { success: false, error: "Le compte administrateur principal ne peut pas être supprimé." };
         }
 
-        // 2. Remove profile from profiles
-        const updated = profiles.filter(p => p.username !== currentUsername && p.user !== user);
+        // 1. Delete individual profile record from Supabase push_subscriptions
+        try {
+            await (supabase.from('push_subscriptions') as any)
+                .delete()
+                .eq('user_id', `profile_${normToDelete}`);
+        } catch (e) {
+            console.warn(`Could not delete profile_${normToDelete} from Supabase:`, e);
+        }
+
+        // 2. Remove member from all foyers
+        try {
+            const allFoyers = await fetchAllFoyers();
+            for (const f of allFoyers) {
+                if (f.members.some(m => m.username?.toLowerCase().trim() === normToDelete || m.name.toLowerCase().trim() === normToDelete)) {
+                    await removeMemberFromFoyer(f.id, normToDelete);
+                }
+            }
+        } catch (e) {
+            console.warn('Error removing member from foyers:', e);
+        }
+
+        // 3. Remove profile from profiles
+        const updated = profiles.filter(p => p.username.toLowerCase().trim() !== normToDelete && p.user !== user);
         setProfiles(updated);
         await syncProfilesToCloud(updated);
 
-        // 3. Clear session and log out
+        // 4. Remove local storage caches
+        localStorage.removeItem(`profile_${normToDelete}`);
+        localStorage.removeItem('user');
+        localStorage.removeItem('duobudget_auth_state');
+
+        // 5. Clear session and log out
         logout();
         return { success: true };
-    }, [user, profiles, setProfiles, syncProfilesToCloud, currentFoyer, logout]);
+    }, [user, profiles, setProfiles, syncProfilesToCloud, logout]);
     
     // Mise à jour de la couleur d'un utilisateur (profil + membre de foyer)
     const updateUserColor = useCallback(async (username: string, newColor: string): Promise<boolean> => {
@@ -734,8 +812,19 @@ export const useAuth = () => {
         return true;
     }, [profiles, setProfiles, syncProfilesToCloud, currentFoyer]);
 
+    // Only the exact account "vincent" is Super Administrator (never Vincent1, VincentA, etc.)
+    const normalizedUsername = username ? username.toLowerCase().trim() : '';
+    const normalizedUser = typeof user === 'string' ? user.toLowerCase().trim() : '';
+    const isAdmin = Boolean(
+        normalizedUsername === 'vincent' ||
+        (user === User.Vincent && (!normalizedUsername || normalizedUsername === 'vincent')) ||
+        (normalizedUser === 'vincent' && (!normalizedUsername || normalizedUsername === 'vincent'))
+    );
+
     return { 
         user, 
+        username,
+        isAdmin,
         currentFoyer,
         foyerMembers: currentFoyer?.members || DEFAULT_FOYER.members,
         login, 

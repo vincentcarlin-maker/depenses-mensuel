@@ -61,21 +61,25 @@ const getInitialDate = () => {
 };
 
 const MainApp: React.FC<{ 
-    user: User, 
+    user: User | string, 
+    username?: string | null,
+    isAdmin?: boolean,
     onLogout: () => void,
     profiles: Profile[],
     onAddProfile: (profile: Profile) => boolean,
     onUpdateProfilePassword: (username: string, newPassword: string) => boolean,
-    onDeleteProfile: (username: string) => boolean,
+    onDeleteProfile: (username: string) => Promise<boolean> | boolean,
     onToggleBlockProfile: (username: string) => { success: boolean; message: string },
     isMaintenanceMode: boolean,
     onToggleMaintenanceMode: (newState?: boolean) => void,
     loginHistory: LoginEvent[],
     currentFoyer?: Foyer,
-    onDeleteOwnAccount?: () => Promise<boolean>,
+    onDeleteOwnAccount?: (confirmPassword?: string) => Promise<{ success: boolean; error?: string } | boolean>,
     onUpdateUserColor?: (username: string, newColor: string) => Promise<boolean>
 }> = ({ 
     user, 
+    username,
+    isAdmin,
     onLogout, 
     profiles, 
     onAddProfile, 
@@ -109,7 +113,7 @@ const MainApp: React.FC<{
 
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [settingsInitialView, setSettingsInitialView] = useState<'main' | 'appearance' | 'reminders' | 'management' | 'notifications'>('main');
+  const [settingsInitialView, setSettingsInitialView] = useState<SettingsViewType>('main');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [formInitialData, setFormInitialData] = useState<(Omit<Expense, 'id' | 'date' | 'created_at'> & { formKey?: string }) | null>(null);
   const [successExpense, setSuccessExpense] = useState<Expense | null>(null);
@@ -124,6 +128,39 @@ const MainApp: React.FC<{
   const allChangesChannelRef = useRef<any>(null);
 
   const activeFoyerId = currentFoyer?.id || DEFAULT_FOYER_ID;
+
+  // Profils isolés et rattachés au foyer actif (pour les paramètres du foyer et l'apparence)
+  const foyerProfiles = useMemo(() => {
+    // 1. Filtrer les profils qui appartiennent explicitement ou implicitement à ce foyer
+    const filtered = profiles.filter(p => {
+      // Profils explicitement rattachés à ce foyer_id
+      if (p.foyer_id && p.foyer_id === activeFoyerId) return true;
+      // Membres enregistrés dans la liste des membres du foyer courant
+      if (currentFoyer?.members && currentFoyer.members.some(m => m.username?.toLowerCase() === p.username?.toLowerCase())) return true;
+      // Profils par défaut (Vincent & Sophie) sur le foyer principal
+      if (activeFoyerId === DEFAULT_FOYER_ID && (!p.foyer_id || p.foyer_id === DEFAULT_FOYER_ID)) {
+        return true;
+      }
+      return false;
+    });
+
+    // 2. Si un membre du foyer n'a pas encore de profil localement, l'ajouter pour un affichage cohérent
+    if (currentFoyer?.members) {
+      for (const member of currentFoyer.members) {
+        if (!filtered.some(p => p.username?.toLowerCase() === member.username?.toLowerCase())) {
+          filtered.push({
+            username: member.username,
+            password: '',
+            user: member.name || member.username,
+            foyer_id: activeFoyerId,
+            color: member.color,
+          });
+        }
+      }
+    }
+
+    return filtered;
+  }, [profiles, currentFoyer, activeFoyerId]);
 
   // Filtre d'isolation des foyers :
   // - Vincent & Sophie (DEFAULT_FOYER_ID) : accès à leur historique (sans foyer_id ou marqué foyer_vincent_sophie)
@@ -1462,12 +1499,12 @@ const MainApp: React.FC<{
                       </div>
                     )}
 
-                    <ExpenseList expenses={searchedExpenses} onExpenseClick={setExpenseToView} highlightedIds={highlightedExpenseIds} modifiedInfo={modifiedExpenseInfo} />
+                    <ExpenseList expenses={searchedExpenses} onExpenseClick={setExpenseToView} highlightedIds={highlightedExpenseIds} modifiedInfo={modifiedExpenseInfo} foyerMembers={currentFoyer?.members} profiles={profiles} />
                   </div>
                 </div>
               </div>
             )}
-            {activeTab === 'analysis' && <CategoryTotals expenses={analysisExpenses} previousMonthExpenses={previousMonthExpenses} previousYearMonthExpenses={previousYearMonthExpenses} last3MonthsExpenses={last3MonthsExpenses} onExpenseClick={setExpenseToView} />}
+            {activeTab === 'analysis' && <CategoryTotals expenses={analysisExpenses} previousMonthExpenses={previousMonthExpenses} previousYearMonthExpenses={previousYearMonthExpenses} last3MonthsExpenses={last3MonthsExpenses} onExpenseClick={setExpenseToView} foyerMembers={currentFoyer?.members} profiles={profiles} />}
             {activeTab === 'yearly' && <YearlySummary expenses={yearlyFilteredExpenses} previousYearExpenses={previousYearFilteredExpenses} year={currentYear} onExpenseClick={setExpenseToView} />}
             {activeTab === 'moneypot' && (<MoneyPotTab transactions={moneyPotTransactions} onAddTransaction={addMoneyPotTransaction} onDeleteTransaction={deleteMoneyPotTransaction} />)}
             {activeTab === 'settings' && (
@@ -1485,8 +1522,11 @@ const MainApp: React.FC<{
                 onAddCategory={addCategory} 
                 onUpdateCategory={updateCategory} 
                 onDeleteCategory={deleteCategory} 
-                profiles={profiles} 
+                profiles={foyerProfiles} 
+                allProfiles={profiles}
                 loggedInUser={user} 
+                loggedInUsername={username || undefined}
+                isAdmin={isAdmin}
                 onAddProfile={onAddProfile} 
                 onUpdateProfilePassword={onUpdateProfilePassword} 
                 onDeleteProfile={onDeleteProfile} 
@@ -1576,8 +1616,11 @@ const MainApp: React.FC<{
         onAddCategory={addCategory} 
         onUpdateCategory={updateCategory} 
         onDeleteCategory={deleteCategory} 
-        profiles={profiles} 
+        profiles={foyerProfiles} 
+        allProfiles={profiles}
         loggedInUser={user} 
+        loggedInUsername={username || undefined}
+        isAdmin={isAdmin}
         onAddProfile={onAddProfile} 
         onUpdateProfilePassword={onUpdateProfilePassword} 
         onDeleteProfile={onDeleteProfile} 
@@ -1607,6 +1650,8 @@ const App: React.FC = () => {
   const { isMaintenanceMode, toggleMaintenanceMode } = useMaintenanceMode();
   const { 
     user, 
+    username,
+    isAdmin,
     currentFoyer,
     login, 
     loginWithResult, 
@@ -1632,8 +1677,8 @@ const App: React.FC = () => {
     );
   }
 
-  // Maintenance mode handling
-  if (isMaintenanceMode && user !== User.Vincent) {
+  // Maintenance mode handling (only primary admin vincent can bypass)
+  if (isMaintenanceMode && !isAdmin) {
     return <MaintenanceOverlay onAdminLogin={loginWithResult} />;
   }
 
@@ -1648,9 +1693,11 @@ const App: React.FC = () => {
   }
 
   return (
-    <CategoryVisualsProvider>
+    <CategoryVisualsProvider foyerId={currentFoyer?.id}>
       <MainApp 
         user={user} 
+        username={username}
+        isAdmin={isAdmin}
         currentFoyer={currentFoyer}
         onDeleteOwnAccount={deleteOwnAccount}
         onUpdateUserColor={updateUserColor}
