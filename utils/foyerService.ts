@@ -181,19 +181,62 @@ export async function fetchFoyerByCode(code: string): Promise<Foyer | null> {
   return null;
 }
 
+// Check globally across all foyers and local profiles if a username is already taken
+export async function isUsernameAlreadyUsed(username: string): Promise<boolean> {
+  const norm = username.toLowerCase().trim();
+  if (!norm) return false;
+
+  // 1. Check default profiles
+  if (norm === 'vincent' || norm === 'sophie') return true;
+
+  // 2. Check local profiles
+  try {
+    const rawProfiles = localStorage.getItem('expense-tracker-profiles');
+    if (rawProfiles) {
+      const profiles = JSON.parse(rawProfiles);
+      if (Array.isArray(profiles) && profiles.some((p: any) => p.username?.toLowerCase().trim() === norm)) {
+        return true;
+      }
+    }
+  } catch {
+    // Ignore storage parse error
+  }
+
+  // 3. Check all foyers in cloud & local
+  try {
+    const allFoyers = await fetchAllFoyers();
+    for (const f of allFoyers) {
+      if (f.members && Array.isArray(f.members)) {
+        if (f.members.some((m: any) => m.username?.toLowerCase().trim() === norm)) {
+          return true;
+        }
+      }
+    }
+  } catch {
+    // Best effort check
+  }
+
+  return false;
+}
+
 // Create a brand new Foyer
 export async function createNewFoyer(
   foyerName: string,
   creator: { name: string; username: string; color?: string }
 ): Promise<{ success: boolean; foyer?: Foyer; error?: string }> {
   try {
+    const normalizedUsername = creator.username.toLowerCase().trim();
+    if (await isUsernameAlreadyUsed(normalizedUsername)) {
+      return { success: false, error: 'Cet identifiant est déjà pris par un autre compte. Veuillez en choisir un différent.' };
+    }
+
     const foyerId = `foyer_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const inviteCode = generateFoyerCode(foyerName || creator.name);
 
     const newMember: FoyerMember = {
-      id: creator.username.toLowerCase().trim(),
+      id: normalizedUsername,
       name: creator.name.trim(),
-      username: creator.username.toLowerCase().trim(),
+      username: normalizedUsername,
       color: creator.color || '#0ea5e9',
       role: 'admin',
       joined_at: new Date().toISOString()
@@ -241,6 +284,11 @@ export async function joinFoyerWithCode(
   newMemberData: { name: string; username: string; color?: string }
 ): Promise<{ success: boolean; foyer?: Foyer; error?: string }> {
   try {
+    const normalizedUsername = newMemberData.username.toLowerCase().trim();
+    if (await isUsernameAlreadyUsed(normalizedUsername)) {
+      return { success: false, error: 'Cet identifiant est déjà pris par un autre compte. Veuillez en choisir un différent.' };
+    }
+
     const foyer = await fetchFoyerByCode(inviteCode);
     if (!foyer) {
       return { 
@@ -249,7 +297,6 @@ export async function joinFoyerWithCode(
       };
     }
 
-    const normalizedUsername = newMemberData.username.toLowerCase().trim();
     const existingIndex = foyer.members.findIndex(m => m.username === normalizedUsername);
 
     const memberObj: FoyerMember = {
@@ -292,9 +339,8 @@ export async function addMemberToFoyer(
   if (!foyer) return { success: false, error: 'Foyer introuvable.' };
 
   const normalizedUsername = member.username.toLowerCase().trim();
-  const exists = foyer.members.some(m => m.username === normalizedUsername);
-  if (exists) {
-    return { success: false, error: 'Ce nom d’utilisateur existe déjà dans le foyer.' };
+  if (await isUsernameAlreadyUsed(normalizedUsername)) {
+    return { success: false, error: 'Cet identifiant est déjà utilisé par un autre compte.' };
   }
 
   const newMember: FoyerMember = {
@@ -338,3 +384,180 @@ export async function removeMemberFromFoyer(
   await saveFoyerToCloudAndLocal(updatedFoyer);
   return { success: true, foyer: updatedFoyer };
 }
+
+// Fetch all Foyers (Cloud + LocalStorage merged)
+export async function fetchAllFoyers(): Promise<Foyer[]> {
+  const localMap = getLocalFoyers();
+  if (!localMap[DEFAULT_FOYER_ID]) {
+    localMap[DEFAULT_FOYER_ID] = DEFAULT_FOYER;
+  }
+
+  try {
+    const { data, error } = await (supabase.from('push_subscriptions') as any)
+      .select('subscription')
+      .like('user_id', 'foyer_id_%');
+
+    if (!error && Array.isArray(data)) {
+      for (const item of data) {
+        if (item?.subscription && item.subscription.id) {
+          const cloudFoyer = item.subscription as Foyer;
+          localMap[cloudFoyer.id] = cloudFoyer;
+        }
+      }
+      saveLocalFoyers(localMap);
+    }
+  } catch (e) {
+    console.error('Error fetching all foyers from cloud:', e);
+  }
+
+  const foyers = Object.values(localMap);
+  return foyers.sort((a, b) => {
+    if (a.id === DEFAULT_FOYER_ID) return -1;
+    if (b.id === DEFAULT_FOYER_ID) return 1;
+    return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+  });
+}
+
+// Update Foyer details (name and/or code)
+export async function updateFoyer(
+  foyerId: string,
+  updates: Partial<Pick<Foyer, 'name' | 'code'>>
+): Promise<{ success: boolean; foyer?: Foyer; error?: string }> {
+  try {
+    const existing = await fetchFoyerById(foyerId);
+    if (!existing) {
+      return { success: false, error: 'Foyer introuvable.' };
+    }
+
+    const oldCode = existing.code;
+    const newCode = updates.code ? updates.code.toUpperCase().trim() : existing.code;
+    const newName = updates.name !== undefined ? updates.name.trim() : existing.name;
+
+    const updatedFoyer: Foyer = {
+      ...existing,
+      name: newName || existing.name,
+      code: newCode || existing.code,
+    };
+
+    // If code changed, clean up old registration in push_subscriptions
+    if (oldCode && oldCode.toUpperCase().trim() !== newCode) {
+      try {
+        await (supabase.from('push_subscriptions') as any)
+          .delete()
+          .eq('user_id', `foyer_reg_${oldCode.toUpperCase().trim()}`);
+      } catch (err) {
+        console.warn('Could not delete old code reg:', err);
+      }
+    }
+
+    await saveFoyerToCloudAndLocal(updatedFoyer);
+    return { success: true, foyer: updatedFoyer };
+  } catch (e: any) {
+    return { success: false, error: e?.message || 'Erreur lors de la mise à jour du foyer.' };
+  }
+}
+
+// Delete a Foyer (Protected: cannot delete DEFAULT_FOYER_ID)
+export async function deleteFoyer(foyerId: string): Promise<{ success: boolean; error?: string }> {
+  if (foyerId === DEFAULT_FOYER_ID) {
+    return { success: false, error: 'Le foyer principal par défaut (Vincent & Sophie) ne peut pas être supprimé.' };
+  }
+
+  try {
+    const local = getLocalFoyers();
+    const foyer = local[foyerId];
+    const code = foyer?.code;
+
+    // Remove from local cache
+    delete local[foyerId];
+    saveLocalFoyers(local);
+
+    // If deleted foyer was currently active in localStorage, reset to default
+    if (getStoredActiveFoyerId() === foyerId) {
+      setStoredActiveFoyerId(DEFAULT_FOYER_ID);
+    }
+
+    // Delete from Supabase cloud
+    await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `foyer_id_${foyerId}`);
+    if (code) {
+      await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `foyer_reg_${code.toUpperCase().trim()}`);
+    }
+
+    // Broadcast deletion
+    try {
+      const channel = supabase.channel('foyer_sync_channel');
+      channel.send({
+        type: 'broadcast',
+        event: 'foyer_deleted',
+        payload: { foyerId }
+      });
+    } catch {
+      // Best effort broadcast
+    }
+
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e?.message || 'Erreur lors de la suppression du foyer.' };
+  }
+}
+
+// Update a member's role inside a foyer
+export async function updateMemberRole(
+  foyerId: string,
+  username: string,
+  newRole: 'admin' | 'member'
+): Promise<{ success: boolean; foyer?: Foyer; error?: string }> {
+  const foyer = await fetchFoyerById(foyerId);
+  if (!foyer) return { success: false, error: 'Foyer introuvable.' };
+
+  const normUser = username.toLowerCase().trim();
+  const memberIndex = foyer.members.findIndex(m => m.username === normUser);
+  if (memberIndex === -1) {
+    return { success: false, error: 'Membre introuvable dans ce foyer.' };
+  }
+
+  const updatedMembers = [...foyer.members];
+  updatedMembers[memberIndex] = {
+    ...updatedMembers[memberIndex],
+    role: newRole
+  };
+
+  const updatedFoyer: Foyer = {
+    ...foyer,
+    members: updatedMembers
+  };
+
+  await saveFoyerToCloudAndLocal(updatedFoyer);
+  return { success: true, foyer: updatedFoyer };
+}
+
+// Update a member's avatar / badge color inside a foyer
+export async function updateMemberColor(
+  foyerId: string,
+  username: string,
+  newColor: string
+): Promise<{ success: boolean; foyer?: Foyer; error?: string }> {
+  const foyer = await fetchFoyerById(foyerId);
+  if (!foyer) return { success: false, error: 'Foyer introuvable.' };
+
+  const normUser = username.toLowerCase().trim();
+  const memberIndex = foyer.members.findIndex(m => m.username === normUser);
+  if (memberIndex === -1) {
+    return { success: false, error: 'Membre introuvable dans ce foyer.' };
+  }
+
+  const updatedMembers = [...foyer.members];
+  updatedMembers[memberIndex] = {
+    ...updatedMembers[memberIndex],
+    color: newColor
+  };
+
+  const updatedFoyer: Foyer = {
+    ...foyer,
+    members: updatedMembers
+  };
+
+  await saveFoyerToCloudAndLocal(updatedFoyer);
+  return { success: true, foyer: updatedFoyer };
+}
+

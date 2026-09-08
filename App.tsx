@@ -36,7 +36,7 @@ import ChevronDownIcon from './components/icons/ChevronDownIcon';
 import PiggyBankIcon from './components/icons/PiggyBankIcon';
 import UserIcon from './components/icons/UserIcon';
 import { notifySubscriptionsDirectly } from './webpush-client';
-import { DEFAULT_FOYER_ID } from './utils/foyerService';
+import { DEFAULT_FOYER_ID, DEFAULT_FOYER } from './utils/foyerService';
 
 type UndoableAction = {
     type: 'delete' | 'update';
@@ -72,7 +72,8 @@ const MainApp: React.FC<{
     onToggleMaintenanceMode: (newState?: boolean) => void,
     loginHistory: LoginEvent[],
     currentFoyer?: Foyer,
-    onDeleteOwnAccount?: () => Promise<boolean>
+    onDeleteOwnAccount?: () => Promise<boolean>,
+    onUpdateUserColor?: (username: string, newColor: string) => Promise<boolean>
 }> = ({ 
     user, 
     onLogout, 
@@ -85,7 +86,8 @@ const MainApp: React.FC<{
     onToggleMaintenanceMode,
     loginHistory,
     currentFoyer,
-    onDeleteOwnAccount
+    onDeleteOwnAccount,
+    onUpdateUserColor
 }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<any[]>([]);
@@ -1504,6 +1506,7 @@ const MainApp: React.FC<{
                 resetTrigger={settingsResetTrigger}
                 currentFoyer={currentFoyer}
                 onDeleteOwnAccount={onDeleteOwnAccount}
+                onUpdateUserColor={onUpdateUserColor}
               />
             )}
           </div>
@@ -1561,6 +1564,7 @@ const MainApp: React.FC<{
         resetTrigger={settingsResetTrigger}
         currentFoyer={currentFoyer}
         onDeleteOwnAccount={onDeleteOwnAccount}
+        onUpdateUserColor={onUpdateUserColor}
         reminders={reminders} 
         expenses={expenses} 
         moneyPotTransactions={moneyPotTransactions}
@@ -1616,6 +1620,7 @@ const App: React.FC = () => {
     toggleBlockProfile, 
     deleteProfile, 
     deleteOwnAccount,
+    updateUserColor,
     loginHistory 
   } = useAuth();
 
@@ -1648,6 +1653,7 @@ const App: React.FC = () => {
         user={user} 
         currentFoyer={currentFoyer}
         onDeleteOwnAccount={deleteOwnAccount}
+        onUpdateUserColor={updateUserColor}
         onLogout={logout} 
         profiles={profiles} 
         onAddProfile={addProfile} 

@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Expense, Reminder, MoneyPotTransaction, Category, User } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Expense, Reminder, MoneyPotTransaction, Category, User, Foyer } from '../types';
 import { supabase } from '../supabase/client';
 import { Profile, LoginEvent } from '../hooks/useAuth';
 import ConfirmationModal from './ConfirmationModal';
 import SupabaseInstructionsModal from './SupabaseInstructionsModal';
-import { CustomCategoryIcon } from '../hooks/useCustomCategoryIcons';
+import AdminFoyersSection from './AdminFoyersSection';
 import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
 import {
   MandatoryIcon,
@@ -575,12 +575,14 @@ interface AdminAndDevTabProps {
   profiles?: Profile[];
   loginHistory?: LoginEvent[];
   loggedInUser: User;
+  currentFoyer?: Foyer;
   setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
   onSyncData?: () => Promise<void>;
   onToggleBlockProfile?: (username: string) => { success: boolean; message: string };
   onDeleteProfile?: (username: string) => boolean;
   onAddProfile?: (profile: Profile) => boolean;
   onUpdateProfilePassword?: (username: string, newPassword: string) => boolean;
+  onSwitchFoyer?: (foyerId: string) => void;
   isMaintenanceMode?: boolean;
   onToggleMaintenanceMode?: (newState?: boolean) => void;
 }
@@ -593,12 +595,14 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
   profiles = [],
   loginHistory = [],
   loggedInUser,
+  currentFoyer,
   setToastInfo,
   onSyncData,
   onToggleBlockProfile,
   onDeleteProfile,
   onAddProfile,
   onUpdateProfilePassword,
+  onSwitchFoyer,
   isMaintenanceMode = false,
   onToggleMaintenanceMode,
 }) => {
@@ -606,16 +610,9 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
   const isAuthorized = loggedInUser === User.Vincent;
 
   // --- States ---
-  // User Management Modals
-  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
-  const [newUsername, setNewUsername] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [newUserRole, setNewUserRole] = useState<User>(User.Sophie);
-  const [addUserError, setAddUserError] = useState('');
-
+  // User Management
   const [editingPasswordUser, setEditingPasswordUser] = useState<string | null>(null);
   const [editPasswordValue, setEditPasswordValue] = useState('');
-  const [deletingUser, setDeletingUser] = useState<string | null>(null);
   // Connection & latency
   const [dbStatus, setDbStatus] = useState<'connected' | 'checking' | 'error'>('connected');
   const [latencyMs, setLatencyMs] = useState<number | null>(84);
@@ -952,53 +949,6 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
   };
 
   // User Management Actions
-  const handleToggleBlock = (username: string) => {
-    if (onToggleBlockProfile) {
-      const res = onToggleBlockProfile(username);
-      setToastInfo({
-        message: res.message,
-        type: res.success ? 'info' : 'error',
-      });
-    }
-  };
-
-  const handleDeleteUserConfirm = () => {
-    if (deletingUser && onDeleteProfile) {
-      const success = onDeleteProfile(deletingUser);
-      if (success) {
-        setToastInfo({ message: `L'utilisateur « ${deletingUser} » a été supprimé.`, type: 'info' });
-      } else {
-        setToastInfo({ message: 'Impossible de supprimer cet utilisateur.', type: 'error' });
-      }
-    }
-    setDeletingUser(null);
-  };
-
-  const handleAddUserSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setAddUserError('');
-    if (!newUsername.trim() || !newPassword.trim()) {
-      setAddUserError('Veuillez remplir tous les champs.');
-      return;
-    }
-    if (onAddProfile) {
-      const success = onAddProfile({
-        username: newUsername.trim(),
-        password: newPassword.trim(),
-        user: newUserRole,
-        blocked: false,
-      });
-      if (success) {
-        setToastInfo({ message: `Utilisateur « ${newUsername.trim()} » créé avec succès.`, type: 'info' });
-        setIsAddUserModalOpen(false);
-        setNewUsername('');
-        setNewPassword('');
-      } else {
-        setAddUserError('Ce nom d’utilisateur existe déjà.');
-      }
-    }
-  };
-
   const handleUpdatePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingPasswordUser && editPasswordValue.trim() && onUpdateProfilePassword) {
@@ -1525,7 +1475,18 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
       </div>
 
       {/* ========================================================= */}
-      {/* 8. GESTION DES UTILISATEURS (BLOQUER / SUPPRIMER)         */}
+      {/* 8. ADMINISTRATION DES FOYERS (VOIR ET ADMINISTRER)       */}
+      {/* ========================================================= */}
+      <AdminFoyersSection
+        expenses={expenses}
+        reminders={reminders}
+        currentFoyer={currentFoyer}
+        setToastInfo={setToastInfo}
+        onSwitchFoyer={onSwitchFoyer}
+      />
+
+      {/* ========================================================= */}
+      {/* 9. GESTION DES UTILISATEURS (BLOQUER / SUPPRIMER)         */}
       {/* ========================================================= */}
       <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
         <div className="flex items-center justify-between gap-3">
@@ -1537,27 +1498,13 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
             </div>
             <div className="min-w-0">
               <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
-                Gestion des comptes utilisateurs
+                Gestion des comptes & mots de passe
               </h3>
               <p className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate">
-                {profiles.length} comptes enregistrés dans l’application
+                {profiles.length} comptes enregistrés — Modification des mots de passe
               </p>
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              setAddUserError('');
-              setNewUsername('');
-              setNewPassword('');
-              setIsAddUserModalOpen(true);
-            }}
-            className="px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-indigo-200/80 dark:border-indigo-800/60 shrink-0"
-          >
-            <span>➕</span>
-            <span>Nouveau compte</span>
-          </button>
         </div>
 
         {/* User Profiles List */}
@@ -1569,11 +1516,10 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
             return (
               <div key={p.username} className="py-3.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`w-10 h-10 rounded-2xl font-extrabold text-base flex items-center justify-center shrink-0 border ${
-                    p.user === User.Sophie 
-                      ? 'bg-pink-100 text-pink-600 border-pink-200 dark:bg-pink-950/60 dark:text-pink-300 dark:border-pink-900/60'
-                      : 'bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-900/60'
-                  }`}>
+                  <div 
+                    className="w-10 h-10 rounded-2xl font-extrabold text-base flex items-center justify-center shrink-0 border text-white"
+                    style={{ backgroundColor: p.color || (p.user === User.Sophie ? '#ec4899' : '#0284c7') }}
+                  >
                     {p.username.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0">
@@ -1600,47 +1546,19 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
                   </div>
                 </div>
 
-                {/* User actions */}
+                {/* User actions: only password modification */}
                 <div className="flex items-center gap-2 shrink-0">
-                  {!isVincent && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleBlock(p.username)}
-                        className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border ${
-                          isBlocked
-                            ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
-                            : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
-                        }`}
-                        title={isBlocked ? "Débloquer l'utilisateur" : "Bloquer l'utilisateur"}
-                      >
-                        <span>{isBlocked ? '🔓' : '🚫'}</span>
-                        <span>{isBlocked ? 'Débloquer' : 'Bloquer'}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setDeletingUser(p.username)}
-                        className="p-1.5 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-300 font-bold text-xs flex items-center gap-1 transition-all cursor-pointer border border-rose-200 dark:border-rose-800/60"
-                        title="Supprimer le compte"
-                      >
-                        <span>🗑️</span>
-                        <span>Supprimer</span>
-                      </button>
-                    </>
-                  )}
-
                   <button
                     type="button"
                     onClick={() => {
                       setEditingPasswordUser(p.username);
                       setEditPasswordValue('');
                     }}
-                    className="p-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1 transition-all cursor-pointer"
+                    className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
                     title="Modifier le mot de passe"
                   >
                     <span>🔑</span>
-                    <span>MDP</span>
+                    <span>Modifier mot de passe</span>
                   </button>
                 </div>
               </div>
@@ -1750,79 +1668,8 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
       </div>
 
       {/* ========================================================= */}
-      {/* USER MANAGEMENT MODALS (ADD, EDIT PASSWORD, DELETE)       */}
+      {/* USER MANAGEMENT MODALS (EDIT PASSWORD)                    */}
       {/* ========================================================= */}
-      {isAddUserModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[999] flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-6 w-full max-w-sm space-y-4 border border-slate-100 dark:border-slate-700">
-            <div className="space-y-1">
-              <h4 className="font-extrabold text-lg text-slate-900 dark:text-white">Ajouter un utilisateur</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Créez un nouveau profil pour accéder à l'application.</p>
-            </div>
-            <form onSubmit={handleAddUserSubmit} className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Nom d’utilisateur
-                </label>
-                <input
-                  type="text"
-                  placeholder="ex: sophie"
-                  value={newUsername}
-                  onChange={e => setNewUsername(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  autoFocus
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Mot de passe
-                </label>
-                <input
-                  type="text"
-                  placeholder="••••••••"
-                  value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Rôle associé
-                </label>
-                <select
-                  value={newUserRole}
-                  onChange={e => setNewUserRole(e.target.value as User)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value={User.Sophie}>Sophie</option>
-                  <option value={User.Vincent}>Vincent (Admin)</option>
-                </select>
-              </div>
-
-              {addUserError && <p className="text-xs text-rose-500 font-bold">{addUserError}</p>}
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddUserModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl font-bold text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors"
-                >
-                  Créer le compte
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {editingPasswordUser && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[999] flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-6 w-full max-w-sm space-y-4 border border-slate-100 dark:border-slate-700">

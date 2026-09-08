@@ -15,6 +15,7 @@ import ConfirmationModal from './ConfirmationModal';
 import { TabId } from './BottomNavigation';
 import BottomNavigation from './BottomNavigation';
 import { useTheme } from '../hooks/useTheme';
+import { USER_COLORS } from '../utils/userColors';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -53,6 +54,7 @@ interface SettingsModalProps {
   initialView?: 'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin';
   currentFoyer?: Foyer;
   onDeleteOwnAccount?: () => Promise<boolean>;
+  onUpdateUserColor?: (username: string, newColor: string) => Promise<boolean>;
   resetTrigger?: number;
 }
 
@@ -470,6 +472,85 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         </div>
                         <VibeSelector />
                     </div>
+
+                    {/* Card 3: Couleur des profils & avatars */}
+                    <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 rounded-2xl bg-pink-50 dark:bg-pink-950/60 flex items-center justify-center text-[#ec4899] dark:text-pink-400 shrink-0">
+                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                                    Couleur des profils & avatars
+                                </h3>
+                                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                                    Personnalisez la couleur d'avatar de chaque membre du foyer.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4 pt-1">
+                            {props.profiles && props.profiles.length > 0 ? (
+                                props.profiles.map((p) => {
+                                    const currentColor = p.color || (p.user === User.Sophie ? '#ec4899' : '#0284c7');
+                                    const initial = p.username.charAt(0).toUpperCase() || 'U';
+
+                                    return (
+                                        <div key={p.username} className="p-4 rounded-2xl bg-slate-50/70 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700 space-y-3">
+                                            <div className="flex items-center gap-3">
+                                                <div 
+                                                    className="w-10 h-10 rounded-full font-extrabold flex items-center justify-center text-sm shrink-0 text-white shadow-xs transition-transform hover:scale-105"
+                                                    style={{ backgroundColor: currentColor }}
+                                                >
+                                                    {initial}
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-sm text-slate-900 dark:text-white">
+                                                        {p.username} {p.user && p.user !== p.username ? `(${p.user})` : ''}
+                                                    </div>
+                                                    <div className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                                                        Sélectionnez une couleur d'avatar :
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-2.5 pt-1">
+                                                {USER_COLORS.map((c) => {
+                                                    const isSelected = currentColor.toLowerCase() === c.value.toLowerCase();
+                                                    return (
+                                                        <button
+                                                            key={c.value}
+                                                            type="button"
+                                                            onClick={async () => {
+                                                                if (props.onUpdateUserColor) {
+                                                                    await props.onUpdateUserColor(p.username, c.value);
+                                                                    props.setToastInfo({
+                                                                        message: `Couleur modifiée pour ${p.username} (${c.label})`,
+                                                                        type: 'info'
+                                                                    });
+                                                                }
+                                                            }}
+                                                            className={`w-7 h-7 rounded-full transition-all cursor-pointer ${c.bgClass} ${
+                                                                isSelected 
+                                                                    ? `ring-3 ring-offset-2 ring-offset-white dark:ring-offset-slate-800 ${c.ringClass} scale-110 shadow-sm` 
+                                                                    : 'opacity-70 hover:opacity-100 hover:scale-105'
+                                                            }`}
+                                                            title={`${c.label} (${p.username})`}
+                                                            aria-label={`Choisir ${c.label} pour ${p.username}`}
+                                                        />
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <p className="text-xs text-slate-400">Aucun profil trouvé.</p>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -615,6 +696,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         profiles={props.profiles}
                         loginHistory={props.loginHistory}
                         loggedInUser={props.loggedInUser}
+                        currentFoyer={props.currentFoyer}
                         setToastInfo={props.setToastInfo}
                         onSyncData={props.onSyncData}
                         onToggleBlockProfile={props.onToggleBlockProfile}

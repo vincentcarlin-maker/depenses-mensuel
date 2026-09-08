@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { User, Foyer } from '../types';
 import { useLocalStorage } from './useLocalStorage';
 import { supabase } from '../supabase/client';
@@ -10,7 +10,9 @@ import {
     joinFoyerWithCode, 
     saveFoyerToCloudAndLocal,
     getStoredActiveFoyerId,
-    setStoredActiveFoyerId
+    setStoredActiveFoyerId,
+    isUsernameAlreadyUsed,
+    updateMemberColor
 } from '../utils/foyerService';
 
 const SESSION_KEY = 'expense-app-session-v2';
@@ -30,6 +32,7 @@ export interface Profile {
 export interface LoginEvent {
     user: User | string;
     timestamp: string;
+    foyer_id?: string;
 }
 
 interface Session {
@@ -79,19 +82,29 @@ export const useAuth = () => {
             return;
         }
 
+        const activeFoyerId = currentFoyer?.id || getStoredActiveFoyerId() || DEFAULT_FOYER_ID;
+
         try {
-            const { error } = await supabase.from('login_logs').insert({
+            // First attempt with foyer_id
+            const { error } = await (supabase.from('login_logs') as any).insert({
                 user_name: String(userName),
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                foyer_id: activeFoyerId
             });
 
-            if (!error) {
-                sessionStorage.setItem(storageKey, now.toString());
+            // Fallback if foyer_id column does not exist yet in Supabase table
+            if (error) {
+                await (supabase.from('login_logs') as any).insert({
+                    user_name: String(userName),
+                    timestamp: new Date().toISOString()
+                });
             }
+
+            sessionStorage.setItem(storageKey, now.toString());
         } catch {
             // Ignore logging errors
         }
-    }, []);
+    }, [currentFoyer]);
 
     // Charge l'historique global depuis Supabase
     useEffect(() => {
@@ -108,7 +121,8 @@ export const useAuth = () => {
             if (!error && data) {
                 const formattedHistory: LoginEvent[] = data.map((log: any) => ({
                     user: log.user_name,
-                    timestamp: log.timestamp
+                    timestamp: log.timestamp,
+                    foyer_id: log.foyer_id
                 }));
                 setLoginHistory(formattedHistory);
             }
@@ -127,7 +141,8 @@ export const useAuth = () => {
                     if (isDuplicate) return prev;
                     return [{
                         user: newLog.user_name,
-                        timestamp: newLog.timestamp
+                        timestamp: newLog.timestamp,
+                        foyer_id: newLog.foyer_id
                     }, ...prev];
                 });
             })
@@ -137,6 +152,38 @@ export const useAuth = () => {
             supabase.removeChannel(channel);
         };
     }, []);
+
+    // Filtrer l'historique strictement réservé au foyer actuellement connecté
+    const foyerLoginHistory = useMemo(() => {
+        if (!currentFoyer) return [];
+
+        const allowedUsernames = new Set<string>();
+        // Foyer par défaut Vincent & Sophie
+        if (currentFoyer.id === DEFAULT_FOYER_ID) {
+            allowedUsernames.add('vincent');
+            allowedUsernames.add('sophie');
+            allowedUsernames.add(User.Vincent.toLowerCase());
+            allowedUsernames.add(User.Sophie.toLowerCase());
+        }
+
+        if (currentFoyer.members && Array.isArray(currentFoyer.members)) {
+            currentFoyer.members.forEach(m => {
+                if (m.username) allowedUsernames.add(m.username.toLowerCase().trim());
+                if (m.name) allowedUsernames.add(m.name.toLowerCase().trim());
+                if (m.id) allowedUsernames.add(m.id.toLowerCase().trim());
+            });
+        }
+
+        return loginHistory.filter(event => {
+            // Si le log a un foyer_id explicite
+            if (event.foyer_id) {
+                return event.foyer_id === currentFoyer.id;
+            }
+            // Fallback : l'utilisateur appartient aux membres de ce foyer
+            const eventUserNorm = String(event.user).toLowerCase().trim();
+            return allowedUsernames.has(eventUserNorm);
+        });
+    }, [loginHistory, currentFoyer]);
 
     // Initial session load
     useEffect(() => {
@@ -420,8 +467,8 @@ export const useAuth = () => {
     }): Promise<{ success: boolean; error?: string; foyer?: Foyer }> => {
         const normalizedUsername = params.username.toLowerCase().trim();
 
-        if (profiles.some(p => p.username === normalizedUsername)) {
-            return { success: false, error: 'Cet identifiant est déjà pris. Veuillez en choisir un autre.' };
+        if (profiles.some(p => p.username === normalizedUsername) || await isUsernameAlreadyUsed(normalizedUsername)) {
+            return { success: false, error: 'Cet identifiant est déjà utilisé par un autre compte. Veuillez en choisir un autre.' };
         }
 
         const createRes = await createNewFoyer(params.foyerName, {
@@ -495,8 +542,8 @@ export const useAuth = () => {
     }): Promise<{ success: boolean; error?: string; foyer?: Foyer }> => {
         const normalizedUsername = params.username.toLowerCase().trim();
 
-        if (profiles.some(p => p.username === normalizedUsername)) {
-            return { success: false, error: 'Cet identifiant est déjà pris. Veuillez en choisir un autre.' };
+        if (profiles.some(p => p.username === normalizedUsername) || await isUsernameAlreadyUsed(normalizedUsername)) {
+            return { success: false, error: 'Cet identifiant est déjà utilisé par un autre compte. Veuillez en choisir un autre.' };
         }
 
         const joinRes = await joinFoyerWithCode(params.inviteCode, {
@@ -665,6 +712,28 @@ export const useAuth = () => {
         return { success: true };
     }, [user, profiles, setProfiles, syncProfilesToCloud, currentFoyer, logout]);
     
+    // Mise à jour de la couleur d'un utilisateur (profil + membre de foyer)
+    const updateUserColor = useCallback(async (username: string, newColor: string): Promise<boolean> => {
+        const normUser = username.toLowerCase().trim();
+
+        // 1. Mettre à jour profiles
+        const updatedProfiles = profiles.map(p => 
+            p.username.toLowerCase().trim() === normUser ? { ...p, color: newColor } : p
+        );
+        setProfiles(updatedProfiles);
+        syncProfilesToCloud(updatedProfiles);
+
+        // 2. Mettre à jour currentFoyer
+        if (currentFoyer) {
+            const res = await updateMemberColor(currentFoyer.id, normUser, newColor);
+            if (res.success && res.foyer) {
+                setCurrentFoyer(res.foyer);
+            }
+        }
+
+        return true;
+    }, [profiles, setProfiles, syncProfilesToCloud, currentFoyer]);
+
     return { 
         user, 
         currentFoyer,
@@ -683,6 +752,8 @@ export const useAuth = () => {
         registerWithNewFoyer,
         registerWithJoinFoyer,
         updateFoyer,
-        loginHistory 
+        updateUserColor,
+        loginHistory: foyerLoginHistory,
+        allLoginHistory: loginHistory
     };
 };

@@ -8,6 +8,7 @@ import { APP_LOGO_BASE64 } from '../constants/logoBase64';
 import CoinOIcon from './icons/CoinOIcon';
 import { fetchFoyerByCode } from '../utils/foyerService';
 import { Foyer } from '../types';
+import { USER_COLORS } from '../utils/userColors';
 
 const Logo = () => {
     return (
@@ -26,15 +27,6 @@ interface LoginProps {
     onRegisterNewFoyer?: (params: { name: string; username: string; password: string; foyerName: string; color?: string }) => Promise<{ success: boolean; error?: string; foyer?: Foyer }>;
     onRegisterJoinFoyer?: (params: { name: string; username: string; password: string; inviteCode: string; color?: string }) => Promise<{ success: boolean; error?: string; foyer?: Foyer }>;
 }
-
-const AVATAR_COLORS = [
-    { label: 'Bleu ciel', value: '#0ea5e9', bgClass: 'bg-sky-500' },
-    { label: 'Rose poudré', value: '#ec4899', bgClass: 'bg-pink-500' },
-    { label: 'Émeraude', value: '#10b981', bgClass: 'bg-emerald-500' },
-    { label: 'Violet', value: '#8b5cf6', bgClass: 'bg-purple-500' },
-    { label: 'Ambre / Orange', value: '#f97316', bgClass: 'bg-orange-500' },
-    { label: 'Indigo', value: '#6366f1', bgClass: 'bg-indigo-500' },
-];
 
 export const Login: React.FC<LoginProps> = ({ 
     onLogin, 
@@ -405,7 +397,7 @@ export const Login: React.FC<LoginProps> = ({
                                         Couleur de votre avatar
                                     </label>
                                     <div className="flex flex-wrap gap-2.5">
-                                        {AVATAR_COLORS.map(c => (
+                                        {USER_COLORS.map(c => (
                                             <button
                                                 key={c.value}
                                                 type="button"
@@ -581,7 +573,7 @@ export const Login: React.FC<LoginProps> = ({
                                         Couleur de votre avatar
                                     </label>
                                     <div className="flex flex-wrap gap-2.5">
-                                        {AVATAR_COLORS.map(c => (
+                                        {USER_COLORS.map(c => (
                                             <button
                                                 key={c.value}
                                                 type="button"

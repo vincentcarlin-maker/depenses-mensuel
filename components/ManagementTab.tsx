@@ -169,53 +169,27 @@ const DataManagement: React.FC<{ expenses: Expense[] }> = ({ expenses }) => {
 const UserManagement: React.FC<{
     profiles: Profile[];
     loggedInUser: User;
-    onAddProfile: (profile: Profile) => boolean;
+    onAddProfile?: (profile: Profile) => boolean;
     onUpdateProfilePassword: (username: string, newPassword: string) => boolean;
-    onDeleteProfile: (username: string) => boolean;
+    onDeleteProfile?: (username: string) => boolean;
     currentFoyer?: Foyer;
     onDeleteOwnAccount?: () => Promise<boolean>;
     setToastInfo?: (info: { message: string; type: 'info' | 'error' }) => void;
-}> = ({ profiles, onAddProfile, onUpdateProfilePassword, onDeleteProfile, loggedInUser, currentFoyer, onDeleteOwnAccount, setToastInfo }) => {
-    const [newUsername, setNewUsername] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [selectedUser, setSelectedUser] = useState<User>(User.Sophie);
-    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+}> = ({ profiles, onUpdateProfilePassword, currentFoyer, onDeleteOwnAccount, setToastInfo }) => {
     const [editingUser, setEditingUser] = useState<Profile | null>(null);
     const [editingPassword, setEditingPassword] = useState('');
-    const [deletingUser, setDeletingUser] = useState<Profile | null>(null);
     const [isDeletingOwnAccount, setIsDeletingOwnAccount] = useState(false);
-    const [error, setError] = useState('');
-
-    const handleAddUser = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newUsername.trim() || !newPassword.trim()) {
-            setError("Le nom d'utilisateur et le mot de passe sont requis.");
-            return;
-        }
-        const success = onAddProfile({ username: newUsername, password: newPassword, user: selectedUser });
-        if (success) {
-            setNewUsername('');
-            setNewPassword('');
-            setError('');
-        } else {
-            setError(`L'utilisateur « ${newUsername} » existe déjà.`);
-        }
-    };
 
     const handleUpdatePassword = () => {
         if (editingUser && editingPassword.trim()) {
             onUpdateProfilePassword(editingUser.username, editingPassword);
+            if (setToastInfo) {
+                setToastInfo({ message: `Mot de passe mis à jour pour ${editingUser.username} !`, type: 'info' });
+            }
             setEditingUser(null);
             setEditingPassword('');
         }
     };
-    
-    const handleDeleteUser = () => {
-        if(deletingUser) {
-            onDeleteProfile(deletingUser.username);
-            setDeletingUser(null);
-        }
-    }
 
     return (
         <div className="space-y-5 sm:space-y-6">
@@ -272,7 +246,7 @@ const UserManagement: React.FC<{
                 </div>
             </div>
 
-            {/* Card 1: Gestion des utilisateurs */}
+            {/* Card 1: Gestion des mots de passe des utilisateurs */}
             <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -286,10 +260,10 @@ const UserManagement: React.FC<{
                         </div>
                         <div>
                             <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
-                                Gestion des utilisateurs
+                                Utilisateurs & Mots de passe
                             </h3>
                             <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                                Ajouter, modifier ou supprimer des profils.
+                                Modification des mots de passe des profils du foyer.
                             </p>
                         </div>
                     </div>
@@ -305,166 +279,48 @@ const UserManagement: React.FC<{
                         const initial = p.username.charAt(0).toUpperCase() || 'U';
                         const isSophie = p.user === User.Sophie;
                         const isPink = isSophie || idx % 2 === 0;
-                        const avatarBg = isPink
+                        const avatarBg = p.color
+                            ? ''
+                            : isPink
                             ? 'bg-[#fce7f3] dark:bg-pink-950/70 text-[#ec4899] dark:text-pink-300' 
                             : 'bg-[#e0f2fe] dark:bg-sky-950/70 text-[#0284c7] dark:text-sky-300';
 
                         return (
-                            <div key={p.username} className="flex items-center justify-between p-2 rounded-2xl hover:bg-slate-50/60 dark:hover:bg-slate-700/30 transition-colors">
+                            <div key={p.username} className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50/60 dark:hover:bg-slate-700/30 transition-colors border border-slate-100/60 dark:border-slate-700/40">
                                 <div className="flex items-center gap-3.5 min-w-0">
-                                    <div className={`w-10 h-10 rounded-full ${avatarBg} font-extrabold flex items-center justify-center text-sm shrink-0`}>
+                                    <div 
+                                        className={`w-10 h-10 rounded-full font-extrabold flex items-center justify-center text-sm shrink-0 text-white ${avatarBg}`}
+                                        style={p.color ? { backgroundColor: p.color } : undefined}
+                                    >
                                         {initial}
                                     </div>
-                                    <span className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base truncate">
-                                        {p.username} {p.user && p.user !== p.username ? `(${p.user})` : ''}
-                                    </span>
+                                    <div className="min-w-0">
+                                        <span className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base truncate block">
+                                            {p.username} {p.user && p.user !== p.username ? `(${p.user})` : ''}
+                                        </span>
+                                        <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                                            Profil actif
+                                        </span>
+                                    </div>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
                                     <button 
                                         type="button"
                                         onClick={() => { setEditingUser(p); setEditingPassword(''); }} 
-                                        className="w-10 h-10 rounded-xl bg-blue-50/80 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 border border-blue-100/60 dark:border-blue-800/40 flex items-center justify-center text-[#2563eb] dark:text-blue-400 transition-all active:scale-95 cursor-pointer shadow-2xs"
+                                        className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 border border-blue-100/60 dark:border-blue-800/40 flex items-center gap-1.5 text-[#2563eb] dark:text-blue-400 font-bold text-xs transition-all active:scale-95 cursor-pointer shadow-2xs"
                                         title={`Modifier le mot de passe de ${p.username}`}
-                                        aria-label={`Modifier le mot de passe de ${p.username}`}
                                     >
-                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                                         </svg>
-                                    </button>
-                                    <button 
-                                        type="button"
-                                        onClick={() => setDeletingUser(p)} 
-                                        className="w-10 h-10 rounded-xl bg-[#fee2e2] dark:bg-rose-950/60 hover:bg-[#fecaca] dark:hover:bg-rose-900/80 border border-rose-200 dark:border-rose-800/60 flex items-center justify-center text-[#ef4444] dark:text-rose-400 transition-all active:scale-95 cursor-pointer shadow-2xs"
-                                        title={`Supprimer le profil ${p.username}`}
-                                        aria-label={`Supprimer le profil ${p.username}`}
-                                    >
-                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M3 6h18" />
-                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                            <line x1="10" y1="11" x2="10" y2="17" />
-                                            <line x1="14" y1="11" x2="14" y2="17" />
-                                        </svg>
+                                        <span>Modifier mot de passe</span>
                                     </button>
                                 </div>
                             </div>
                         );
                     })}
                 </div>
-            </div>
-
-            {/* Card 2: Ajouter un utilisateur */}
-            <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
-                            <svg className="w-6 h-6 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
-                                Ajouter un utilisateur
-                            </h3>
-                            <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                                Créez un nouveau profil pour DuoBudget.
-                            </p>
-                        </div>
-                    </div>
-                    {/* Cute pastel dots on top right */}
-                    <div className="flex gap-1 opacity-80">
-                        <div className="w-2.5 h-2.5 rounded-full bg-cyan-200 dark:bg-cyan-900/60" />
-                        <div className="w-2.5 h-2.5 rounded-full bg-purple-200 dark:bg-purple-900/60" />
-                        <div className="w-2.5 h-2.5 rounded-full bg-pink-200 dark:bg-pink-900/60" />
-                    </div>
-                </div>
-
-                <form onSubmit={handleAddUser} className="space-y-3 pt-1">
-                    {/* Input 1: Username */}
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                        </div>
-                        <input 
-                            type="text" 
-                            placeholder="Nom d'utilisateur" 
-                            value={newUsername} 
-                            onChange={e => setNewUsername(e.target.value)} 
-                            className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-[#f8fafc] dark:bg-slate-700/50 border border-slate-100 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all" 
-                        />
-                    </div>
-
-                    {/* Input 2: Password */}
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                        </div>
-                        <input 
-                            type={isPasswordVisible ? "text" : "password"} 
-                            placeholder="Mot de passe" 
-                            value={newPassword} 
-                            onChange={e => setNewPassword(e.target.value)} 
-                            className="w-full pl-11 pr-11 py-3.5 rounded-2xl bg-[#f8fafc] dark:bg-slate-700/50 border border-slate-100 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all" 
-                        />
-                        <button 
-                            type="button" 
-                            onClick={() => setIsPasswordVisible(!isPasswordVisible)} 
-                            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors cursor-pointer"
-                            aria-label={isPasswordVisible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-                        >
-                            {isPasswordVisible ? (
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                                </svg>
-                            ) : (
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                            )}
-                        </button>
-                    </div>
-
-                    {/* Input 3: Select Sophie / Vincent */}
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                        </div>
-                        <select 
-                            value={selectedUser} 
-                            onChange={e => setSelectedUser(e.target.value as User)} 
-                            className="w-full pl-11 pr-10 py-3.5 rounded-2xl bg-[#f8fafc] dark:bg-slate-700/50 border border-slate-100 dark:border-slate-700 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 appearance-none transition-all cursor-pointer"
-                        >
-                            {Object.values(User).map(u => (
-                                <option key={u} value={u}>{u}</option>
-                            ))}
-                        </select>
-                        <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                    </div>
-
-                    {error && <p className="text-xs text-rose-500 font-bold px-1">{error}</p>}
-
-                    {/* Submit button: Vibrant cyan button matching screenshot */}
-                    <button 
-                        type="submit" 
-                        className="w-full py-3.5 px-4 rounded-2xl bg-[#00c5eb] hover:bg-[#00b4d8] active:bg-[#0096c7] text-white font-bold text-base flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.99] cursor-pointer mt-2"
-                    >
-                        <div className="w-5 h-5 rounded-full border-2 border-white flex items-center justify-center font-extrabold text-xs">
-                            +
-                        </div>
-                        <span>Ajouter</span>
-                    </button>
-                </form>
             </div>
 
             {/* Edit Modal */}
@@ -494,7 +350,7 @@ const UserManagement: React.FC<{
                             <button 
                                 type="button"
                                 onClick={handleUpdatePassword} 
-                                className="px-5 py-2.5 rounded-xl font-bold text-sm bg-[#00c5eb] hover:bg-[#00b4d8] text-white shadow-xs transition-colors"
+                                className="px-5 py-2.5 rounded-xl font-bold text-sm bg-sky-500 hover:bg-sky-600 text-white shadow-xs transition-colors"
                             >
                                 Enregistrer
                             </button>
@@ -503,15 +359,6 @@ const UserManagement: React.FC<{
                 </div>
             )}
             
-            {/* Delete Confirmation */}
-            <ConfirmationModal
-                isOpen={!!deletingUser}
-                onClose={() => setDeletingUser(null)}
-                onConfirm={handleDeleteUser}
-                title="Confirmer la suppression"
-                message={`Êtes-vous sûr de vouloir supprimer l'utilisateur « ${deletingUser?.username} » ? Cette action est irréversible.`}
-            />
-
             {/* Store Policy: Delete own account option */}
             {onDeleteOwnAccount && (
                 <div className="pt-4 border-t border-slate-100 dark:border-slate-700/60">
