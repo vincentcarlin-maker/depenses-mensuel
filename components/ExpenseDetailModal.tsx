@@ -63,8 +63,7 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
-  const resolvedVisual = getVisual(expense.category, expense.description);
-  const visual = resolvedVisual || CategoryVisuals[expense.category] || CategoryVisuals["Divers"];
+  const visual = getVisual(expense.category, expense.description);
   
   const lowerCaseDesc = expense.description.toLowerCase();
   const isChristmas = (expense.category === 'Divers' && /no[uëe]l/i.test(expense.description)) || (expense.category === 'Cadeau' && /no[uëe]l/i.test(expense.description));
@@ -167,7 +166,7 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
 
         {/* Top Header Banner & Category Icon */}
         <div className="relative shrink-0">
-          <div className={`w-full h-16 sm:h-20 ${visual.bannerBg} relative`}>
+          <div className={`w-full h-16 sm:h-20 ${visual.bannerBg || visual.badgeBg || 'bg-slate-100 dark:bg-slate-700/60'} relative`}>
             {/* Close Button */}
             <button 
               onClick={onClose} 

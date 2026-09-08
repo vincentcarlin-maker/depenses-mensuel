@@ -10,13 +10,15 @@ export interface KeywordRule {
 }
 
 const DEFAULT_STORAGE_KEY = 'keyword_icon_rules';
+const DEFAULT_FOYER_ID = 'foyer_vincent_sophie';
 
 export function useKeywordRules(foyerId?: string) {
-  const storageKey = foyerId ? `keyword_icon_rules_${foyerId}` : DEFAULT_STORAGE_KEY;
+  const normalizedFoyerId = (!foyerId || foyerId === DEFAULT_FOYER_ID) ? undefined : foyerId;
+  const storageKey = normalizedFoyerId ? `keyword_icon_rules_${normalizedFoyerId}` : DEFAULT_STORAGE_KEY;
 
   const [rules, setRules] = useState<KeywordRule[]>(() => {
     try {
-      const saved = localStorage.getItem(storageKey);
+      const saved = localStorage.getItem(storageKey) || localStorage.getItem(DEFAULT_STORAGE_KEY);
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -28,7 +30,7 @@ export function useKeywordRules(foyerId?: string) {
   // Keep state in sync when foyerId / storageKey changes
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(storageKey);
+      const saved = localStorage.getItem(storageKey) || localStorage.getItem(DEFAULT_STORAGE_KEY);
       setRules(saved ? JSON.parse(saved) : []);
     } catch {
       setRules([]);
@@ -38,11 +40,14 @@ export function useKeywordRules(foyerId?: string) {
   // Sync to Supabase & Broadcast
   const syncToCloud = useCallback(async (updatedRules: KeywordRule[]) => {
     localStorage.setItem(storageKey, JSON.stringify(updatedRules));
+    if (storageKey !== DEFAULT_STORAGE_KEY) {
+      localStorage.setItem(DEFAULT_STORAGE_KEY, JSON.stringify(updatedRules));
+    }
     if (channelRef.current) {
       channelRef.current.send({
         type: 'broadcast',
         event: 'keyword_icon_rules_changed',
-        payload: { rules: updatedRules, foyerId }
+        payload: { rules: updatedRules, foyerId: foyerId || DEFAULT_FOYER_ID }
       });
     }
     try {
@@ -51,6 +56,13 @@ export function useKeywordRules(foyerId?: string) {
         value: JSON.stringify(updatedRules),
         updated_at: new Date().toISOString()
       });
+      if (storageKey !== DEFAULT_STORAGE_KEY) {
+        await (supabase.from('app_settings') as any).upsert({
+          key: DEFAULT_STORAGE_KEY,
+          value: JSON.stringify(updatedRules),
+          updated_at: new Date().toISOString()
+        });
+      }
     } catch (e) {
       console.warn(`Could not sync ${storageKey} to Supabase app_settings:`, e);
     }
@@ -60,20 +72,39 @@ export function useKeywordRules(foyerId?: string) {
   useEffect(() => {
     const fetchFromCloud = async () => {
       try {
-        const { data, error } = await (supabase.from('app_settings') as any)
-          .select('value')
-          .eq('key', storageKey)
-          .maybeSingle();
+        const keysToFetch = normalizedFoyerId 
+          ? [storageKey] 
+          : ['keyword_icon_rules', 'keyword_icon_rules_foyer_vincent_sophie'];
 
-        if (!error && data && (data as any).value) {
-          const parsed = JSON.parse((data as any).value);
-          if (Array.isArray(parsed)) {
-            setRules(parsed);
-            localStorage.setItem(storageKey, JSON.stringify(parsed));
+        const { data, error } = await (supabase.from('app_settings') as any)
+          .select('key, value')
+          .in('key', keysToFetch);
+
+        if (!error && data && data.length > 0) {
+          let combined: KeywordRule[] = [];
+          data.forEach((row: any) => {
+            if (row.value) {
+              try {
+                const parsed = JSON.parse(row.value);
+                if (Array.isArray(parsed)) {
+                  combined = [...combined, ...parsed];
+                }
+              } catch {}
+            }
+          });
+
+          const uniqueMap = new Map<string, KeywordRule>();
+          combined.forEach(item => {
+            if (item.keyword) {
+              uniqueMap.set(item.keyword.toLowerCase().trim(), item);
+            }
+          });
+
+          const deduplicated = Array.from(uniqueMap.values());
+          if (deduplicated.length > 0) {
+            setRules(deduplicated);
+            localStorage.setItem(storageKey, JSON.stringify(deduplicated));
           }
-        } else if (!error && !data) {
-          // No cloud data yet for this foyer: ensure state is empty
-          setRules([]);
         }
       } catch {
         // ignore
@@ -91,13 +122,13 @@ export function useKeywordRules(foyerId?: string) {
     channel
       .on('broadcast', { event: 'keyword_icon_rules_changed' }, (payload: any) => {
         const data = payload?.payload || payload;
-        if (data && Array.isArray(data.rules) && (!data.foyerId || data.foyerId === foyerId)) {
+        if (data && Array.isArray(data.rules)) {
           setRules(data.rules);
           localStorage.setItem(storageKey, JSON.stringify(data.rules));
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'app_settings' }, (payload: any) => {
-        if (payload.new && payload.new.key === storageKey && payload.new.value) {
+        if (payload.new && (payload.new.key === storageKey || payload.new.key === DEFAULT_STORAGE_KEY) && payload.new.value) {
           try {
             const parsed = JSON.parse(payload.new.value);
             if (Array.isArray(parsed)) {
@@ -116,7 +147,7 @@ export function useKeywordRules(foyerId?: string) {
         supabase.removeChannel(channel);
       }
     };
-  }, [storageKey, foyerId]);
+  }, [storageKey, normalizedFoyerId, foyerId]);
 
   const addRule = useCallback((keyword: string, iconId: string, color: string) => {
     const trimmed = keyword.trim();

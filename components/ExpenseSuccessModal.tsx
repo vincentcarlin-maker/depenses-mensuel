@@ -14,6 +14,7 @@ import {
     PalmTreeIcon, 
     PillIcon 
 } from './icons/CategoryIcons';
+import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
 
 interface ExpenseSuccessModalProps {
   isOpen: boolean;
@@ -55,6 +56,7 @@ export const ExpenseSuccessModal: React.FC<ExpenseSuccessModalProps> = ({
   title,
   subtitle,
 }) => {
+  const { getVisual } = useCategoryVisuals();
   const [isRendered, setIsRendered] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
@@ -104,7 +106,7 @@ export const ExpenseSuccessModal: React.FC<ExpenseSuccessModalProps> = ({
 
   if (!isRendered || !expense) return null;
 
-  const visual = CategoryVisuals[expense.category] || CategoryVisuals["Divers"];
+  const visual = getVisual(expense.category, expense.description);
   const CategoryIcon = visual.icon;
 
   const isIncome = expense.amount < 0;
@@ -181,7 +183,7 @@ export const ExpenseSuccessModal: React.FC<ExpenseSuccessModalProps> = ({
         {/* Carte récapitulative de la dépense enregistrée */}
         <div className="mt-5 bg-[#f8fafc] dark:bg-slate-700/50 border border-slate-100/90 dark:border-slate-700 rounded-2xl p-3.5 flex items-center justify-between gap-3 text-left">
           {/* Icône de catégorie dans son badge rond coloré */}
-          <div className={`w-11 h-11 rounded-full ${visual.bg} ${visual.textColor} flex items-center justify-center shrink-0`}>
+          <div className={`w-11 h-11 rounded-full ${visual.badgeBg || visual.color} ${visual.textColor} flex items-center justify-center shrink-0`}>
             <CategoryIcon className="w-6 h-6" />
           </div>
 

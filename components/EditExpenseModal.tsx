@@ -21,6 +21,7 @@ import {
     PalmTreeIcon,
     PillIcon
 } from './icons/CategoryIcons';
+import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; bgColor: string; borderColor: string } } = {
   "Dépenses récurrentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
@@ -73,6 +74,7 @@ const toDatetimeLocal = (isoString: string): string => {
 };
 
 const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, onUpdateExpense, onDeleteExpense, onClose, categories, groceryStores, cars, heatingTypes, loggedInUser, onlineUsers = [], onAddExpense, foyerMembers }) => {
+    const { getVisual } = useCategoryVisuals();
     const members = useMemo(() => foyerMembers && foyerMembers.length > 0 ? foyerMembers : DEFAULT_FOYER.members, [foyerMembers]);
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState(Math.abs(expense.amount).toString());
@@ -157,11 +159,16 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
         } else if (expense.category === 'Chauffage') {
             const typeRegex = /\s\(([^)]+)\)$/;
             const match = expense.description.match(typeRegex);
-            if (match) setHeatingType(match[1]);
+            if (match) {
+                setHeatingType(match[1]);
+            } else {
+                setHeatingType(heatingTypes && heatingTypes.length > 0 ? heatingTypes[0] : 'Chauffage');
+            }
         } else if (expense.category === 'Réparation voitures') {
             const carRegex = /\s\(([^)]+)\)$/;
             const match = expense.description.match(carRegex);
-            if (match && cars.includes(match[1])) {
+            const effectiveCars = cars && cars.length > 0 ? cars : ["Voiture"];
+            if (match && (effectiveCars.includes(match[1]) || match[1] === 'Voiture')) {
                 setRepairedCar(match[1]);
                 let remaining = expense.description.replace(carRegex, '').trim();
                 
@@ -471,7 +478,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
     };
 
     const heatingOptions = useMemo(() => {
-        const options = new Set(heatingTypes);
+        const options = new Set(heatingTypes && heatingTypes.length > 0 ? heatingTypes : ["Chauffage"]);
         if (heatingType && !options.has(heatingType)) {
             options.add(heatingType);
         }
@@ -479,7 +486,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
     }, [heatingTypes, heatingType]);
     
     const carOptions = useMemo(() => {
-        const options = new Set(cars);
+        const options = new Set(cars && cars.length > 0 ? cars : ["Voiture"]);
         if (category === 'Réparation voitures' && repairedCar && !options.has(repairedCar)) {
             options.add(repairedCar);
         }
@@ -607,7 +614,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                             </label>
                             <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
                                 {categories.map((cat) => {
-                                    const visual = CategoryVisuals[cat] || CategoryVisuals["Divers"];
+                                    const visual = getVisual(cat);
                                     const Icon = visual.icon;
                                     const isSelected = category === cat;
                                     return (
@@ -617,11 +624,11 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                             onClick={() => setCategory(cat)}
                                             className={`flex flex-col items-center justify-center p-1.5 rounded-lg border transition-all duration-200 ${
                                                 isSelected 
-                                                ? `${visual.borderColor} ${visual.bgColor} ring-1 ring-blue-500/20 shadow-sm scale-105` 
+                                                ? `${visual.borderColor || 'border-blue-200'} ${visual.badgeBg} ring-1 ring-blue-500/20 shadow-sm scale-105` 
                                                 : 'border-transparent bg-slate-50 dark:bg-slate-700/30 hover:bg-slate-100 dark:hover:bg-slate-700 opacity-70 hover:opacity-100'
                                             }`}
                                         >
-                                            <div className={`mb-1 ${isSelected ? visual.color : 'text-slate-400 dark:text-slate-500'}`}>
+                                            <div className={`mb-1 ${isSelected ? visual.textColor : 'text-slate-400 dark:text-slate-500'}`}>
                                                 <Icon className="h-5 w-5" />
                                             </div>
                                             <span className={`text-[9px] text-center font-bold leading-tight ${isSelected ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>

@@ -4,6 +4,7 @@ import { type Reminder, type Category, User, type FoyerMember } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import EditReminderModal from './EditReminderModal';
 import { resolveUserTheme } from '../utils/userColors';
+import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
 import { 
     MandatoryIcon, 
     FuelIcon, 
@@ -51,7 +52,7 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
   "Divers": { icon: MiscIcon, color: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-50 dark:bg-cyan-950/60' },
 };
 
-export const getReminderVisual = (reminder: { description: string; category: string }) => {
+export const getReminderVisual = (reminder: { description: string; category: string }, getVisualFunc?: (cat: string, desc?: string) => any) => {
     const lower = reminder.description.toLowerCase();
     
     if (lower.includes('netflix')) {
@@ -154,11 +155,11 @@ export const getReminderVisual = (reminder: { description: string; category: str
     }
 
     // Default to category visual
-    const visual = CategoryVisuals[reminder.category] || CategoryVisuals["Divers"];
+    const visual = getVisualFunc ? getVisualFunc(reminder.category, reminder.description) : (CategoryVisuals[reminder.category] || CategoryVisuals["Divers"]);
     const IconCmp = visual.icon;
     return {
         icon: () => (
-            <div className={`w-10 h-10 rounded-2xl ${visual.bgColor} ${visual.color} flex items-center justify-center`}>
+            <div className={`w-10 h-10 rounded-2xl ${visual.badgeBg || visual.bgColor || 'bg-slate-100 dark:bg-slate-700/50'} ${visual.textColor || visual.color || 'text-slate-600'} flex items-center justify-center`}>
                 <IconCmp className="w-5 h-5" />
             </div>
         )
@@ -444,6 +445,7 @@ const ReminderItem: React.FC<{
     onEditReminder: (reminder: Reminder) => void;
     foyerMembers?: FoyerMember[];
 }> = ({ reminder, onUpdateReminder, onDeleteReminder, onEditReminder, foyerMembers }) => {
+    const { getVisual } = useCategoryVisuals();
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
     const handleToggleActive = () => {
@@ -460,7 +462,7 @@ const ReminderItem: React.FC<{
     };
 
     const isActive = reminder.is_active !== false;
-    const visual = getReminderVisual(reminder);
+    const visual = getReminderVisual(reminder, getVisual);
     const IconComponent = visual.icon;
     const userTheme = resolveUserTheme(reminder.user, foyerMembers);
 

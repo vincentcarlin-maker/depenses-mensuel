@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { type Reminder, type Category, User, type FoyerMember } from '../types';
 import { resolveUserTheme } from '../utils/userColors';
+import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
 import { 
     MandatoryIcon, 
     FuelIcon, 
@@ -42,6 +43,7 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
 };
 
 const EditReminderModal: React.FC<EditReminderModalProps> = ({ reminder, onUpdateReminder, onClose, categories, foyerMembers }) => {
+    const { getVisual } = useCategoryVisuals();
     const [description, setDescription] = useState(reminder.description);
     const [amount, setAmount] = useState(reminder.amount.toString());
     const [category, setCategory] = useState<Category>(reminder.category);
@@ -98,7 +100,7 @@ const EditReminderModal: React.FC<EditReminderModalProps> = ({ reminder, onUpdat
         });
     };
 
-    const selectedCategoryVisual = CategoryVisuals[category] || CategoryVisuals["Divers"];
+    const selectedCategoryVisual = getVisual(category, description);
     const SelectedCategoryIcon = selectedCategoryVisual.icon;
 
     return (
@@ -190,7 +192,7 @@ const EditReminderModal: React.FC<EditReminderModalProps> = ({ reminder, onUpdat
                             className="w-full flex items-center justify-between p-3 bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-2xl text-left text-slate-900 dark:text-slate-100 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 transition-all cursor-pointer"
                         >
                             <div className="flex items-center gap-2.5">
-                                <div className={`w-7 h-7 rounded-lg ${selectedCategoryVisual.bgColor} ${selectedCategoryVisual.color} flex items-center justify-center shrink-0`}>
+                                <div className={`w-7 h-7 rounded-lg ${selectedCategoryVisual.badgeBg || selectedCategoryVisual.color || 'bg-slate-100 dark:bg-slate-700/50'} ${selectedCategoryVisual.textColor || selectedCategoryVisual.color} flex items-center justify-center shrink-0`}>
                                     <SelectedCategoryIcon className="w-4 h-4" />
                                 </div>
                                 <span className="font-semibold text-sm text-slate-800 dark:text-slate-100">
@@ -205,7 +207,7 @@ const EditReminderModal: React.FC<EditReminderModalProps> = ({ reminder, onUpdat
                         {isCategoryOpen && (
                             <div className="absolute z-40 mt-2 w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 max-h-52 overflow-y-auto p-1.5 space-y-1">
                                 {categories.map((cat) => {
-                                    const visual = CategoryVisuals[cat] || CategoryVisuals["Divers"];
+                                    const visual = getVisual(cat);
                                     const Icon = visual.icon;
                                     const isSelected = cat === category;
                                     return (
@@ -222,7 +224,7 @@ const EditReminderModal: React.FC<EditReminderModalProps> = ({ reminder, onUpdat
                                                     : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50'
                                             }`}
                                         >
-                                            <div className={`w-7 h-7 rounded-lg ${visual.bgColor} ${visual.color} flex items-center justify-center shrink-0`}>
+                                            <div className={`w-7 h-7 rounded-lg ${visual.badgeBg || visual.color || 'bg-slate-100 dark:bg-slate-700/50'} ${visual.textColor || visual.color} flex items-center justify-center shrink-0`}>
                                                 <Icon className="w-4 h-4" />
                                             </div>
                                             <span className="truncate">{cat}</span>

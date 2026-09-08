@@ -21,6 +21,7 @@ import {
     PalmTreeIcon,
     PillIcon
 } from './icons/CategoryIcons';
+import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; bgColor: string; borderColor: string } } = {
   "Dépenses récurrentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
@@ -70,7 +71,12 @@ const toDatetimeLocal = (date: Date): string => {
 };
 
 const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initialData, loggedInUser, onlineUsers, disabled = false, categories, groceryStores, cars, heatingTypes, foyerMembers }) => {
+  const { getVisual } = useCategoryVisuals();
   const members = useMemo(() => foyerMembers && foyerMembers.length > 0 ? foyerMembers : DEFAULT_FOYER.members, [foyerMembers]);
+  
+  const effectiveCars = useMemo(() => cars && cars.length > 0 ? cars : ["Voiture"], [cars]);
+  const effectiveHeatingTypes = useMemo(() => heatingTypes && heatingTypes.length > 0 ? heatingTypes : ["Chauffage"], [heatingTypes]);
+
   const [description, setDescription] = useState(initialData?.description || '');
   const [amount, setAmount] = useState(initialData ? String(Math.abs(initialData.amount)) : '');
   const [category, setCategory] = useState<Category>(initialData?.category || categories[0] || '');
@@ -80,8 +86,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [transactionType, setTransactionType] = useState<'expense' | 'refund'>(initialData && initialData.amount < 0 ? 'refund' : 'expense');
   const [store, setStore] = useState(groceryStores[0] || '');
   const [customStore, setCustomStore] = useState('');
-  const [heatingType, setHeatingType] = useState(heatingTypes[0] || '');
-  const [repairedCar, setRepairedCar] = useState(cars[0] || '');
+  const [heatingType, setHeatingType] = useState(initialData?.category === 'Chauffage' ? (initialData.description.replace('Chauffage (', '').replace(')', '')) : (effectiveHeatingTypes[0] || 'Chauffage'));
+  const [repairedCar, setRepairedCar] = useState(initialData?.category === 'Réparation voitures' ? initialData.description : (effectiveCars[0] || 'Voiture'));
   const [carMileage, setCarMileage] = useState('');
   const [carGarage, setCarGarage] = useState('');
 
@@ -174,20 +180,20 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
 
   useEffect(() => {
     if (category === "Carburant") {
-      if (!cars.includes(description)) {
+      if (!effectiveCars.includes(description)) {
         nonSpecialCategoryDescriptionRef.current = description;
-        setDescription(cars[0] || '');
+        setDescription(effectiveCars[0] || 'Voiture');
       }
     } else if (category === "Courses") {
-        if(cars.includes(description)) {
+        if(effectiveCars.includes(description)) {
             setDescription(nonSpecialCategoryDescriptionRef.current);
         }
     } else {
-      if (cars.includes(description)) {
+      if (effectiveCars.includes(description)) {
         setDescription(nonSpecialCategoryDescriptionRef.current);
       }
     }
-  }, [category, cars]);
+  }, [category, effectiveCars]);
 
   useEffect(() => {
     if (!showSubtractions) {
@@ -293,16 +299,16 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
     });
 
     if (!initialData) {
-        setDescription(category === "Carburant" ? (cars[0] || '') : '');
+        setDescription(category === "Carburant" ? (effectiveCars[0] || 'Voiture') : '');
         setAmount('');
         setStore(groceryStores[0] || '');
         setCustomStore('');
-        setHeatingType(heatingTypes[0] || '');
+        setHeatingType(effectiveHeatingTypes[0] || 'Chauffage');
         setCategory(categories[0] || '');
         setTransactionType('expense');
         setError('');
         setSuggestions([]);
-        setRepairedCar(cars[0] || '');
+        setRepairedCar(effectiveCars[0] || 'Voiture');
         setCarMileage('');
         setCarGarage('');
         setClothingPerson('Nathan');
@@ -602,7 +608,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                 ) : (
                     <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
                         {categories.map((cat) => {
-                            const visual = CategoryVisuals[cat] || CategoryVisuals["Divers"];
+                            const visual = getVisual(cat);
                             const Icon = visual.icon;
                             const isSelected = category === cat;
                             return (
@@ -612,11 +618,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                                     onClick={() => setCategory(cat)}
                                     className={`flex flex-col items-center justify-center p-1.5 rounded-lg border transition-all duration-200 ${
                                         isSelected 
-                                        ? `${visual.borderColor} ${visual.bgColor} ring-1 ring-brand-500/20 shadow-sm scale-105` 
+                                        ? `${visual.borderColor || 'border-blue-200'} ${visual.badgeBg} ring-1 ring-brand-500/20 shadow-sm scale-105` 
                                         : 'border-transparent bg-slate-50 dark:bg-slate-700/30 hover:bg-slate-100 dark:hover:bg-slate-700 opacity-70 hover:opacity-100'
                                     }`}
                                 >
-                                    <div className={`mb-1 ${isSelected ? visual.color : 'text-slate-400 dark:text-slate-500'}`}>
+                                    <div className={`mb-1 ${isSelected ? visual.textColor : 'text-slate-400 dark:text-slate-500'}`}>
                                         <Icon className="h-5 w-5" />
                                     </div>
                                     <span className={`text-[9px] text-center font-bold leading-tight ${isSelected ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
@@ -788,7 +794,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                       <div className="animate-fade-in">
                           <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type de Chauffage</label>
                           <SegmentedControl
-                              options={heatingTypes}
+                              options={effectiveHeatingTypes}
                               value={heatingType}
                               onChange={setHeatingType}
                               colorClass="text-brand-600 dark:text-brand-400"
@@ -801,7 +807,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                           <div>
                               <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Véhicule</label>
                               <SegmentedControl
-                                  options={cars}
+                                  options={effectiveCars}
                                   value={repairedCar}
                                   onChange={setRepairedCar}
                                   colorClass="text-brand-600 dark:text-brand-400"
@@ -926,7 +932,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                           <div className="animate-fade-in">
                           <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Véhicule</label>
                           <SegmentedControl
-                              options={cars}
+                              options={effectiveCars}
                               value={description}
                               onChange={(val) => setDescription(val)}
                               colorClass="text-brand-600 dark:text-brand-400"

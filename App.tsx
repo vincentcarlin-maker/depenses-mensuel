@@ -37,6 +37,7 @@ import PiggyBankIcon from './components/icons/PiggyBankIcon';
 import UserIcon from './components/icons/UserIcon';
 import { notifySubscriptionsDirectly } from './webpush-client';
 import { DEFAULT_FOYER_ID, DEFAULT_FOYER } from './utils/foyerService';
+import { resolveUserTheme } from './utils/userColors';
 
 type UndoableAction = {
     type: 'delete' | 'update';
@@ -1436,24 +1437,17 @@ const MainApp: React.FC<{
 
                       {(currentFoyer?.members || DEFAULT_FOYER.members).map((member) => {
                         const isSelected = filterUser === member.name;
-                        const isSophie = member.name === User.Sophie;
-                        const isVincent = member.name === User.Vincent;
+                        const theme = resolveUserTheme(member.name, currentFoyer?.members || DEFAULT_FOYER.members, profiles);
 
-                        let pillClass = 'bg-sky-50/50 dark:bg-sky-950/20 border-sky-100/80 dark:border-sky-900/30 text-sky-600 dark:text-sky-400 hover:bg-sky-100/60';
-                        let iconColor = 'text-sky-500';
+                        let pillClass = '';
+                        let iconColor = '';
+
                         if (isSelected) {
-                          pillClass = 'bg-sky-100/90 dark:bg-sky-950/80 border-sky-200/90 dark:border-sky-800 text-sky-600 dark:text-sky-300 shadow-2xs';
-                          iconColor = 'text-sky-600 dark:text-sky-300';
-                        } else if (isSophie) {
-                          pillClass = isSelected
-                            ? 'bg-pink-100/90 dark:bg-pink-950/80 border-pink-200/90 dark:border-pink-800 text-pink-600 dark:text-pink-300 shadow-2xs'
-                            : 'bg-pink-50/50 dark:bg-pink-950/20 border-pink-100/80 dark:border-pink-900/30 text-pink-600 dark:text-pink-400 hover:bg-pink-100/60';
-                          iconColor = isSelected ? 'text-pink-600 dark:text-pink-300' : 'text-pink-500 dark:text-pink-400';
-                        } else if (isVincent) {
-                          pillClass = isSelected
-                            ? 'bg-blue-100/90 dark:bg-blue-950/80 border-blue-200/90 dark:border-blue-800 text-blue-600 dark:text-blue-300 shadow-2xs'
-                            : 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-100/80 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100/60';
-                          iconColor = isSelected ? 'text-blue-600 dark:text-blue-300' : 'text-blue-500 dark:text-blue-400';
+                          pillClass = `${theme.badgeClass} border-current shadow-2xs`;
+                          iconColor = theme.textClass;
+                        } else {
+                          pillClass = `${theme.lightBgClass} border ${theme.borderClass} ${theme.textClass} hover:bg-opacity-80 hover:opacity-95`;
+                          iconColor = theme.textClass;
                         }
 
                         return (

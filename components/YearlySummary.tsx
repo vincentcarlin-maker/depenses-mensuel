@@ -4,7 +4,7 @@ import { type Expense, type Category } from '../types';
 import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Line, Area } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
 import CloseIcon from './icons/CloseIcon';
-import { useCategoryVisuals, PRESET_CATEGORY_VISUALS } from '../hooks/useCategoryVisuals';
+import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
 const WalletIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
@@ -163,6 +163,21 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
     if (!categoryData || categoryData.length === 0) return 0;
     return Math.max(...categoryData.map(d => d.average));
   }, [categoryData]);
+
+  const availableCategoriesForTrend = useMemo(() => {
+    const uniqueCats = new Set<string>();
+    for (const exp of expenses) {
+      if (exp.category) {
+        uniqueCats.add(exp.category);
+      }
+    }
+    for (const exp of previousYearExpenses) {
+      if (exp.category) {
+        uniqueCats.add(exp.category);
+      }
+    }
+    return Array.from(uniqueCats).sort((a, b) => a.localeCompare(b, 'fr'));
+  }, [expenses, previousYearExpenses]);
   
   const monthlyTrendData = useMemo(() => {
     const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
@@ -451,11 +466,9 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                     >
                         📊 Toutes
                     </button>
-                    {Object.keys(PRESET_CATEGORY_VISUALS).map((catName) => {
+                    {availableCategoriesForTrend.map((catName) => {
                         const visual = getVisual(catName);
                         const IconComponent = visual.icon;
-                        const hasExpenses = expenses.some(e => e.category === catName) || previousYearExpenses.some(e => e.category === catName);
-                        if (!hasExpenses) return null;
                         
                         const isSelected = chartCategoryFilter === catName;
                         const displayName = getCategoryDisplayName(catName);
@@ -465,7 +478,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                                 key={catName}
                                 onClick={() => setChartCategoryFilter(catName as Category)}
                                 style={isSelected ? {
-                                    backgroundColor: visual.pieColor,
+                                    backgroundColor: visual.pieColor || '#3b82f6',
                                     color: '#ffffff',
                                     borderColor: 'transparent',
                                 } : {}}
