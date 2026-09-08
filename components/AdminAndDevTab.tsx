@@ -607,7 +607,7 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
   onToggleMaintenanceMode,
 }) => {
   // Only Vincent is authorized
-  const isAuthorized = loggedInUser === User.Vincent;
+  const isAuthorized = loggedInUser === User.Vincent || (typeof loggedInUser === 'string' && loggedInUser.toLowerCase() === 'vincent');
 
   // --- States ---
   // User Management
@@ -1704,16 +1704,6 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
             </form>
           </div>
         </div>
-      )}
-
-      {deletingUser && (
-        <ConfirmationModal
-          isOpen={true}
-          onClose={() => setDeletingUser(null)}
-          onConfirm={handleDeleteUserConfirm}
-          title="Supprimer l'utilisateur"
-          message={`Êtes-vous sûr de vouloir supprimer définitivement le compte « ${deletingUser} » ? L'utilisateur ne pourra plus se connecter.`}
-        />
       )}
 
       {/* ========================================================= */}
