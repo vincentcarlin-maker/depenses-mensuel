@@ -410,6 +410,57 @@ export async function fetchAllFoyers(): Promise<Foyer[]> {
     console.error('Error fetching all foyers from cloud:', e);
   }
 
+  // Attempt to recover/reconstruct any foyers that are mentioned in profiles but missing in the registry
+  try {
+    const { data: profilesData } = await (supabase.from('push_subscriptions') as any)
+      .select('subscription')
+      .eq('user_id', 'app_user_profiles_v2')
+      .maybeSingle();
+
+    if (profilesData?.subscription?.profiles && Array.isArray(profilesData.subscription.profiles)) {
+      const allProfiles = profilesData.subscription.profiles;
+      let hasReconstructed = false;
+
+      for (const profile of allProfiles) {
+        const fId = profile.foyer_id;
+        if (fId && !localMap[fId]) {
+          // Reconstruct the missing foyer using all profiles belonging to it
+          const sameFoyerProfiles = allProfiles.filter((p: any) => p.foyer_id === fId);
+          const members = sameFoyerProfiles.map((p: any) => ({
+            id: p.username,
+            name: p.user || p.username,
+            username: p.username,
+            color: p.color || '#0ea5e9',
+            role: 'admin',
+            joined_at: new Date(2023, 9, 1).toISOString()
+          }));
+
+          const reconstructedFoyer: Foyer = {
+            id: fId,
+            name: profile.foyer_name || 'Foyer',
+            code: profile.foyer_code || 'CODE',
+            created_at: new Date(2023, 9, 1).toISOString(),
+            members
+          };
+
+          localMap[fId] = reconstructedFoyer;
+          hasReconstructed = true;
+
+          // Sync it back to the cloud database asynchronously so it is persistent
+          saveFoyerToCloudAndLocal(reconstructedFoyer).catch(err => {
+            console.warn('Could not auto-sync reconstructed foyer:', err);
+          });
+        }
+      }
+
+      if (hasReconstructed) {
+        saveLocalFoyers(localMap);
+      }
+    }
+  } catch (err) {
+    console.warn('Could not auto-reconstruct missing foyers:', err);
+  }
+
   const foyers = Object.values(localMap);
   return foyers.sort((a, b) => {
     if (a.id === DEFAULT_FOYER_ID) return -1;

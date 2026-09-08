@@ -53,10 +53,12 @@ interface SettingsModalProps {
   onLogout: () => void;
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
-  initialView?: 'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin';
+  initialView?: 'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin' | 'keywords';
   currentFoyer?: Foyer;
-  onDeleteOwnAccount?: () => Promise<boolean>;
+  onDeleteOwnAccount?: (confirmPassword?: string) => Promise<{ success: boolean; error?: string } | boolean>;
   onUpdateUserColor?: (username: string, newColor: string) => Promise<boolean>;
+  onLeaveFoyer?: () => Promise<{ success: boolean; error?: string }>;
+  onCloseFoyer?: () => Promise<{ success: boolean; error?: string }>;
   resetTrigger?: number;
 }
 
@@ -114,7 +116,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     activeTab,
     onTabChange,
   } = props;
-  const [activeView, setActiveView] = useState<'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin'>('main');
+  const [activeView, setActiveView] = useState<'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin' | 'keywords'>('main');
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const { themeSetting } = useTheme();
 
@@ -584,58 +586,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         expenses={props.expenses}
                         profiles={props.profiles}
                         loggedInUser={props.loggedInUser}
-                        onAddProfile={props.onAddProfile}
-                        onUpdateProfilePassword={props.onUpdateProfilePassword}
-                        onDeleteProfile={props.onDeleteProfile}
-                        categories={props.categories}
-                        onAddCategory={props.onAddCategory}
-                        onUpdateCategory={props.onUpdateCategory}
-                        onDeleteCategory={props.onDeleteCategory}
-                        groceryStores={props.groceryStores}
-                        setGroceryStores={props.setGroceryStores}
-                        cars={props.cars}
-                        setCars={props.setCars}
-                        heatingTypes={props.heatingTypes}
-                        setHeatingTypes={props.setHeatingTypes}
-                        setToastInfo={props.setToastInfo}
-                        loginHistory={props.loginHistory}
-                    />
-                </div>
-            )}
-
-            {activeView === 'lists' && (
-                <div className="space-y-5 animate-fade-in">
-                    <ManagementTab 
-                        focusSection="lists"
-                        expenses={props.expenses}
-                        profiles={props.profiles}
-                        loggedInUser={props.loggedInUser}
-                        onAddProfile={props.onAddProfile}
-                        onUpdateProfilePassword={props.onUpdateProfilePassword}
-                        onDeleteProfile={props.onDeleteProfile}
-                        categories={props.categories}
-                        onAddCategory={props.onAddCategory}
-                        onUpdateCategory={props.onUpdateCategory}
-                        onDeleteCategory={props.onDeleteCategory}
-                        groceryStores={props.groceryStores}
-                        setGroceryStores={props.setGroceryStores}
-                        cars={props.cars}
-                        setCars={props.setCars}
-                        heatingTypes={props.heatingTypes}
-                        setHeatingTypes={props.setHeatingTypes}
-                        setToastInfo={props.setToastInfo}
-                        loginHistory={props.loginHistory}
-                    />
-                </div>
-            )}
-
-            {activeView === 'users' && (
-                <div className="space-y-5 animate-fade-in">
-                    <ManagementTab 
-                        focusSection="users"
-                        expenses={props.expenses}
-                        profiles={props.profiles}
-                        loggedInUser={props.loggedInUser}
+                        loggedInUsername={props.loggedInUsername}
                         onAddProfile={props.onAddProfile}
                         onUpdateProfilePassword={props.onUpdateProfilePassword}
                         onDeleteProfile={props.onDeleteProfile}
@@ -653,6 +604,70 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         loginHistory={props.loginHistory}
                         currentFoyer={props.currentFoyer}
                         onDeleteOwnAccount={props.onDeleteOwnAccount}
+                        onLeaveFoyer={props.onLeaveFoyer}
+                        onCloseFoyer={props.onCloseFoyer}
+                    />
+                </div>
+            )}
+
+            {activeView === 'lists' && (
+                <div className="space-y-5 animate-fade-in">
+                    <ManagementTab 
+                        focusSection="lists"
+                        expenses={props.expenses}
+                        profiles={props.profiles}
+                        loggedInUser={props.loggedInUser}
+                        loggedInUsername={props.loggedInUsername}
+                        onAddProfile={props.onAddProfile}
+                        onUpdateProfilePassword={props.onUpdateProfilePassword}
+                        onDeleteProfile={props.onDeleteProfile}
+                        categories={props.categories}
+                        onAddCategory={props.onAddCategory}
+                        onUpdateCategory={props.onUpdateCategory}
+                        onDeleteCategory={props.onDeleteCategory}
+                        groceryStores={props.groceryStores}
+                        setGroceryStores={props.setGroceryStores}
+                        cars={props.cars}
+                        setCars={props.setCars}
+                        heatingTypes={props.heatingTypes}
+                        setHeatingTypes={props.setHeatingTypes}
+                        setToastInfo={props.setToastInfo}
+                        loginHistory={props.loginHistory}
+                        currentFoyer={props.currentFoyer}
+                        onDeleteOwnAccount={props.onDeleteOwnAccount}
+                        onLeaveFoyer={props.onLeaveFoyer}
+                        onCloseFoyer={props.onCloseFoyer}
+                    />
+                </div>
+            )}
+
+            {activeView === 'users' && (
+                <div className="space-y-5 animate-fade-in">
+                    <ManagementTab 
+                        focusSection="users"
+                        expenses={props.expenses}
+                        profiles={props.profiles}
+                        loggedInUser={props.loggedInUser}
+                        loggedInUsername={props.loggedInUsername}
+                        onAddProfile={props.onAddProfile}
+                        onUpdateProfilePassword={props.onUpdateProfilePassword}
+                        onDeleteProfile={props.onDeleteProfile}
+                        categories={props.categories}
+                        onAddCategory={props.onAddCategory}
+                        onUpdateCategory={props.onUpdateCategory}
+                        onDeleteCategory={props.onDeleteCategory}
+                        groceryStores={props.groceryStores}
+                        setGroceryStores={props.setGroceryStores}
+                        cars={props.cars}
+                        setCars={props.setCars}
+                        heatingTypes={props.heatingTypes}
+                        setHeatingTypes={props.setHeatingTypes}
+                        setToastInfo={props.setToastInfo}
+                        loginHistory={props.loginHistory}
+                        currentFoyer={props.currentFoyer}
+                        onDeleteOwnAccount={props.onDeleteOwnAccount}
+                        onLeaveFoyer={props.onLeaveFoyer}
+                        onCloseFoyer={props.onCloseFoyer}
                     />
                 </div>
             )}
@@ -706,6 +721,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         expenses={props.expenses}
                         profiles={props.profiles}
                         loggedInUser={props.loggedInUser}
+                        loggedInUsername={props.loggedInUsername}
                         onAddProfile={props.onAddProfile}
                         onUpdateProfilePassword={props.onUpdateProfilePassword}
                         onDeleteProfile={props.onDeleteProfile}
@@ -721,6 +737,10 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         setHeatingTypes={props.setHeatingTypes}
                         setToastInfo={props.setToastInfo}
                         loginHistory={props.loginHistory}
+                        currentFoyer={props.currentFoyer}
+                        onDeleteOwnAccount={props.onDeleteOwnAccount}
+                        onLeaveFoyer={props.onLeaveFoyer}
+                        onCloseFoyer={props.onCloseFoyer}
                     />
                 </div>
             )}

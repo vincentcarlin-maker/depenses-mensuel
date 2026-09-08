@@ -53,8 +53,10 @@ interface SettingsTabProps {
   onLogout: () => void;
   resetTrigger?: number;
   currentFoyer?: Foyer;
-  onDeleteOwnAccount?: () => Promise<boolean>;
+  onDeleteOwnAccount?: (confirmPassword?: string) => Promise<{ success: boolean; error?: string } | boolean>;
   onUpdateUserColor?: (username: string, newColor: string) => Promise<boolean>;
+  onLeaveFoyer?: () => Promise<{ success: boolean; error?: string }>;
+  onCloseFoyer?: () => Promise<{ success: boolean; error?: string }>;
 }
 
 const SettingsItemRow: React.FC<{
@@ -112,8 +114,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
   const { themeSetting } = useTheme();
 
   useEffect(() => {
-    if (props.initialView) {
-      setActiveView(prev => (prev !== props.initialView ? props.initialView : prev));
+    const initView = props.initialView;
+    if (initView) {
+      setActiveView(prev => (prev !== initView ? initView : prev));
     }
   }, [props.initialView]);
 
@@ -556,6 +559,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             expenses={props.expenses}
             profiles={props.profiles}
             loggedInUser={props.loggedInUser}
+            loggedInUsername={props.loggedInUsername}
             onAddProfile={props.onAddProfile}
             onUpdateProfilePassword={props.onUpdateProfilePassword}
             onDeleteProfile={props.onDeleteProfile}
@@ -573,6 +577,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             loginHistory={props.loginHistory}
             currentFoyer={props.currentFoyer}
             onDeleteOwnAccount={props.onDeleteOwnAccount}
+            onLeaveFoyer={props.onLeaveFoyer}
+            onCloseFoyer={props.onCloseFoyer}
           />
         </div>
       )}
@@ -585,6 +591,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             expenses={props.expenses}
             profiles={props.profiles}
             loggedInUser={props.loggedInUser}
+            loggedInUsername={props.loggedInUsername}
             onAddProfile={props.onAddProfile}
             onUpdateProfilePassword={props.onUpdateProfilePassword}
             onDeleteProfile={props.onDeleteProfile}
@@ -602,6 +609,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             loginHistory={props.loginHistory}
             currentFoyer={props.currentFoyer}
             onDeleteOwnAccount={props.onDeleteOwnAccount}
+            onLeaveFoyer={props.onLeaveFoyer}
+            onCloseFoyer={props.onCloseFoyer}
           />
         </div>
       )}
@@ -614,6 +623,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             expenses={props.expenses}
             profiles={props.profiles}
             loggedInUser={props.loggedInUser}
+            loggedInUsername={props.loggedInUsername}
             onAddProfile={props.onAddProfile}
             onUpdateProfilePassword={props.onUpdateProfilePassword}
             onDeleteProfile={props.onDeleteProfile}
@@ -631,6 +641,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             loginHistory={props.loginHistory}
             currentFoyer={props.currentFoyer}
             onDeleteOwnAccount={props.onDeleteOwnAccount}
+            onLeaveFoyer={props.onLeaveFoyer}
+            onCloseFoyer={props.onCloseFoyer}
           />
         </div>
       )}
@@ -687,6 +699,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             expenses={props.expenses}
             profiles={props.profiles}
             loggedInUser={props.loggedInUser}
+            loggedInUsername={props.loggedInUsername}
             onAddProfile={props.onAddProfile}
             onUpdateProfilePassword={props.onUpdateProfilePassword}
             onDeleteProfile={props.onDeleteProfile}
@@ -702,6 +715,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             setHeatingTypes={props.setHeatingTypes}
             setToastInfo={props.setToastInfo}
             loginHistory={props.loginHistory}
+            currentFoyer={props.currentFoyer}
+            onDeleteOwnAccount={props.onDeleteOwnAccount}
+            onLeaveFoyer={props.onLeaveFoyer}
+            onCloseFoyer={props.onCloseFoyer}
           />
         </div>
       )}

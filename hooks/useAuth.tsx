@@ -294,6 +294,10 @@ export const useAuth = () => {
     useEffect(() => {
         const fetchProfilesFromCloud = async () => {
             try {
+                // Fetch existing foyers to identify orphaned accounts
+                const existingFoyers = await fetchAllFoyers();
+                const existingFoyerIds = existingFoyers.map(f => f.id);
+
                 // Fetch individually saved profiles first (safe against overwrites)
                 const { data: individualRows } = await (supabase.from('push_subscriptions') as any)
                     .select('subscription')
@@ -306,21 +310,54 @@ export const useAuth = () => {
                     .maybeSingle();
 
                 const discoveredProfiles: Profile[] = [];
+                const orphanedUsernames: string[] = [];
 
                 if (Array.isArray(individualRows)) {
                     for (const row of individualRows) {
                         if (row.subscription && row.subscription.username) {
-                            discoveredProfiles.push(row.subscription as Profile);
+                            const gp = row.subscription as Profile;
+                            const fid = gp.foyer_id;
+                            const isOrphaned = fid && fid !== DEFAULT_FOYER_ID && !existingFoyerIds.includes(fid);
+                            if (isOrphaned) {
+                                orphanedUsernames.push(gp.username.toLowerCase().trim());
+                            } else {
+                                discoveredProfiles.push(gp);
+                            }
                         }
                     }
                 }
 
                 if (globalData?.subscription?.profiles && Array.isArray(globalData.subscription.profiles)) {
                     for (const gp of globalData.subscription.profiles) {
-                        if (!discoveredProfiles.some(dp => dp.username === gp.username)) {
+                        const fid = gp.foyer_id;
+                        const isOrphaned = fid && fid !== DEFAULT_FOYER_ID && !existingFoyerIds.includes(fid);
+                        if (isOrphaned) {
+                            const uName = gp.username.toLowerCase().trim();
+                            if (!orphanedUsernames.includes(uName)) {
+                                orphanedUsernames.push(uName);
+                            }
+                        } else if (!discoveredProfiles.some(dp => dp.username === gp.username)) {
                             discoveredProfiles.push(gp);
                         }
                     }
+                }
+
+                // Purge orphaned profiles from cloud push_subscriptions
+                if (orphanedUsernames.length > 0) {
+                    for (const uName of orphanedUsernames) {
+                        try {
+                            await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_${uName}`);
+                        } catch (err) {
+                            console.warn('Could not delete orphaned profile from Supabase:', err);
+                        }
+                    }
+                    // Trigger a clean save of the merged profiles v2 without the orphans
+                    const cleanedProfiles = discoveredProfiles.filter(p => !orphanedUsernames.includes(p.username.toLowerCase().trim()));
+                    await (supabase.from('push_subscriptions') as any).delete().eq('user_id', 'app_user_profiles_v2');
+                    await (supabase.from('push_subscriptions') as any).insert({
+                        user_id: 'app_user_profiles_v2',
+                        subscription: { profiles: cleanedProfiles }
+                    });
                 }
 
                 if (discoveredProfiles.length > 0) {
@@ -436,6 +473,8 @@ export const useAuth = () => {
                             joined_at: new Date().toISOString()
                         }]
                     };
+                    // Save the newly reconstructed foyer back to cloud & local storage
+                    await saveFoyerToCloudAndLocal(foyer);
                 }
             }
             
@@ -812,6 +851,129 @@ export const useAuth = () => {
         return true;
     }, [profiles, setProfiles, syncProfilesToCloud, currentFoyer]);
 
+    // Quitter le foyer actif courant
+    const leaveFoyer = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+        if (!user || !currentFoyer) {
+            return { success: false, error: 'Non authentifié ou aucun foyer actif.' };
+        }
+        const currentUsername = String(user).toLowerCase().trim();
+        
+        if (currentFoyer.id === DEFAULT_FOYER_ID) {
+            return { success: false, error: 'Le foyer principal par défaut (Vincent & Sophie) ne peut pas être quitté.' };
+        }
+
+        // Check if last member
+        if (currentFoyer.members.length <= 1) {
+            return { success: false, error: 'Vous êtes le dernier membre de ce foyer. Pour le quitter, vous devez le fermer définitivement depuis l’onglet Foyer ou supprimer votre compte.' };
+        }
+
+        // Check if sole admin
+        const myMember = currentFoyer.members.find(m => m.username === currentUsername);
+        if (myMember?.role === 'admin') {
+            const otherAdmins = currentFoyer.members.filter(m => m.username !== currentUsername && m.role === 'admin');
+            if (otherAdmins.length === 0) {
+                return { success: false, error: 'Vous êtes le seul administrateur de ce foyer. Veuillez désigner un autre membre comme administrateur avant de quitter le foyer, ou fermez définitivement le foyer.' };
+            }
+        }
+
+        // 1. Remove from foyer members list
+        const res = await removeMemberFromFoyer(currentFoyer.id, currentUsername);
+        if (!res.success) {
+            return { success: false, error: res.error || 'Impossible de quitter le foyer.' };
+        }
+
+        // 2. Update profile to be associated with DEFAULT_FOYER
+        const updatedProfiles = profiles.map(p => {
+            if (p.username.toLowerCase().trim() === currentUsername) {
+                return {
+                    ...p,
+                    foyer_id: DEFAULT_FOYER_ID,
+                    foyer_name: DEFAULT_FOYER.name,
+                    foyer_code: DEFAULT_FOYER.code
+                };
+            }
+            return p;
+        });
+        setProfiles(updatedProfiles);
+        await syncProfilesToCloud(updatedProfiles);
+
+        // 3. Switch active foyer back to DEFAULT_FOYER
+        setCurrentFoyer(DEFAULT_FOYER);
+        setStoredActiveFoyerId(DEFAULT_FOYER_ID);
+
+        return { success: true };
+    }, [user, currentFoyer, profiles, setProfiles, syncProfilesToCloud]);
+
+    // Fermer définitivement le foyer courant et supprimer toutes ses données
+    const closeFoyer = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+        if (!user || !currentFoyer) {
+            return { success: false, error: 'Non authentifié ou aucun foyer actif.' };
+        }
+        const currentUsername = String(user).toLowerCase().trim();
+        
+        if (currentFoyer.id === DEFAULT_FOYER_ID) {
+            return { success: false, error: 'Le foyer principal par défaut (Vincent & Sophie) ne peut pas être fermé.' };
+        }
+
+        // Check if current user is admin of this foyer
+        const myMember = currentFoyer.members.find(m => m.username === currentUsername);
+        if (myMember?.role !== 'admin') {
+            return { success: false, error: 'Seuls les administrateurs du foyer peuvent le fermer définitivement.' };
+        }
+
+        const foyerIdToDelete = currentFoyer.id;
+        const foyerCodeToDelete = currentFoyer.code;
+
+        try {
+            // 1. Delete all expenses of this foyer from Supabase
+            await supabase.from('expenses').delete().eq('foyer_id', foyerIdToDelete);
+
+            // 2. Delete all reminders of this foyer from Supabase
+            await supabase.from('reminders').delete().eq('foyer_id', foyerIdToDelete);
+
+            // 3. Delete all money pot transactions of this foyer
+            await supabase.from('money_pot').delete().eq('foyer_id', foyerIdToDelete);
+
+            // 4. Delete setting categories/cars/heating from Supabase
+            await supabase.from('push_subscriptions').delete().eq('user_id', `setting_expenseCategories_${foyerIdToDelete}`);
+            await supabase.from('push_subscriptions').delete().eq('user_id', `setting_cars_${foyerIdToDelete}`);
+            await supabase.from('push_subscriptions').delete().eq('user_id', `setting_heatingTypes_${foyerIdToDelete}`);
+
+            // 5. Delete individual profile records from Supabase for ALL members of this foyer!
+            const foyerUsernames = currentFoyer.members.map(m => m.username.toLowerCase().trim());
+            for (const uName of foyerUsernames) {
+                await supabase.from('push_subscriptions').delete().eq('user_id', `profile_${uName}`);
+                localStorage.removeItem(`profile_${uName}`);
+            }
+
+            // 6. Delete the foyer registry rows from Supabase
+            await supabase.from('push_subscriptions').delete().eq('user_id', `foyer_id_${foyerIdToDelete}`);
+            await supabase.from('push_subscriptions').delete().eq('user_id', `foyer_reg_${foyerCodeToDelete.toUpperCase().trim()}`);
+
+            // 7. Remove the foyer from our local cache map
+            const localFoyersRaw = localStorage.getItem('duobudget_local_foyers_v1');
+            if (localFoyersRaw) {
+                try {
+                     const localFoyers = JSON.parse(localFoyersRaw);
+                     delete localFoyers[foyerIdToDelete];
+                     localStorage.setItem('duobudget_local_foyers_v1', JSON.stringify(localFoyers));
+                } catch {}
+            }
+
+            // 8. Update global profiles: filter out any accounts belonging to this deleted foyer
+            const updatedProfiles = profiles.filter(p => p.foyer_id !== foyerIdToDelete);
+            setProfiles(updatedProfiles);
+            await syncProfilesToCloud(updatedProfiles);
+
+            // 9. Logout
+            logout();
+
+            return { success: true };
+        } catch (e: any) {
+            return { success: false, error: e?.message || 'Erreur lors de la suppression du foyer.' };
+        }
+    }, [user, currentFoyer, profiles, setProfiles, syncProfilesToCloud, logout]);
+
     // Only the exact account "vincent" is Super Administrator (never Vincent1, VincentA, etc.)
     const normalizedUsername = username ? username.toLowerCase().trim() : '';
     const normalizedUser = typeof user === 'string' ? user.toLowerCase().trim() : '';
@@ -842,6 +1004,8 @@ export const useAuth = () => {
         registerWithJoinFoyer,
         updateFoyer,
         updateUserColor,
+        leaveFoyer,
+        closeFoyer,
         loginHistory: foyerLoginHistory,
         allLoginHistory: loginHistory
     };

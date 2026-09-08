@@ -76,7 +76,9 @@ const MainApp: React.FC<{
     loginHistory: LoginEvent[],
     currentFoyer?: Foyer,
     onDeleteOwnAccount?: (confirmPassword?: string) => Promise<{ success: boolean; error?: string } | boolean>,
-    onUpdateUserColor?: (username: string, newColor: string) => Promise<boolean>
+    onUpdateUserColor?: (username: string, newColor: string) => Promise<boolean>,
+    leaveFoyer?: () => Promise<{ success: boolean; error?: string }>,
+    closeFoyer?: () => Promise<{ success: boolean; error?: string }>
 }> = ({ 
     user, 
     username,
@@ -92,7 +94,9 @@ const MainApp: React.FC<{
     loginHistory,
     currentFoyer,
     onDeleteOwnAccount,
-    onUpdateUserColor
+    onUpdateUserColor,
+    leaveFoyer,
+    closeFoyer
 }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<any[]>([]);
@@ -1541,6 +1545,8 @@ const MainApp: React.FC<{
                 currentFoyer={currentFoyer}
                 onDeleteOwnAccount={onDeleteOwnAccount}
                 onUpdateUserColor={onUpdateUserColor}
+                onLeaveFoyer={leaveFoyer}
+                onCloseFoyer={closeFoyer}
               />
             )}
           </div>
@@ -1599,6 +1605,8 @@ const MainApp: React.FC<{
         currentFoyer={currentFoyer}
         onDeleteOwnAccount={onDeleteOwnAccount}
         onUpdateUserColor={onUpdateUserColor}
+        onLeaveFoyer={leaveFoyer}
+        onCloseFoyer={closeFoyer}
         reminders={reminders} 
         expenses={expenses} 
         moneyPotTransactions={moneyPotTransactions}
@@ -1660,6 +1668,8 @@ const App: React.FC = () => {
     deleteProfile, 
     deleteOwnAccount,
     updateUserColor,
+    leaveFoyer,
+    closeFoyer,
     loginHistory 
   } = useAuth();
 
@@ -1695,6 +1705,8 @@ const App: React.FC = () => {
         currentFoyer={currentFoyer}
         onDeleteOwnAccount={deleteOwnAccount}
         onUpdateUserColor={updateUserColor}
+        leaveFoyer={leaveFoyer}
+        closeFoyer={closeFoyer}
         onLogout={logout} 
         profiles={profiles} 
         onAddProfile={addProfile} 
