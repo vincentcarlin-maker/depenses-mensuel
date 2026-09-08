@@ -70,8 +70,23 @@ Deno.serve(async (req) => {
       // Pour les tests, on envoie à tout le monde
       targetSubscriptions = subscriptions;
     } else if (expense || moneyPotTransaction) {
-      // On n'envoie pas à l'auteur de l'activité
-      targetSubscriptions = subscriptions.filter((sub) => sub.user_id !== author);
+      const targetFoyerId = body?.foyer_id || expense?.foyer_id || moneyPotTransaction?.foyer_id || 'foyer_vincent_sophie';
+
+      // Filtrer les abonnements :
+      // 1. Ne pas envoyer à l'auteur lui-même
+      // 2. Ne notifier QUE les membres du même foyer
+      targetSubscriptions = subscriptions.filter((sub: any) => {
+        if (sub.user_id === author) return false;
+        
+        const subObj = typeof sub.subscription === 'string' ? JSON.parse(sub.subscription) : sub.subscription;
+        if (!subObj || !subObj.endpoint) return false;
+
+        const subFoyerId = subObj.foyer_id || (sub.user_id === 'Vincent' || sub.user_id === 'Sophie' || sub.user_id === 'Commun' ? 'foyer_vincent_sophie' : undefined);
+        if (targetFoyerId === 'foyer_vincent_sophie') {
+          return !subFoyerId || subFoyerId === 'foyer_vincent_sophie';
+        }
+        return subFoyerId === targetFoyerId;
+      });
     } else {
       return new Response(JSON.stringify({ error: "Aucune donnée de test, dépense ou transaction fournie." }), {
         status: 400,

@@ -30,9 +30,11 @@ interface RemindersTabProps {
   onUpdateReminder: (reminder: Reminder) => Promise<void>;
   onDeleteReminder: (id: string) => Promise<void>;
   categories: Category[];
+  foyerMembers?: { id: string; name: string }[];
 }
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; bgColor: string } } = {
+  "Dépenses récurrentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700' },
   "Dép. récurrentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700' },
   "Dép. recurentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700' },
   "Dépenses obligatoires": { icon: MandatoryIcon, color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-950/60' },
@@ -165,17 +167,20 @@ export const getReminderVisual = (reminder: { description: string; category: str
 const ReminderForm: React.FC<{ 
     onAddReminder: (reminder: Omit<Reminder, 'id' | 'created_at'>) => Promise<void>;
     categories: Category[];
-}> = ({ onAddReminder, categories }) => {
+    foyerMembers?: { id: string; name: string }[];
+}> = ({ onAddReminder, categories, foyerMembers }) => {
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
     const [category, setCategory] = useState<Category>(
-        categories.includes("Dép. récurrentes" as Category) 
+        categories.includes("Dépenses récurrentes" as Category)
+            ? ("Dépenses récurrentes" as Category)
+            : categories.includes("Dép. récurrentes" as Category) 
             ? ("Dép. récurrentes" as Category) 
             : categories.includes("Dépenses obligatoires" as Category) 
             ? ("Dépenses obligatoires" as Category) 
             : categories[0]
     );
-    const [user, setUser] = useState<User>(User.Sophie);
+    const [user, setUser] = useState<string>(User.Sophie);
     const [dayOfMonth, setDayOfMonth] = useState('');
     const [error, setError] = useState('');
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
@@ -262,34 +267,29 @@ const ReminderForm: React.FC<{
                         Personne concernée
                     </label>
                     <div className="bg-[#f1f5f9] dark:bg-slate-700/50 p-1 rounded-full flex gap-1">
-                        <button
-                            type="button"
-                            onClick={() => setUser(User.Sophie)}
-                            className={`flex-1 py-2.5 px-4 rounded-full text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all ${
-                                user === User.Sophie
-                                    ? 'bg-white dark:bg-slate-800 text-[#e11d48] dark:text-rose-400 shadow-xs'
-                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
-                            }`}
-                        >
-                            <svg className={`w-4 h-4 ${user === User.Sophie ? 'fill-[#e11d48] text-[#e11d48]' : 'text-slate-400'}`} viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                            </svg>
-                            Sophie
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setUser(User.Vincent)}
-                            className={`flex-1 py-2.5 px-4 rounded-full text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all ${
-                                user === User.Vincent
-                                    ? 'bg-white dark:bg-slate-800 text-[#0284c7] dark:text-sky-400 shadow-xs'
-                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
-                            }`}
-                        >
-                            <svg className={`w-4 h-4 ${user === User.Vincent ? 'fill-[#0284c7] text-[#0284c7]' : 'text-slate-400'}`} viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                            </svg>
-                            Vincent
-                        </button>
+                        {(foyerMembers && foyerMembers.length > 0 ? foyerMembers : [{ id: '1', name: User.Sophie }, { id: '2', name: User.Vincent }]).map((m, idx) => {
+                            const isSelected = user === m.name;
+                            const isPink = idx % 2 === 0;
+                            const selectedColor = isPink ? 'text-[#e11d48] dark:text-rose-400' : 'text-[#0284c7] dark:text-sky-400';
+                            const fillColor = isPink ? 'fill-[#e11d48] text-[#e11d48]' : 'fill-[#0284c7] text-[#0284c7]';
+                            return (
+                                <button
+                                    key={m.id || m.name}
+                                    type="button"
+                                    onClick={() => setUser(m.name)}
+                                    className={`flex-1 py-2.5 px-4 rounded-full text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                                        isSelected
+                                            ? `bg-white dark:bg-slate-800 ${selectedColor} shadow-xs`
+                                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                                    }`}
+                                >
+                                    <svg className={`w-4 h-4 ${isSelected ? fillColor : 'text-slate-400'}`} viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                                    </svg>
+                                    {m.name}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -597,7 +597,7 @@ const ReminderList: React.FC<{
     );
 };
 
-const RemindersTab: React.FC<RemindersTabProps> = ({ reminders, onAddReminder, onUpdateReminder, onDeleteReminder, categories }) => {
+const RemindersTab: React.FC<RemindersTabProps> = ({ reminders, onAddReminder, onUpdateReminder, onDeleteReminder, categories, foyerMembers }) => {
     const [reminderToEdit, setReminderToEdit] = useState<Reminder | null>(null);
 
     const handleUpdateReminder = async (updatedReminder: Reminder) => {
@@ -607,7 +607,7 @@ const RemindersTab: React.FC<RemindersTabProps> = ({ reminders, onAddReminder, o
 
     return (
         <div className="space-y-6">
-            <ReminderForm onAddReminder={onAddReminder} categories={categories} />
+            <ReminderForm onAddReminder={onAddReminder} categories={categories} foyerMembers={foyerMembers} />
             <ReminderList 
                 reminders={reminders} 
                 onUpdateReminder={onUpdateReminder} 
@@ -620,6 +620,7 @@ const RemindersTab: React.FC<RemindersTabProps> = ({ reminders, onAddReminder, o
                     onUpdateReminder={handleUpdateReminder}
                     onClose={() => setReminderToEdit(null)}
                     categories={categories}
+                    foyerMembers={foyerMembers}
                 />
             )}
         </div>

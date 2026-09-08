@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { User, type Category, type Expense, type CustomCategoryIcon } from '../types';
+import { User, type Category, type Expense, type CustomCategoryIcon, type Foyer } from '../types';
 import { type Profile, type LoginEvent } from '../hooks/useAuth';
 import ConfirmationModal from './ConfirmationModal';
 import ArrowDownTrayIcon from './icons/ArrowDownTrayIcon';
@@ -95,7 +95,7 @@ const HistoryManagement: React.FC<{ loginHistory: LoginEvent[] }> = ({ loginHist
                 <div className="divide-y divide-slate-100/80 dark:divide-slate-700/50 pt-1">
                     {loginHistory.slice(0, 8).map((event, index) => {
                         const isSophie = event.user === User.Sophie;
-                        const dotColor = isSophie ? 'bg-[#f43f5e]' : 'bg-[#0ea5e9]';
+                        const dotColor = isSophie ? 'bg-[#f43f5e]' : (index % 2 === 0 ? 'bg-[#0ea5e9]' : 'bg-[#10b981]');
                         const formattedDate = formatDateFrench(event.timestamp);
 
                         return (
@@ -172,7 +172,10 @@ const UserManagement: React.FC<{
     onAddProfile: (profile: Profile) => boolean;
     onUpdateProfilePassword: (username: string, newPassword: string) => boolean;
     onDeleteProfile: (username: string) => boolean;
-}> = ({ profiles, onAddProfile, onUpdateProfilePassword, onDeleteProfile }) => {
+    currentFoyer?: Foyer;
+    onDeleteOwnAccount?: () => Promise<boolean>;
+    setToastInfo?: (info: { message: string; type: 'info' | 'error' }) => void;
+}> = ({ profiles, onAddProfile, onUpdateProfilePassword, onDeleteProfile, loggedInUser, currentFoyer, onDeleteOwnAccount, setToastInfo }) => {
     const [newUsername, setNewUsername] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [selectedUser, setSelectedUser] = useState<User>(User.Sophie);
@@ -180,6 +183,7 @@ const UserManagement: React.FC<{
     const [editingUser, setEditingUser] = useState<Profile | null>(null);
     const [editingPassword, setEditingPassword] = useState('');
     const [deletingUser, setDeletingUser] = useState<Profile | null>(null);
+    const [isDeletingOwnAccount, setIsDeletingOwnAccount] = useState(false);
     const [error, setError] = useState('');
 
     const handleAddUser = (e: React.FormEvent) => {
@@ -215,6 +219,59 @@ const UserManagement: React.FC<{
 
     return (
         <div className="space-y-5 sm:space-y-6">
+            {/* Card 0: Mon Foyer & Code Partage */}
+            <div className="bg-gradient-to-br from-sky-50 to-blue-50 dark:from-slate-800 dark:to-slate-800/90 rounded-[26px] p-5 sm:p-6 border border-sky-100 dark:border-slate-700/60 shadow-xs space-y-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-2xl bg-sky-500 text-white flex items-center justify-center font-black text-xl shadow-xs shrink-0">
+                            🏠
+                        </div>
+                        <div>
+                            <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                                {currentFoyer?.name || 'Mon Foyer Partagé'}
+                            </h3>
+                            <p className="text-xs text-sky-600 dark:text-sky-400 font-semibold">
+                                Espace privé sécurisé & données synchronisées
+                            </p>
+                        </div>
+                    </div>
+                    <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                        {currentFoyer?.members?.length || profiles.length} membre{(currentFoyer?.members?.length || profiles.length) > 1 ? 's' : ''}
+                    </span>
+                </div>
+
+                <div className="bg-white dark:bg-slate-700/70 p-4 rounded-2xl border border-sky-100 dark:border-slate-600/50 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div>
+                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                            Code d'invitation du foyer :
+                        </p>
+                        <p className="text-xl font-mono font-black tracking-widest text-sky-600 dark:text-sky-300">
+                            {currentFoyer?.code || 'Actif'}
+                        </p>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-400 mt-0.5">
+                            Partagez ce code avec votre partenaire pour synchroniser vos comptes et dépenses.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const code = currentFoyer?.code || 'Actif';
+                            navigator.clipboard.writeText(code);
+                            if (setToastInfo) {
+                                setToastInfo({ message: `Code ${code} copié dans le presse-papier !`, type: 'info' });
+                            }
+                        }}
+                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer shrink-0"
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                        <span>Copier le code</span>
+                    </button>
+                </div>
+            </div>
+
             {/* Card 1: Gestion des utilisateurs */}
             <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
                 <div className="flex items-center justify-between">
@@ -244,12 +301,13 @@ const UserManagement: React.FC<{
                 </div>
 
                 <div className="space-y-2.5 pt-1">
-                    {profiles.map(p => {
+                    {profiles.map((p, idx) => {
+                        const initial = p.username.charAt(0).toUpperCase() || 'U';
                         const isSophie = p.user === User.Sophie;
-                        const avatarBg = isSophie 
+                        const isPink = isSophie || idx % 2 === 0;
+                        const avatarBg = isPink
                             ? 'bg-[#fce7f3] dark:bg-pink-950/70 text-[#ec4899] dark:text-pink-300' 
                             : 'bg-[#e0f2fe] dark:bg-sky-950/70 text-[#0284c7] dark:text-sky-300';
-                        const initial = (p.username.charAt(0) || (isSophie ? 'S' : 'V')).toUpperCase();
 
                         return (
                             <div key={p.username} className="flex items-center justify-between p-2 rounded-2xl hover:bg-slate-50/60 dark:hover:bg-slate-700/30 transition-colors">
@@ -258,7 +316,7 @@ const UserManagement: React.FC<{
                                         {initial}
                                     </div>
                                     <span className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base truncate">
-                                        {p.username} ({p.user})
+                                        {p.username} {p.user && p.user !== p.username ? `(${p.user})` : ''}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
@@ -452,6 +510,38 @@ const UserManagement: React.FC<{
                 onConfirm={handleDeleteUser}
                 title="Confirmer la suppression"
                 message={`Êtes-vous sûr de vouloir supprimer l'utilisateur « ${deletingUser?.username} » ? Cette action est irréversible.`}
+            />
+
+            {/* Store Policy: Delete own account option */}
+            {onDeleteOwnAccount && (
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-700/60">
+                    <button 
+                        type="button"
+                        onClick={() => setIsDeletingOwnAccount(true)}
+                        className="w-full py-3 px-4 rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/60 hover:bg-rose-100/60 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <span>Supprimer mon compte et mes données</span>
+                    </button>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center mt-1.5">
+                        Conformité App Store & Google Play : supprime définitivement votre profil et vos accès.
+                    </p>
+                </div>
+            )}
+
+            <ConfirmationModal
+                isOpen={isDeletingOwnAccount}
+                onClose={() => setIsDeletingOwnAccount(false)}
+                onConfirm={async () => {
+                    setIsDeletingOwnAccount(false);
+                    if (onDeleteOwnAccount) {
+                        await onDeleteOwnAccount();
+                    }
+                }}
+                title="Supprimer mon compte"
+                message="Attention : Voulez-vous vraiment supprimer votre compte ? Votre profil et votre session seront définitivement effacés."
             />
         </div>
     );
@@ -1122,6 +1212,8 @@ interface ManagementTabProps {
     setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
     loginHistory: LoginEvent[];
     focusSection?: 'all' | 'users' | 'categories' | 'lists' | 'data';
+    currentFoyer?: Foyer;
+    onDeleteOwnAccount?: () => Promise<boolean>;
 }
 
 const ManagementTab: React.FC<ManagementTabProps> = (props) => {

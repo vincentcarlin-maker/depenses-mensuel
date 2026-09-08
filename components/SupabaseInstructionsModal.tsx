@@ -106,7 +106,20 @@ CREATE POLICY "Allow all access" ON public.reminders FOR ALL TO anon USING (true
 CREATE POLICY "Allow all access" ON public.login_logs FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access" ON public.money_pot FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access" ON public.activities FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access" ON public.app_settings FOR ALL TO anon USING (true) WITH CHECK (true);`;
+CREATE POLICY "Allow all access" ON public.app_settings FOR ALL TO anon USING (true) WITH CHECK (true);
+
+-- 9. MULTI-UTILISATEURS & ISOLATION DES FOYERS (App Store / Déploiement)
+-- Ajoute la colonne 'foyer_id' pour séparer les données de chaque foyer/couple
+ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS foyer_id text DEFAULT 'foyer_vincent_sophie';
+ALTER TABLE public.reminders ADD COLUMN IF NOT EXISTS foyer_id text DEFAULT 'foyer_vincent_sophie';
+ALTER TABLE public.money_pot ADD COLUMN IF NOT EXISTS foyer_id text DEFAULT 'foyer_vincent_sophie';
+ALTER TABLE public.activities ADD COLUMN IF NOT EXISTS foyer_id text DEFAULT 'foyer_vincent_sophie';
+
+-- Rétro-compatibilité : Associer l'historique existant au foyer de Vincent & Sophie
+UPDATE public.expenses SET foyer_id = 'foyer_vincent_sophie' WHERE foyer_id IS NULL;
+UPDATE public.reminders SET foyer_id = 'foyer_vincent_sophie' WHERE foyer_id IS NULL;
+UPDATE public.money_pot SET foyer_id = 'foyer_vincent_sophie' WHERE foyer_id IS NULL;
+UPDATE public.activities SET foyer_id = 'foyer_vincent_sophie' WHERE foyer_id IS NULL;`;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center" aria-modal="true" role="dialog">

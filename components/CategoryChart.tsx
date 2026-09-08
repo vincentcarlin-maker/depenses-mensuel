@@ -50,7 +50,7 @@ const TrendArrowIcon = ({ isUp, className = "w-6 h-6" }: { isUp: boolean; classN
 );
 
 const getCategoryDisplayName = (name: string): string => {
-  if (name === 'Dépenses obligatoires' || name === 'Dép. récurrentes' || name === 'Dép. recurentes') {
+  if (name === 'Dépenses récurrentes' || name === 'Dépenses obligatoires' || name === 'Dép. récurrentes' || name === 'Dép. recurentes') {
     return 'Dép. récurrentes';
   }
   return name;
@@ -63,6 +63,7 @@ const ChevronRightIcon = ({ className = "w-5 h-5" }: { className?: string }) => 
 );
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string } } = {
+  "Dépenses récurrentes": { icon: MandatoryIcon, color: 'bg-slate-600' },
   "Dép. récurrentes": { icon: MandatoryIcon, color: 'bg-slate-600' },
   "Dép. recurentes": { icon: MandatoryIcon, color: 'bg-slate-600' },
   "Dépenses obligatoires": { icon: MandatoryIcon, color: 'bg-slate-600' },

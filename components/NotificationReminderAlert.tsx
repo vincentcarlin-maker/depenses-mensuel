@@ -106,6 +106,9 @@ const NotificationReminderAlert: React.FC<NotificationReminderAlertProps> = ({
           privacyMode: false,
         };
 
+        const activeFoyerId = localStorage.getItem('duobudget_active_foyer_id') || 'foyer_vincent_sophie';
+        subJSON.foyer_id = activeFoyerId;
+
         await (supabase.from('push_subscriptions') as any).insert({
           user_id: userId,
           subscription: subJSON,

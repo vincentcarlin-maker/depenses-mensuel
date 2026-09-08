@@ -5,6 +5,25 @@ export enum User {
   Commun = "Commun",
 }
 
+export type UserName = User | string;
+
+export interface FoyerMember {
+  id: string;
+  name: string;
+  username: string;
+  color?: string;
+  role?: 'admin' | 'member';
+  joined_at?: string;
+}
+
+export interface Foyer {
+  id: string;
+  name: string;
+  code: string;
+  created_at: string;
+  members: FoyerMember[];
+}
+
 // Les catégories sont maintenant dynamiques.
 // Ceci est juste un type pour la cléarité, la vraie liste est gérée dans l'état de l'application.
 export type Category = string;
@@ -54,8 +73,10 @@ export interface Expense {
   amount: number;
   category: Category;
   date: string; // ISO 8601 format (TIMESTAMPTZ)
-  user: User;
+  user: User | string;
   created_at: string;
+  user_agent?: string;
+  foyer_id?: string;
   subtracted_items?: SubtractedItem[];
 }
 
@@ -64,10 +85,12 @@ export interface Reminder {
   description: string;
   amount: number;
   category: Category;
-  user: User;
+  user: User | string;
   day_of_month: number;
   is_active: boolean;
   created_at: string;
+  user_agent?: string;
+  foyer_id?: string;
 }
 
 export interface MoneyPotTransaction {
@@ -77,6 +100,7 @@ export interface MoneyPotTransaction {
   user_name: string; // Renamed from 'user' to avoid reserved keyword conflicts
   date: string;
   created_at: string;
+  foyer_id?: string;
 }
 
 export interface CustomCategoryIcon {
@@ -93,8 +117,8 @@ export interface CustomCategoryIcon {
 export type Activity = {
     id: string; // unique id for the activity
     type: 'add' | 'update' | 'delete';
-    performedBy: User; // The logged-in user who did the action
-    expense: Partial<Expense> & { id: string, user: User, date: string };
+    performedBy: User | string; // The logged-in user who did the action
+    expense: Partial<Expense> & { id: string, user: User | string, date: string, foyer_id?: string };
     oldExpense?: Partial<Expense>; // Used to show diff on updates
     timestamp: string;
 };

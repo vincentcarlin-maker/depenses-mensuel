@@ -35,6 +35,7 @@ const urlB64ToUint8Array = (base64String: string) => {
 
 interface NotificationsTabProps {
     loggedInUser: User;
+    currentFoyer?: any;
 }
 
 // Category visual mapping for the filter chips
@@ -105,7 +106,7 @@ const formatCategoryLabel = (cat: string) => {
     return cat;
 };
 
-const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => {
+const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, currentFoyer }) => {
     const [permission, setPermission] = useState<NotificationPermission>('default');
     const [isSubscribed, setIsSubscribed] = useState(false);
     
@@ -200,6 +201,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                         };
                         const subscriptionJSON = subscription.toJSON() as any;
                         subscriptionJSON.preferences = localPrefs;
+                        subscriptionJSON.foyer_id = currentFoyer?.id || 'foyer_vincent_sophie';
 
                         await (supabase.from('push_subscriptions') as any).insert({
                             user_id: userId,
@@ -257,6 +259,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                 const userId = (loggedInUser as string) === 'Duo' ? 'Commun' : loggedInUser;
                 const subscriptionJSON = subscription.toJSON() as any;
                 subscriptionJSON.preferences = updatedPrefs;
+                subscriptionJSON.foyer_id = currentFoyer?.id || 'foyer_vincent_sophie';
                 
                 await (supabase.from('push_subscriptions') as any).delete().eq('user_id', userId);
                 await (supabase.from('push_subscriptions') as any).insert({
@@ -363,6 +366,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                 quietHoursEnd: prefQuietHoursEnd,
                 privacyMode: prefPrivacyMode
             };
+            subJSON.foyer_id = currentFoyer?.id || 'foyer_vincent_sophie';
 
             await (supabase.from('push_subscriptions') as any).insert({
                 user_id: userId,
@@ -601,95 +605,41 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser }) => 
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5">
-                        {/* Sophie */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2.5">
                         {(() => {
-                            const isChecked = prefAuthors.includes('Sophie');
-                            return (
-                                <button
-                                    type="button"
-                                    onClick={() => handleAuthorToggle('Sophie')}
-                                    className={`py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl border flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 transition-all cursor-pointer font-bold text-xs sm:text-sm min-w-0 ${
-                                        isChecked
-                                            ? 'bg-[#e0f2fe] dark:bg-sky-950/60 border-[#bae6fd] dark:border-sky-800 text-slate-900 dark:text-white shadow-2xs'
-                                            : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200/80 dark:border-slate-700 text-slate-400 dark:text-slate-500'
-                                    }`}
-                                >
-                                    <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-[6px] flex items-center justify-center shrink-0 transition-colors ${
-                                        isChecked
-                                            ? 'bg-[#0284c7] text-white'
-                                            : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
-                                    }`}>
-                                        {isChecked && (
-                                            <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        )}
-                                    </div>
-                                    <span className="text-sm sm:text-base shrink-0">👤</span>
-                                    <span className="truncate">Sophie</span>
-                                </button>
-                            );
-                        })()}
+                            const authorList = currentFoyer?.members && currentFoyer.members.length > 0
+                                ? [...currentFoyer.members.map((m: any) => m.name), 'Commun']
+                                : ['Sophie', 'Vincent', 'Commun'];
 
-                        {/* Vincent */}
-                        {(() => {
-                            const isChecked = prefAuthors.includes('Vincent');
-                            return (
-                                <button
-                                    type="button"
-                                    onClick={() => handleAuthorToggle('Vincent')}
-                                    className={`py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl border flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 transition-all cursor-pointer font-bold text-xs sm:text-sm min-w-0 ${
-                                        isChecked
-                                            ? 'bg-[#e0f2fe] dark:bg-sky-950/60 border-[#bae6fd] dark:border-sky-800 text-slate-900 dark:text-white shadow-2xs'
-                                            : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200/80 dark:border-slate-700 text-slate-400 dark:text-slate-500'
-                                    }`}
-                                >
-                                    <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-[6px] flex items-center justify-center shrink-0 transition-colors ${
-                                        isChecked
-                                            ? 'bg-[#0284c7] text-white'
-                                            : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
-                                    }`}>
-                                        {isChecked && (
-                                            <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        )}
-                                    </div>
-                                    <span className="text-sm sm:text-base shrink-0">👤</span>
-                                    <span className="truncate">Vincent</span>
-                                </button>
-                            );
-                        })()}
-
-                        {/* Dépenses communes */}
-                        {(() => {
-                            const isChecked = prefAuthors.includes('Commun');
-                            return (
-                                <button
-                                    type="button"
-                                    onClick={() => handleAuthorToggle('Commun')}
-                                    className={`py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl border flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 transition-all cursor-pointer font-bold text-xs sm:text-sm min-w-0 ${
-                                        isChecked
-                                            ? 'bg-[#e0f2fe] dark:bg-sky-950/60 border-[#bae6fd] dark:border-sky-800 text-slate-900 dark:text-white shadow-2xs'
-                                            : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200/80 dark:border-slate-700 text-slate-400 dark:text-slate-500'
-                                    }`}
-                                >
-                                    <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-[6px] flex items-center justify-center shrink-0 transition-colors ${
-                                        isChecked
-                                            ? 'bg-[#0284c7] text-white'
-                                            : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
-                                    }`}>
-                                        {isChecked && (
-                                            <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        )}
-                                    </div>
-                                    <span className="text-sm sm:text-base shrink-0">👥</span>
-                                    <span className="truncate">Communes</span>
-                                </button>
-                            );
+                            return authorList.map((authorName: string) => {
+                                const isChecked = prefAuthors.includes(authorName);
+                                return (
+                                    <button
+                                        key={authorName}
+                                        type="button"
+                                        onClick={() => handleAuthorToggle(authorName)}
+                                        className={`py-2 px-2 sm:py-2.5 sm:px-3 rounded-xl border flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 transition-all cursor-pointer font-bold text-xs sm:text-sm min-w-0 ${
+                                            isChecked
+                                                ? 'bg-[#e0f2fe] dark:bg-sky-950/60 border-[#bae6fd] dark:border-sky-800 text-slate-900 dark:text-white shadow-2xs'
+                                                : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200/80 dark:border-slate-700 text-slate-400 dark:text-slate-500'
+                                        }`}
+                                    >
+                                        <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-[6px] flex items-center justify-center shrink-0 transition-colors ${
+                                            isChecked
+                                                ? 'bg-[#0284c7] text-white'
+                                                : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
+                                        }`}>
+                                            {isChecked && (
+                                                <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                        <span className="text-sm sm:text-base shrink-0">{authorName === 'Commun' ? '👥' : '👤'}</span>
+                                        <span className="truncate">{authorName}</span>
+                                    </button>
+                                );
+                            });
                         })()}
                     </div>
                 </div>

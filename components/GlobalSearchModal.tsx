@@ -20,9 +20,17 @@ interface GlobalSearchModalProps {
 const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, onClose, allExpenses, onEditExpense, highlightedIds, modifiedInfo = new Map(), categories }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [filterUser, setFilterUser] = useState<User | 'All'>('All');
+  const [filterUser, setFilterUser] = useState<string | 'All'>('All');
   const [filterCategory, setFilterCategory] = useState<Category | 'All'>('All');
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const availableUsers = useMemo(() => {
+    const set = new Set<string>();
+    allExpenses.forEach(e => {
+      if (e.user) set.add(e.user);
+    });
+    return Array.from(set);
+  }, [allExpenses]);
 
   const searchedExpenses = useMemo(() => {
     // Filter by text first
@@ -135,25 +143,22 @@ const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, onClose, 
            <div className="mb-6 p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 space-y-4 animate-fade-in shadow-sm">
                <div>
                    <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Par personne</label>
-                   <div className="flex gap-2">
+                   <div className="flex flex-wrap gap-2">
                        <button 
                            onClick={() => setFilterUser('All')}
-                           className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors border ${filterUser === 'All' ? 'bg-slate-100 dark:bg-slate-700 border-transparent text-slate-800 dark:text-slate-100' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                           className={`py-1.5 px-3 rounded-lg text-sm font-medium transition-colors border ${filterUser === 'All' ? 'bg-slate-100 dark:bg-slate-700 border-transparent text-slate-800 dark:text-slate-100' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                        >
                            Tous
                        </button>
-                       <button 
-                           onClick={() => setFilterUser(User.Sophie)}
-                           className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors border ${filterUser === User.Sophie ? 'bg-pink-500 border-pink-600 text-white' : 'bg-white dark:bg-slate-800 border-pink-200 dark:border-pink-900/30 text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-900/10'}`}
-                       >
-                           Sophie
-                       </button>
-                       <button 
-                           onClick={() => setFilterUser(User.Vincent)}
-                           className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors border ${filterUser === User.Vincent ? 'bg-sky-500 border-sky-600 text-white' : 'bg-white dark:bg-slate-800 border-sky-200 dark:border-sky-900/30 text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/10'}`}
-                       >
-                           Vincent
-                       </button>
+                       {availableUsers.map(u => (
+                           <button 
+                               key={u}
+                               onClick={() => setFilterUser(u)}
+                               className={`py-1.5 px-3 rounded-lg text-sm font-medium transition-colors border ${filterUser === u ? 'bg-sky-500 border-sky-600 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                           >
+                               {u}
+                           </button>
+                       ))}
                    </div>
                </div>
                <div>

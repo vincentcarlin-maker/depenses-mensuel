@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Expense, Reminder, MoneyPotTransaction, Category, User } from '../types';
+import { Expense, Reminder, MoneyPotTransaction, Category, User, Foyer } from '../types';
 import { supabase } from '../supabase/client';
+import { DEFAULT_FOYER_ID } from '../utils/foyerService';
 import ConfirmationModal from './ConfirmationModal';
 
 interface DataAndBackupTabProps {
@@ -15,6 +16,7 @@ interface DataAndBackupTabProps {
   onSyncData?: () => Promise<void>;
   onDeleteAllExpenses?: () => Promise<void>;
   onResetApp?: () => Promise<void>;
+  currentFoyer?: Foyer;
 }
 
 export const DataAndBackupTab: React.FC<DataAndBackupTabProps> = ({
@@ -27,6 +29,7 @@ export const DataAndBackupTab: React.FC<DataAndBackupTabProps> = ({
   heatingTypes = [],
   setToastInfo,
   onSyncData,
+  currentFoyer,
 }) => {
   // Sync state
   const [isSyncing, setIsSyncing] = useState(false);
@@ -380,18 +383,21 @@ export const DataAndBackupTab: React.FC<DataAndBackupTabProps> = ({
 
   const handleExportBalanceHistory = () => {
     const dateStr = new Date().toISOString().split('T')[0];
+    const m1Name = currentFoyer?.members[0]?.name || 'Membre 1';
+    const m2Name = currentFoyer?.members[1]?.name || 'Membre 2';
+
     // Group monthly balance
-    const monthlyGroups: Record<string, { total: number; sophie: number; vincent: number; commun: number }> = {};
+    const monthlyGroups: Record<string, { total: number; m1: number; m2: number; commun: number }> = {};
 
     expenses.forEach(e => {
       const d = new Date(e.date);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       if (!monthlyGroups[key]) {
-        monthlyGroups[key] = { total: 0, sophie: 0, vincent: 0, commun: 0 };
+        monthlyGroups[key] = { total: 0, m1: 0, m2: 0, commun: 0 };
       }
       monthlyGroups[key].total += e.amount;
-      if (e.user === User.Sophie) monthlyGroups[key].sophie += e.amount;
-      else if (e.user === User.Vincent) monthlyGroups[key].vincent += e.amount;
+      if (e.user === m1Name) monthlyGroups[key].m1 += e.amount;
+      else if (e.user === m2Name) monthlyGroups[key].m2 += e.amount;
       else monthlyGroups[key].commun += e.amount;
     });
 
@@ -400,22 +406,22 @@ export const DataAndBackupTab: React.FC<DataAndBackupTabProps> = ({
     if (exportFormat === 'json') {
       downloadJSON(monthlyGroups, `DuoBudget_Balance_Historique_${dateStr}`);
     } else {
-      const headers = ['Mois', 'Total Dépenses (€)', 'Total Sophie (€)', 'Total Vincent (€)', 'Total Commun (€)', 'Équilibre Sophie / Vincent (€)'];
+      const headers = ['Mois', 'Total Dépenses (€)', `Total ${m1Name} (€)`, `Total ${m2Name} (€)`, 'Total Commun (€)', `Équilibre ${m1Name} / ${m2Name} (€)`];
       const rows = sortedMonths.map(month => {
         const data = monthlyGroups[month];
-        const diff = (data.sophie - data.vincent) / 2;
+        const diff = (data.m1 - data.m2) / 2;
         const balanceText =
           diff > 0
-            ? `Vincent doit ${diff.toFixed(2).replace('.', ',')} € à Sophie`
+            ? `${m2Name} doit ${diff.toFixed(2).replace('.', ',')} € à ${m1Name}`
             : diff < 0
-            ? `Sophie doit ${Math.abs(diff).toFixed(2).replace('.', ',')} € à Vincent`
+            ? `${m1Name} doit ${Math.abs(diff).toFixed(2).replace('.', ',')} € à ${m2Name}`
             : 'Équilibré (0,00 €)';
 
         return [
           month,
           data.total.toFixed(2).replace('.', ','),
-          data.sophie.toFixed(2).replace('.', ','),
-          data.vincent.toFixed(2).replace('.', ','),
+          data.m1.toFixed(2).replace('.', ','),
+          data.m2.toFixed(2).replace('.', ','),
           data.commun.toFixed(2).replace('.', ','),
           balanceText,
         ];
@@ -484,6 +490,8 @@ export const DataAndBackupTab: React.FC<DataAndBackupTabProps> = ({
   const handleConfirmImport = async () => {
     if (!importDataPreview) return;
     setIsImporting(true);
+    const activeFoyerId = currentFoyer?.id || DEFAULT_FOYER_ID;
+
     try {
       const { parsedPayload } = importDataPreview;
 
@@ -491,12 +499,16 @@ export const DataAndBackupTab: React.FC<DataAndBackupTabProps> = ({
         const validExpenses = parsedPayload.expenses.filter((e: any) => e.amount && e.date);
 
         if (importMode === 'replace') {
-          // Delete all then insert
-          await supabase.from('expenses').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          // Delete only current foyer's expenses
+          if (activeFoyerId === DEFAULT_FOYER_ID) {
+            await supabase.from('expenses').delete().or(`foyer_id.eq.${DEFAULT_FOYER_ID},foyer_id.is.null`);
+          } else {
+            await supabase.from('expenses').delete().eq('foyer_id', activeFoyerId);
+          }
         }
 
         if (validExpenses.length > 0) {
-          // Clean ID or let Supabase assign
+          // Clean ID or let Supabase assign, tag with active foyer
           const cleanExpenses = validExpenses.map((e: any) => ({
             id: e.id || crypto.randomUUID(),
             description: e.description || 'Dépense importée',
@@ -505,12 +517,20 @@ export const DataAndBackupTab: React.FC<DataAndBackupTabProps> = ({
             date: e.date,
             user: e.user || User.Sophie,
             created_at: e.created_at || new Date().toISOString(),
+            foyer_id: activeFoyerId,
           }));
 
-          // Batch insert by chunks of 50
+          // Batch insert by chunks of 50 (with graceful fallback if foyer_id column doesn't exist yet)
           for (let i = 0; i < cleanExpenses.length; i += 50) {
             const chunk = cleanExpenses.slice(i, i + 50);
-            await supabase.from('expenses').upsert(chunk, { onConflict: 'id' });
+            const { error: upsertErr } = await supabase.from('expenses').upsert(chunk, { onConflict: 'id' });
+            if (upsertErr && (upsertErr.code === 'PGRST204' || upsertErr.message?.includes('foyer_id'))) {
+              const fallbackChunk = chunk.map((item: any) => {
+                const { foyer_id: _, ...rest } = item;
+                return rest;
+              });
+              await supabase.from('expenses').upsert(fallbackChunk, { onConflict: 'id' });
+            }
           }
         }
       }
@@ -562,11 +582,18 @@ export const DataAndBackupTab: React.FC<DataAndBackupTabProps> = ({
 
   // --- 7. Danger Zone Handlers ---
   const handleDeleteAllExpenses = async () => {
+    const activeFoyerId = currentFoyer?.id || DEFAULT_FOYER_ID;
     try {
-      const { error } = await supabase.from('expenses').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      let query = supabase.from('expenses').delete();
+      if (activeFoyerId === DEFAULT_FOYER_ID) {
+        query = query.or(`foyer_id.eq.${DEFAULT_FOYER_ID},foyer_id.is.null`);
+      } else {
+        query = query.eq('foyer_id', activeFoyerId);
+      }
+      const { error } = await query;
       if (error) throw error;
 
-      setToastInfo({ message: 'Toutes les dépenses ont été supprimées.', type: 'info' });
+      setToastInfo({ message: 'Toutes les dépenses du foyer ont été supprimées.', type: 'info' });
       setIsDeleteExpensesConfirmOpen(false);
       setDangerConfirmText('');
       if (onSyncData) await onSyncData();
@@ -577,12 +604,19 @@ export const DataAndBackupTab: React.FC<DataAndBackupTabProps> = ({
   };
 
   const handleResetApplication = async () => {
+    const activeFoyerId = currentFoyer?.id || DEFAULT_FOYER_ID;
     try {
-      await supabase.from('expenses').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await supabase.from('money_pot').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await supabase.from('activities').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      if (activeFoyerId === DEFAULT_FOYER_ID) {
+        await supabase.from('expenses').delete().or(`foyer_id.eq.${DEFAULT_FOYER_ID},foyer_id.is.null`);
+        await supabase.from('money_pot').delete().or(`foyer_id.eq.${DEFAULT_FOYER_ID},foyer_id.is.null`);
+        await supabase.from('activities').delete().or(`foyer_id.eq.${DEFAULT_FOYER_ID},foyer_id.is.null`);
+      } else {
+        await supabase.from('expenses').delete().eq('foyer_id', activeFoyerId);
+        await supabase.from('money_pot').delete().eq('foyer_id', activeFoyerId);
+        await supabase.from('activities').delete().eq('foyer_id', activeFoyerId);
+      }
 
-      setToastInfo({ message: "L'application a été réinitialisée.", type: 'info' });
+      setToastInfo({ message: "Les données du foyer ont été réinitialisées.", type: 'info' });
       setIsResetConfirmOpen(false);
       setDangerConfirmText('');
       if (onSyncData) await onSyncData();

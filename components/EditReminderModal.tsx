@@ -20,9 +20,11 @@ interface EditReminderModalProps {
     onUpdateReminder: (reminder: Reminder) => void;
     onClose: () => void;
     categories: Category[];
+    foyerMembers?: { id: string; name: string }[];
 }
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; bgColor: string } } = {
+  "Dépenses récurrentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700' },
   "Dép. récurrentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700' },
   "Dép. recurentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700' },
   "Dépenses obligatoires": { icon: MandatoryIcon, color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-950/60' },
@@ -38,11 +40,11 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
   "Divers": { icon: MiscIcon, color: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-50 dark:bg-cyan-950/60' },
 };
 
-const EditReminderModal: React.FC<EditReminderModalProps> = ({ reminder, onUpdateReminder, onClose, categories }) => {
+const EditReminderModal: React.FC<EditReminderModalProps> = ({ reminder, onUpdateReminder, onClose, categories, foyerMembers }) => {
     const [description, setDescription] = useState(reminder.description);
     const [amount, setAmount] = useState(reminder.amount.toString());
     const [category, setCategory] = useState<Category>(reminder.category);
-    const [user, setUser] = useState<User>(reminder.user);
+    const [user, setUser] = useState<string>(reminder.user);
     const [dayOfMonth, setDayOfMonth] = useState(reminder.day_of_month.toString());
     const [error, setError] = useState('');
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
@@ -143,34 +145,29 @@ const EditReminderModal: React.FC<EditReminderModalProps> = ({ reminder, onUpdat
                             Personne concernée
                         </label>
                         <div className="bg-[#f1f5f9] dark:bg-slate-700/50 p-1 rounded-full flex gap-1">
-                            <button
-                                type="button"
-                                onClick={() => setUser(User.Sophie)}
-                                className={`flex-1 py-2 px-3 rounded-full text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                                    user === User.Sophie
-                                        ? 'bg-white dark:bg-slate-800 text-[#e11d48] dark:text-rose-400 shadow-xs'
-                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
-                                }`}
-                            >
-                                <svg className={`w-4 h-4 ${user === User.Sophie ? 'fill-[#e11d48] text-[#e11d48]' : 'text-slate-400'}`} viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                </svg>
-                                Sophie
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setUser(User.Vincent)}
-                                className={`flex-1 py-2 px-3 rounded-full text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                                    user === User.Vincent
-                                        ? 'bg-white dark:bg-slate-800 text-[#0284c7] dark:text-sky-400 shadow-xs'
-                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
-                                }`}
-                            >
-                                <svg className={`w-4 h-4 ${user === User.Vincent ? 'fill-[#0284c7] text-[#0284c7]' : 'text-slate-400'}`} viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                </svg>
-                                Vincent
-                            </button>
+                            {(foyerMembers && foyerMembers.length > 0 ? foyerMembers : [{ id: '1', name: User.Sophie }, { id: '2', name: User.Vincent }]).map((m: { id: string; name: string }, idx: number) => {
+                                const isSelected = user === m.name;
+                                const isPink = idx % 2 === 0;
+                                const selectedColor = isPink ? 'text-[#e11d48] dark:text-rose-400' : 'text-[#0284c7] dark:text-sky-400';
+                                const fillColor = isPink ? 'fill-[#e11d48] text-[#e11d48]' : 'fill-[#0284c7] text-[#0284c7]';
+                                return (
+                                    <button
+                                        key={m.id || m.name}
+                                        type="button"
+                                        onClick={() => setUser(m.name)}
+                                        className={`flex-1 py-2 px-3 rounded-full text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                                            isSelected
+                                                ? `bg-white dark:bg-slate-800 ${selectedColor} shadow-xs`
+                                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                                        }`}
+                                    >
+                                        <svg className={`w-4 h-4 ${isSelected ? fillColor : 'text-slate-400'}`} viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                                        </svg>
+                                        {m.name}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 

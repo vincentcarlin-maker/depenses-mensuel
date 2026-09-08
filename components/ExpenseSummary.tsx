@@ -1,6 +1,7 @@
 
 import React, { useMemo, useState } from 'react';
-import { type Expense, User } from '../types';
+import { type Expense, User, type FoyerMember } from '../types';
+import { DEFAULT_FOYER } from '../utils/foyerService';
 import ExpenseList from './ExpenseList';
 import CloseIcon from './icons/CloseIcon';
 import ChevronRightIcon from './icons/ChevronRightIcon';
@@ -13,18 +14,36 @@ interface BalanceReportProps {
   allExpenses: Expense[];
   currentYear: number;
   currentMonth: number;
-  sophieTotalMonth: number;
-  vincentTotalMonth: number;
-  loggedInUser?: User | null;
+  sophieTotalMonth?: number;
+  vincentTotalMonth?: number;
+  loggedInUser?: User | string | null;
+  foyerMembers?: FoyerMember[];
 }
 
-const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear, currentMonth, sophieTotalMonth, vincentTotalMonth, loggedInUser }) => {
-  const [userExpensesModal, setUserExpensesModal] = useState<{ user: User, expenses: Expense[] } | null>(null);
+const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear, currentMonth, loggedInUser, foyerMembers }) => {
+  const members = useMemo(() => {
+    if (foyerMembers && foyerMembers.length > 0) {
+      return foyerMembers;
+    }
+    return [{ id: '1', name: String(loggedInUser || 'Moi') }];
+  }, [foyerMembers, loggedInUser]);
+  const [userExpensesModal, setUserExpensesModal] = useState<{ user: string, expenses: Expense[] } | null>(null);
 
-  const { historicDifference, cumulativeDifference, statusType, message, communTotalMonth, sophieExpenses, vincentExpenses } = useMemo(() => {
+  const memberA = members[0] || { name: String(loggedInUser || 'Moi') };
+  const memberB = members[1] || { name: 'ton partenaire' };
+
+  const {
+    historicDifference,
+    cumulativeDifference,
+    statusType,
+    message,
+    communTotalMonth,
+    memberStats,
+    totalExpenses
+  } = useMemo(() => {
     const firstDayOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1));
     
-    // Expenses for the current month paid by "Commun" (Cagnotte)
+    // Expenses for current month
     const currentMonthExpenses = allExpenses.filter(expense => {
       const expenseDate = new Date(expense.date);
       return expenseDate.getUTCFullYear() === currentYear && expenseDate.getUTCMonth() === currentMonth;
@@ -34,22 +53,31 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
         .filter(e => e.user === User.Commun)
         .reduce((sum, e) => sum + e.amount, 0);
 
-    const sophieExpenses = currentMonthExpenses.filter(e => e.user === User.Sophie);
-    const vincentExpenses = currentMonthExpenses.filter(e => e.user === User.Vincent);
-
     const historicExpenses = allExpenses.filter(exp => new Date(exp.date) < firstDayOfMonth);
-    
-    const sophieHistoric = historicExpenses
-      .filter(e => e.user === User.Sophie)
-      .reduce((sum, e) => sum + e.amount, 0);
-    
-    const vincentHistoric = historicExpenses
-      .filter(e => e.user === User.Vincent)
-      .reduce((sum, e) => sum + e.amount, 0);
 
-    // Expenses paid by "Commun" do not affect the debt balance between Sophie and Vincent.
-    const historicDifference = sophieHistoric - vincentHistoric;
-    const currentMonthDifference = sophieTotalMonth - vincentTotalMonth;
+    const memberStats = members.map(m => {
+      const monthExp = currentMonthExpenses.filter(e => e.user === m.name);
+      const monthTotal = monthExp.reduce((sum, e) => sum + e.amount, 0);
+      const histTotal = historicExpenses.filter(e => e.user === m.name).reduce((sum, e) => sum + e.amount, 0);
+      return {
+        member: m,
+        expenses: monthExp,
+        monthTotal,
+        histTotal
+      };
+    });
+
+    const totalMonthIndividual = memberStats.reduce((sum, ms) => sum + ms.monthTotal, 0);
+    const totalExpenses = totalMonthIndividual + communTotalMonth;
+
+    // Primary balance difference between memberA and memberB
+    const aHist = memberStats.find(ms => ms.member.name === memberA.name)?.histTotal || 0;
+    const bHist = memberStats.find(ms => ms.member.name === memberB.name)?.histTotal || 0;
+    const aMonth = memberStats.find(ms => ms.member.name === memberA.name)?.monthTotal || 0;
+    const bMonth = memberStats.find(ms => ms.member.name === memberB.name)?.monthTotal || 0;
+
+    const historicDifference = aHist - bHist;
+    const currentMonthDifference = aMonth - bMonth;
     const cumulativeDifference = historicDifference + currentMonthDifference;
 
     let message: string;
@@ -59,12 +87,18 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
       message = "Les comptes sont parfaitement équilibrés.";
       statusType = 'balanced';
     } else {
-      const sophieAhead = cumulativeDifference > 0;
+      const aAhead = cumulativeDifference > 0;
       const amount = Math.abs(cumulativeDifference).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
       
-      if (loggedInUser === User.Sophie || loggedInUser === User.Vincent) {
-        const isAhead = (loggedInUser === User.Sophie && sophieAhead) || (loggedInUser === User.Vincent && !sophieAhead);
-        const otherUser = loggedInUser === User.Sophie ? "Vincent" : "Sophie";
+      const currentUserName = String(loggedInUser || '');
+      const isUserMemberA = currentUserName === memberA.name;
+      const isUserMemberB = members.length > 1 && currentUserName === memberB.name;
+
+      if (isUserMemberA || isUserMemberB) {
+        const isAhead = (isUserMemberA && aAhead) || (isUserMemberB && !aAhead);
+        const otherUser = isUserMemberA 
+          ? (members.length > 1 ? memberB.name : 'ton partenaire') 
+          : memberA.name;
         
         if (isAhead) {
           message = `Tu as une avance de ${amount} par rapport à ${otherUser}.`;
@@ -73,29 +107,45 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
           message = `Tu as un retard de ${amount} par rapport à ${otherUser}.`;
           statusType = 'behind';
         }
-      } else {
-        if (sophieAhead) {
-          message = `Sophie a dépensé ${amount} de plus par rapport à Vincent.`;
+      } else if (members.length >= 2) {
+        if (aAhead) {
+          message = `${memberA.name} a dépensé ${amount} de plus par rapport à ${memberB.name}.`;
           statusType = 'ahead';
         } else {
-          message = `Vincent a dépensé ${amount} de plus par rapport à Sophie.`;
+          message = `${memberB.name} a dépensé ${amount} de plus par rapport à ${memberA.name}.`;
           statusType = 'ahead';
+        }
+      } else {
+        const otherUser = 'ton partenaire';
+        if (aAhead) {
+          message = `Tu as une avance de ${amount} par rapport à ${otherUser}.`;
+          statusType = 'ahead';
+        } else {
+          message = `Tu as un retard de ${amount} par rapport à ${otherUser}.`;
+          statusType = 'behind';
         }
       }
     }
     
-    return { historicDifference, cumulativeDifference, statusType, message, communTotalMonth, sophieExpenses, vincentExpenses };
-  }, [allExpenses, currentYear, currentMonth, sophieTotalMonth, vincentTotalMonth, loggedInUser]);
-  
-  // Total including individual spending AND common spending
-  const totalExpenses = sophieTotalMonth + vincentTotalMonth + communTotalMonth;
+    return {
+      historicDifference,
+      cumulativeDifference,
+      statusType,
+      message,
+      communTotalMonth,
+      memberStats,
+      totalExpenses
+    };
+  }, [allExpenses, currentYear, currentMonth, loggedInUser, members, memberA.name, memberB.name]);
 
   return (
     <div className="bg-white dark:bg-slate-800 p-4 sm:p-7 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-6 sm:space-y-7">
         {/* Balance des comptes section */}
         <div>
             <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Balance des comptes</h2>
-            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Répartition et solde entre Sophie et Vincent</p>
+            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
+              Répartition et solde {members.length >= 2 ? `entre ${memberA.name} et ${memberB.name}` : 'du foyer'}
+            </p>
             
             {/* Status Banner */}
             {(() => {
@@ -192,53 +242,55 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                     </div>
                 </div>
 
-                {/* Total Sophie */}
-                <div 
-                    className="flex items-center justify-between p-3.5 sm:p-5 bg-pink-50/60 dark:bg-pink-950/30 border border-pink-100/80 dark:border-pink-900/40 rounded-2xl sm:rounded-3xl transition-all shadow-xs cursor-pointer hover:shadow-md hover:scale-[1.005] active:scale-[0.99] min-w-0"
-                    onClick={() => setUserExpensesModal({ user: User.Sophie, expenses: sophieExpenses })}
-                >
-                    <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1 pr-2">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-pink-100 dark:bg-pink-900/50 flex items-center justify-center text-pink-600 dark:text-pink-400 shrink-0">
-                        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                        </svg>
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-lg leading-tight">Total Sophie</h3>
-                        <p className="text-[11px] sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">Dépenses de Sophie</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                      <span className="font-extrabold text-base sm:text-2xl text-pink-600 dark:text-pink-400 whitespace-nowrap">
-                          {sophieTotalMonth.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                      </span>
-                      <ChevronRightIcon />
-                    </div>
-                </div>
+                {/* Member Totals */}
+                {memberStats.map(({ member, monthTotal, expenses }, index) => {
+                  const isSophie = member.name === User.Sophie;
+                  const isVincent = member.name === User.Vincent;
+                  
+                  const bgClass = isSophie 
+                    ? 'bg-pink-50/60 dark:bg-pink-950/30 border-pink-100/80 dark:border-pink-900/40' 
+                    : isVincent 
+                    ? 'bg-blue-50/60 dark:bg-blue-950/30 border-blue-100/80 dark:border-blue-900/40'
+                    : 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-100/80 dark:border-emerald-900/40';
 
-                {/* Total Vincent */}
-                <div 
-                    className="flex items-center justify-between p-3.5 sm:p-5 bg-blue-50/60 dark:bg-blue-950/30 border border-blue-100/80 dark:border-blue-900/40 rounded-2xl sm:rounded-3xl transition-all shadow-xs cursor-pointer hover:shadow-md hover:scale-[1.005] active:scale-[0.99] min-w-0"
-                    onClick={() => setUserExpensesModal({ user: User.Vincent, expenses: vincentExpenses })}
-                >
-                    <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1 pr-2">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
-                        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                        </svg>
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-lg leading-tight">Total Vincent</h3>
-                        <p className="text-[11px] sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">Dépenses de Vincent</p>
-                      </div>
+                  const iconBg = isSophie
+                    ? 'bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-400'
+                    : isVincent
+                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                    : 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400';
+
+                  const textColor = isSophie
+                    ? 'text-pink-600 dark:text-pink-400'
+                    : isVincent
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-emerald-600 dark:text-emerald-400';
+
+                  return (
+                    <div 
+                        key={member.id || member.name}
+                        className={`flex items-center justify-between p-3.5 sm:p-5 border rounded-2xl sm:rounded-3xl transition-all shadow-xs cursor-pointer hover:shadow-md hover:scale-[1.005] active:scale-[0.99] min-w-0 ${bgClass}`}
+                        onClick={() => setUserExpensesModal({ user: member.name, expenses })}
+                    >
+                        <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1 pr-2">
+                          <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ${iconBg} flex items-center justify-center font-extrabold text-base sm:text-lg shrink-0`}>
+                            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                            </svg>
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-lg leading-tight">Total {member.name}</h3>
+                            <p className="text-[11px] sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">Dépenses de {member.name}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                          <span className={`font-extrabold text-base sm:text-2xl ${textColor} whitespace-nowrap`}>
+                              {monthTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                          </span>
+                          <ChevronRightIcon />
+                        </div>
                     </div>
-                    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                      <span className="font-extrabold text-base sm:text-2xl text-blue-600 dark:text-blue-400 whitespace-nowrap">
-                          {vincentTotalMonth.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                      </span>
-                      <ChevronRightIcon />
-                    </div>
-                </div>
+                  );
+                })}
 
                 {/* Cagnotte if > 0 */}
                 {communTotalMonth > 0 && (
@@ -269,7 +321,7 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                 <div className="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[80vh]">
                     <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                         <h3 className="font-extrabold text-lg text-slate-900 dark:text-slate-100">Dépenses de {userExpensesModal.user}</h3>
-                        <button onClick={() => setUserExpensesModal(null)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                        <button onClick={() => setUserExpensesModal(null)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer">
                             <CloseIcon />
                         </button>
                     </div>

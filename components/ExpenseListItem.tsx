@@ -35,6 +35,7 @@ const ExpenseListItem: React.FC<{
     const isSophie = expense.user === User.Sophie;
     const isVincent = expense.user === User.Vincent;
     const isCommun = expense.user === User.Commun;
+    const isOtherUser = !isSophie && !isVincent && !isCommun && !!expense.user;
 
     let cardStyleClass = 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-700';
     let amountColorClass = 'text-slate-800 dark:text-slate-100';
@@ -50,6 +51,9 @@ const ExpenseListItem: React.FC<{
     } else if (isCommun) {
         cardStyleClass = 'bg-purple-50/50 dark:bg-purple-950/20 border-purple-100/90 dark:border-purple-900/30 hover:bg-purple-50 dark:hover:bg-purple-950/30';
         amountColorClass = 'text-purple-600 dark:text-purple-400';
+    } else if (isOtherUser) {
+        cardStyleClass = 'bg-sky-50/50 dark:bg-sky-950/20 border-sky-100/90 dark:border-sky-900/30 hover:bg-sky-50 dark:hover:bg-sky-950/30';
+        amountColorClass = 'text-sky-600 dark:text-sky-400';
     }
 
     // Logique spéciale pour Noël
@@ -135,9 +139,17 @@ const ExpenseListItem: React.FC<{
                             </span>
                         )}
                         {isCommun && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 text-[11px] sm:text-xs font-bold shrink-0">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-[11px] sm:text-xs font-bold shrink-0">
                                 <PiggyBankIcon className="w-3 h-3" />
                                 <span>Cagnotte</span>
+                            </span>
+                        )}
+                        {isOtherUser && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 text-[11px] sm:text-xs font-bold shrink-0">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                </svg>
+                                <span>{expense.user}</span>
                             </span>
                         )}
                     </div>

@@ -29,6 +29,7 @@ import {
 import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; textColor: string; bannerBg: string } } = {
+  "Dépenses récurrentes": { icon: MandatoryIcon, color: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300', bannerBg: 'bg-slate-100/90 dark:bg-slate-700/60' },
   "Dép. recurentes": { icon: MandatoryIcon, color: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300', bannerBg: 'bg-slate-100/90 dark:bg-slate-700/60' },
   "Dép. récurrentes": { icon: MandatoryIcon, color: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300', bannerBg: 'bg-slate-100/90 dark:bg-slate-700/60' },
   "Dépenses obligatoires": { icon: MandatoryIcon, color: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300', bannerBg: 'bg-slate-100/90 dark:bg-slate-700/60' },

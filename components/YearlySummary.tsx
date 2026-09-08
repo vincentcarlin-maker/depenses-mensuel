@@ -45,7 +45,7 @@ const ChevronRightIcon = ({ className = "w-5 h-5" }: { className?: string }) => 
 );
 
 const getCategoryDisplayName = (name: string): string => {
-  if (name === 'Dépenses obligatoires' || name === 'Dép. récurrentes' || name === 'Dép. recurentes') {
+  if (name === 'Dépenses récurrentes' || name === 'Dépenses obligatoires' || name === 'Dép. récurrentes' || name === 'Dép. recurentes') {
     return 'Dép. récurrentes';
   }
   return name;

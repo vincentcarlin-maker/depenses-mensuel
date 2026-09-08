@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase/client';
-import { type Expense, User, type Activity, type MoneyPotTransaction } from './types';
+import { type Expense, User, type Activity, type MoneyPotTransaction, type Foyer } from './types';
 import Header from './components/Header';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseSummary from './components/ExpenseSummary';
@@ -34,7 +34,9 @@ import MoneyPotTab from './components/MoneyPotTab';
 import BottomNavigation, { TabId } from './components/BottomNavigation';
 import ChevronDownIcon from './components/icons/ChevronDownIcon';
 import PiggyBankIcon from './components/icons/PiggyBankIcon';
+import UserIcon from './components/icons/UserIcon';
 import { notifySubscriptionsDirectly } from './webpush-client';
+import { DEFAULT_FOYER_ID } from './utils/foyerService';
 
 type UndoableAction = {
     type: 'delete' | 'update';
@@ -68,7 +70,9 @@ const MainApp: React.FC<{
     onToggleBlockProfile: (username: string) => { success: boolean; message: string },
     isMaintenanceMode: boolean,
     onToggleMaintenanceMode: (newState?: boolean) => void,
-    loginHistory: LoginEvent[]
+    loginHistory: LoginEvent[],
+    currentFoyer?: Foyer,
+    onDeleteOwnAccount?: () => Promise<boolean>
 }> = ({ 
     user, 
     onLogout, 
@@ -79,7 +83,9 @@ const MainApp: React.FC<{
     onToggleBlockProfile,
     isMaintenanceMode,
     onToggleMaintenanceMode,
-    loginHistory 
+    loginHistory,
+    currentFoyer,
+    onDeleteOwnAccount
 }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<any[]>([]);
@@ -87,6 +93,7 @@ const MainApp: React.FC<{
   const [isLoading, setIsLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(getInitialDate);
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
+  const [settingsResetTrigger, setSettingsResetTrigger] = useState(0);
   
   // Split state for Viewing vs Editing
   const [expenseToView, setExpenseToView] = useState<Expense | null>(null);
@@ -114,15 +121,31 @@ const MainApp: React.FC<{
   const expensesRef = useRef<Expense[]>([]); // Ref to access current expenses in realtime callbacks
   const allChangesChannelRef = useRef<any>(null);
 
+  const activeFoyerId = currentFoyer?.id || DEFAULT_FOYER_ID;
+
+  // Filtre d'isolation des foyers :
+  // - Vincent & Sophie (DEFAULT_FOYER_ID) : accès à leur historique (sans foyer_id ou marqué foyer_vincent_sophie)
+  // - Tout autre foyer : uniquement ses propres données portant son foyer_id
+  const belongsToCurrentFoyer = useCallback((item: { foyer_id?: string } | null | undefined): boolean => {
+    if (!item) return false;
+    if (activeFoyerId === DEFAULT_FOYER_ID) {
+      return !item.foyer_id || item.foyer_id === DEFAULT_FOYER_ID;
+    }
+    return item.foyer_id === activeFoyerId;
+  }, [activeFoyerId]);
+
   const broadcastChange = useCallback((table: string, eventType: 'INSERT' | 'UPDATE' | 'DELETE', payload: any, performedBy?: string) => {
     if (allChangesChannelRef.current) {
+      const payloadWithFoyer = payload && typeof payload === 'object' && !payload.foyer_id
+        ? { ...payload, foyer_id: activeFoyerId }
+        : payload;
       allChangesChannelRef.current.send({
         type: 'broadcast',
         event: 'db-change',
-        payload: { table, eventType, payload, performedBy }
+        payload: { table, eventType, payload: payloadWithFoyer, performedBy, foyer_id: activeFoyerId }
       });
     }
-  }, []);
+  }, [activeFoyerId]);
 
   // Presence state
   const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
@@ -131,21 +154,28 @@ const MainApp: React.FC<{
   const [lastBellCheck, setLastBellCheck] = useLocalStorage('lastBellCheck', new Date().toISOString());
   const [activities, setActivities] = useState<Activity[]>([]);
   
-  // Dynamic categories and lists
-  const [categories, setCategories] = useSyncedSettings<any[]>('expenseCategories', DEFAULT_CATEGORIES);
-  
-  useEffect(() => {
-      if (!categories.includes("Complément alimentaire")) {
-          setCategories(prev => [...prev, "Complément alimentaire"]);
-      }
-      if (categories.includes("Dépenses obligatoires") || categories.includes("Dép. récurrentes")) {
-          setCategories(prev => prev.map(c => (c === "Dépenses obligatoires" || c === "Dép. récurrentes") ? "Dép. recurentes" : c));
-      }
-  }, [categories, setCategories]);
+  // Dynamic categories and lists scoped per foyer
+  const categoriesKey = activeFoyerId === DEFAULT_FOYER_ID ? 'expenseCategories' : `expenseCategories_${activeFoyerId}`;
+  const storesKey = activeFoyerId === DEFAULT_FOYER_ID ? 'groceryStores' : `groceryStores_${activeFoyerId}`;
+  const carsKey = activeFoyerId === DEFAULT_FOYER_ID ? 'cars' : `cars_${activeFoyerId}`;
+  const heatingKey = activeFoyerId === DEFAULT_FOYER_ID ? 'heatingTypes' : `heatingTypes_${activeFoyerId}`;
 
-  const [groceryStores, setGroceryStores] = useSyncedSettings<string[]>('groceryStores', ['Leclerc', 'Leclerc Drive', 'Intermarché', 'Intermarché Drive', 'Carrefour', 'Boulangerie']);
-  const [cars, setCars] = useSyncedSettings<string[]>('cars', ['Peugeot 5008', 'Peugeot 207']);
-  const [heatingTypes, setHeatingTypes] = useSyncedSettings<string[]>('heatingTypes', ['Bois', 'Fioul']);
+  const NEW_FOYER_DEFAULT_CATEGORIES = ["Dépenses récurrentes", "Courses", "Carburant"];
+  const defaultCategories = activeFoyerId === DEFAULT_FOYER_ID ? DEFAULT_CATEGORIES : NEW_FOYER_DEFAULT_CATEGORIES;
+  const defaultStores = activeFoyerId === DEFAULT_FOYER_ID 
+    ? ['Leclerc', 'Leclerc Drive', 'Intermarché', 'Intermarché Drive', 'Carrefour', 'Boulangerie']
+    : ['Courses'];
+  const defaultCars = activeFoyerId === DEFAULT_FOYER_ID 
+    ? ['Peugeot 5008', 'Peugeot 207']
+    : [];
+  const defaultHeating = activeFoyerId === DEFAULT_FOYER_ID
+    ? ['Électricité', 'Gaz', 'Bois / Pellets', 'Fioul']
+    : [];
+
+  const [categories, setCategories] = useSyncedSettings<any[]>(categoriesKey, defaultCategories);
+  const [groceryStores, setGroceryStores] = useSyncedSettings<string[]>(storesKey, defaultStores);
+  const [cars, setCars] = useSyncedSettings<string[]>(carsKey, defaultCars);
+  const [heatingTypes, setHeatingTypes] = useSyncedSettings<string[]>(heatingKey, defaultHeating);
 
   const { currentMonth, currentYear } = useMemo(() => ({
       currentMonth: currentDate.getUTCMonth(),
@@ -323,10 +353,22 @@ const MainApp: React.FC<{
   }, []);
 
   const syncData = useCallback(async () => {
-    const expensesPromise = supabase.from('expenses').select('*').gte('date', '2023-10-01T00:00:00Z').order('date', { ascending: false });
-    const remindersPromise = supabase.from('reminders').select('*').order('day_of_month', { ascending: true });
-    const moneyPotPromise = supabase.from('money_pot').select('*').order('date', { ascending: false });
-    const activitiesPromise = supabase.from('activities').select('*').order('timestamp', { ascending: false }).limit(100);
+    let expensesPromise = supabase.from('expenses').select('*').gte('date', '2023-10-01T00:00:00Z').order('date', { ascending: false });
+    let remindersPromise = supabase.from('reminders').select('*').order('day_of_month', { ascending: true });
+    let moneyPotPromise = supabase.from('money_pot').select('*').order('date', { ascending: false });
+    let activitiesPromise = supabase.from('activities').select('*').order('timestamp', { ascending: false }).limit(100);
+
+    if (activeFoyerId === DEFAULT_FOYER_ID) {
+      expensesPromise = expensesPromise.or(`foyer_id.eq.${DEFAULT_FOYER_ID},foyer_id.is.null`);
+      remindersPromise = remindersPromise.or(`foyer_id.eq.${DEFAULT_FOYER_ID},foyer_id.is.null`);
+      moneyPotPromise = moneyPotPromise.or(`foyer_id.eq.${DEFAULT_FOYER_ID},foyer_id.is.null`);
+      activitiesPromise = activitiesPromise.or(`foyer_id.eq.${DEFAULT_FOYER_ID},foyer_id.is.null`);
+    } else {
+      expensesPromise = expensesPromise.eq('foyer_id', activeFoyerId);
+      remindersPromise = remindersPromise.eq('foyer_id', activeFoyerId);
+      moneyPotPromise = moneyPotPromise.eq('foyer_id', activeFoyerId);
+      activitiesPromise = activitiesPromise.eq('foyer_id', activeFoyerId);
+    }
 
     const [expensesResponse, remindersResponse, moneyPotResponse, activitiesResponse] = await Promise.all([expensesPromise, remindersPromise, moneyPotPromise, activitiesPromise]);
 
@@ -334,28 +376,33 @@ const MainApp: React.FC<{
         console.error('Error fetching expenses:', expensesResponse.error.message);
         setToastInfo({ message: "Erreur lors de la récupération des dépenses.", type: 'error' });
     } else if (expensesResponse.data) {
-        setExpenses(expensesResponse.data as Expense[]);
+        // Isolation des dépenses : Vincent & Sophie voient leur historique, un autre foyer voit uniquement ses dépenses
+        const scopedExpenses = (expensesResponse.data as Expense[]).filter(belongsToCurrentFoyer);
+        setExpenses(scopedExpenses);
     }
     
     if (remindersResponse.error) {
         console.error('Error fetching reminders:', remindersResponse.error.message);
         setToastInfo({ message: "Erreur lors de la récupération des rappels.", type: 'error' });
     } else if (remindersResponse.data) {
-        setReminders(remindersResponse.data as any[]);
+        const scopedReminders = (remindersResponse.data as any[]).filter(belongsToCurrentFoyer);
+        setReminders(scopedReminders);
     }
 
     if (moneyPotResponse.error) {
         console.warn('Error fetching money pot (Table may not exist yet):', moneyPotResponse.error.message);
     } else if (moneyPotResponse.data) {
-        setMoneyPotTransactions(moneyPotResponse.data as MoneyPotTransaction[]);
+        const scopedTransactions = (moneyPotResponse.data as MoneyPotTransaction[]).filter(belongsToCurrentFoyer);
+        setMoneyPotTransactions(scopedTransactions);
     }
     
     if (activitiesResponse.error) {
         console.error('Error fetching activities:', activitiesResponse.error.message);
     } else if (activitiesResponse.data) {
-        setActivities(activitiesResponse.data as Activity[]);
+        const scopedActivities = (activitiesResponse.data as Activity[]).filter(belongsToCurrentFoyer);
+        setActivities(scopedActivities);
     }
-  }, []);
+  }, [belongsToCurrentFoyer, activeFoyerId]);
 
   useEffect(() => {
     const performInitialSync = async () => {
@@ -364,11 +411,12 @@ const MainApp: React.FC<{
         setIsLoading(false);
     };
     performInitialSync();
-  }, [syncData]);
+  }, [syncData, activeFoyerId]);
 
   // Presence Effect
   useEffect(() => {
-      const presenceChannel = supabase.channel('online-users', {
+      const channelName = `online-users-${activeFoyerId}`;
+      const presenceChannel = supabase.channel(channelName, {
           config: {
               presence: {
                   key: user,
@@ -376,27 +424,41 @@ const MainApp: React.FC<{
           },
       });
 
+      const updateOnlineState = () => {
+          const newState = presenceChannel.presenceState();
+          const users = Object.keys(newState) as User[];
+          setOnlineUsers(users);
+      };
+
       presenceChannel
-          .on('presence', { event: 'sync' }, () => {
-              const newState = presenceChannel.presenceState();
-              const users = Object.keys(newState) as User[];
-              setOnlineUsers(users);
-          })
+          .on('presence', { event: 'sync' }, updateOnlineState)
+          .on('presence', { event: 'join' }, updateOnlineState)
+          .on('presence', { event: 'leave' }, updateOnlineState)
           .subscribe(async (status) => {
               if (status === 'SUBSCRIBED') {
-                 await presenceChannel.track({ online_at: new Date().toISOString(), user_id: user });
+                 await presenceChannel.track({ online_at: new Date().toISOString(), user_id: user, foyer_id: activeFoyerId });
               }
           });
-      
+
+      const handleVisibilityChange = () => {
+          if (document.visibilityState === 'visible') {
+              presenceChannel.track({ online_at: new Date().toISOString(), user_id: user, foyer_id: activeFoyerId });
+          }
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
       return () => {
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
           supabase.removeChannel(presenceChannel);
       }
-  }, [user]);
+  }, [user, activeFoyerId]);
 
   // Realtime subscription for Activities
    useEffect(() => {
         const handleActivityInsert = (payload: any) => {
             const newActivity = payload.new as Activity;
+            if (!belongsToCurrentFoyer(newActivity)) return;
             setActivities(prev => mergeAndDedupeActivities(prev, [newActivity]));
         };
 
@@ -405,20 +467,30 @@ const MainApp: React.FC<{
         };
 
         const activityChannel = supabase
-            .channel('public:activities')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activities' }, handleActivityInsert)
-            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'activities' }, handleActivityDelete)
+            .channel(`foyer-activities-${activeFoyerId}`)
+            .on('postgres_changes', { 
+              event: 'INSERT', 
+              schema: 'public', 
+              table: 'activities',
+              filter: activeFoyerId === DEFAULT_FOYER_ID ? undefined : `foyer_id=eq.${activeFoyerId}`
+            }, handleActivityInsert)
+            .on('postgres_changes', { 
+              event: 'DELETE', 
+              schema: 'public', 
+              table: 'activities' 
+            }, handleActivityDelete)
             .subscribe();
 
         return () => {
             supabase.removeChannel(activityChannel);
         };
-    }, [mergeAndDedupeActivities]);
+    }, [mergeAndDedupeActivities, belongsToCurrentFoyer, activeFoyerId]);
 
   useEffect(() => {
     const handleExpenseInsert = (payload: any) => {
       const newExpense = payload.new as Expense;
       if (!newExpense?.id) return;
+      if (!belongsToCurrentFoyer(newExpense)) return;
 
       setExpenses(prevExpenses => {
         const expenseExists = prevExpenses.some(e => e.id === newExpense.id);
@@ -434,6 +506,7 @@ const MainApp: React.FC<{
     const handleExpenseUpdate = (payload: any) => {
       const updatedExpense = payload.new as Expense;
       if (!updatedExpense?.id) return;
+      if (!belongsToCurrentFoyer(updatedExpense)) return;
 
       setExpenses(prevExpenses =>
         prevExpenses.map(expense =>
@@ -464,6 +537,7 @@ const MainApp: React.FC<{
       }
 
       const changedReminder = payload.new as any;
+      if (changedReminder && !belongsToCurrentFoyer(changedReminder)) return;
       setReminders(prev => {
         const existingIndex = prev.findIndex(r => r.id === changedReminder.id);
         if (existingIndex !== -1) {
@@ -478,6 +552,7 @@ const MainApp: React.FC<{
     const handleMoneyPotChange = (payload: any) => {
         if (payload.eventType === 'INSERT') {
             const newTransaction = payload.new as MoneyPotTransaction;
+            if (!belongsToCurrentFoyer(newTransaction)) return;
             setMoneyPotTransactions(prev => {
                 if (prev.some(t => t.id === newTransaction.id)) return prev;
                 return [newTransaction, ...prev];
@@ -489,14 +564,40 @@ const MainApp: React.FC<{
     }
 
     const allChangesChannel = supabase
-      .channel('all-changes-channel')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'expenses' }, handleExpenseInsert)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'expenses' }, handleExpenseUpdate)
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'expenses' }, handleExpenseDelete)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reminders' }, handleReminderChange)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'money_pot' }, handleMoneyPotChange)
+      .channel(`foyer-changes-${activeFoyerId}`)
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'expenses',
+        filter: activeFoyerId === DEFAULT_FOYER_ID ? undefined : `foyer_id=eq.${activeFoyerId}`
+      }, handleExpenseInsert)
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'expenses',
+        filter: activeFoyerId === DEFAULT_FOYER_ID ? undefined : `foyer_id=eq.${activeFoyerId}`
+      }, handleExpenseUpdate)
+      .on('postgres_changes', { 
+        event: 'DELETE', 
+        schema: 'public', 
+        table: 'expenses' 
+      }, handleExpenseDelete)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'reminders',
+        filter: activeFoyerId === DEFAULT_FOYER_ID ? undefined : `foyer_id=eq.${activeFoyerId}`
+      }, handleReminderChange)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'money_pot',
+        filter: activeFoyerId === DEFAULT_FOYER_ID ? undefined : `foyer_id=eq.${activeFoyerId}`
+      }, handleMoneyPotChange)
       .on('broadcast', { event: 'db-change' }, (payload: any) => {
-        const { table, eventType, payload: data } = payload.payload || {};
+        const { table, eventType, payload: data, foyer_id } = payload.payload || {};
+        if (foyer_id && !belongsToCurrentFoyer({ foyer_id })) return;
+        if (data && typeof data === 'object' && !belongsToCurrentFoyer(data)) return;
         if (table === 'expenses') {
             if (eventType === 'INSERT') {
                 handleExpenseInsert({ new: data });
@@ -530,7 +631,7 @@ const MainApp: React.FC<{
       supabase.removeChannel(allChangesChannel);
       allChangesChannelRef.current = null;
     };
-  }, [highlightExpense, user, syncData, mergeAndDedupeActivities]);
+  }, [highlightExpense, user, syncData, mergeAndDedupeActivities, belongsToCurrentFoyer, activeFoyerId]);
 
   const logActivity = useCallback(async (activityPayload: Omit<Activity, 'id' | 'timestamp'>) => {
     const id = crypto.randomUUID();
@@ -538,20 +639,26 @@ const MainApp: React.FC<{
       ...activityPayload,
       id: id,
       timestamp: new Date().toISOString(),
+      foyer_id: activeFoyerId,
     };
-    const { error } = await supabase.from('activities').insert(newActivity);
+    let { error } = await supabase.from('activities').insert(newActivity);
+    if (error && (error.code === 'PGRST204' || error.message?.includes('foyer_id'))) {
+      const { foyer_id: _, ...fallbackActivity } = newActivity;
+      const res = await supabase.from('activities').insert(fallbackActivity);
+      error = res.error;
+    }
     if (error) {
       console.error("Failed to log activity:", error.message);
       return null;
     }
     return id;
-  }, []);
+  }, [activeFoyerId]);
 
   // Multi-route Unified Push Notification Dispatcher (Sequential single-route dispatch to avoid duplicate triggers)
-  const dispatchPushNotification = useCallback(async (payload: { type: 'add' | 'delete' | 'update' | 'moneypot'; expense?: any; moneyPotTransaction?: any; performedBy?: string }) => {
+  const dispatchPushNotification = useCallback(async (payload: { type: 'add' | 'delete' | 'update' | 'moneypot'; expense?: any; moneyPotTransaction?: any; performedBy?: string; foyer_id?: string }) => {
     try {
       const author = user === 'Duo' ? 'Commun' : user;
-      const fullPayload = { ...payload, performedBy: author };
+      const fullPayload = { ...payload, performedBy: author, foyer_id: payload.foyer_id || activeFoyerId };
 
       // 1. Essayer l'Edge Function Supabase en priorité
       let dispatched = false;
@@ -593,7 +700,7 @@ const MainApp: React.FC<{
     } catch(e) {
       console.error("Erreur d'émission d'avis push:", e);
     }
-  }, [user]);
+  }, [user, activeFoyerId]);
 
   // Money Pot Handlers
   const addMoneyPotTransaction = async (transaction: Omit<MoneyPotTransaction, 'id' | 'created_at'>) => {
@@ -601,12 +708,18 @@ const MainApp: React.FC<{
       const newTransaction: MoneyPotTransaction = {
           ...transaction,
           id: newId,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          foyer_id: activeFoyerId,
       };
 
       setMoneyPotTransactions(prev => [newTransaction, ...prev]);
 
-      const { error } = await supabase.from('money_pot').insert({ ...transaction, id: newId });
+      let { error } = await supabase.from('money_pot').insert(newTransaction);
+      if (error && (error.code === 'PGRST204' || error.message?.includes('foyer_id'))) {
+          const { foyer_id: _, ...fallbackTx } = newTransaction;
+          const res = await supabase.from('money_pot').insert(fallbackTx);
+          error = res.error;
+      }
 
       if (error) {
           console.error("Error adding money pot transaction", error);
@@ -647,7 +760,7 @@ const MainApp: React.FC<{
     recentlyAddedIds.current.add(newId);
     setTimeout(() => recentlyAddedIds.current.delete(newId), 5000);
 
-    const expenseData = { ...expense, id: newId };
+    const expenseData: Expense = { ...expense, id: newId, foyer_id: activeFoyerId };
     const optimisticExpense: Expense = { ...expenseData, created_at: new Date().toISOString() };
     setExpenses(prev => [optimisticExpense, ...prev]);
     highlightExpense(newId);
@@ -662,7 +775,13 @@ const MainApp: React.FC<{
         });
     }
 
-    const { data, error } = await supabase.from('expenses').insert(expenseData).select().single();
+    let { data, error } = await supabase.from('expenses').insert(expenseData).select().single();
+    if (error && (error.code === 'PGRST204' || error.message?.includes('foyer_id'))) {
+        const { foyer_id: _, ...fallbackExpense } = expenseData;
+        const fallbackRes = await supabase.from('expenses').insert(fallbackExpense).select().single();
+        data = fallbackRes.data ? { ...fallbackRes.data, foyer_id: activeFoyerId } : fallbackRes.data;
+        error = fallbackRes.error;
+    }
       
     if (error) {
       console.error('Error adding expense:', error.message || error);
@@ -803,11 +922,18 @@ const MainApp: React.FC<{
 
   const addReminder = async (reminder: Omit<any, 'id' | 'created_at'>) => {
     const newId = crypto.randomUUID();
-    const reminderData = { ...reminder, id: newId };
+    const reminderData = { ...reminder, id: newId, foyer_id: activeFoyerId };
     const optimisticReminder: any = { ...reminderData, created_at: new Date().toISOString() };
     setReminders(prev => [...prev, optimisticReminder].sort((a,b) => a.day_of_month - b.day_of_month));
 
-    const { data, error } = await supabase.from('reminders').insert(reminderData).select().single();
+    let { data, error } = await supabase.from('reminders').insert(reminderData).select().single();
+    if (error && (error.code === 'PGRST204' || error.message?.includes('foyer_id'))) {
+        const { foyer_id: _, ...fallbackReminder } = reminderData;
+        const fallbackRes = await supabase.from('reminders').insert(fallbackReminder).select().single();
+        data = fallbackRes.data ? { ...fallbackRes.data, foyer_id: activeFoyerId } : fallbackRes.data;
+        error = fallbackRes.error;
+    }
+
     if (error) {
         console.error('Error adding reminder:', error.message || error);
         setToastInfo({ message: "Erreur lors de l'ajout du rappel.", type: 'error' });
@@ -1038,8 +1164,7 @@ const MainApp: React.FC<{
   };
 
   const deleteCategory = (name: string) => {
-    if (categories.length > 1) setCategories(prev => prev.filter(c => c !== name));
-    else setToastInfo({ message: 'Vous devez conserver au moins une catégorie.', type: 'error' });
+    setCategories(prev => prev.filter(c => c !== name));
   };
 
   const isConnected = realtimeStatus === 'SUBSCRIBED';
@@ -1090,56 +1215,92 @@ const MainApp: React.FC<{
         </div>
       )}
       <PullToRefresh isRefreshing={isRefreshing} onRefresh={handleRefresh}>
-        <Header onOpenSearch={() => setIsSearchOpen(true)} loggedInUser={user} activityItems={activityItemsForHeader} unreadCount={unreadCount} onMarkAsRead={markActivitiesAsRead} realtimeStatus={realtimeStatus} onDeleteActivity={deleteActivity} />
+        <Header 
+          onOpenSearch={() => setIsSearchOpen(true)} 
+          loggedInUser={user} 
+          activityItems={activityItemsForHeader} 
+          unreadCount={unreadCount} 
+          onMarkAsRead={markActivitiesAsRead} 
+          realtimeStatus={realtimeStatus} 
+          onDeleteActivity={deleteActivity} 
+          onlineUsers={onlineUsers}
+          foyerMembers={currentFoyer?.members}
+        />
         <main className="container mx-auto p-4 md:p-8 pb-32">
           {activeTab !== 'settings' && (
-            <div className="flex justify-between items-center max-w-md mx-auto mb-6 px-2 animate-fade-in-up">
-              <button onClick={() => handleDateNavigation('prev')} disabled={isPrevDisabled} className="w-10 h-10 rounded-full bg-slate-100/90 dark:bg-slate-800/90 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-700 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <div className="relative group cursor-pointer flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                  <h2 className="text-base sm:text-xl font-bold text-slate-900 dark:text-slate-100 text-center capitalize tracking-tight">{activeTab === 'yearly' ? currentYear : currentMonthName}</h2>
-                  <ChevronDownIcon className="text-slate-400 dark:text-slate-500 w-4 h-4" />
-                  {activeTab === 'yearly' ? (
-                    <select
-                      value={currentYear}
-                      onChange={(e) => {
-                        const year = parseInt(e.target.value, 10);
-                        if (!isNaN(year)) {
-                          const limit = new Date('2023-10-01T00:00:00Z');
-                          const newDate = new Date(currentDate);
-                          newDate.setUTCFullYear(year);
-                          setCurrentDate(newDate < limit ? limit : newDate);
-                        }
-                      }}
-                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10 font-bold"
-                      aria-label="Sélectionner l'année"
-                    >
-                      {availableYears.map((y) => (
-                        <option key={y} value={y} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold">
-                          {y}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input type="month" value={monthInputValue} min="2023-10" onChange={handleDateSelect} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" ref={(input) => { if (input) input.onclick = () => { try { input.showPicker(); } catch (err) {} } }} />
-                  )}
+            <>
+              <div className="flex justify-between items-center max-w-md mx-auto mb-6 px-2 animate-fade-in-up">
+                <button onClick={() => handleDateNavigation('prev')} disabled={isPrevDisabled} className="w-10 h-10 rounded-full bg-slate-100/90 dark:bg-slate-800/90 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-700 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <div className="relative group cursor-pointer flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <h2 className="text-base sm:text-xl font-bold text-slate-900 dark:text-slate-100 text-center capitalize tracking-tight">{activeTab === 'yearly' ? currentYear : currentMonthName}</h2>
+                    <ChevronDownIcon className="text-slate-400 dark:text-slate-500 w-4 h-4" />
+                    {activeTab === 'yearly' ? (
+                      <select
+                        value={currentYear}
+                        onChange={(e) => {
+                          const year = parseInt(e.target.value, 10);
+                          if (!isNaN(year)) {
+                            const limit = new Date('2023-10-01T00:00:00Z');
+                            const newDate = new Date(currentDate);
+                            newDate.setUTCFullYear(year);
+                            setCurrentDate(newDate < limit ? limit : newDate);
+                          }
+                        }}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10 font-bold"
+                        aria-label="Sélectionner l'année"
+                      >
+                        {availableYears.map((y) => (
+                          <option key={y} value={y} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold">
+                            {y}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input type="month" value={monthInputValue} min="2023-10" onChange={handleDateSelect} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" ref={(input) => { if (input) input.onclick = () => { try { input.showPicker(); } catch (err) {} } }} />
+                    )}
+                </div>
+                <button onClick={() => handleDateNavigation('next')} className="w-10 h-10 rounded-full bg-slate-100/90 dark:bg-slate-800/90 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shadow-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-700 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
               </div>
-              <button onClick={() => handleDateNavigation('next')} className="w-10 h-10 rounded-full bg-slate-100/90 dark:bg-slate-800/90 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-700 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
+              <ReminderAlerts reminders={reminders} monthlyExpenses={filteredExpenses} onPayReminder={handlePayReminder} currentMonth={currentMonth} currentYear={currentYear} loggedInUser={user} />
+              <NotificationReminderAlert onOpenSettings={() => { setSettingsInitialView('notifications'); setIsSettingsOpen(true); }} />
+            </>
           )}
-          <ReminderAlerts reminders={reminders} monthlyExpenses={filteredExpenses} onPayReminder={handlePayReminder} currentMonth={currentMonth} currentYear={currentYear} loggedInUser={user} />
-          <NotificationReminderAlert onOpenSettings={() => { setSettingsInitialView('notifications'); setIsSettingsOpen(true); }} />
           <div className="animate-fade-in">
             {activeTab === 'dashboard' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div id="expense-form-container" className="space-y-8"><ExpenseForm key={formInitialData?.formKey || 'default-form'} onAddExpense={addExpense} expenses={expenses} initialData={formInitialData} loggedInUser={user} onlineUsers={onlineUsers} disabled={!isConnected} categories={categories} groceryStores={groceryStores} cars={cars} heatingTypes={heatingTypes} /><ExpenseSummary allExpenses={expenses} currentYear={currentYear} currentMonth={currentMonth} sophieTotalMonth={sophieTotalMonth} vincentTotalMonth={vincentTotalMonth} loggedInUser={user} /></div>
+                <div id="expense-form-container" className="space-y-8">
+                  <ExpenseForm 
+                    key={formInitialData?.formKey || 'default-form'} 
+                    onAddExpense={addExpense} 
+                    expenses={expenses} 
+                    initialData={formInitialData} 
+                    loggedInUser={user} 
+                    onlineUsers={onlineUsers} 
+                    disabled={!isConnected} 
+                    categories={categories} 
+                    groceryStores={groceryStores} 
+                    cars={cars} 
+                    heatingTypes={heatingTypes}
+                    foyerMembers={currentFoyer?.members}
+                  />
+                  <ExpenseSummary 
+                    allExpenses={expenses} 
+                    currentYear={currentYear} 
+                    currentMonth={currentMonth} 
+                    sophieTotalMonth={sophieTotalMonth} 
+                    vincentTotalMonth={vincentTotalMonth} 
+                    loggedInUser={user}
+                    foyerMembers={currentFoyer?.members}
+                  />
+                </div>
                 <div className="space-y-8">
                   <div className="bg-white dark:bg-slate-800 p-5 sm:p-7 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700/80 space-y-5">
                     {/* Header with Title and Month badge */}
@@ -1222,7 +1383,7 @@ const MainApp: React.FC<{
                     <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
                       <button
                         onClick={() => setFilterUser('All')}
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all border shrink-0 ${
+                        className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all border shrink-0 cursor-pointer ${
                           filterUser === 'All'
                             ? 'bg-blue-100/90 dark:bg-blue-950/80 border-blue-200/90 dark:border-blue-800 text-blue-600 dark:text-blue-300 shadow-2xs'
                             : 'bg-slate-50/80 dark:bg-slate-700/40 border-slate-200/60 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
@@ -1234,37 +1395,43 @@ const MainApp: React.FC<{
                         <span>Toutes</span>
                       </button>
 
-                      <button
-                        onClick={() => setFilterUser(User.Sophie)}
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all border shrink-0 ${
-                          filterUser === User.Sophie
-                            ? 'bg-pink-100/90 dark:bg-pink-950/80 border-pink-200/90 dark:border-pink-800 text-pink-600 dark:text-pink-300 shadow-2xs'
-                            : 'bg-pink-50/50 dark:bg-pink-950/20 border-pink-100/80 dark:border-pink-900/30 text-pink-600 dark:text-pink-400 hover:bg-pink-100/60'
-                        }`}
-                      >
-                        <svg className="w-4 h-4 text-pink-500" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                        </svg>
-                        <span>Sophie</span>
-                      </button>
+                      {(currentFoyer?.members || DEFAULT_FOYER.members).map((member) => {
+                        const isSelected = filterUser === member.name;
+                        const isSophie = member.name === User.Sophie;
+                        const isVincent = member.name === User.Vincent;
 
-                      <button
-                        onClick={() => setFilterUser(User.Vincent)}
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all border shrink-0 ${
-                          filterUser === User.Vincent
+                        let pillClass = 'bg-sky-50/50 dark:bg-sky-950/20 border-sky-100/80 dark:border-sky-900/30 text-sky-600 dark:text-sky-400 hover:bg-sky-100/60';
+                        let iconColor = 'text-sky-500';
+                        if (isSelected) {
+                          pillClass = 'bg-sky-100/90 dark:bg-sky-950/80 border-sky-200/90 dark:border-sky-800 text-sky-600 dark:text-sky-300 shadow-2xs';
+                          iconColor = 'text-sky-600 dark:text-sky-300';
+                        } else if (isSophie) {
+                          pillClass = isSelected
+                            ? 'bg-pink-100/90 dark:bg-pink-950/80 border-pink-200/90 dark:border-pink-800 text-pink-600 dark:text-pink-300 shadow-2xs'
+                            : 'bg-pink-50/50 dark:bg-pink-950/20 border-pink-100/80 dark:border-pink-900/30 text-pink-600 dark:text-pink-400 hover:bg-pink-100/60';
+                          iconColor = isSelected ? 'text-pink-600 dark:text-pink-300' : 'text-pink-500 dark:text-pink-400';
+                        } else if (isVincent) {
+                          pillClass = isSelected
                             ? 'bg-blue-100/90 dark:bg-blue-950/80 border-blue-200/90 dark:border-blue-800 text-blue-600 dark:text-blue-300 shadow-2xs'
-                            : 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-100/80 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100/60'
-                        }`}
-                      >
-                        <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                        </svg>
-                        <span>Vincent</span>
-                      </button>
+                            : 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-100/80 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100/60';
+                          iconColor = isSelected ? 'text-blue-600 dark:text-blue-300' : 'text-blue-500 dark:text-blue-400';
+                        }
+
+                        return (
+                          <button
+                            key={member.id || member.name}
+                            onClick={() => setFilterUser(member.name as any)}
+                            className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all border shrink-0 cursor-pointer ${pillClass}`}
+                          >
+                            <UserIcon className={`w-4 h-4 ${iconColor}`} />
+                            <span>{member.name}</span>
+                          </button>
+                        );
+                      })}
 
                       <button
                         onClick={() => setFilterUser(User.Commun)}
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all border shrink-0 ${
+                        className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all border shrink-0 cursor-pointer ${
                           filterUser === User.Commun
                             ? 'bg-purple-100/90 dark:bg-purple-950/80 border-purple-200/90 dark:border-purple-800 text-purple-600 dark:text-purple-300 shadow-2xs'
                             : 'bg-purple-50/50 dark:bg-purple-950/20 border-purple-100/80 dark:border-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100/60'
@@ -1334,6 +1501,9 @@ const MainApp: React.FC<{
                 setToastInfo={setToastInfo} 
                 loginHistory={loginHistory} 
                 onLogout={onLogout} 
+                resetTrigger={settingsResetTrigger}
+                currentFoyer={currentFoyer}
+                onDeleteOwnAccount={onDeleteOwnAccount}
               />
             )}
           </div>
@@ -1344,10 +1514,15 @@ const MainApp: React.FC<{
         onTabChange={(tabId) => {
           if (tabId === 'settings') {
             setSettingsInitialView('main');
+            setSettingsResetTrigger(prev => prev + 1);
           }
           setActiveTab(tabId);
         }} 
-        onOpenSettings={() => { setSettingsInitialView('main'); setIsSettingsOpen(true); }} 
+        onOpenSettings={() => { 
+          setSettingsInitialView('main'); 
+          setSettingsResetTrigger(prev => prev + 1);
+          setIsSettingsOpen(true); 
+        }} 
       />
       <ExpenseSuccessModal
         isOpen={!!successExpense}
@@ -1359,7 +1534,23 @@ const MainApp: React.FC<{
         }}
       />
       {expenseToView && (<ExpenseDetailModal expense={expenseToView} history={expenseHistory} onClose={() => setExpenseToView(null)} onEdit={() => { setExpenseToEdit(expenseToView); setExpenseToView(null); }} />)}
-      {expenseToEdit && (<EditExpenseModal expense={expenseToEdit} expenses={expenses} onUpdateExpense={updateExpense} onDeleteExpense={deleteExpense} onClose={() => setExpenseToEdit(null)} categories={categories} groceryStores={groceryStores} cars={cars} heatingTypes={heatingTypes} loggedInUser={user} onAddExpense={addExpense} />)}
+      {expenseToEdit && (
+        <EditExpenseModal 
+          expense={expenseToEdit} 
+          expenses={expenses} 
+          onUpdateExpense={updateExpense} 
+          onDeleteExpense={deleteExpense} 
+          onClose={() => setExpenseToEdit(null)} 
+          categories={categories} 
+          groceryStores={groceryStores} 
+          cars={cars} 
+          heatingTypes={heatingTypes} 
+          loggedInUser={user} 
+          onlineUsers={onlineUsers}
+          onAddExpense={addExpense} 
+          foyerMembers={currentFoyer?.members}
+        />
+      )}
       {toastInfo && (<Toast message={toastInfo.message} type={toastInfo.type} onClose={() => setToastInfo(null)} />)}
       <UndoToast undoableAction={undoableAction} onUndo={handleUndo} />
       <GlobalSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} allExpenses={expenses} onEditExpense={setExpenseToView} highlightedIds={highlightedExpenseIds} modifiedInfo={modifiedExpenseInfo} categories={categories} />
@@ -1367,6 +1558,9 @@ const MainApp: React.FC<{
         isOpen={isSettingsOpen} 
         onClose={() => setIsSettingsOpen(false)} 
         initialView={settingsInitialView}
+        resetTrigger={settingsResetTrigger}
+        currentFoyer={currentFoyer}
+        onDeleteOwnAccount={onDeleteOwnAccount}
         reminders={reminders} 
         expenses={expenses} 
         moneyPotTransactions={moneyPotTransactions}
@@ -1409,8 +1603,11 @@ const App: React.FC = () => {
   const { isMaintenanceMode, toggleMaintenanceMode } = useMaintenanceMode();
   const { 
     user, 
+    currentFoyer,
     login, 
     loginWithResult, 
+    registerWithNewFoyer,
+    registerWithJoinFoyer,
     logout, 
     isLoading, 
     profiles, 
@@ -1418,6 +1615,7 @@ const App: React.FC = () => {
     updateProfilePassword, 
     toggleBlockProfile, 
     deleteProfile, 
+    deleteOwnAccount,
     loginHistory 
   } = useAuth();
 
@@ -1435,13 +1633,21 @@ const App: React.FC = () => {
   }
 
   if (!user) {
-    return <Login onLogin={loginWithResult} />;
+    return (
+      <Login 
+        onLogin={loginWithResult} 
+        onRegisterNewFoyer={registerWithNewFoyer}
+        onRegisterJoinFoyer={registerWithJoinFoyer}
+      />
+    );
   }
 
   return (
     <CategoryVisualsProvider>
       <MainApp 
         user={user} 
+        currentFoyer={currentFoyer}
+        onDeleteOwnAccount={deleteOwnAccount}
         onLogout={logout} 
         profiles={profiles} 
         onAddProfile={addProfile} 

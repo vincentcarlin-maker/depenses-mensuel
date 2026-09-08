@@ -31,6 +31,7 @@ const CategoryVisuals: {
     textColor: string; 
   } 
 } = {
+  "Dépenses récurrentes": { icon: MandatoryIcon, bg: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300' },
   "Dép. recurentes": { icon: MandatoryIcon, bg: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300' },
   "Dép. récurrentes": { icon: MandatoryIcon, bg: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300' },
   "Dépenses obligatoires": { icon: MandatoryIcon, bg: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300' },

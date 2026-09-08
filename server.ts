@@ -27,7 +27,7 @@ async function startServer() {
     app.use(express.json());
 
     // Notre endpoint de test
-    app.post("/api/test-notification", async (req, res) => {
+    app.post("/api/test-notification", async (_req, res) => {
         try {
             const { data: subscriptions, error: subsError } = await supabase.from('push_subscriptions').select('subscription, user_id');
             if (subsError) {
@@ -96,8 +96,23 @@ async function startServer() {
                     ? (expense.user || "Quelqu'un") 
                     : (moneyPotTransaction ? (moneyPotTransaction.user_name || "Quelqu'un") : "Quelqu'un"));
 
-            // Filtrer les abonnements pour ne pas envoyer à l'auteur lui-même
-            const targetSubs = subscriptions.filter((sub) => sub.user_id !== author);
+            const targetFoyerId = req.body?.foyer_id || expense?.foyer_id || moneyPotTransaction?.foyer_id || 'foyer_vincent_sophie';
+
+            // Filtrer les abonnements :
+            // 1. Ne pas envoyer à l'auteur lui-même
+            // 2. Ne notifier QUE les membres du même foyer
+            const targetSubs = subscriptions.filter((sub) => {
+                if (sub.user_id === author) return false;
+                
+                const subObj = typeof sub.subscription === 'string' ? JSON.parse(sub.subscription) : sub.subscription;
+                if (!subObj || !subObj.endpoint) return false;
+
+                const subFoyerId = subObj.foyer_id || (sub.user_id === 'Vincent' || sub.user_id === 'Sophie' || sub.user_id === 'Commun' ? 'foyer_vincent_sophie' : undefined);
+                if (targetFoyerId === 'foyer_vincent_sophie') {
+                    return !subFoyerId || subFoyerId === 'foyer_vincent_sophie';
+                }
+                return subFoyerId === targetFoyerId;
+            });
 
             if (targetSubs.length === 0) {
                 return res.status(200).json({ message: "Aucun autre utilisateur à notifier." });
@@ -255,7 +270,7 @@ async function startServer() {
         const distPath = path.join(process.cwd(), 'dist');
         app.use(express.static(distPath));
         // Important: Use * for Express v4, *all for Express v5
-        app.get('*', (req, res) => {
+        app.get('*', (_req, res) => {
             res.sendFile(path.join(distPath, 'index.html'));
         });
     }

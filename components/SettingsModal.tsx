@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { type Reminder, type Category, type Expense, type MoneyPotTransaction, User } from '../types';
+import { type Reminder, type Category, type Expense, type MoneyPotTransaction, User, type Foyer } from '../types';
 import RemindersTab from './RemindersTab';
 import ThemeSelector from './ThemeSelector';
 import VibeSelector from './VibeSelector';
@@ -51,6 +51,9 @@ interface SettingsModalProps {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
   initialView?: 'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin';
+  currentFoyer?: Foyer;
+  onDeleteOwnAccount?: () => Promise<boolean>;
+  resetTrigger?: number;
 }
 
 const SettingsItemRow: React.FC<{
@@ -116,6 +119,12 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
         setActiveView(props.initialView || 'main');
     }
   }, [isOpen, props.initialView]);
+
+  useEffect(() => {
+    if (props.resetTrigger !== undefined) {
+      setActiveView('main');
+    }
+  }, [props.resetTrigger]);
 
   useEffect(() => {
     if (isOpen) {
@@ -218,22 +227,22 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                     {/* Overlapping Avatars with heart */}
                     <div className="relative flex items-center">
                       <div className="w-12 h-12 rounded-full bg-[#fde8ec] dark:bg-rose-950/60 text-[#e11d48] dark:text-rose-300 font-extrabold text-lg flex items-center justify-center border-2 border-white dark:border-slate-800 shadow-xs z-0">
-                        S
+                        {props.currentFoyer?.members?.[0]?.name?.charAt(0).toUpperCase() || 'S'}
                       </div>
                       <div className="w-6 h-6 rounded-full bg-white dark:bg-slate-800 border border-rose-100 dark:border-rose-900/60 shadow-xs flex items-center justify-center -mx-2.5 z-20 text-xs">
                         💖
                       </div>
                       <div className="w-12 h-12 rounded-full bg-[#e0f2fe] dark:bg-sky-950/60 text-[#0284c7] dark:text-sky-300 font-extrabold text-lg flex items-center justify-center border-2 border-white dark:border-slate-800 shadow-xs z-10">
-                        V
+                        {props.currentFoyer?.members?.[1]?.name?.charAt(0).toUpperCase() || 'V'}
                       </div>
                     </div>
 
                     <div>
                       <h3 className="font-extrabold text-slate-900 dark:text-slate-100 text-base sm:text-lg">
-                        Sophie & Vincent
+                        {props.currentFoyer?.name || (props.currentFoyer?.members?.map(m => m.name).join(' & ') || 'Mon Foyer Partagé')}
                       </h3>
                       <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 font-medium">
-                        Compte DuoBudget
+                        Code d'invitation : <span className="font-mono font-bold text-sky-600 dark:text-sky-400">{props.currentFoyer?.code || 'Actif'}</span>
                       </p>
                     </div>
                   </div>
@@ -480,6 +489,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         onUpdateReminder={onUpdateReminder}
                         onDeleteReminder={onDeleteReminder}
                         categories={categories}
+                        foyerMembers={props.currentFoyer?.members}
                     />
                 </div>
             )}
@@ -494,7 +504,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         Gérez vos alertes et préférences sur cet appareil
                       </p>
                     </div>
-                    <NotificationsTab loggedInUser={props.loggedInUser} />
+                    <NotificationsTab loggedInUser={props.loggedInUser} currentFoyer={props.currentFoyer} />
                 </div>
             )}
 
@@ -572,6 +582,8 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         setHeatingTypes={props.setHeatingTypes}
                         setToastInfo={props.setToastInfo}
                         loginHistory={props.loginHistory}
+                        currentFoyer={props.currentFoyer}
+                        onDeleteOwnAccount={props.onDeleteOwnAccount}
                     />
                 </div>
             )}
@@ -588,6 +600,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         heatingTypes={props.heatingTypes}
                         setToastInfo={props.setToastInfo}
                         onSyncData={props.onSyncData}
+                        currentFoyer={props.currentFoyer}
                     />
                 </div>
             )}

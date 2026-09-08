@@ -11,6 +11,20 @@ export function useSyncedSettings<T>(key: string, initialValue: T): [T, (value: 
     }
   });
 
+  // Keep state in sync if key changes (e.g. foyer switch)
+  useEffect(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      if (item) {
+        setStoredValue(JSON.parse(item));
+      } else {
+        setStoredValue(initialValue);
+      }
+    } catch {
+      setStoredValue(initialValue);
+    }
+  }, [key]);
+
   const channelRef = useRef<any>(null);
 
   // Sync to Cloud
@@ -34,16 +48,16 @@ export function useSyncedSettings<T>(key: string, initialValue: T): [T, (value: 
         });
       }
 
-      // Save to Supabase
+      // Save to Supabase (using durable push_subscriptions key-value table)
       (async () => {
         try {
-          await (supabase.from('app_settings') as any).upsert({
-            key: key,
-            value: JSON.stringify(nextValue),
-            updated_at: new Date().toISOString()
+          await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `setting_${key}`);
+          await (supabase.from('push_subscriptions') as any).insert({
+            user_id: `setting_${key}`,
+            subscription: { value: nextValue }
           });
         } catch (e) {
-          console.warn(`Could not sync ${key} to Supabase app_settings:`, e);
+          console.warn(`Could not sync ${key} to Supabase:`, e);
         }
       })();
 
@@ -55,15 +69,15 @@ export function useSyncedSettings<T>(key: string, initialValue: T): [T, (value: 
   useEffect(() => {
     const fetchFromCloud = async () => {
       try {
-        const { data, error } = await (supabase.from('app_settings') as any)
-          .select('value')
-          .eq('key', key)
+        const { data, error } = await (supabase.from('push_subscriptions') as any)
+          .select('subscription')
+          .eq('user_id', `setting_${key}`)
           .maybeSingle();
 
-        if (!error && data && data.value) {
-          const parsed = JSON.parse(data.value);
-          setStoredValue(parsed);
-          window.localStorage.setItem(key, JSON.stringify(parsed));
+        if (!error && data && data.subscription && data.subscription.value !== undefined) {
+          const cloudVal = data.subscription.value;
+          setStoredValue(cloudVal);
+          window.localStorage.setItem(key, JSON.stringify(cloudVal));
         }
       } catch {
         // ignore

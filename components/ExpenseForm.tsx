@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { type Expense, type Category, User, type SubtractedItem, PRODUCT_CATEGORIES } from '../types';
+import { type Expense, type Category, User, type SubtractedItem, PRODUCT_CATEGORIES, type FoyerMember } from '../types';
+import { DEFAULT_FOYER } from '../utils/foyerService';
 import SegmentedControl from './SegmentedControl';
 import ConfirmationModal from './ConfirmationModal';
 import PiggyBankIcon from './icons/PiggyBankIcon';
@@ -22,6 +23,7 @@ import {
 } from './icons/CategoryIcons';
 
 const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; bgColor: string; borderColor: string } } = {
+  "Dépenses récurrentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
   "Dép. récurrentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
   "Dép. recurentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
   "Dépenses obligatoires": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
@@ -48,13 +50,14 @@ interface ExpenseFormProps {
   onAddExpense: (expense: Omit<Expense, 'id' | 'created_at'>) => void;
   expenses: Expense[];
   initialData?: Omit<Expense, 'id' | 'date' | 'created_at'> | null;
-  loggedInUser: User;
-  onlineUsers: User[];
+  loggedInUser: User | string;
+  onlineUsers: (User | string)[];
   disabled?: boolean;
   categories: Category[];
   groceryStores: string[];
   cars: string[];
   heatingTypes: string[];
+  foyerMembers?: FoyerMember[];
 }
 
 const toDatetimeLocal = (date: Date): string => {
@@ -66,11 +69,12 @@ const toDatetimeLocal = (date: Date): string => {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
-const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initialData, loggedInUser, onlineUsers, disabled = false, categories, groceryStores, cars, heatingTypes }) => {
+const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initialData, loggedInUser, onlineUsers, disabled = false, categories, groceryStores, cars, heatingTypes, foyerMembers }) => {
+  const members = useMemo(() => foyerMembers && foyerMembers.length > 0 ? foyerMembers : DEFAULT_FOYER.members, [foyerMembers]);
   const [description, setDescription] = useState(initialData?.description || '');
   const [amount, setAmount] = useState(initialData ? String(Math.abs(initialData.amount)) : '');
   const [category, setCategory] = useState<Category>(initialData?.category || categories[0] || '');
-  const [user, setUser] = useState<User>(initialData?.user || loggedInUser);
+  const [user, setUser] = useState<User | string>(initialData?.user || loggedInUser || members[0]?.name || User.Sophie);
   const [date, setDate] = useState(toDatetimeLocal(new Date()));
   const [isDateManuallySet, setIsDateManuallySet] = useState(false);
   const [transactionType, setTransactionType] = useState<'expense' | 'refund'>(initialData && initialData.amount < 0 ? 'refund' : 'expense');
@@ -80,6 +84,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [repairedCar, setRepairedCar] = useState(cars[0] || '');
   const [carMileage, setCarMileage] = useState('');
   const [carGarage, setCarGarage] = useState('');
+
+  useEffect(() => {
+    if (categories.length > 0 && (!category || !categories.includes(category))) {
+      setCategory(categories[0]);
+    }
+  }, [categories, category]);
   
   const [showSubtractions, setShowSubtractions] = useState(false);
   const [receiptTotal, setReceiptTotal] = useState('');
@@ -498,27 +508,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
       }
   };
 
-  const partnerName = loggedInUser === User.Sophie ? User.Vincent : User.Sophie;
-  const isPartnerOnline = onlineUsers.includes(partnerName);
-
-  let sophieButtonClass = '';
-  if (isPartnerOnline && partnerName === User.Sophie) {
-      sophieButtonClass = 'text-green-500 dark:text-green-400 animate-pulse';
-  } else if (user === User.Sophie) {
-      sophieButtonClass = 'text-pink-600 dark:text-pink-400';
-  } else {
-      sophieButtonClass = 'text-slate-600 dark:text-slate-300';
-  }
-
-  let vincentButtonClass = '';
-  if (isPartnerOnline && partnerName === User.Vincent) {
-      vincentButtonClass = 'text-green-500 dark:text-green-400 animate-pulse';
-  } else if (user === User.Vincent) {
-      vincentButtonClass = 'text-sky-600 dark:text-sky-400';
-  } else {
-      vincentButtonClass = 'text-slate-600 dark:text-slate-300';
-  }
-
   return (
     <>
         <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-md border border-slate-100 dark:border-slate-800 overflow-hidden">
@@ -540,81 +529,112 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         </div>
         <form onSubmit={handleSubmit} className="p-4 sm:p-7 space-y-5 sm:space-y-6">
             <div>
-            <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2 sm:mb-2.5">Qui a payé ?</label>
-            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 bg-slate-50 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-700/60">
+              <div className="mb-2 sm:mb-2.5">
+                <label className="block text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">Qui a payé ?</label>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Sélectionnez la personne qui a effectué le paiement.</p>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5">
+                {members.map((m, idx) => {
+                  const isSelected = user === m.name;
+                  const isSophie = m.name === User.Sophie || idx === 0;
+                  const isVincent = m.name === User.Vincent || idx === 1;
+
+                  let activeBgClass = 'bg-sky-50/90 dark:bg-sky-950/40 border-2 border-sky-500 dark:border-sky-500 text-sky-700 dark:text-sky-300 shadow-xs';
+                  let avatarBg = 'bg-sky-500 text-white';
+
+                  if (isSophie) {
+                    activeBgClass = 'bg-pink-50/90 dark:bg-pink-950/40 border-2 border-pink-500 dark:border-pink-500 text-pink-700 dark:text-pink-300 shadow-xs';
+                    avatarBg = 'bg-[#f43f5e] text-white';
+                  } else if (isVincent) {
+                    activeBgClass = 'bg-blue-50/90 dark:bg-blue-950/40 border-2 border-blue-600 dark:border-blue-500 text-blue-700 dark:text-blue-300 shadow-xs';
+                    avatarBg = 'bg-[#2563eb] text-white';
+                  }
+
+                  const isOnline = (onlineUsers || []).some(
+                    u => String(u).trim().toLowerCase() === String(m.name).trim().toLowerCase()
+                  ) || (loggedInUser && String(loggedInUser).trim().toLowerCase() === String(m.name).trim().toLowerCase());
+
+                  return (
+                    <button
+                      key={m.id || m.name}
+                      type="button"
+                      onClick={() => setUser(m.name)}
+                      className={`p-1.5 sm:p-3 rounded-2xl font-bold text-[11px] sm:text-xs md:text-sm flex items-center justify-center gap-1 sm:gap-2 transition-all cursor-pointer min-w-0 ${
+                        isSelected
+                          ? activeBgClass
+                          : 'bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'
+                      }`}
+                    >
+                      <div className="relative shrink-0">
+                        <span className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center ${avatarBg}`}>
+                          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                        </span>
+                        <span 
+                          title={isOnline ? `${m.name} est en ligne` : `${m.name} est hors ligne`}
+                          className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full border-2 border-white dark:border-slate-800 absolute -bottom-0.5 -right-0.5 transition-colors duration-300 ${
+                            isOnline ? 'bg-emerald-500 shadow-xs animate-pulse' : 'bg-slate-300 dark:bg-slate-600'
+                          }`} 
+                        />
+                      </div>
+                      <span className="truncate">{m.name}</span>
+                    </button>
+                  );
+                })}
                 <button
-                    type="button"
-                    onClick={() => setUser(User.Sophie)}
-                    className={`py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-1.5 transition-all ${
-                        user === User.Sophie
-                            ? 'bg-pink-100/90 dark:bg-pink-950/50 text-pink-600 dark:text-pink-400 border border-pink-200/80 dark:border-pink-900/50 shadow-xs'
-                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
-                    }`}
+                  type="button"
+                  onClick={() => setUser(User.Commun)}
+                  className={`p-1.5 sm:p-3 rounded-2xl font-bold text-[11px] sm:text-xs md:text-sm flex items-center justify-center gap-1 sm:gap-2 transition-all cursor-pointer min-w-0 ${
+                    user === User.Commun
+                      ? 'bg-emerald-50/90 dark:bg-emerald-950/40 border-2 border-emerald-500 dark:border-emerald-500 text-emerald-800 dark:text-emerald-300 shadow-xs'
+                      : 'bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'
+                  }`}
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    <span>Sophie</span>
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-emerald-500 text-white font-black text-xs sm:text-sm flex items-center justify-center shrink-0">
+                    €
+                  </div>
+                  <span className="truncate">Cagnotte</span>
                 </button>
-                <button
-                    type="button"
-                    onClick={() => setUser(User.Vincent)}
-                    className={`py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-1.5 transition-all ${
-                        user === User.Vincent
-                            ? 'bg-blue-100/90 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200/80 dark:border-blue-900/50 shadow-xs'
-                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
-                    }`}
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    <span>Vincent</span>
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setUser(User.Commun)}
-                    className={`py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-1.5 transition-all ${
-                        user === User.Commun
-                            ? 'bg-purple-100/90 dark:bg-indigo-950/50 text-purple-600 dark:text-indigo-400 border border-purple-200/80 dark:border-indigo-900/50 shadow-xs'
-                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
-                    }`}
-                >
-                    <PiggyBankIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                    <span>Cagnotte</span>
-                </button>
-            </div>
+              </div>
             </div>
 
             <div>
                 <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-3">
                     Catégorie
                 </label>
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
-                    {categories.map((cat) => {
-                        const visual = CategoryVisuals[cat] || CategoryVisuals["Divers"];
-                        const Icon = visual.icon;
-                        const isSelected = category === cat;
-                        return (
-                            <button
-                                key={cat}
-                                type="button"
-                                onClick={() => setCategory(cat)}
-                                className={`flex flex-col items-center justify-center p-1.5 rounded-lg border transition-all duration-200 ${
-                                    isSelected 
-                                    ? `${visual.borderColor} ${visual.bgColor} ring-1 ring-brand-500/20 shadow-sm scale-105` 
-                                    : 'border-transparent bg-slate-50 dark:bg-slate-700/30 hover:bg-slate-100 dark:hover:bg-slate-700 opacity-70 hover:opacity-100'
-                                }`}
-                            >
-                                <div className={`mb-1 ${isSelected ? visual.color : 'text-slate-400 dark:text-slate-500'}`}>
-                                    <Icon className="h-5 w-5" />
-                                </div>
-                                <span className={`text-[9px] text-center font-bold leading-tight ${isSelected ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
-                                    {cat}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
+                {categories.length === 0 ? (
+                    <div className="p-4 bg-sky-50 dark:bg-sky-950/40 border border-sky-100 dark:border-sky-900/50 rounded-2xl text-xs sm:text-sm text-sky-800 dark:text-sky-300 flex items-center justify-between gap-3">
+                        <span>Vous n'avez pas encore de catégorie dans ce foyer. Vous pouvez créer vos propres catégories dans les <strong>Réglages &gt; Catégories</strong>.</span>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
+                        {categories.map((cat) => {
+                            const visual = CategoryVisuals[cat] || CategoryVisuals["Divers"];
+                            const Icon = visual.icon;
+                            const isSelected = category === cat;
+                            return (
+                                <button
+                                    key={cat}
+                                    type="button"
+                                    onClick={() => setCategory(cat)}
+                                    className={`flex flex-col items-center justify-center p-1.5 rounded-lg border transition-all duration-200 ${
+                                        isSelected 
+                                        ? `${visual.borderColor} ${visual.bgColor} ring-1 ring-brand-500/20 shadow-sm scale-105` 
+                                        : 'border-transparent bg-slate-50 dark:bg-slate-700/30 hover:bg-slate-100 dark:hover:bg-slate-700 opacity-70 hover:opacity-100'
+                                    }`}
+                                >
+                                    <div className={`mb-1 ${isSelected ? visual.color : 'text-slate-400 dark:text-slate-500'}`}>
+                                        <Icon className="h-5 w-5" />
+                                    </div>
+                                    <span className={`text-[9px] text-center font-bold leading-tight ${isSelected ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                                        {cat}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
             
             {category === 'Courses' && (
@@ -958,31 +978,37 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                   <div className="space-y-4 pt-1">
                     {/* Type Section */}
                     <div>
-                        <label className="block text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Type</label>
-                        <div className="grid grid-cols-2 gap-1.5 sm:gap-2 bg-[#f8fafc] dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/60">
+                        <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Type</label>
+                        <div className="grid grid-cols-2 gap-2 sm:gap-2.5 bg-slate-50 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80">
                             <button
                               type="button"
                               onClick={() => setTransactionType('expense')}
-                              className={`py-2 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer ${
+                              className={`p-2.5 sm:p-3 rounded-xl flex items-center justify-center gap-2 sm:gap-2.5 transition-all cursor-pointer ${
                                 transactionType === 'expense'
-                                  ? 'bg-[#fdeef3] dark:bg-rose-950/70 text-[#d91b5c] dark:text-rose-300 border border-[#fbcfe0] dark:border-rose-900/60 shadow-2xs'
+                                  ? 'bg-pink-50/90 dark:bg-rose-950/60 border border-pink-300 dark:border-rose-800/60 shadow-xs'
                                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 border border-slate-200/80 dark:border-slate-700/80'
                               }`}
                             >
-                              <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#e60067] text-white flex items-center justify-center font-black text-[10px] sm:text-xs shrink-0 shadow-2xs">-</span>
-                              <span className="whitespace-nowrap">Dépense</span>
+                              <span className="w-6 h-6 rounded-full bg-[#f43f5e] text-white flex items-center justify-center font-black text-sm shrink-0 shadow-2xs">-</span>
+                              <div className="flex flex-col text-left min-w-0">
+                                <span className="font-extrabold text-xs sm:text-sm text-[#e11d48] dark:text-rose-300 leading-tight">Dépense</span>
+                                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-tight mt-0.5 whitespace-nowrap">- Argent sortant</span>
+                              </div>
                             </button>
                             <button
                               type="button"
                               onClick={() => setTransactionType('refund')}
-                              className={`py-2 px-1.5 sm:px-3 rounded-xl font-bold text-[11px] xs:text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2 transition-all cursor-pointer ${
+                              className={`p-2.5 sm:p-3 rounded-xl flex items-center justify-center gap-2 sm:gap-2.5 transition-all cursor-pointer ${
                                 transactionType === 'refund'
-                                  ? 'bg-[#edf5ff] dark:bg-blue-950/70 text-[#2563eb] dark:text-blue-300 border border-[#bfdbfe] dark:border-blue-900/60 shadow-2xs'
+                                  ? 'bg-emerald-50/90 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800/60 shadow-xs'
                                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 border border-slate-200/80 dark:border-slate-700/80'
                               }`}
                             >
-                              <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#2563eb] text-white flex items-center justify-center font-black text-[10px] sm:text-xs shrink-0 shadow-2xs">+</span>
-                              <span className="whitespace-nowrap">Remboursement</span>
+                              <span className="w-6 h-6 rounded-full bg-[#10b981] text-white flex items-center justify-center font-black text-sm shrink-0 shadow-2xs">+</span>
+                              <div className="flex flex-col text-left min-w-0">
+                                <span className="font-extrabold text-xs sm:text-sm text-[#059669] dark:text-emerald-400 leading-tight">Remboursement</span>
+                                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-tight mt-0.5 whitespace-nowrap">+ Argent entrant</span>
+                              </div>
                             </button>
                         </div>
                     </div>

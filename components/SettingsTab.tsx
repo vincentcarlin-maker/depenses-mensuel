@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { type Reminder, type Category, type Expense, type MoneyPotTransaction, User } from '../types';
+import { type Reminder, type Category, type Expense, type MoneyPotTransaction, User, type Foyer } from '../types';
 import RemindersTab from './RemindersTab';
 import ThemeSelector from './ThemeSelector';
 import VibeSelector from './VibeSelector';
@@ -48,6 +48,9 @@ interface SettingsTabProps {
   setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
   loginHistory: LoginEvent[];
   onLogout: () => void;
+  resetTrigger?: number;
+  currentFoyer?: Foyer;
+  onDeleteOwnAccount?: () => Promise<boolean>;
 }
 
 const SettingsItemRow: React.FC<{
@@ -109,6 +112,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
       setActiveView(props.initialView);
     }
   }, [props.initialView]);
+
+  useEffect(() => {
+    if (props.resetTrigger !== undefined) {
+      setActiveView('main');
+    }
+  }, [props.resetTrigger]);
 
   const setView = (view: SettingsViewType) => {
     setActiveView(view);
@@ -173,25 +182,33 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             className="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 flex items-center justify-between transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/90 cursor-pointer group"
           >
             <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-              {/* Overlapping Avatars with heart */}
+              {/* Dynamic Avatars */}
               <div className="relative flex items-center shrink-0">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#fde8ec] dark:bg-rose-950/60 text-[#e11d48] dark:text-rose-300 font-extrabold text-base sm:text-lg flex items-center justify-center border-2 border-white dark:border-slate-800 shadow-xs z-0">
-                  S
-                </div>
-                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white dark:bg-slate-800 border border-rose-100 dark:border-rose-900/60 shadow-xs flex items-center justify-center -mx-2 z-20 text-[10px] sm:text-xs">
-                  💖
-                </div>
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#e0f2fe] dark:bg-sky-950/60 text-[#0284c7] dark:text-sky-300 font-extrabold text-base sm:text-lg flex items-center justify-center border-2 border-white dark:border-slate-800 shadow-xs z-10">
-                  V
-                </div>
+                {props.currentFoyer?.members && props.currentFoyer.members.length >= 2 ? (
+                  <>
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#fde8ec] dark:bg-rose-950/60 text-[#e11d48] dark:text-rose-300 font-extrabold text-base sm:text-lg flex items-center justify-center border-2 border-white dark:border-slate-800 shadow-xs z-0">
+                      {props.currentFoyer.members[0]?.name?.charAt(0).toUpperCase() || '1'}
+                    </div>
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white dark:bg-slate-800 border border-rose-100 dark:border-rose-900/60 shadow-xs flex items-center justify-center -mx-2 z-20 text-[10px] sm:text-xs">
+                      💖
+                    </div>
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#e0f2fe] dark:bg-sky-950/60 text-[#0284c7] dark:text-sky-300 font-extrabold text-base sm:text-lg flex items-center justify-center border-2 border-white dark:border-slate-800 shadow-xs z-10">
+                      {props.currentFoyer.members[1]?.name?.charAt(0).toUpperCase() || '2'}
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#e0f2fe] dark:bg-sky-950/60 text-[#0284c7] dark:text-sky-300 font-extrabold text-base sm:text-lg flex items-center justify-center border-2 border-white dark:border-slate-800 shadow-xs">
+                    {String(props.loggedInUser).charAt(0).toUpperCase()}
+                  </div>
+                )}
               </div>
 
               <div className="min-w-0">
                 <h3 className="font-extrabold text-slate-900 dark:text-slate-100 text-sm sm:text-base truncate">
-                  Sophie & Vincent
+                  {props.currentFoyer?.name || (props.currentFoyer?.members?.map(m => m.name).join(' & ') || 'Mon Foyer Partagé')}
                 </h3>
                 <p className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate">
-                  Compte DuoBudget
+                  Compte DuoBudget {props.currentFoyer?.code ? `(${props.currentFoyer.code})` : ''}
                 </p>
               </div>
             </div>
@@ -338,7 +355,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
                   }
                   title="Administration & Développement"
                   description="Outils techniques et gestion des icônes"
-                  value="Vincent"
+                  value="Admin"
                   onClick={() => setView('admin')}
                 />
               )}
@@ -442,6 +459,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             onUpdateReminder={onUpdateReminder}
             onDeleteReminder={onDeleteReminder}
             categories={categories}
+            foyerMembers={props.currentFoyer?.members}
           />
         </div>
       )}
@@ -457,7 +475,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
               Gérez vos alertes et préférences sur cet appareil
             </p>
           </div>
-          <NotificationsTab loggedInUser={props.loggedInUser} />
+          <NotificationsTab loggedInUser={props.loggedInUser} currentFoyer={props.currentFoyer} />
         </div>
       )}
 
@@ -484,6 +502,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             setHeatingTypes={props.setHeatingTypes}
             setToastInfo={props.setToastInfo}
             loginHistory={props.loginHistory}
+            currentFoyer={props.currentFoyer}
+            onDeleteOwnAccount={props.onDeleteOwnAccount}
           />
         </div>
       )}
@@ -511,6 +531,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             setHeatingTypes={props.setHeatingTypes}
             setToastInfo={props.setToastInfo}
             loginHistory={props.loginHistory}
+            currentFoyer={props.currentFoyer}
+            onDeleteOwnAccount={props.onDeleteOwnAccount}
           />
         </div>
       )}
@@ -538,6 +560,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             setHeatingTypes={props.setHeatingTypes}
             setToastInfo={props.setToastInfo}
             loginHistory={props.loginHistory}
+            currentFoyer={props.currentFoyer}
+            onDeleteOwnAccount={props.onDeleteOwnAccount}
           />
         </div>
       )}
@@ -555,6 +579,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             heatingTypes={props.heatingTypes}
             setToastInfo={props.setToastInfo}
             onSyncData={props.onSyncData}
+            currentFoyer={props.currentFoyer}
           />
         </div>
       )}

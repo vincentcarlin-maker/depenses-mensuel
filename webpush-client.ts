@@ -142,8 +142,21 @@ export async function notifySubscriptionsDirectly(
       return { success: true, count: 0 };
     }
 
-    // 2. Filter out current user's own subscription so they don't notify themselves
-    const otherSubscriptions = subscriptionsList.filter(sub => sub.user_id !== currentUser);
+    const targetFoyerId = notificationData?.foyer_id || notificationData?.expense?.foyer_id || notificationData?.moneyPotTransaction?.foyer_id || 'foyer_vincent_sophie';
+
+    // 2. Filter out current user's own subscription and subscriptions outside the target foyer
+    const otherSubscriptions = subscriptionsList.filter(sub => {
+      if (sub.user_id === currentUser) return false;
+      
+      const subObj = typeof sub.subscription === 'string' ? JSON.parse(sub.subscription) : sub.subscription;
+      if (!subObj || !subObj.endpoint) return false;
+
+      const subFoyerId = subObj.foyer_id || (sub.user_id === 'Vincent' || sub.user_id === 'Sophie' || sub.user_id === 'Commun' ? 'foyer_vincent_sophie' : undefined);
+      if (targetFoyerId === 'foyer_vincent_sophie') {
+        return !subFoyerId || subFoyerId === 'foyer_vincent_sophie';
+      }
+      return subFoyerId === targetFoyerId;
+    });
 
     if (otherSubscriptions.length === 0) {
       console.log("No subscriptions for other users found to notify.");
