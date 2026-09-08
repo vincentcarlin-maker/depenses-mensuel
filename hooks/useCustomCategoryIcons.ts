@@ -54,20 +54,23 @@ export function useCustomCategoryIcons(foyerId?: string) {
       });
     }
     try {
-      await (supabase.from('app_settings') as any).upsert({
-        key: storageKey,
-        value: JSON.stringify(icons),
-        updated_at: new Date().toISOString()
+      await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `setting_${storageKey}`);
+      await (supabase.from('push_subscriptions') as any).insert({
+        user_id: `setting_${storageKey}`,
+        subscription: { icons },
+        created_at: new Date().toISOString()
       });
+
       if (storageKey !== DEFAULT_STORAGE_KEY) {
-        await (supabase.from('app_settings') as any).upsert({
-          key: DEFAULT_STORAGE_KEY,
-          value: JSON.stringify(icons),
-          updated_at: new Date().toISOString()
+        await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `setting_${DEFAULT_STORAGE_KEY}`);
+        await (supabase.from('push_subscriptions') as any).insert({
+          user_id: `setting_${DEFAULT_STORAGE_KEY}`,
+          subscription: { icons },
+          created_at: new Date().toISOString()
         });
       }
     } catch (e) {
-      console.warn(`Could not sync ${storageKey} to Supabase app_settings:`, e);
+      console.warn(`Could not sync ${storageKey} to Supabase push_subscriptions:`, e);
     }
   }, [storageKey, foyerId]);
 
@@ -76,19 +79,19 @@ export function useCustomCategoryIcons(foyerId?: string) {
     const fetchFromCloud = async () => {
       try {
         const keysToFetch = normalizedFoyerId 
-          ? [storageKey] 
-          : ['custom_category_icons', 'custom_category_icons_foyer_vincent_sophie'];
+          ? [`setting_${storageKey}`] 
+          : [`setting_${DEFAULT_STORAGE_KEY}`, `setting_custom_category_icons_foyer_vincent_sophie`];
 
-        const { data, error } = await (supabase.from('app_settings') as any)
-          .select('key, value')
-          .in('key', keysToFetch);
+        const { data, error } = await (supabase.from('push_subscriptions') as any)
+          .select('user_id, subscription')
+          .in('user_id', keysToFetch);
 
         if (!error && data && data.length > 0) {
           let combined: CustomCategoryIcon[] = [];
           data.forEach((row: any) => {
-            if (row.value) {
+            if (row.subscription?.icons) {
               try {
-                const parsed = JSON.parse(row.value);
+                const parsed = row.subscription.icons;
                 if (Array.isArray(parsed)) {
                   combined = [...combined, ...parsed];
                 }
@@ -110,8 +113,8 @@ export function useCustomCategoryIcons(foyerId?: string) {
             localStorage.setItem(storageKey, JSON.stringify(deduplicated));
           }
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        console.warn("Could not fetch custom category icons from cloud:", err);
       }
     };
 
@@ -131,10 +134,10 @@ export function useCustomCategoryIcons(foyerId?: string) {
           localStorage.setItem(storageKey, JSON.stringify(data.icons));
         }
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'app_settings' }, (payload: any) => {
-        if (payload.new && (payload.new.key === storageKey || payload.new.key === DEFAULT_STORAGE_KEY) && payload.new.value) {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'push_subscriptions' }, (payload: any) => {
+        if (payload.new && (payload.new.user_id === `setting_${storageKey}` || payload.new.user_id === `setting_${DEFAULT_STORAGE_KEY}`) && payload.new.subscription?.icons) {
           try {
-            const parsed = JSON.parse(payload.new.value);
+            const parsed = payload.new.subscription.icons;
             if (Array.isArray(parsed)) {
               setCustomIcons(parsed);
               localStorage.setItem(storageKey, JSON.stringify(parsed));
