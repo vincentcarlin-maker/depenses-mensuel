@@ -1659,6 +1659,10 @@ const App: React.FC = () => {
     registerWithNewFoyer,
     registerWithJoinFoyer,
     loginWithOAuth,
+    pendingOAuthUser,
+    completeOAuthRegisterNewFoyer,
+    completeOAuthJoinFoyer,
+    cancelOAuthPending,
     logout, 
     isLoading, 
     profiles, 
@@ -1693,6 +1697,10 @@ const App: React.FC = () => {
         onRegisterNewFoyer={registerWithNewFoyer}
         onRegisterJoinFoyer={registerWithJoinFoyer}
         onLoginWithOAuth={loginWithOAuth}
+        pendingOAuthUser={pendingOAuthUser}
+        onCompleteOAuthRegisterNewFoyer={completeOAuthRegisterNewFoyer}
+        onCompleteOAuthJoinFoyer={completeOAuthJoinFoyer}
+        onCancelOAuthPending={cancelOAuthPending}
       />
     );
   }

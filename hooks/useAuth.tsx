@@ -20,6 +20,15 @@ import {
 const SESSION_KEY = 'expense-app-session-v2';
 const PROFILES_KEY = 'expense-app-profiles-v2';
 
+export interface PendingOAuthUser {
+    authUser: any;
+    email: string;
+    fullName: string;
+    provider: 'google' | 'apple';
+    suggestedUsername: string;
+    avatarUrl?: string;
+}
+
 export interface Profile {
     username: string;
     password: string;
@@ -75,6 +84,7 @@ export const useAuth = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [profiles, setProfiles] = useLocalStorage<Profile[]>(PROFILES_KEY, INITIAL_PROFILES);
     const [loginHistory, setLoginHistory] = useState<LoginEvent[]>([]);
+    const [pendingOAuthUser, setPendingOAuthUser] = useState<PendingOAuthUser | null>(null);
 
     // Helper pour logger une visite en base de données
     const currentFoyerRef = useRef<Foyer | null>(currentFoyer);
@@ -247,6 +257,7 @@ export const useAuth = () => {
         }
         setUser(null);
         setUsername(null);
+        setPendingOAuthUser(null);
     }, [user]);
 
     // Realtime sync for profiles across devices
@@ -429,102 +440,162 @@ export const useAuth = () => {
 
     const handleOAuthUser = useCallback(async (authUser: any) => {
         if (!authUser) return;
-        const email: string = authUser.email || '';
+        const email: string = (authUser.email || '').trim();
         const metadata = authUser.user_metadata || {};
         const fullName: string = metadata.full_name || metadata.name || (email ? email.split('@')[0] : 'Membre');
-        const provider: string = authUser.app_metadata?.provider || 'oauth';
+        const provider: 'google' | 'apple' = authUser.app_metadata?.provider === 'apple' ? 'apple' : 'google';
         
-        let baseUsername = email ? email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '') : `user_${String(authUser.id).slice(0, 6)}`;
-        if (!baseUsername) baseUsername = 'membre';
+        let profile: Profile | undefined = undefined;
 
-        // Find existing profile by username, email, name, or oauth id
-        let profile = profiles.find(p => 
-            p.username === baseUsername || 
-            ((p as any).email && email && (p as any).email.toLowerCase() === email.toLowerCase()) || 
-            p.username === `oauth_${authUser.id}` ||
-            String(p.user).toLowerCase() === fullName.toLowerCase() ||
-            p.username === fullName.toLowerCase().replace(/[^a-z0-9]/g, '')
-        );
+        // 1. Strict email match in loaded profiles
+        if (email) {
+            profile = profiles.find(p => p.email && p.email.toLowerCase().trim() === email.toLowerCase());
+        }
 
+        // 2. Exact OAuth ID match in password or username
         if (!profile) {
-            // Check direct profile row in push_subscriptions
+            profile = profiles.find(p => p.password === `oauth_${authUser.id}` || p.username === `oauth_${authUser.id}`);
+        }
+
+        // 3. Special admin linking: if email is strictly Vincent Carlin's registered email
+        if (!profile && email && email.toLowerCase() === 'vincent.carlin@sfr.fr') {
+            const vincentProfile = profiles.find(p => p.username === 'vincent');
+            if (vincentProfile) {
+                profile = { ...vincentProfile, email: 'vincent.carlin@sfr.fr', provider: 'google' };
+                const updatedProfiles = profiles.map(p => p.username === 'vincent' ? profile! : p);
+                setProfiles(updatedProfiles);
+                syncProfilesToCloud(updatedProfiles);
+            }
+        }
+
+        // 4. Check direct profile row in Supabase push_subscriptions by email
+        if (!profile && email) {
             try {
                 const { data } = await (supabase.from('push_subscriptions') as any)
                     .select('subscription')
-                    .eq('user_id', `profile_${baseUsername}`)
+                    .eq('user_id', `profile_email_${email.toLowerCase().trim()}`)
                     .maybeSingle();
-                if (data?.subscription) {
+                if (data?.subscription?.username) {
                     profile = data.subscription as Profile;
                 }
             } catch {}
         }
 
-        let foyer: Foyer | null = null;
-
+        // 5. Check direct profile row by oauth ID
         if (!profile) {
-            // New user registration via Google / Apple OAuth
-            let finalUsername = baseUsername;
-            let counter = 1;
-            while (profiles.some(p => p.username === finalUsername)) {
-                finalUsername = `${baseUsername}${counter}`;
-                counter++;
-            }
-
-            const foyerName = `Foyer de ${fullName}`;
-            const createRes = await createNewFoyer(foyerName, {
-                name: fullName,
-                username: finalUsername,
-                color: '#0ea5e9'
-            });
-
-            if (createRes.success && createRes.foyer) {
-                foyer = createRes.foyer;
-            } else {
-                foyer = DEFAULT_FOYER;
-            }
-
-            const newProfile: Profile = {
-                username: finalUsername,
-                password: `oauth_${authUser.id}`,
-                user: fullName,
-                foyer_id: foyer.id,
-                foyer_name: foyer.name,
-                foyer_code: foyer.code,
-                color: '#0ea5e9',
-                email: email,
-                provider: provider
-            };
-
-            const updated = [...profiles, newProfile];
-            setProfiles(updated);
-            syncProfilesToCloud(updated);
-            profile = newProfile;
-        } else {
-            const foyerId = profile.foyer_id || DEFAULT_FOYER_ID;
-            foyer = await fetchFoyerById(foyerId);
-            if (!foyer) foyer = DEFAULT_FOYER;
+            try {
+                const { data } = await (supabase.from('push_subscriptions') as any)
+                    .select('subscription')
+                    .eq('user_id', `profile_oauth_${authUser.id}`)
+                    .maybeSingle();
+                if (data?.subscription?.username) {
+                    profile = data.subscription as Profile;
+                }
+            } catch {}
         }
 
-        const oneYearFromNow = Date.now() + 365 * 24 * 60 * 60 * 1000;
-        const session: Session = {
-            user: profile.user,
-            username: profile.username,
-            foyer_id: foyer.id,
-            expiresAt: oneYearFromNow,
-        };
-        window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-        setUser(profile.user);
-        setUsername(profile.username);
-        setCurrentFoyer(foyer);
-        setStoredActiveFoyerId(foyer.id);
-        logVisit(profile.user);
+        // IF PROFILE EXISTS: Direct login to their own foyer!
+        if (profile) {
+            const foyerId = profile.foyer_id || DEFAULT_FOYER_ID;
+            let foyer: Foyer | null = null;
+            if (foyerId === DEFAULT_FOYER_ID) {
+                foyer = DEFAULT_FOYER;
+            } else {
+                foyer = await fetchFoyerById(foyerId);
+                if (!foyer) {
+                    // Reconstruct from profile
+                    foyer = {
+                        id: foyerId,
+                        name: profile.foyer_name || `Foyer de ${profile.user}`,
+                        code: profile.foyer_code || 'FOY-000',
+                        created_at: new Date().toISOString(),
+                        members: [{
+                            id: profile.username,
+                            name: String(profile.user),
+                            username: profile.username,
+                            color: profile.color || '#0ea5e9',
+                            role: 'admin',
+                            joined_at: new Date().toISOString()
+                        }]
+                    };
+                    await saveFoyerToCloudAndLocal(foyer);
+                }
+            }
+
+            const oneYearFromNow = Date.now() + 365 * 24 * 60 * 60 * 1000;
+            const session: Session = {
+                user: profile.user,
+                username: profile.username,
+                foyer_id: foyer.id,
+                expiresAt: oneYearFromNow,
+            };
+            window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+            setUser(profile.user);
+            setUsername(profile.username);
+            setCurrentFoyer(foyer);
+            setStoredActiveFoyerId(foyer.id);
+            setPendingOAuthUser(null);
+            logVisit(profile.user);
+            return;
+        }
+
+        // IF NO PROFILE: NEW USER -> Trigger onboarding!
+        let baseUsername = email ? email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '') : `user_${String(authUser.id).slice(0, 6)}`;
+        if (!baseUsername || baseUsername === 'vincent' || baseUsername === 'sophie') {
+            baseUsername = `user_${Math.floor(100 + Math.random() * 900)}`;
+        }
+        let suggestedUsername = baseUsername;
+        let counter = 1;
+        while (profiles.some(p => p.username === suggestedUsername) || suggestedUsername === 'vincent' || suggestedUsername === 'sophie') {
+            suggestedUsername = `${baseUsername}${counter}`;
+            counter++;
+        }
+
+        setPendingOAuthUser({
+            authUser,
+            email,
+            fullName,
+            provider,
+            suggestedUsername,
+            avatarUrl: metadata.avatar_url || metadata.picture
+        });
     }, [profiles, setProfiles, syncProfilesToCloud, logVisit]);
 
     // Listen for Supabase OAuth login events or existing session
     useEffect(() => {
-        // Check if current URL contains access_token (e.g. from OAuth redirect with # or %23)
+        // Check if current URL contains access_token or code
         if (typeof window !== 'undefined') {
             const fullUrl = window.location.href;
+
+            // Handle PKCE code (?code=...)
+            if (fullUrl.includes('code=')) {
+                try {
+                    const searchParams = new URLSearchParams(window.location.search);
+                    const code = searchParams.get('code');
+                    if (code) {
+                        supabase.auth.exchangeCodeForSession(code).then(({ data }) => {
+                            if (data?.session?.user) {
+                                handleOAuthUser(data.session.user);
+                                if (window.opener) {
+                                    try {
+                                        window.opener.postMessage({ type: 'SUPABASE_AUTH_SUCCESS' }, '*');
+                                    } catch {}
+                                    window.close();
+                                }
+                            }
+                        }).catch(err => {
+                            console.warn("Could not exchange code for session:", err);
+                        });
+                        try {
+                            const cleanPath = window.location.pathname || '/';
+                            window.history.replaceState(null, '', cleanPath);
+                        } catch {}
+                    }
+                } catch (err) {
+                    console.warn("Could not parse code from URL:", err);
+                }
+            }
+
             if (fullUrl.includes('access_token=') || fullUrl.includes('%23access_token=')) {
                 try {
                     const cleanFragment = fullUrl.replace(/.*(%23|#|\?)/, '');
@@ -622,18 +693,21 @@ export const useAuth = () => {
     const loginWithOAuth = useCallback(async (provider: 'google' | 'apple'): Promise<{ success: boolean; error?: string; redirected?: boolean; authUrl?: string }> => {
         try {
             const redirectTo = window.location.origin;
+            const isIframe = typeof window !== 'undefined' && window.self !== window.top;
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider,
                 options: {
                     redirectTo,
-                    skipBrowserRedirect: true
+                    skipBrowserRedirect: isIframe,
+                    queryParams: provider === 'google' ? {
+                        prompt: 'select_account'
+                    } : undefined
                 }
             });
             if (error) {
                 return { success: false, error: error.message };
             }
             if (data?.url) {
-                const isIframe = window.self !== window.top;
                 if (isIframe) {
                     const width = 520;
                     const height = 650;
@@ -652,11 +726,170 @@ export const useAuth = () => {
                 }
                 return { success: true, redirected: true, authUrl: data.url };
             }
-            return { success: true };
+            return { success: true, redirected: true };
         } catch (err: any) {
             return { success: false, error: err?.message || 'Erreur de connexion OAuth' };
         }
     }, [handleOAuthUser]);
+
+    const completeOAuthRegisterNewFoyer = useCallback(async (params: {
+        foyerName: string;
+        name: string;
+        username: string;
+        color?: string;
+    }): Promise<{ success: boolean; error?: string; foyer?: Foyer }> => {
+        if (!pendingOAuthUser) {
+            return { success: false, error: 'Session de connexion OAuth expirée. Veuillez réessayer.' };
+        }
+        const { authUser, email, provider } = pendingOAuthUser;
+        const normalizedUsername = params.username.toLowerCase().trim();
+
+        if (profiles.some(p => p.username === normalizedUsername) || await isUsernameAlreadyUsed(normalizedUsername)) {
+            return { success: false, error: 'Cet identifiant est déjà utilisé par un autre compte. Veuillez en choisir un autre.' };
+        }
+
+        const createRes = await createNewFoyer(params.foyerName || `Foyer de ${params.name.trim()}`, {
+            name: params.name.trim(),
+            username: normalizedUsername,
+            color: params.color || '#0ea5e9'
+        });
+
+        if (!createRes.success || !createRes.foyer) {
+            return { success: false, error: createRes.error || 'Erreur lors de la création du foyer.' };
+        }
+
+        const newProfile: Profile = {
+            username: normalizedUsername,
+            password: `oauth_${authUser.id}`,
+            user: params.name.trim(),
+            foyer_id: createRes.foyer.id,
+            foyer_name: createRes.foyer.name,
+            foyer_code: createRes.foyer.code,
+            color: params.color || '#0ea5e9',
+            email: email,
+            provider: provider
+        };
+
+        const updated = [...profiles, newProfile];
+        setProfiles(updated);
+        syncProfilesToCloud(updated);
+
+        // Save email & oauth pointers
+        try {
+            if (email) {
+                await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_email_${email.toLowerCase().trim()}`);
+                await (supabase.from('push_subscriptions') as any).insert({
+                    user_id: `profile_email_${email.toLowerCase().trim()}`,
+                    subscription: newProfile
+                });
+            }
+            await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_oauth_${authUser.id}`);
+            await (supabase.from('push_subscriptions') as any).insert({
+                user_id: `profile_oauth_${authUser.id}`,
+                subscription: newProfile
+            });
+        } catch {}
+
+        const oneYearFromNow = Date.now() + 365 * 24 * 60 * 60 * 1000;
+        const session: Session = {
+            user: newProfile.user,
+            username: newProfile.username,
+            foyer_id: createRes.foyer.id,
+            expiresAt: oneYearFromNow,
+        };
+        window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        setUser(newProfile.user);
+        setUsername(newProfile.username);
+        setCurrentFoyer(createRes.foyer);
+        setStoredActiveFoyerId(createRes.foyer.id);
+        setPendingOAuthUser(null);
+        logVisit(newProfile.user);
+
+        return { success: true, foyer: createRes.foyer };
+    }, [pendingOAuthUser, profiles, setProfiles, syncProfilesToCloud, logVisit]);
+
+    const completeOAuthJoinFoyer = useCallback(async (params: {
+        inviteCode: string;
+        name: string;
+        username: string;
+        color?: string;
+    }): Promise<{ success: boolean; error?: string; foyer?: Foyer }> => {
+        if (!pendingOAuthUser) {
+            return { success: false, error: 'Session de connexion OAuth expirée. Veuillez réessayer.' };
+        }
+        const { authUser, email, provider } = pendingOAuthUser;
+        const normalizedUsername = params.username.toLowerCase().trim();
+
+        if (profiles.some(p => p.username === normalizedUsername) || await isUsernameAlreadyUsed(normalizedUsername)) {
+            return { success: false, error: 'Cet identifiant est déjà utilisé par un autre compte. Veuillez en choisir un autre.' };
+        }
+
+        const joinRes = await joinFoyerWithCode(params.inviteCode, {
+            name: params.name.trim(),
+            username: normalizedUsername,
+            color: params.color || '#ec4899'
+        });
+
+        if (!joinRes.success || !joinRes.foyer) {
+            return { success: false, error: joinRes.error || 'Code d’invitation introuvable.' };
+        }
+
+        const newProfile: Profile = {
+            username: normalizedUsername,
+            password: `oauth_${authUser.id}`,
+            user: params.name.trim(),
+            foyer_id: joinRes.foyer.id,
+            foyer_name: joinRes.foyer.name,
+            foyer_code: joinRes.foyer.code,
+            color: params.color || '#ec4899',
+            email: email,
+            provider: provider
+        };
+
+        const updated = [...profiles, newProfile];
+        setProfiles(updated);
+        syncProfilesToCloud(updated);
+
+        // Save email & oauth pointers
+        try {
+            if (email) {
+                await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_email_${email.toLowerCase().trim()}`);
+                await (supabase.from('push_subscriptions') as any).insert({
+                    user_id: `profile_email_${email.toLowerCase().trim()}`,
+                    subscription: newProfile
+                });
+            }
+            await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_oauth_${authUser.id}`);
+            await (supabase.from('push_subscriptions') as any).insert({
+                user_id: `profile_oauth_${authUser.id}`,
+                subscription: newProfile
+            });
+        } catch {}
+
+        const oneYearFromNow = Date.now() + 365 * 24 * 60 * 60 * 1000;
+        const session: Session = {
+            user: newProfile.user,
+            username: newProfile.username,
+            foyer_id: joinRes.foyer.id,
+            expiresAt: oneYearFromNow,
+        };
+        window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        setUser(newProfile.user);
+        setUsername(newProfile.username);
+        setCurrentFoyer(joinRes.foyer);
+        setStoredActiveFoyerId(joinRes.foyer.id);
+        setPendingOAuthUser(null);
+        logVisit(newProfile.user);
+
+        return { success: true, foyer: joinRes.foyer };
+    }, [pendingOAuthUser, profiles, setProfiles, syncProfilesToCloud, logVisit]);
+
+    const cancelOAuthPending = useCallback(async () => {
+        try {
+            await supabase.auth.signOut();
+        } catch {}
+        setPendingOAuthUser(null);
+    }, []);
 
     const registerOrLoginOAuthUserDirect = useCallback(async (params: {
         provider: 'google' | 'apple';
@@ -1253,6 +1486,10 @@ export const useAuth = () => {
         registerWithNewFoyer,
         registerWithJoinFoyer,
         loginWithOAuth,
+        pendingOAuthUser,
+        completeOAuthRegisterNewFoyer,
+        completeOAuthJoinFoyer,
+        cancelOAuthPending,
         registerOrLoginOAuthUserDirect,
         updateFoyer,
         updateUserColor,

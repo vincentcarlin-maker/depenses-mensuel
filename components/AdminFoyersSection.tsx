@@ -73,6 +73,8 @@ export const AdminFoyersSection: React.FC<AdminFoyersSectionProps> = ({
   const [foyerToDelete, setFoyerToDelete] = useState<Foyer | null>(null);
   const [memberToRemove, setMemberToRemove] = useState<{ foyerId: string; member: FoyerMember } | null>(null);
 
+  const [isDeletingFoyer, setIsDeletingFoyer] = useState(false);
+
   // Load all foyers from Cloud & Local
   const loadFoyers = useCallback(async () => {
     setIsLoading(true);
@@ -90,8 +92,17 @@ export const AdminFoyersSection: React.FC<AdminFoyersSectionProps> = ({
   useEffect(() => {
     loadFoyers();
 
-    // Subscribe to real-time foyer changes
-    const channel = supabase.channel('foyer_admin_channel')
+    // Subscribe to real-time foyer changes across channels
+    const syncChannel = supabase.channel('foyer_sync_channel')
+      .on('broadcast', { event: 'foyer_updated' }, () => {
+        loadFoyers();
+      })
+      .on('broadcast', { event: 'foyer_deleted' }, () => {
+        loadFoyers();
+      })
+      .subscribe();
+
+    const adminChannel = supabase.channel('foyer_admin_channel')
       .on('broadcast', { event: 'foyer_updated' }, () => {
         loadFoyers();
       })
@@ -101,7 +112,8 @@ export const AdminFoyersSection: React.FC<AdminFoyersSectionProps> = ({
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(syncChannel);
+      supabase.removeChannel(adminChannel);
     };
   }, [loadFoyers]);
 
@@ -235,11 +247,12 @@ export const AdminFoyersSection: React.FC<AdminFoyersSectionProps> = ({
 
   // Delete Foyer
   const handleConfirmDeleteFoyer = async () => {
-    if (!foyerToDelete) return;
+    if (!foyerToDelete || isDeletingFoyer) return;
+    setIsDeletingFoyer(true);
     try {
       const res = await deleteFoyer(foyerToDelete.id);
       if (res.success) {
-        setToastInfo({ message: `Le foyer « ${foyerToDelete.name} » a été supprimé.`, type: 'info' });
+        setToastInfo({ message: `Le foyer « ${foyerToDelete.name} » a été supprimé avec succès.`, type: 'info' });
         setFoyerToDelete(null);
         await loadFoyers();
       } else {
@@ -247,6 +260,8 @@ export const AdminFoyersSection: React.FC<AdminFoyersSectionProps> = ({
       }
     } catch {
       setToastInfo({ message: 'Erreur lors de la suppression.', type: 'error' });
+    } finally {
+      setIsDeletingFoyer(false);
     }
   };
 

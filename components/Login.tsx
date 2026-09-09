@@ -10,6 +10,7 @@ import CoinOIcon from './icons/CoinOIcon';
 import { fetchFoyerByCode } from '../utils/foyerService';
 import { Foyer } from '../types';
 import { USER_COLORS } from '../utils/userColors';
+import { PendingOAuthUser } from '../hooks/useAuth';
 
 const SocialAuthButtons: React.FC<{
     onSelect: (provider: 'google' | 'apple') => void;
@@ -101,18 +102,86 @@ interface LoginProps {
     onRegisterNewFoyer?: (params: { name: string; username: string; password: string; foyerName: string; color?: string }) => Promise<{ success: boolean; error?: string; foyer?: Foyer }>;
     onRegisterJoinFoyer?: (params: { name: string; username: string; password: string; inviteCode: string; color?: string }) => Promise<{ success: boolean; error?: string; foyer?: Foyer }>;
     onLoginWithOAuth?: (provider: 'google' | 'apple') => Promise<{ success: boolean; error?: string; redirected?: boolean }>;
+    pendingOAuthUser?: PendingOAuthUser | null;
+    onCompleteOAuthRegisterNewFoyer?: (params: { foyerName: string; name: string; username: string; color?: string }) => Promise<{ success: boolean; error?: string; foyer?: Foyer }>;
+    onCompleteOAuthJoinFoyer?: (params: { inviteCode: string; name: string; username: string; color?: string }) => Promise<{ success: boolean; error?: string; foyer?: Foyer }>;
+    onCancelOAuthPending?: () => void;
 }
 
 export const Login: React.FC<LoginProps> = ({ 
     onLogin, 
     onRegisterNewFoyer, 
     onRegisterJoinFoyer,
-    onLoginWithOAuth
+    onLoginWithOAuth,
+    pendingOAuthUser,
+    onCompleteOAuthRegisterNewFoyer,
+    onCompleteOAuthJoinFoyer,
+    onCancelOAuthPending
 }) => {
     const [view, setView] = useState<'welcome' | 'login' | 'create' | 'join'>('welcome');
 
     // OAuth loading state
     const [oauthLoadingProvider, setOauthLoadingProvider] = useState<'google' | 'apple' | null>(null);
+
+    // OAuth Onboarding State (for new OAuth users)
+    const [oauthTab, setOauthTab] = useState<'create' | 'join'>('create');
+    const [oauthFoyerName, setOauthFoyerName] = useState('');
+    const [oauthName, setOauthName] = useState('');
+    const [oauthUsername, setOauthUsername] = useState('');
+    const [oauthInviteCode, setOauthInviteCode] = useState('');
+    const [oauthColor, setOauthColor] = useState('#0ea5e9');
+    const [oauthCheckingCode, setOauthCheckingCode] = useState(false);
+    const [oauthFoundFoyer, setOauthFoundFoyer] = useState<Foyer | null>(null);
+    const [oauthCodeError, setOauthCodeError] = useState('');
+
+    // Pre-fill OAuth fields when pendingOAuthUser becomes active
+    useEffect(() => {
+        if (pendingOAuthUser) {
+            setOauthName(pendingOAuthUser.fullName || '');
+            setOauthUsername(pendingOAuthUser.suggestedUsername || '');
+            setOauthFoyerName(pendingOAuthUser.fullName ? `Foyer de ${pendingOAuthUser.fullName}` : 'Mon nouveau foyer');
+            setError('');
+        }
+    }, [pendingOAuthUser]);
+
+    // Live foyer lookup for OAuth invite code
+    useEffect(() => {
+        const clean = oauthInviteCode.trim().toUpperCase();
+        if (clean.length < 3) {
+            setOauthFoundFoyer(null);
+            setOauthCodeError('');
+            return;
+        }
+
+        let isCancelled = false;
+        setOauthCheckingCode(true);
+        setOauthCodeError('');
+
+        const timer = setTimeout(async () => {
+            try {
+                const foyer = await fetchFoyerByCode(clean);
+                if (!isCancelled) {
+                    setOauthCheckingCode(false);
+                    if (foyer) {
+                        setOauthFoundFoyer(foyer);
+                        setOauthCodeError('');
+                    } else {
+                        setOauthFoundFoyer(null);
+                        if (clean.length >= 6) {
+                            setOauthCodeError('Aucun foyer trouvé pour ce code.');
+                        }
+                    }
+                }
+            } catch {
+                if (!isCancelled) setOauthCheckingCode(false);
+            }
+        }, 400);
+
+        return () => {
+            isCancelled = true;
+            clearTimeout(timer);
+        };
+    }, [oauthInviteCode]);
 
     // Login state
     const [username, setUsername] = useState('');
@@ -286,6 +355,62 @@ export const Login: React.FC<LoginProps> = ({
         }
     };
 
+    const handleOAuthCreateSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        if (!oauthName.trim() || !oauthUsername.trim() || !oauthFoyerName.trim()) {
+            setError('Veuillez renseigner tous les champs obligatoires.');
+            return;
+        }
+        if (!onCompleteOAuthRegisterNewFoyer) return;
+        setIsLoading(true);
+        try {
+            const res = await onCompleteOAuthRegisterNewFoyer({
+                foyerName: oauthFoyerName.trim(),
+                name: oauthName.trim(),
+                username: oauthUsername.trim(),
+                color: oauthColor
+            });
+            if (!res.success) {
+                setError(res.error || 'Erreur lors de la création du foyer.');
+            }
+        } catch (err: any) {
+            setError(err?.message || 'Erreur lors de la finalisation du compte.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleOAuthJoinSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        if (!oauthInviteCode.trim()) {
+            setError('Veuillez saisir le code d’invitation du foyer.');
+            return;
+        }
+        if (!oauthName.trim() || !oauthUsername.trim()) {
+            setError('Veuillez renseigner votre prénom et votre identifiant.');
+            return;
+        }
+        if (!onCompleteOAuthJoinFoyer) return;
+        setIsLoading(true);
+        try {
+            const res = await onCompleteOAuthJoinFoyer({
+                inviteCode: oauthInviteCode.trim(),
+                name: oauthName.trim(),
+                username: oauthUsername.trim(),
+                color: oauthColor
+            });
+            if (!res.success) {
+                setError(res.error || 'Code d’invitation introuvable ou incorrect.');
+            }
+        } catch (err: any) {
+            setError(err?.message || 'Erreur lors de la liaison au foyer.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const resetForms = () => {
         setError('');
         setCodeError('');
@@ -312,9 +437,260 @@ export const Login: React.FC<LoginProps> = ({
                 <div className="bg-white dark:bg-slate-800/95 backdrop-blur-md rounded-3xl shadow-xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-700/70 transition-all">
                     
                     {/* ============================================================ */}
+                    {/* 0. ÉCRAN ONBOARDING OAUTH (NOUVEAU COMPTE GOOGLE / APPLE)    */}
+                    {/* ============================================================ */}
+                    {pendingOAuthUser && (
+                        <div className="space-y-5 animate-fade-in">
+                            <div className="text-center space-y-1.5 pb-3 border-b border-slate-100 dark:border-slate-700">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold mb-1">
+                                    {pendingOAuthUser.provider === 'apple' ? (
+                                        <AppleIcon className="w-3.5 h-3.5" />
+                                    ) : (
+                                        <GoogleIcon className="w-3.5 h-3.5" />
+                                    )}
+                                    <span>Connecté avec {pendingOAuthUser.provider === 'apple' ? 'Apple' : 'Google'}</span>
+                                </div>
+                                <h2 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white tracking-tight">
+                                    Finaliser votre inscription
+                                </h2>
+                                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                                    Compte : <strong className="text-slate-700 dark:text-slate-200">{pendingOAuthUser.email || pendingOAuthUser.fullName}</strong>
+                                </p>
+                            </div>
+
+                            {/* Segmented Choice : Nouveau Foyer ou Rejoindre */}
+                            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl">
+                                <button
+                                    type="button"
+                                    onClick={() => { setError(''); setOauthTab('create'); }}
+                                    className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 ${
+                                        oauthTab === 'create'
+                                            ? 'bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-xs'
+                                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                    }`}
+                                >
+                                    <span>🏠</span>
+                                    <span>Créer mon foyer</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setError(''); setOauthTab('join'); }}
+                                    className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 ${
+                                        oauthTab === 'join'
+                                            ? 'bg-white dark:bg-slate-800 text-pink-600 dark:text-pink-400 shadow-xs'
+                                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                    }`}
+                                >
+                                    <span>🔗</span>
+                                    <span>Rejoindre un foyer</span>
+                                </button>
+                            </div>
+
+                            {error && (
+                                <div className="p-3.5 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs sm:text-sm rounded-xl font-semibold">
+                                    {error}
+                                </div>
+                            )}
+
+                            {oauthTab === 'create' ? (
+                                <form onSubmit={handleOAuthCreateSubmit} className="space-y-4">
+                                    <div className="p-3 rounded-xl bg-sky-50/60 dark:bg-sky-950/30 border border-sky-100 dark:border-sky-900/50 text-xs text-sky-900 dark:text-sky-200">
+                                        ✨ Un espace de compte entièrement dédié et privé va être généré pour vous.
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                            Nom de votre foyer <span className="text-rose-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={oauthFoyerName}
+                                            onChange={(e) => setOauthFoyerName(e.target.value)}
+                                            placeholder="Ex: Foyer Martin, Duo Vacances..."
+                                            required
+                                            className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-sky-500 font-medium"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                                Votre prénom <span className="text-rose-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={oauthName}
+                                                onChange={(e) => setOauthName(e.target.value)}
+                                                placeholder="Votre prénom"
+                                                required
+                                                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-sky-500 font-medium"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                                Identifiant DuoBudget <span className="text-rose-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={oauthUsername}
+                                                onChange={(e) => setOauthUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, ''))}
+                                                placeholder="identifiant"
+                                                required
+                                                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-sky-500 font-medium font-mono"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Color selection */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                                            Couleur de votre avatar
+                                        </label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {USER_COLORS.map(c => (
+                                                <button
+                                                    key={c.value}
+                                                    type="button"
+                                                    onClick={() => setOauthColor(c.value)}
+                                                    className={`w-7 h-7 rounded-full transition-all flex items-center justify-center ${
+                                                        oauthColor === c.value ? 'ring-2 ring-offset-2 ring-slate-800 dark:ring-white scale-110' : 'opacity-80 hover:opacity-100'
+                                                    }`}
+                                                    style={{ backgroundColor: c.value }}
+                                                    title={c.label}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={isLoading}
+                                        className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white font-extrabold text-sm shadow-md hover:shadow-lg transition-all active:scale-98 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+                                    >
+                                        {isLoading ? (
+                                            <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                        ) : (
+                                            <>
+                                                <span>Créer mon foyer & commencer</span>
+                                                <ChevronRightIcon className="w-4 h-4" />
+                                            </>
+                                        )}
+                                    </button>
+                                </form>
+                            ) : (
+                                <form onSubmit={handleOAuthJoinSubmit} className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                            Code d’invitation du foyer <span className="text-rose-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={oauthInviteCode}
+                                            onChange={(e) => setOauthInviteCode(e.target.value.toUpperCase())}
+                                            placeholder="Ex: FOY-123456"
+                                            required
+                                            className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-pink-500 font-mono font-black tracking-wider text-center"
+                                        />
+                                        {oauthCheckingCode && (
+                                            <p className="text-[11px] text-slate-500 mt-1">Vérification du code en cours...</p>
+                                        )}
+                                        {oauthFoundFoyer && (
+                                            <div className="mt-2 p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs text-emerald-800 dark:text-emerald-300 font-bold">
+                                                ✅ Foyer trouvé : {oauthFoundFoyer.name} ({oauthFoundFoyer.members?.length || 0} membres)
+                                            </div>
+                                        )}
+                                        {oauthCodeError && (
+                                            <p className="text-[11px] text-rose-500 mt-1 font-semibold">{oauthCodeError}</p>
+                                        )}
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                                Votre prénom <span className="text-rose-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={oauthName}
+                                                onChange={(e) => setOauthName(e.target.value)}
+                                                placeholder="Votre prénom"
+                                                required
+                                                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-pink-500 font-medium"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                                Identifiant DuoBudget <span className="text-rose-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={oauthUsername}
+                                                onChange={(e) => setOauthUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, ''))}
+                                                placeholder="identifiant"
+                                                required
+                                                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-pink-500 font-medium font-mono"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Color selection */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                                            Couleur de votre avatar
+                                        </label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {USER_COLORS.map(c => (
+                                                <button
+                                                    key={c.value}
+                                                    type="button"
+                                                    onClick={() => setOauthColor(c.value)}
+                                                    className={`w-7 h-7 rounded-full transition-all flex items-center justify-center ${
+                                                        oauthColor === c.value ? 'ring-2 ring-offset-2 ring-slate-800 dark:ring-white scale-110' : 'opacity-80 hover:opacity-100'
+                                                    }`}
+                                                    style={{ backgroundColor: c.value }}
+                                                    title={c.label}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={isLoading}
+                                        className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-extrabold text-sm shadow-md hover:shadow-lg transition-all active:scale-98 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+                                    >
+                                        {isLoading ? (
+                                            <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                        ) : (
+                                            <>
+                                                <span>Rejoindre ce foyer partagé</span>
+                                                <ChevronRightIcon className="w-4 h-4" />
+                                            </>
+                                        )}
+                                    </button>
+                                </form>
+                            )}
+
+                            <div className="pt-2 text-center">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (onCancelOAuthPending) onCancelOAuthPending();
+                                    }}
+                                    className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white underline underline-offset-2"
+                                >
+                                    Changer de compte ou annuler
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ============================================================ */}
                     {/* 1. ÉCRAN DE BIENVENUE (WELCOME SCREEN)                       */}
                     {/* ============================================================ */}
-                    {view === 'welcome' && (
+                    {!pendingOAuthUser && view === 'welcome' && (
                         <div className="space-y-5 animate-fade-in">
                             <div className="text-center space-y-1">
                                 <h2 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white tracking-tight">
