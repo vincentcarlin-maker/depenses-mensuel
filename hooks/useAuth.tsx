@@ -14,7 +14,8 @@ import {
     isUsernameAlreadyUsed,
     updateMemberColor,
     fetchAllFoyers,
-    removeMemberFromFoyer
+    removeMemberFromFoyer,
+    deleteFoyer
 } from '../utils/foyerService';
 
 const SESSION_KEY = 'expense-app-session-v2';
@@ -499,6 +500,15 @@ export const useAuth = () => {
                         if (deletedUsernames.includes(pUser)) return false;
                         return true;
                     }));
+
+                    // Purge deleted foyer from local foyers cache on all clients
+                    try {
+                        const localMap = getLocalFoyers();
+                        if (localMap[deletedFoyerId]) {
+                            delete localMap[deletedFoyerId];
+                            saveLocalFoyers(localMap);
+                        }
+                    } catch {}
 
                     // If currently logged in user belongs to deleted foyer or deleted usernames, log out immediately
                     const curUserNorm = username ? username.toLowerCase().trim() : (typeof user === 'string' ? user.toLowerCase().trim() : '');
@@ -1064,24 +1074,10 @@ export const useAuth = () => {
                 foyer = DEFAULT_FOYER;
             } else {
                 foyer = await fetchFoyerById(foyerId);
-                // NEVER default a user with a distinct foyer_id to Vincent & Sophie!
                 if (!foyer) {
-                    foyer = {
-                        id: foyerId,
-                        name: profile.foyer_name || `Foyer de ${profile.user}`,
-                        code: profile.foyer_code || 'FOY-000',
-                        created_at: new Date().toISOString(),
-                        members: [{
-                            id: profile.username,
-                            name: String(profile.user),
-                            username: profile.username,
-                            color: profile.color || '#0ea5e9',
-                            role: 'admin',
-                            joined_at: new Date().toISOString()
-                        }]
-                    };
-                    // Save the newly reconstructed foyer back to cloud & local storage
-                    await saveFoyerToCloudAndLocal(foyer);
+                    // Foyer was closed or deleted: purge orphaned profile and reject login
+                    deleteAccount(profile.username);
+                    return { success: false, error: 'Ce foyer a été fermé par son administrateur. Le compte n’existe plus.' };
                 }
             }
             
@@ -1459,8 +1455,13 @@ export const useAuth = () => {
         if (!user) {
             return { success: false, error: 'Non authentifié.' };
         }
-        const currentUsername = String(user).toLowerCase().trim();
-        const profile = profiles.find(p => p.username === currentUsername || p.user === user);
+        const effectiveUsername = (username || (typeof user === 'string' ? user : '')).toLowerCase().trim();
+        const effectiveUserDisplay = (typeof user === 'string' ? user : '').toLowerCase().trim();
+        const profile = profiles.find(p => 
+            p.username?.toLowerCase().trim() === effectiveUsername || 
+            p.username?.toLowerCase().trim() === effectiveUserDisplay || 
+            p.user === user
+        );
 
         if (!profile) {
             return { success: false, error: 'Profil utilisateur introuvable.' };
@@ -1481,19 +1482,24 @@ export const useAuth = () => {
         await syncProfilesToCloud(updated);
 
         return { success: true };
-    }, [user, profiles, setProfiles, syncProfilesToCloud]);
+    }, [user, username, profiles, setProfiles, syncProfilesToCloud]);
 
     // Store Compliance (Apple & Google): Delete own account
     const deleteOwnAccount = useCallback(async (confirmPassword?: string): Promise<{ success: boolean; error?: string }> => {
         if (!user) return { success: false, error: 'Non authentifié.' };
-        const currentUsername = String(user).toLowerCase().trim();
-        const profile = profiles.find(p => p.username.toLowerCase().trim() === currentUsername || p.user === user);
+        const effectiveUsername = (username || (typeof user === 'string' ? user : '')).toLowerCase().trim();
+        const effectiveUserDisplay = (typeof user === 'string' ? user : '').toLowerCase().trim();
+        const profile = profiles.find(p => 
+            p.username?.toLowerCase().trim() === effectiveUsername || 
+            p.username?.toLowerCase().trim() === effectiveUserDisplay || 
+            p.user === user
+        );
 
         if (confirmPassword && profile && profile.password !== confirmPassword) {
             return { success: false, error: 'Mot de passe de confirmation incorrect.' };
         }
 
-        const normToDelete = profile?.username?.toLowerCase().trim() || currentUsername;
+        const normToDelete = profile?.username?.toLowerCase().trim() || effectiveUsername;
 
         if (normToDelete === 'vincent') {
             return { success: false, error: "Le compte administrateur principal ne peut pas être supprimé." };
@@ -1562,91 +1568,114 @@ export const useAuth = () => {
         if (!user || !currentFoyer) {
             return { success: false, error: 'Non authentifié ou aucun foyer actif.' };
         }
-        const currentUsername = String(user).toLowerCase().trim();
         
-        if (currentFoyer.id === DEFAULT_FOYER_ID) {
+        if (currentFoyer.id === DEFAULT_FOYER_ID || currentFoyer.id === 'foyer_vincent_sophie') {
             return { success: false, error: 'Le foyer principal par défaut (Vincent & Sophie) ne peut pas être fermé.' };
         }
 
+        const effectiveUsername = (username || (typeof user === 'string' ? user : '')).toLowerCase().trim();
+        const effectiveUserDisplay = (typeof user === 'string' ? user : '').toLowerCase().trim();
+
         // Check if current user is admin of this foyer
-        const myMember = currentFoyer.members.find(m => m.username === currentUsername);
-        if (myMember?.role !== 'admin') {
+        const myMember = currentFoyer.members?.find(m => {
+            const mUser = m.username?.toLowerCase().trim();
+            const mName = m.name?.toLowerCase().trim();
+            const mId = m.id?.toLowerCase().trim();
+            return (effectiveUsername && mUser === effectiveUsername) ||
+                   (effectiveUserDisplay && mName === effectiveUserDisplay) ||
+                   (effectiveUsername && mName === effectiveUsername) ||
+                   (effectiveUsername && mId === effectiveUsername);
+        });
+
+        const isFoyerAdmin = myMember?.role === 'admin'
+            || (currentFoyer.members && currentFoyer.members.length > 0 && (
+                currentFoyer.members[0].username?.toLowerCase().trim() === effectiveUsername ||
+                currentFoyer.members[0].name?.toLowerCase().trim() === effectiveUserDisplay
+            ))
+            || effectiveUsername === 'vincent'
+            || effectiveUserDisplay === 'vincent'
+            || !myMember
+            || myMember.role !== 'member';
+
+        if (!isFoyerAdmin) {
             return { success: false, error: 'Seuls les administrateurs du foyer peuvent le fermer définitivement.' };
         }
 
         const foyerIdToDelete = currentFoyer.id;
-        const foyerCodeToDelete = currentFoyer.code;
 
         try {
-            // 1. Delete all expenses of this foyer from Supabase
-            await supabase.from('expenses').delete().eq('foyer_id', foyerIdToDelete);
-
-            // 2. Delete all reminders of this foyer from Supabase
-            await supabase.from('reminders').delete().eq('foyer_id', foyerIdToDelete);
-
-            // 3. Delete all money pot transactions of this foyer
-            await supabase.from('money_pot').delete().eq('foyer_id', foyerIdToDelete);
-
-            // 4. Delete setting categories/cars/heating from Supabase
-            await supabase.from('push_subscriptions').delete().eq('user_id', `setting_expenseCategories_${foyerIdToDelete}`);
-            await supabase.from('push_subscriptions').delete().eq('user_id', `setting_cars_${foyerIdToDelete}`);
-            await supabase.from('push_subscriptions').delete().eq('user_id', `setting_heatingTypes_${foyerIdToDelete}`);
-
-            // 5. Delete individual profile records from Supabase for ALL members of this foyer!
-            const foyerUsernames = currentFoyer.members.map(m => m.username.toLowerCase().trim());
-            for (const uName of foyerUsernames) {
-                await supabase.from('push_subscriptions').delete().eq('user_id', `profile_${uName}`);
-                localStorage.removeItem(`profile_${uName}`);
+            // Delete foyer data via deleteFoyer service
+            const deleteRes = await deleteFoyer(foyerIdToDelete);
+            if (!deleteRes.success) {
+                return deleteRes;
             }
 
-            // 6. Delete the foyer registry rows from Supabase
-            await supabase.from('push_subscriptions').delete().eq('user_id', `foyer_id_${foyerIdToDelete}`);
-            await supabase.from('push_subscriptions').delete().eq('user_id', `foyer_reg_${foyerCodeToDelete.toUpperCase().trim()}`);
-
-            // 7. Remove the foyer from our local cache map
-            const localFoyersRaw = localStorage.getItem('duobudget_local_foyers_v1');
-            if (localFoyersRaw) {
-                try {
-                     const localFoyers = JSON.parse(localFoyersRaw);
-                     delete localFoyers[foyerIdToDelete];
-                     localStorage.setItem('duobudget_local_foyers_v1', JSON.stringify(localFoyers));
-                } catch {}
-            }
-
-            // 8. Update global profiles: filter out any accounts belonging to this deleted foyer
+            // Update global profiles: filter out any accounts belonging to this deleted foyer
             const updatedProfiles = profiles.filter(p => p.foyer_id !== foyerIdToDelete);
             setProfiles(updatedProfiles);
             await syncProfilesToCloud(updatedProfiles);
 
-            // 9. Logout
+            // Broadcast real-time foyer deletion event so all connected members get logged out
+            try {
+                const syncChannel = supabase.channel('foyer_sync_channel');
+                await syncChannel.send({
+                    type: 'broadcast',
+                    event: 'foyer_deleted',
+                    payload: { foyerId: foyerIdToDelete }
+                });
+            } catch {}
+
+            // Logout
             logout();
 
             return { success: true };
         } catch (e: any) {
             return { success: false, error: e?.message || 'Erreur lors de la suppression du foyer.' };
         }
-    }, [user, currentFoyer, profiles, setProfiles, syncProfilesToCloud, logout]);
+    }, [user, username, currentFoyer, profiles, setProfiles, syncProfilesToCloud, logout]);
 
     // Quitter le foyer actif courant
     const leaveFoyer = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
         if (!user || !currentFoyer) {
             return { success: false, error: 'Non authentifié ou aucun foyer actif.' };
         }
-        const currentUsername = String(user).toLowerCase().trim();
         
-        if (currentFoyer.id === DEFAULT_FOYER_ID) {
+        if (currentFoyer.id === DEFAULT_FOYER_ID || currentFoyer.id === 'foyer_vincent_sophie') {
             return { success: false, error: 'Le foyer principal par défaut (Vincent & Sophie) ne peut pas être quitté.' };
         }
 
-        // Si l'utilisateur est administrateur, quitter le foyer le ferme définitivement et supprime les données
-        const myMember = currentFoyer.members.find(m => m.username === currentUsername);
-        if (myMember?.role === 'admin') {
+        const effectiveUsername = (username || (typeof user === 'string' ? user : '')).toLowerCase().trim();
+        const effectiveUserDisplay = (typeof user === 'string' ? user : '').toLowerCase().trim();
+
+        const myMember = currentFoyer.members?.find(m => {
+            const mUser = m.username?.toLowerCase().trim();
+            const mName = m.name?.toLowerCase().trim();
+            const mId = m.id?.toLowerCase().trim();
+            return (effectiveUsername && mUser === effectiveUsername) ||
+                   (effectiveUserDisplay && mName === effectiveUserDisplay) ||
+                   (effectiveUsername && mName === effectiveUsername) ||
+                   (effectiveUsername && mId === effectiveUsername);
+        });
+
+        // Si l'utilisateur est administrateur ou seul membre, quitter le foyer le ferme définitivement et supprime les données
+        const isFoyerAdmin = myMember?.role === 'admin'
+            || (currentFoyer.members && currentFoyer.members.length > 0 && (
+                currentFoyer.members[0].username?.toLowerCase().trim() === effectiveUsername ||
+                currentFoyer.members[0].name?.toLowerCase().trim() === effectiveUserDisplay
+            ))
+            || effectiveUsername === 'vincent'
+            || effectiveUserDisplay === 'vincent'
+            || (currentFoyer.members && currentFoyer.members.length <= 1)
+            || !myMember
+            || myMember.role !== 'member';
+
+        if (isFoyerAdmin) {
             return await closeFoyer();
         }
 
         // Pour un membre classique, quitter le foyer supprime définitivement son compte et le déconnecte
         return await deleteOwnAccount();
-    }, [user, currentFoyer, closeFoyer, deleteOwnAccount]);
+    }, [user, username, currentFoyer, closeFoyer, deleteOwnAccount]);
 
     // Only the exact account "vincent" is Super Administrator (never Vincent1, VincentA, etc.)
     const normalizedUsername = username ? username.toLowerCase().trim() : '';

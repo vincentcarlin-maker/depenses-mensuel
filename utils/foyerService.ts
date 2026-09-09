@@ -554,6 +554,8 @@ export async function deleteFoyer(foyerId: string): Promise<{ success: boolean; 
     const targetUsernames = new Set<string>();
     (foyer?.members || []).forEach(m => {
       if (m.username) targetUsernames.add(m.username.toLowerCase().trim());
+      if (m.name) targetUsernames.add(m.name.toLowerCase().trim());
+      if (m.id) targetUsernames.add(m.id.toLowerCase().trim());
     });
 
     // Check global app_user_profiles_v2
@@ -583,8 +585,12 @@ export async function deleteFoyer(foyerId: string): Promise<{ success: boolean; 
 
       if (Array.isArray(individualRows)) {
         individualRows.forEach((row: any) => {
-          if (row?.subscription?.foyer_id === foyerId && row?.subscription?.username) {
-            targetUsernames.add(row.subscription.username.toLowerCase().trim());
+          const sub = row?.subscription;
+          if (
+            sub?.foyer_id === foyerId ||
+            (sub?.username && targetUsernames.has(sub.username.toLowerCase().trim()))
+          ) {
+            if (sub?.username) targetUsernames.add(sub.username.toLowerCase().trim());
             individualProfileRowsToDelete.push(row.user_id);
           }
         });
@@ -612,7 +618,7 @@ export async function deleteFoyer(foyerId: string): Promise<{ success: boolean; 
 
     const memberUsernames = Array.from(targetUsernames);
 
-    // 2. Remove foyer from local cache
+    // 2. Remove foyer from local cache immediately
     delete local[foyerId];
     saveLocalFoyers(local);
 
@@ -631,7 +637,7 @@ export async function deleteFoyer(foyerId: string): Promise<{ success: boolean; 
       } catch {}
     }
 
-    // 5. Clean up Supabase push_subscriptions (foyer registration, code, settings)
+    // 5. Clean up ALL foyer-related rows in Supabase push_subscriptions
     try {
       await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `foyer_id_${foyerId}`);
       if (code) {
@@ -641,6 +647,23 @@ export async function deleteFoyer(foyerId: string): Promise<{ success: boolean; 
       await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `custom_category_rules_${foyerId}`);
       await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `money_pots_${foyerId}`);
       await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `money_pot_transactions_${foyerId}`);
+
+      // Scan and purge any registration rows matching this foyer ID or code
+      const { data: allRegRows } = await (supabase.from('push_subscriptions') as any)
+        .select('user_id, subscription')
+        .or(`user_id.like.foyer_id_%,user_id.like.foyer_reg_%`);
+
+      if (Array.isArray(allRegRows)) {
+        for (const row of allRegRows) {
+          if (
+            row?.subscription?.id === foyerId ||
+            row?.user_id === `foyer_id_${foyerId}` ||
+            (code && row?.user_id === `foyer_reg_${code.toUpperCase().trim()}`)
+          ) {
+            await (supabase.from('push_subscriptions') as any).delete().eq('user_id', row.user_id);
+          }
+        }
+      }
     } catch (err) {
       console.warn('Could not delete foyer subscriptions from cloud:', err);
     }
@@ -659,16 +682,23 @@ export async function deleteFoyer(foyerId: string): Promise<{ success: boolean; 
       } catch {}
     }
 
-    // 7. Update merged app_user_profiles_v2 in Supabase
+    // 7. Always update merged app_user_profiles_v2 in Supabase
     let cleanedProfiles: any[] = [];
     try {
-      if (globalProfiles.length > 0) {
-        cleanedProfiles = globalProfiles.filter((p: any) => {
+      const { data: freshGlobal } = await (supabase.from('push_subscriptions') as any)
+        .select('subscription')
+        .eq('user_id', 'app_user_profiles_v2')
+        .maybeSingle();
+
+      const profilesToClean = freshGlobal?.subscription?.profiles || globalProfiles;
+
+      if (Array.isArray(profilesToClean)) {
+        cleanedProfiles = profilesToClean.filter((p: any) => {
           const pFoyerId = p.foyer_id;
           const pUsername = p.username?.toLowerCase().trim();
           if (pUsername === 'vincent' || pUsername === 'sophie') return true;
           if (pFoyerId === foyerId) return false;
-          if (memberUsernames.includes(pUsername)) return false;
+          if (pUsername && memberUsernames.includes(pUsername)) return false;
           return true;
         });
 
@@ -693,7 +723,7 @@ export async function deleteFoyer(foyerId: string): Promise<{ success: boolean; 
             const pUsername = p.username?.toLowerCase().trim();
             if (pUsername === 'vincent' || pUsername === 'sophie') return true;
             if (pFoyerId === foyerId) return false;
-            if (memberUsernames.includes(pUsername)) return false;
+            if (pUsername && memberUsernames.includes(pUsername)) return false;
             return true;
           });
           localStorage.setItem('expense-app-profiles-v2', JSON.stringify(localCleaned));
@@ -733,9 +763,8 @@ export async function deleteFoyer(foyerId: string): Promise<{ success: boolean; 
         event: 'foyer_deleted',
         payload: { foyerId, deletedUsernames: memberUsernames }
       });
-    } catch {
-      // Best effort broadcast
-    }
+    } catch {}
+
     try {
       const adminChannel = supabase.channel('foyer_admin_channel');
       adminChannel.send({
