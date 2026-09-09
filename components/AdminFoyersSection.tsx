@@ -136,27 +136,27 @@ export const AdminFoyersSection: React.FC<AdminFoyersSectionProps> = ({
   const handleSwitchFoyer = async (targetFoyer: Foyer) => {
     try {
       setStoredActiveFoyerId(targetFoyer.id);
+      try {
+        const raw = window.localStorage.getItem('expense-app-session-v2') || window.localStorage.getItem('expense-app-session');
+        if (raw) {
+          const sess = JSON.parse(raw);
+          sess.foyer_id = targetFoyer.id;
+          window.localStorage.setItem('expense-app-session-v2', JSON.stringify(sess));
+        }
+      } catch {}
+
       if (onSwitchFoyer) {
         onSwitchFoyer(targetFoyer.id);
       } else {
-        // Fallback: update session in localStorage and notify
-        try {
-          const raw = window.localStorage.getItem('expense-app-session-v2') || window.localStorage.getItem('expense-app-session');
-          if (raw) {
-            const sess = JSON.parse(raw);
-            sess.foyer_id = targetFoyer.id;
-            window.localStorage.setItem('expense-app-session-v2', JSON.stringify(sess));
-          }
-        } catch {}
+        setTimeout(() => {
+          window.location.reload();
+        }, 300);
       }
+
       setToastInfo({
         message: `Foyer actif changé pour « ${targetFoyer.name} ». Les données affichées correspondent désormais à ce foyer.`,
         type: 'info'
       });
-      // Small timeout to allow reload/refresh
-      setTimeout(() => {
-        window.location.reload();
-      }, 700);
     } catch {
       setToastInfo({ message: 'Erreur lors du changement de foyer.', type: 'error' });
     }
@@ -647,13 +647,13 @@ export const AdminFoyersSection: React.FC<AdminFoyersSectionProps> = ({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {f.members?.map((m) => {
+                  {f.members?.map((m, mIdx) => {
                     const isAdmin = m.role === 'admin';
                     const canDeleteMember = (f.members?.length || 0) > 1;
 
                     return (
                       <div
-                        key={m.username}
+                        key={`${f.id}-${m.username}-${m.id || mIdx}`}
                         className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 gap-2"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">

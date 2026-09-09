@@ -37,6 +37,7 @@ interface SettingsTabProps {
   isAdmin?: boolean;
   onAddProfile: (profile: Profile) => boolean;
   onUpdateProfilePassword: (username: string, newPassword: string) => boolean;
+  onUpdateProfileEmail?: (username: string, newEmail: string) => boolean;
   onDeleteProfile: (username: string) => Promise<boolean> | boolean;
   onToggleBlockProfile?: (username: string) => { success: boolean; message: string };
   isMaintenanceMode?: boolean;
@@ -57,6 +58,7 @@ interface SettingsTabProps {
   onUpdateUserColor?: (username: string, newColor: string) => Promise<boolean>;
   onLeaveFoyer?: () => Promise<{ success: boolean; error?: string }>;
   onCloseFoyer?: () => Promise<{ success: boolean; error?: string }>;
+  onSwitchFoyer?: (foyerId: string) => void;
 }
 
 const SettingsItemRow: React.FC<{
@@ -133,12 +135,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
     }
   };
 
+  const foyerTitle = props.currentFoyer?.name || 'Mon Foyer';
+
   const viewTitles: Record<string, string> = {
     main: 'Réglages',
     appearance: 'Apparence',
     reminders: 'Gestion des rappels',
     notifications: 'Notifications',
-    users: 'Utilisateurs',
+    users: foyerTitle,
     categories: 'Catégories',
     lists: 'Contenu des listes',
     data: 'Données & sauvegarde',
@@ -300,18 +304,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             </h4>
             <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
               <SettingsItemRow
-                iconBg="bg-[#eff6ff] dark:bg-blue-950/60"
-                iconColor="text-[#3b82f6] dark:text-blue-400"
-                icon={
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                }
-                title="Utilisateurs"
-                description="Gérer les membres du compte"
-                onClick={() => setView('users')}
-              />
-              <SettingsItemRow
                 iconBg="bg-[#ecfdf5] dark:bg-emerald-950/60"
                 iconColor="text-[#10b981] dark:text-emerald-400"
                 icon={
@@ -453,12 +445,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
 
             <div className="space-y-4 pt-1">
               {props.profiles && props.profiles.length > 0 ? (
-                props.profiles.map((p) => {
+                props.profiles.map((p, pIdx) => {
                   const currentColor = p.color || (p.user === User.Sophie ? '#ec4899' : '#0284c7');
                   const initial = p.username.charAt(0).toUpperCase() || 'U';
 
                   return (
-                    <div key={p.username} className="p-4 rounded-2xl bg-slate-50/70 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700 space-y-3">
+                    <div key={`${p.username}-${p.foyer_id || 'default'}-${pIdx}`} className="p-4 rounded-2xl bg-slate-50/70 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700 space-y-3">
                       <div className="flex items-center gap-3">
                         <div 
                           className="w-10 h-10 rounded-full font-extrabold flex items-center justify-center text-sm shrink-0 text-white shadow-xs transition-transform hover:scale-105"
@@ -562,6 +554,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             loggedInUsername={props.loggedInUsername}
             onAddProfile={props.onAddProfile}
             onUpdateProfilePassword={props.onUpdateProfilePassword}
+            onUpdateProfileEmail={props.onUpdateProfileEmail}
             onDeleteProfile={props.onDeleteProfile}
             categories={props.categories}
             onAddCategory={props.onAddCategory}
@@ -594,6 +587,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             loggedInUsername={props.loggedInUsername}
             onAddProfile={props.onAddProfile}
             onUpdateProfilePassword={props.onUpdateProfilePassword}
+            onUpdateProfileEmail={props.onUpdateProfileEmail}
             onDeleteProfile={props.onDeleteProfile}
             categories={props.categories}
             onAddCategory={props.onAddCategory}
@@ -626,6 +620,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             loggedInUsername={props.loggedInUsername}
             onAddProfile={props.onAddProfile}
             onUpdateProfilePassword={props.onUpdateProfilePassword}
+            onUpdateProfileEmail={props.onUpdateProfileEmail}
             onDeleteProfile={props.onDeleteProfile}
             categories={props.categories}
             onAddCategory={props.onAddCategory}
@@ -687,6 +682,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             onUpdateProfilePassword={props.onUpdateProfilePassword}
             isMaintenanceMode={props.isMaintenanceMode}
             onToggleMaintenanceMode={props.onToggleMaintenanceMode}
+            onSwitchFoyer={props.onSwitchFoyer}
           />
         </div>
       )}
@@ -702,6 +698,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             loggedInUsername={props.loggedInUsername}
             onAddProfile={props.onAddProfile}
             onUpdateProfilePassword={props.onUpdateProfilePassword}
+            onUpdateProfileEmail={props.onUpdateProfileEmail}
             onDeleteProfile={props.onDeleteProfile}
             categories={props.categories}
             onAddCategory={props.onAddCategory}

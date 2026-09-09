@@ -69,6 +69,7 @@ const MainApp: React.FC<{
     profiles: Profile[],
     onAddProfile: (profile: Profile) => boolean,
     onUpdateProfilePassword: (username: string, newPassword: string) => boolean,
+    onUpdateProfileEmail?: (username: string, newEmail: string) => boolean,
     onDeleteProfile: (username: string) => Promise<boolean> | boolean,
     onToggleBlockProfile: (username: string) => { success: boolean; message: string },
     isMaintenanceMode: boolean,
@@ -78,7 +79,8 @@ const MainApp: React.FC<{
     onDeleteOwnAccount?: (confirmPassword?: string) => Promise<{ success: boolean; error?: string } | boolean>,
     onUpdateUserColor?: (username: string, newColor: string) => Promise<boolean>,
     leaveFoyer?: () => Promise<{ success: boolean; error?: string }>,
-    closeFoyer?: () => Promise<{ success: boolean; error?: string }>
+    closeFoyer?: () => Promise<{ success: boolean; error?: string }>,
+    onSwitchFoyer?: (foyerId: string) => Promise<boolean>
 }> = ({ 
     user, 
     username,
@@ -87,6 +89,7 @@ const MainApp: React.FC<{
     profiles, 
     onAddProfile, 
     onUpdateProfilePassword, 
+    onUpdateProfileEmail,
     onDeleteProfile, 
     onToggleBlockProfile,
     isMaintenanceMode,
@@ -96,7 +99,8 @@ const MainApp: React.FC<{
     onDeleteOwnAccount,
     onUpdateUserColor,
     leaveFoyer,
-    closeFoyer
+    closeFoyer,
+    onSwitchFoyer
 }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<any[]>([]);
@@ -164,7 +168,25 @@ const MainApp: React.FC<{
       }
     }
 
-    return filtered;
+    // 3. Dédupliquer les profils par e-mail et username
+    const dedupMap = new Map<string, Profile>();
+    const emailSeen = new Set<string>();
+
+    for (const p of filtered) {
+      if (!p || !p.username) continue;
+      const email = p.email ? p.email.toLowerCase().trim() : '';
+      const normUser = p.username.toLowerCase().trim();
+
+      if (email) {
+        if (emailSeen.has(email)) continue;
+        emailSeen.add(email);
+      }
+      if (!dedupMap.has(normUser)) {
+        dedupMap.set(normUser, p);
+      }
+    }
+
+    return Array.from(dedupMap.values());
   }, [profiles, currentFoyer, activeFoyerId]);
 
   // Filtre d'isolation des foyers :
@@ -1439,7 +1461,7 @@ const MainApp: React.FC<{
                         <span>Toutes</span>
                       </button>
 
-                      {(currentFoyer?.members || DEFAULT_FOYER.members).map((member) => {
+                      {(currentFoyer?.members || DEFAULT_FOYER.members).map((member, mIdx) => {
                         const isSelected = filterUser === member.name;
                         const theme = resolveUserTheme(member.name, currentFoyer?.members || DEFAULT_FOYER.members, profiles);
 
@@ -1456,7 +1478,7 @@ const MainApp: React.FC<{
 
                         return (
                           <button
-                            key={member.id || member.name}
+                            key={`${member.id || member.name}-${mIdx}`}
                             onClick={() => setFilterUser(member.name as any)}
                             className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all border shrink-0 cursor-pointer ${pillClass}`}
                           >
@@ -1527,6 +1549,7 @@ const MainApp: React.FC<{
                 isAdmin={isAdmin}
                 onAddProfile={onAddProfile} 
                 onUpdateProfilePassword={onUpdateProfilePassword} 
+                onUpdateProfileEmail={onUpdateProfileEmail}
                 onDeleteProfile={onDeleteProfile} 
                 onToggleBlockProfile={onToggleBlockProfile} 
                 isMaintenanceMode={isMaintenanceMode} 
@@ -1547,6 +1570,7 @@ const MainApp: React.FC<{
                 onUpdateUserColor={onUpdateUserColor}
                 onLeaveFoyer={leaveFoyer}
                 onCloseFoyer={closeFoyer}
+                onSwitchFoyer={onSwitchFoyer}
               />
             )}
           </div>
@@ -1607,6 +1631,7 @@ const MainApp: React.FC<{
         onUpdateUserColor={onUpdateUserColor}
         onLeaveFoyer={leaveFoyer}
         onCloseFoyer={closeFoyer}
+        onSwitchFoyer={onSwitchFoyer}
         reminders={reminders} 
         expenses={expenses} 
         moneyPotTransactions={moneyPotTransactions}
@@ -1625,6 +1650,7 @@ const MainApp: React.FC<{
         isAdmin={isAdmin}
         onAddProfile={onAddProfile} 
         onUpdateProfilePassword={onUpdateProfilePassword} 
+        onUpdateProfileEmail={onUpdateProfileEmail}
         onDeleteProfile={onDeleteProfile} 
         onToggleBlockProfile={onToggleBlockProfile}
         isMaintenanceMode={isMaintenanceMode}
@@ -1668,12 +1694,14 @@ const App: React.FC = () => {
     profiles, 
     addProfile, 
     updateProfilePassword, 
+    updateProfileEmail,
     toggleBlockProfile, 
     deleteProfile, 
     deleteOwnAccount,
     updateUserColor,
     leaveFoyer,
     closeFoyer,
+    switchFoyer,
     loginHistory 
   } = useAuth();
 
@@ -1716,10 +1744,12 @@ const App: React.FC = () => {
         onUpdateUserColor={updateUserColor}
         leaveFoyer={leaveFoyer}
         closeFoyer={closeFoyer}
+        onSwitchFoyer={switchFoyer}
         onLogout={logout} 
         profiles={profiles} 
         onAddProfile={addProfile} 
         onUpdateProfilePassword={updateProfilePassword} 
+        onUpdateProfileEmail={updateProfileEmail}
         onDeleteProfile={deleteProfile} 
         onToggleBlockProfile={toggleBlockProfile}
         isMaintenanceMode={isMaintenanceMode}

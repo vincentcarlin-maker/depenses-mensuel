@@ -172,22 +172,51 @@ const UserManagement: React.FC<{
     loggedInUsername?: string;
     onAddProfile?: (profile: Profile) => boolean;
     onUpdateProfilePassword: (username: string, newPassword: string) => boolean;
+    onUpdateProfileEmail?: (username: string, newEmail: string) => boolean;
     onDeleteProfile?: (username: string) => Promise<boolean> | boolean;
     currentFoyer?: Foyer;
     onDeleteOwnAccount?: (confirmPassword?: string) => Promise<{ success: boolean; error?: string } | boolean>;
     onLeaveFoyer?: () => Promise<{ success: boolean; error?: string }>;
     onCloseFoyer?: () => Promise<{ success: boolean; error?: string }>;
     setToastInfo?: (info: { message: string; type: 'info' | 'error' }) => void;
-}> = ({ profiles, onUpdateProfilePassword, currentFoyer, onDeleteOwnAccount, onLeaveFoyer, onCloseFoyer, loggedInUsername, setToastInfo }) => {
+}> = ({ profiles, onUpdateProfilePassword, onUpdateProfileEmail, currentFoyer, onDeleteOwnAccount, onLeaveFoyer, onCloseFoyer, loggedInUsername, loggedInUser, setToastInfo }) => {
     const [editingUser, setEditingUser] = useState<Profile | null>(null);
     const [editingPassword, setEditingPassword] = useState('');
+    const [editingEmailUser, setEditingEmailUser] = useState<Profile | null>(null);
+    const [editingEmailValue, setEditingEmailValue] = useState('');
     const [isDeletingOwnAccount, setIsDeletingOwnAccount] = useState(false);
     const [isLeavingFoyer, setIsLeavingFoyer] = useState(false);
     const [isClosingFoyer, setIsClosingFoyer] = useState(false);
 
-    const currentUsernameNormalized = loggedInUsername ? loggedInUsername.toLowerCase().trim() : '';
+    const currentUsernameNormalized = loggedInUsername ? loggedInUsername.toLowerCase().trim() : String(loggedInUser).toLowerCase().trim();
     const myMember = currentFoyer?.members?.find(m => m.username.toLowerCase().trim() === currentUsernameNormalized);
     const isFoyerAdmin = myMember?.role === 'admin';
+
+    const connectedDisplayName = loggedInUsername || (typeof loggedInUser === 'string' ? loggedInUser : 'Utilisateur');
+
+    // Deduplicate profiles by email & username
+    const displayProfiles = React.useMemo(() => {
+        const map = new Map<string, Profile>();
+        const emailSeen = new Set<string>();
+
+        for (const p of profiles) {
+            if (!p || !p.username) continue;
+            const email = p.email ? p.email.toLowerCase().trim() : '';
+            const normUser = p.username.toLowerCase().trim();
+
+            if (email) {
+                if (emailSeen.has(email)) continue;
+                emailSeen.add(email);
+            }
+            if (!map.has(normUser)) {
+                map.set(normUser, p);
+            }
+        }
+        return Array.from(map.values());
+    }, [profiles]);
+
+    const activeProfileObj = displayProfiles.find(p => p.username.toLowerCase().trim() === currentUsernameNormalized) ||
+                             displayProfiles.find(p => p.username.toLowerCase().trim() === String(loggedInUser).toLowerCase().trim());
 
     const handleUpdatePassword = () => {
         if (editingUser && editingPassword.trim()) {
@@ -200,39 +229,93 @@ const UserManagement: React.FC<{
         }
     };
 
+    const handleUpdateEmail = () => {
+        if (editingEmailUser) {
+            const cleanEmail = editingEmailValue.trim();
+            if (onUpdateProfileEmail) {
+                onUpdateProfileEmail(editingEmailUser.username, cleanEmail);
+            } else {
+                editingEmailUser.email = cleanEmail;
+            }
+            if (setToastInfo) {
+                setToastInfo({ message: `Adresse e-mail mise à jour pour ${editingEmailUser.username} !`, type: 'info' });
+            }
+            setEditingEmailUser(null);
+            setEditingEmailValue('');
+        }
+    };
+
     return (
         <div className="space-y-5 sm:space-y-6">
-            {/* Card 0: Mon Foyer & Code Partage */}
-            <div className="bg-gradient-to-br from-sky-50 to-blue-50 dark:from-slate-800 dark:to-slate-800/90 rounded-[26px] p-5 sm:p-6 border border-sky-100 dark:border-slate-700/60 shadow-xs space-y-4">
-                <div className="flex items-center justify-between">
+            {/* Header Card: Welcome Banner "Bonjour [utilisateur]" */}
+            <div className="bg-gradient-to-r from-sky-500 via-cyan-500 to-blue-600 rounded-[26px] p-5 sm:p-6 text-white shadow-md relative overflow-hidden">
+                <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                        <div 
+                            className="w-12 h-12 rounded-full font-black flex items-center justify-center text-lg text-white border-2 border-white/40 shadow-sm shrink-0"
+                            style={{ backgroundColor: activeProfileObj?.color || (connectedDisplayName.toLowerCase() === 'sophie' ? '#ec4899' : '#0284c7') }}
+                        >
+                            {connectedDisplayName.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                            <h2 className="font-extrabold text-xl sm:text-2xl leading-tight truncate">
+                                Bonjour {connectedDisplayName} 👋
+                            </h2>
+                            <p className="text-xs text-sky-100 font-medium truncate mt-0.5">
+                                Profil actif : <span className="font-bold underline">{connectedDisplayName}</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex flex-col sm:items-end gap-1 shrink-0">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold border border-white/30 text-white w-fit">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-300 animate-pulse" />
+                            <span>Connecté</span>
+                        </span>
+                        {activeProfileObj?.email ? (
+                            <span className="text-[11px] text-sky-100 font-medium truncate flex items-center gap-1">
+                                ✉️ {activeProfileObj.email}
+                            </span>
+                        ) : (
+                            <span className="text-[11px] text-sky-200/80 font-medium italic">
+                                Aucune adresse e-mail renseignée
+                            </span>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Section 1: Informations & Code de Partage du Foyer */}
+            <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-2xl bg-sky-500 text-white flex items-center justify-center font-black text-xl shadow-xs shrink-0">
+                        <div className="w-11 h-11 rounded-2xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center font-black text-xl shrink-0">
                             🏠
                         </div>
                         <div>
                             <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
                                 {currentFoyer?.name || 'Mon Foyer Partagé'}
                             </h3>
-                            <p className="text-xs text-sky-600 dark:text-sky-400 font-semibold">
-                                Espace privé sécurisé & données synchronisées
+                            <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                                Espace sécurisé & dépenses synchronisées
                             </p>
                         </div>
                     </div>
-                    <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
-                        {currentFoyer?.members?.length || profiles.length} membre{(currentFoyer?.members?.length || profiles.length) > 1 ? 's' : ''}
+                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                        {displayProfiles.length} membre{displayProfiles.length > 1 ? 's' : ''}
                     </span>
                 </div>
 
-                <div className="bg-white dark:bg-slate-700/70 p-4 rounded-2xl border border-sky-100 dark:border-slate-600/50 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-600/50 flex flex-col sm:flex-row items-center justify-between gap-3">
                     <div>
-                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                             Code d'invitation du foyer :
                         </p>
-                        <p className="text-xl font-mono font-black tracking-widest text-sky-600 dark:text-sky-300">
+                        <p className="text-2xl font-mono font-black tracking-widest text-sky-600 dark:text-sky-400 mt-0.5">
                             {currentFoyer?.code || 'Actif'}
                         </p>
-                        <p className="text-[11px] text-slate-400 dark:text-slate-400 mt-0.5">
-                            Partagez ce code avec votre partenaire pour synchroniser vos comptes et dépenses.
+                        <p className="text-[11px] text-slate-400 dark:text-slate-400 mt-1">
+                            Partagez ce code avec votre partenaire pour rejoindre ce foyer.
                         </p>
                     </div>
                     <button
@@ -244,7 +327,7 @@ const UserManagement: React.FC<{
                                 setToastInfo({ message: `Code ${code} copié dans le presse-papier !`, type: 'info' });
                             }
                         }}
-                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer shrink-0"
+                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer shrink-0"
                     >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
@@ -255,7 +338,7 @@ const UserManagement: React.FC<{
                 </div>
             </div>
 
-            {/* Card 1: Gestion des mots de passe des utilisateurs */}
+            {/* Section 2: Membres du Foyer & Sécurité des Comptes */}
             <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -269,25 +352,21 @@ const UserManagement: React.FC<{
                         </div>
                         <div>
                             <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
-                                Utilisateurs & Mots de passe
+                                Membres & Comptes du foyer
                             </h3>
                             <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                                Modification des mots de passe des profils du foyer.
+                                Gestion des adresses e-mail et mots de passe
                             </p>
                         </div>
-                    </div>
-                    {/* Cute overlapping user avatars badge */}
-                    <div className="flex -space-x-1.5 opacity-80">
-                        <div className="w-5 h-5 rounded-full bg-pink-200 dark:bg-pink-900/60 border-2 border-white dark:border-slate-800" />
-                        <div className="w-5 h-5 rounded-full bg-blue-200 dark:bg-blue-900/60 border-2 border-white dark:border-slate-800" />
                     </div>
                 </div>
 
                 <div className="space-y-2.5 pt-1">
-                    {profiles.map((p, idx) => {
+                    {displayProfiles.map((p, idx) => {
                         const initial = p.username.charAt(0).toUpperCase() || 'U';
                         const isSophie = p.user === User.Sophie;
                         const isPink = isSophie || idx % 2 === 0;
+                        const isCurrentConnected = p.username.toLowerCase().trim() === currentUsernameNormalized;
                         const avatarBg = p.color
                             ? ''
                             : isPink
@@ -295,31 +374,54 @@ const UserManagement: React.FC<{
                             : 'bg-[#e0f2fe] dark:bg-sky-950/70 text-[#0284c7] dark:text-sky-300';
 
                         return (
-                            <div key={p.username} className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50/60 dark:hover:bg-slate-700/30 transition-colors border border-slate-100/60 dark:border-slate-700/40">
+                            <div key={`${p.username}-${p.foyer_id || 'default'}-${idx}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-700/30 border border-slate-100/80 dark:border-slate-700/50 gap-3">
                                 <div className="flex items-center gap-3.5 min-w-0">
                                     <div 
-                                        className={`w-10 h-10 rounded-full font-extrabold flex items-center justify-center text-sm shrink-0 text-white ${avatarBg}`}
+                                        className={`w-11 h-11 rounded-full font-extrabold flex items-center justify-center text-base shrink-0 text-white shadow-xs ${avatarBg}`}
                                         style={p.color ? { backgroundColor: p.color } : undefined}
                                     >
                                         {initial}
                                     </div>
-                                    <div className="min-w-0">
-                                        <span className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base truncate block">
-                                            {p.username} {p.user && p.user !== p.username ? `(${p.user})` : ''}
-                                        </span>
-                                        <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-                                            Profil actif
-                                        </span>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-extrabold text-slate-900 dark:text-slate-100 text-sm sm:text-base truncate">
+                                                {p.username} {p.user && p.user !== p.username ? `(${p.user})` : ''}
+                                            </span>
+                                            {isCurrentConnected && (
+                                                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                                    Connecté
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                            <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                            </svg>
+                                            <span className="truncate">
+                                                {p.email ? p.email : <span className="italic text-slate-400 dark:text-slate-500">Aucune adresse e-mail renseignée</span>}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 shrink-0">
+                                <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto flex-wrap">
+                                    <button 
+                                        type="button"
+                                        onClick={() => { setEditingEmailUser(p); setEditingEmailValue(p.email || ''); }} 
+                                        className="px-3 py-2 rounded-xl bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200/80 dark:border-slate-600/80 flex items-center gap-1.5 text-slate-700 dark:text-slate-200 font-bold text-xs transition-all active:scale-95 cursor-pointer shadow-2xs"
+                                        title={`Modifier l'adresse e-mail de ${p.username}`}
+                                    >
+                                        <svg className="w-3.5 h-3.5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                        <span>Modifier e-mail</span>
+                                    </button>
                                     <button 
                                         type="button"
                                         onClick={() => { setEditingUser(p); setEditingPassword(''); }} 
                                         className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 border border-blue-100/60 dark:border-blue-800/40 flex items-center gap-1.5 text-[#2563eb] dark:text-blue-400 font-bold text-xs transition-all active:scale-95 cursor-pointer shadow-2xs"
                                         title={`Modifier le mot de passe de ${p.username}`}
                                     >
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                                         </svg>
@@ -331,6 +433,47 @@ const UserManagement: React.FC<{
                     })}
                 </div>
             </div>
+
+            {/* Edit Email Modal */}
+            {editingEmailUser && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-6 w-full max-w-sm space-y-4 border border-slate-100 dark:border-slate-700">
+                        <div className="space-y-1">
+                            <h4 className="font-extrabold text-lg text-slate-900 dark:text-white">Modifier l'adresse e-mail</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Pour le compte de « {editingEmailUser.username} ».</p>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                Adresse e-mail enregistrée
+                            </label>
+                            <input 
+                                type="email" 
+                                placeholder="exemple@domaine.com" 
+                                value={editingEmailValue} 
+                                onChange={e => setEditingEmailValue(e.target.value)} 
+                                className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                autoFocus
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2 pt-2">
+                            <button 
+                                type="button"
+                                onClick={() => setEditingEmailUser(null)} 
+                                className="px-4 py-2.5 rounded-xl font-bold text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                            >
+                                Annuler
+                            </button>
+                            <button 
+                                type="button"
+                                onClick={handleUpdateEmail} 
+                                className="px-4 py-2.5 rounded-xl font-bold text-sm bg-sky-500 hover:bg-sky-600 text-white shadow-xs transition-all cursor-pointer active:scale-95"
+                            >
+                                Enregistrer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Edit Modal */}
             {editingUser && (
@@ -1163,6 +1306,7 @@ interface ManagementTabProps {
     loggedInUser: User;
     onAddProfile: (profile: Profile) => boolean;
     onUpdateProfilePassword: (username: string, newPassword: string) => boolean;
+    onUpdateProfileEmail?: (username: string, newEmail: string) => boolean;
     onDeleteProfile: (username: string) => Promise<boolean> | boolean;
     categories: Category[];
     onAddCategory: (name: string) => boolean;
@@ -1266,16 +1410,16 @@ const ManagementTab: React.FC<ManagementTabProps> = (props) => {
             {focusSection === 'users' && (
                 <div className="space-y-1 pt-1 pb-1">
                     <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                        Utilisateurs
+                        {props.currentFoyer?.name || 'Mon Foyer Partagé'}
                     </h1>
                     <p className="text-slate-500 dark:text-slate-400 font-medium text-xs sm:text-sm">
-                        Gérez les membres du compte DuoBudget
+                        Gérez les membres, le code d'invitation et les accès de votre foyer
                     </p>
                 </div>
             )}
-            {(focusSection === 'all' || focusSection === 'users') && <HistoryManagement loginHistory={props.loginHistory} />}
             {focusSection === 'all' && <DataManagement expenses={props.expenses} />}
             {(focusSection === 'all' || focusSection === 'users') && <UserManagement {...props} />}
+            {(focusSection === 'all' || focusSection === 'users') && <HistoryManagement loginHistory={props.loginHistory} />}
             {(focusSection === 'all' || focusSection === 'categories') && <CategoryManagement {...props} />}
             {(focusSection === 'all' || focusSection === 'lists' || focusSection === 'categories') && (
                 <ListManagement 

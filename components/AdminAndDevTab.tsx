@@ -1007,8 +1007,28 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
     );
   }
 
-  // Filter profiles for user management search
-  const filteredProfiles = profiles.filter(p => {
+  // Filter profiles for user management search, ensuring strict deduplication by email and username
+  const uniqueProfilesList = React.useMemo(() => {
+    const map = new Map<string, Profile>();
+    const emailSeen = new Set<string>();
+
+    for (const p of profiles) {
+      if (!p || !p.username) continue;
+      const email = p.email ? p.email.toLowerCase().trim() : '';
+      const normUser = p.username.toLowerCase().trim();
+
+      if (email) {
+        if (emailSeen.has(email)) continue;
+        emailSeen.add(email);
+      }
+      if (!map.has(normUser)) {
+        map.set(normUser, p);
+      }
+    }
+    return Array.from(map.values());
+  }, [profiles]);
+
+  const filteredProfiles = uniqueProfilesList.filter(p => {
     if (!userSearchTerm.trim()) return true;
     const term = userSearchTerm.toLowerCase();
     return (
@@ -1219,13 +1239,13 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
                   Aucun compte ne correspond à votre recherche.
                 </div>
               ) : (
-                filteredProfiles.map((p) => {
+                filteredProfiles.map((p, pIdx) => {
                   const isVincent = p.username.toLowerCase().trim() === 'vincent';
                   const isBlocked = !!p.blocked;
                   const isFoyerPrincipal = !p.foyer_id || p.foyer_id === 'foyer_vincent_sophie';
 
                   return (
-                    <div key={p.username} className="py-3.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+                    <div key={`${p.username}-${p.foyer_id || 'default'}-${pIdx}`} className="py-3.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
                       <div className="flex items-center gap-3 min-w-0">
                         <div 
                           className="w-10 h-10 rounded-2xl font-extrabold text-base flex items-center justify-center shrink-0 border text-white shadow-2xs"

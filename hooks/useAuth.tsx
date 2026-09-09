@@ -77,6 +77,62 @@ const INITIAL_PROFILES: Profile[] = [
     },
 ];
 
+// Helper to deduplicate profiles and guarantee uniqueness of usernames and emails
+const deduplicateProfiles = (profilesList: Profile[]): Profile[] => {
+    const map = new Map<string, Profile>();
+    const emailToUsernameMap = new Map<string, string>();
+
+    for (const p of profilesList) {
+        if (!p || !p.username) continue;
+        const normUsername = p.username.toLowerCase().trim();
+        const normEmail = p.email ? p.email.toLowerCase().trim() : '';
+
+        // If email matches an existing profile, merge into that existing profile key
+        let targetKey = normUsername;
+        if (normEmail && emailToUsernameMap.has(normEmail)) {
+            targetKey = emailToUsernameMap.get(normEmail)!;
+        }
+
+        if (map.has(targetKey)) {
+            const existing = map.get(targetKey)!;
+            // Prefer readable username over generic auto-generated user_ / oauth_ usernames
+            const isAutoUser = existing.username.startsWith('user_') || existing.username.startsWith('oauth_');
+            const isNewReadable = !normUsername.startsWith('user_') && !normUsername.startsWith('oauth_');
+            const chosenUsername = isAutoUser && isNewReadable ? p.username : existing.username;
+            const chosenUser = isAutoUser && isNewReadable ? p.user : existing.user;
+
+            const merged = {
+                ...existing,
+                ...p,
+                username: chosenUsername,
+                user: chosenUser,
+                email: normEmail || existing.email,
+                color: p.color || existing.color,
+                blocked: p.blocked !== undefined ? p.blocked : existing.blocked,
+                foyer_id: p.foyer_id || existing.foyer_id,
+                foyer_name: p.foyer_name || existing.foyer_name,
+                foyer_code: p.foyer_code || existing.foyer_code,
+            };
+            map.set(targetKey, merged);
+            if (normEmail) {
+                emailToUsernameMap.set(normEmail, targetKey);
+            }
+        } else {
+            map.set(normUsername, p);
+            if (normEmail) {
+                emailToUsernameMap.set(normEmail, normUsername);
+            }
+        }
+    }
+    for (const initP of INITIAL_PROFILES) {
+        const key = initP.username.toLowerCase().trim();
+        if (!map.has(key)) {
+            map.set(key, initP);
+        }
+    }
+    return Array.from(map.values());
+};
+
 export const useAuth = () => {
     const [user, setUser] = useState<User | string | null>(null);
     const [username, setUsername] = useState<string | null>(null);
@@ -264,15 +320,16 @@ export const useAuth = () => {
     const profileChannelRef = useRef<any>(null);
 
     const syncProfilesToCloud = useCallback(async (updatedProfiles: Profile[]) => {
+        const uniqueProfiles = deduplicateProfiles(updatedProfiles);
         if (profileChannelRef.current) {
             profileChannelRef.current.send({
                 type: 'broadcast',
                 event: 'user_profiles_changed',
-                payload: { profiles: updatedProfiles }
+                payload: { profiles: uniqueProfiles }
             });
         }
         try {
-            const activeUsernames = updatedProfiles.map(p => p.username.toLowerCase().trim());
+            const activeUsernames = uniqueProfiles.map(p => p.username.toLowerCase().trim());
 
             // 1. Delete any individual profile record in Supabase for users that no longer exist
             const { data: existingIndividual } = await (supabase.from('push_subscriptions') as any)
@@ -282,14 +339,14 @@ export const useAuth = () => {
             if (Array.isArray(existingIndividual)) {
                 for (const row of existingIndividual) {
                     const uName = row.user_id.replace(/^profile_/, '').toLowerCase().trim();
-                    if (!activeUsernames.includes(uName)) {
+                    if (!activeUsernames.includes(uName) && !row.user_id.startsWith('profile_email_')) {
                         await (supabase.from('push_subscriptions') as any).delete().eq('user_id', row.user_id);
                     }
                 }
             }
 
             // 2. Save active profiles individually
-            for (const p of updatedProfiles) {
+            for (const p of uniqueProfiles) {
                 const normUser = p.username.toLowerCase().trim();
                 await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_${normUser}`);
                 await (supabase.from('push_subscriptions') as any).insert({
@@ -302,7 +359,7 @@ export const useAuth = () => {
             await (supabase.from('push_subscriptions') as any).delete().eq('user_id', 'app_user_profiles_v2');
             await (supabase.from('push_subscriptions') as any).insert({
                 user_id: 'app_user_profiles_v2',
-                subscription: { profiles: updatedProfiles }
+                subscription: { profiles: uniqueProfiles }
             });
         } catch (e) {
             console.warn('Could not save user_profiles to Supabase:', e);
@@ -339,7 +396,17 @@ export const useAuth = () => {
                             if (isOrphaned) {
                                 orphanedUsernames.push(gp.username.toLowerCase().trim());
                             } else {
-                                discoveredProfiles.push(gp);
+                                const normUser = gp.username.toLowerCase().trim();
+                                const existingIdx = discoveredProfiles.findIndex(dp => dp.username.toLowerCase().trim() === normUser);
+                                if (existingIdx >= 0) {
+                                    discoveredProfiles[existingIdx] = {
+                                        ...discoveredProfiles[existingIdx],
+                                        ...gp,
+                                        email: gp.email || discoveredProfiles[existingIdx].email
+                                    };
+                                } else {
+                                    discoveredProfiles.push(gp);
+                                }
                             }
                         }
                     }
@@ -354,8 +421,18 @@ export const useAuth = () => {
                             if (!orphanedUsernames.includes(uName)) {
                                 orphanedUsernames.push(uName);
                             }
-                        } else if (!discoveredProfiles.some(dp => dp.username === gp.username)) {
-                            discoveredProfiles.push(gp);
+                        } else {
+                            const normUser = gp.username.toLowerCase().trim();
+                            const existingIdx = discoveredProfiles.findIndex(dp => dp.username.toLowerCase().trim() === normUser);
+                            if (existingIdx >= 0) {
+                                discoveredProfiles[existingIdx] = {
+                                    ...discoveredProfiles[existingIdx],
+                                    ...gp,
+                                    email: gp.email || discoveredProfiles[existingIdx].email
+                                };
+                            } else {
+                                discoveredProfiles.push(gp);
+                            }
                         }
                     }
                 }
@@ -370,7 +447,7 @@ export const useAuth = () => {
                         }
                     }
                     // Trigger a clean save of the merged profiles v2 without the orphans
-                    const cleanedProfiles = discoveredProfiles.filter(p => !orphanedUsernames.includes(p.username.toLowerCase().trim()));
+                    const cleanedProfiles = deduplicateProfiles(discoveredProfiles.filter(p => !orphanedUsernames.includes(p.username.toLowerCase().trim())));
                     await (supabase.from('push_subscriptions') as any).delete().eq('user_id', 'app_user_profiles_v2');
                     await (supabase.from('push_subscriptions') as any).insert({
                         user_id: 'app_user_profiles_v2',
@@ -379,16 +456,7 @@ export const useAuth = () => {
                 }
 
                 if (discoveredProfiles.length > 0) {
-                    setProfiles(() => {
-                        const merged = [...discoveredProfiles];
-                        // Merge ensuring Vincent & Sophie always exist
-                        for (const initP of INITIAL_PROFILES) {
-                            if (!merged.some(p => p.username === initP.username)) {
-                                merged.push(initP);
-                            }
-                        }
-                        return merged;
-                    });
+                    setProfiles(() => deduplicateProfiles(discoveredProfiles));
                 }
             } catch {
                 // Ignore missing table or network error
@@ -407,15 +475,7 @@ export const useAuth = () => {
             .on('broadcast', { event: 'user_profiles_changed' }, (payload: any) => {
                 const data = payload?.payload || payload;
                 if (data && Array.isArray(data.profiles)) {
-                    setProfiles(() => {
-                        const merged = [...data.profiles];
-                        for (const initP of INITIAL_PROFILES) {
-                            if (!merged.some(m => m.username === initP.username)) {
-                                merged.push(initP);
-                            }
-                        }
-                        return merged;
-                    });
+                    setProfiles(() => deduplicateProfiles(data.profiles));
                 }
             })
             .subscribe();
@@ -456,15 +516,36 @@ export const useAuth = () => {
         };
     }, [setProfiles, username, currentFoyer, logout]);
 
-    // Check if active user profile has been blocked by admin
+    // Check if active user profile has been blocked by admin or removed
     useEffect(() => {
         if (user) {
-            const currentProfile = profiles.find(p => p.user === user || p.username === String(user).toLowerCase());
-            if (currentProfile && currentProfile.blocked) {
-                logout();
+            const currentNorm = username ? username.toLowerCase().trim() : (typeof user === 'string' ? user.toLowerCase().trim() : '');
+            if (currentNorm && currentNorm !== 'vincent' && currentNorm !== 'sophie') {
+                const currentProfile = profiles.find(p => p.username?.toLowerCase().trim() === currentNorm);
+                if (currentProfile && currentProfile.blocked) {
+                    logout();
+                }
             }
         }
-    }, [user, profiles, logout]);
+    }, [user, username, profiles, logout]);
+
+    // Listen for real-time user force logout events
+    useEffect(() => {
+        const authEventsChannel = supabase.channel('duobudget_auth_events')
+            .on('broadcast', { event: 'user_deleted_force_logout' }, (payload: any) => {
+                const data = payload?.payload || payload;
+                const deletedUsername = data?.username?.toLowerCase().trim();
+                const currentNorm = username ? username.toLowerCase().trim() : (typeof user === 'string' ? user.toLowerCase().trim() : '');
+                if (deletedUsername && currentNorm === deletedUsername && currentNorm !== 'vincent' && currentNorm !== 'sophie') {
+                    logout();
+                }
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(authEventsChannel);
+        };
+    }, [username, user, logout]);
 
     const handleOAuthUser = useCallback(async (authUser: any) => {
         if (!authUser) return;
@@ -1246,6 +1327,40 @@ export const useAuth = () => {
         return true;
     }, [profiles, setProfiles, syncProfilesToCloud]);
 
+    const updateProfileEmail = useCallback((username: string, newEmail: string): boolean => {
+        const normalizedUsername = username.toLowerCase().trim();
+        const cleanEmail = newEmail.trim();
+        if (!profiles.some(p => p.username === normalizedUsername)) {
+            return false; // User not found
+        }
+        const updated = profiles.map(p => p.username === normalizedUsername ? { ...p, email: cleanEmail } : p);
+        setProfiles(updated);
+        syncProfilesToCloud(updated);
+        return true;
+    }, [profiles, setProfiles, syncProfilesToCloud]);
+
+    const switchFoyer = useCallback(async (foyerId: string): Promise<boolean> => {
+        try {
+            const foyer = await fetchFoyerById(foyerId);
+            if (foyer) {
+                setCurrentFoyer(foyer);
+                setStoredActiveFoyerId(foyer.id);
+                try {
+                    const raw = window.localStorage.getItem(SESSION_KEY) || window.localStorage.getItem('expense-app-session');
+                    if (raw) {
+                        const sess = JSON.parse(raw);
+                        sess.foyer_id = foyer.id;
+                        window.localStorage.setItem(SESSION_KEY, JSON.stringify(sess));
+                    }
+                } catch {}
+                return true;
+            }
+        } catch (e) {
+            console.error('Error switching foyer:', e);
+        }
+        return false;
+    }, []);
+
     const deleteProfile = useCallback(async (username: string): Promise<boolean> => {
         const normalizedUsername = username.toLowerCase().trim();
         if (normalizedUsername === 'vincent') {
@@ -1261,19 +1376,25 @@ export const useAuth = () => {
             console.warn(`Could not delete profile_${normalizedUsername} from Supabase:`, e);
         }
 
-        // 2. Remove member from current foyer if applicable
+        // 2. Remove member from current foyer ONLY if currentFoyer actually has this member
         if (currentFoyer && currentFoyer.members) {
-            const remainingMembers = currentFoyer.members.filter(m => 
-                m.username?.toLowerCase().trim() !== normalizedUsername &&
-                m.name.toLowerCase().trim() !== normalizedUsername
+            const hasMember = currentFoyer.members.some(m => 
+                m.username?.toLowerCase().trim() === normalizedUsername ||
+                m.name.toLowerCase().trim() === normalizedUsername
             );
-            if (remainingMembers.length > 0) {
-                const updatedFoyer: Foyer = {
-                    ...currentFoyer,
-                    members: remainingMembers
-                };
-                setCurrentFoyer(updatedFoyer);
-                await saveFoyerToCloudAndLocal(updatedFoyer);
+            if (hasMember) {
+                const remainingMembers = currentFoyer.members.filter(m => 
+                    m.username?.toLowerCase().trim() !== normalizedUsername &&
+                    m.name.toLowerCase().trim() !== normalizedUsername
+                );
+                if (remainingMembers.length > 0) {
+                    const updatedFoyer: Foyer = {
+                        ...currentFoyer,
+                        members: remainingMembers
+                    };
+                    setCurrentFoyer(updatedFoyer);
+                    await saveFoyerToCloudAndLocal(updatedFoyer);
+                }
             }
         }
 
@@ -1294,7 +1415,19 @@ export const useAuth = () => {
         setProfiles(updated);
         await syncProfilesToCloud(updated);
 
-        // 5. Clean up local storage
+        // 5. Broadcast real-time user deletion to immediately kick out the deleted user
+        try {
+            const authChannel = supabase.channel('duobudget_auth_events');
+            authChannel.send({
+                type: 'broadcast',
+                event: 'user_deleted_force_logout',
+                payload: { username: normalizedUsername }
+            });
+        } catch (e) {
+            console.warn('Could not broadcast user deletion:', e);
+        }
+
+        // 6. Clean up local storage
         localStorage.removeItem(`profile_${normalizedUsername}`);
         return true;
     }, [profiles, setProfiles, currentFoyer, syncProfilesToCloud]);
@@ -1539,6 +1672,7 @@ export const useAuth = () => {
         profiles, 
         addProfile, 
         updateProfilePassword, 
+        updateProfileEmail,
         changeMyPassword,
         toggleBlockProfile, 
         deleteProfile, 
@@ -1552,6 +1686,7 @@ export const useAuth = () => {
         cancelOAuthPending,
         registerOrLoginOAuthUserDirect,
         updateFoyer,
+        switchFoyer,
         updateUserColor,
         leaveFoyer,
         closeFoyer,
