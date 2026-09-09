@@ -15,7 +15,9 @@ import {
     updateMemberColor,
     fetchAllFoyers,
     removeMemberFromFoyer,
-    deleteFoyer
+    deleteFoyer,
+    getLocalFoyers,
+    saveLocalFoyers
 } from '../utils/foyerService';
 
 const SESSION_KEY = 'expense-app-session-v2';
@@ -1076,7 +1078,7 @@ export const useAuth = () => {
                 foyer = await fetchFoyerById(foyerId);
                 if (!foyer) {
                     // Foyer was closed or deleted: purge orphaned profile and reject login
-                    deleteAccount(profile.username);
+                    deleteProfile(profile.username);
                     return { success: false, error: 'Ce foyer a été fermé par son administrateur. Le compte n’existe plus.' };
                 }
             }
@@ -1484,63 +1486,6 @@ export const useAuth = () => {
         return { success: true };
     }, [user, username, profiles, setProfiles, syncProfilesToCloud]);
 
-    // Store Compliance (Apple & Google): Delete own account
-    const deleteOwnAccount = useCallback(async (confirmPassword?: string): Promise<{ success: boolean; error?: string }> => {
-        if (!user) return { success: false, error: 'Non authentifié.' };
-        const effectiveUsername = (username || (typeof user === 'string' ? user : '')).toLowerCase().trim();
-        const effectiveUserDisplay = (typeof user === 'string' ? user : '').toLowerCase().trim();
-        const profile = profiles.find(p => 
-            p.username?.toLowerCase().trim() === effectiveUsername || 
-            p.username?.toLowerCase().trim() === effectiveUserDisplay || 
-            p.user === user
-        );
-
-        if (confirmPassword && profile && profile.password !== confirmPassword) {
-            return { success: false, error: 'Mot de passe de confirmation incorrect.' };
-        }
-
-        const normToDelete = profile?.username?.toLowerCase().trim() || effectiveUsername;
-
-        if (normToDelete === 'vincent') {
-            return { success: false, error: "Le compte administrateur principal ne peut pas être supprimé." };
-        }
-
-        // 1. Delete individual profile record from Supabase push_subscriptions
-        try {
-            await (supabase.from('push_subscriptions') as any)
-                .delete()
-                .eq('user_id', `profile_${normToDelete}`);
-        } catch (e) {
-            console.warn(`Could not delete profile_${normToDelete} from Supabase:`, e);
-        }
-
-        // 2. Remove member from all foyers
-        try {
-            const allFoyers = await fetchAllFoyers();
-            for (const f of allFoyers) {
-                if (f.members.some(m => m.username?.toLowerCase().trim() === normToDelete || m.name.toLowerCase().trim() === normToDelete)) {
-                    await removeMemberFromFoyer(f.id, normToDelete);
-                }
-            }
-        } catch (e) {
-            console.warn('Error removing member from foyers:', e);
-        }
-
-        // 3. Remove profile from profiles
-        const updated = profiles.filter(p => p.username.toLowerCase().trim() !== normToDelete && p.user !== user);
-        setProfiles(updated);
-        await syncProfilesToCloud(updated);
-
-        // 4. Remove local storage caches
-        localStorage.removeItem(`profile_${normToDelete}`);
-        localStorage.removeItem('user');
-        localStorage.removeItem('duobudget_auth_state');
-
-        // 5. Clear session and log out
-        logout();
-        return { success: true };
-    }, [user, profiles, setProfiles, syncProfilesToCloud, logout]);
-    
     // Mise à jour de la couleur d'un utilisateur (profil + membre de foyer)
     const updateUserColor = useCallback(async (username: string, newColor: string): Promise<boolean> => {
         const normUser = username.toLowerCase().trim();
@@ -1633,6 +1578,82 @@ export const useAuth = () => {
             return { success: false, error: e?.message || 'Erreur lors de la suppression du foyer.' };
         }
     }, [user, username, currentFoyer, profiles, setProfiles, syncProfilesToCloud, logout]);
+
+    // Store Compliance & User Account Deletion
+    const deleteOwnAccount = useCallback(async (confirmPassword?: string): Promise<{ success: boolean; error?: string }> => {
+        if (!user) return { success: false, error: 'Non authentifié.' };
+        const effectiveUsername = (username || (typeof user === 'string' ? user : '')).toLowerCase().trim();
+        const effectiveUserDisplay = (typeof user === 'string' ? user : '').toLowerCase().trim();
+        const profile = profiles.find(p => 
+            p.username?.toLowerCase().trim() === effectiveUsername || 
+            p.username?.toLowerCase().trim() === effectiveUserDisplay || 
+            p.user === user
+        );
+
+        if (confirmPassword && profile && profile.password !== confirmPassword) {
+            return { success: false, error: 'Mot de passe de confirmation incorrect.' };
+        }
+
+        const normToDelete = profile?.username?.toLowerCase().trim() || effectiveUsername;
+
+        if (normToDelete === 'vincent') {
+            return { success: false, error: "Le compte administrateur principal ne peut pas être supprimé." };
+        }
+
+        // Si l'utilisateur est administrateur de son foyer actif (et hors foyer principal), la suppression ferme le foyer et supprime toutes les données & membres.
+        if (currentFoyer && currentFoyer.id !== DEFAULT_FOYER_ID && currentFoyer.id !== 'foyer_vincent_sophie') {
+            const myMember = currentFoyer.members?.find(m => {
+                const mUser = m.username?.toLowerCase().trim();
+                const mName = m.name?.toLowerCase().trim();
+                return (normToDelete && mUser === normToDelete) || (normToDelete && mName === normToDelete);
+            });
+
+            const isFoyerAdmin = myMember?.role === 'admin'
+                || (currentFoyer.members && currentFoyer.members.length > 0 && (
+                    currentFoyer.members[0].username?.toLowerCase().trim() === normToDelete ||
+                    currentFoyer.members[0].name?.toLowerCase().trim() === normToDelete
+                ));
+
+            if (isFoyerAdmin) {
+                return await closeFoyer();
+            }
+        }
+
+        // 1. Delete individual profile record from Supabase push_subscriptions
+        try {
+            await (supabase.from('push_subscriptions') as any)
+                .delete()
+                .eq('user_id', `profile_${normToDelete}`);
+        } catch (e) {
+            console.warn(`Could not delete profile_${normToDelete} from Supabase:`, e);
+        }
+
+        // 2. Remove member from all foyers
+        try {
+            const allFoyers = await fetchAllFoyers();
+            for (const f of allFoyers) {
+                if (f.members.some(m => m.username?.toLowerCase().trim() === normToDelete || m.name.toLowerCase().trim() === normToDelete)) {
+                    await removeMemberFromFoyer(f.id, normToDelete);
+                }
+            }
+        } catch (e) {
+            console.warn('Error removing member from foyers:', e);
+        }
+
+        // 3. Remove profile from profiles
+        const updated = profiles.filter(p => p.username.toLowerCase().trim() !== normToDelete && p.user !== user);
+        setProfiles(updated);
+        await syncProfilesToCloud(updated);
+
+        // 4. Remove local storage caches
+        localStorage.removeItem(`profile_${normToDelete}`);
+        localStorage.removeItem('user');
+        localStorage.removeItem('duobudget_auth_state');
+
+        // 5. Clear session and log out
+        logout();
+        return { success: true };
+    }, [user, username, currentFoyer, profiles, setProfiles, syncProfilesToCloud, logout, closeFoyer]);
 
     // Quitter le foyer actif courant
     const leaveFoyer = useCallback(async (): Promise<{ success: boolean; error?: string }> => {

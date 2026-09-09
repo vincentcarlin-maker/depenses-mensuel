@@ -531,27 +531,29 @@ const UserManagement: React.FC<{
                 </div>
             )}
             
-            {/* Store Policy: Delete own account option */}
+            {/* Store Policy & Account Deletion */}
             {onDeleteOwnAccount && (
-                <div className="pt-4 border-t border-slate-100 dark:border-slate-700/60">
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-700/60 space-y-2">
                     <button 
                         type="button"
                         onClick={() => setIsDeletingOwnAccount(true)}
-                        className="w-full py-3 px-4 rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/60 hover:bg-rose-100/60 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                        className="w-full py-3.5 px-4 rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/70 hover:bg-rose-100/70 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-3xs hover:shadow-xs active:scale-98"
                     >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                         <span>Supprimer mon compte et mes données</span>
                     </button>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center mt-1.5">
-                        Conformité App Store & Google Play : supprime définitivement votre profil et vos accès.
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center font-medium px-2">
+                        {isFoyerAdmin && currentFoyer && currentFoyer.id !== 'foyer_vincent_sophie'
+                            ? `En tant qu'administrateur du foyer, la suppression de votre compte fermera définitivement le foyer « ${currentFoyer.name} », supprimera tous ses membres et l'ensemble de ses données.`
+                            : "Supprime définitivement votre profil d'utilisateur et supprime vos accès au foyer."}
                     </p>
                 </div>
             )}
 
-            {/* Actions du Foyer (Not available for DEFAULT_FOYER) */}
-            {currentFoyer && currentFoyer.id !== 'foyer_vincent_sophie' && (
+            {/* Actions du Foyer (Only for non-admin members wanting to leave; admins use 'Supprimer mon compte et mes données') */}
+            {currentFoyer && currentFoyer.id !== 'foyer_vincent_sophie' && !isFoyerAdmin && (
                 <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4 pt-4 border-t border-slate-100 dark:border-slate-700/60">
                     <div className="flex items-center gap-3">
                         <div className="w-11 h-11 rounded-2xl bg-sky-50 dark:bg-sky-950/40 flex items-center justify-center text-sky-500 dark:text-sky-400 shrink-0">
@@ -562,7 +564,7 @@ const UserManagement: React.FC<{
                                 Actions du Foyer Partagé
                             </h3>
                             <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                                Quitter le foyer ou fermer définitivement le compte partagé.
+                                Quitter le foyer partagé.
                             </p>
                         </div>
                     </div>
@@ -581,26 +583,7 @@ const UserManagement: React.FC<{
                                 <span>Quitter ce foyer</span>
                             </button>
                         )}
-
-                        {/* Close Foyer button (Only for admins) */}
-                        {onCloseFoyer && isFoyerAdmin && (
-                            <button
-                                type="button"
-                                onClick={() => setIsClosingFoyer(true)}
-                                className="flex-1 py-3 px-4 rounded-2xl border border-red-200 dark:border-red-900/40 bg-red-50 hover:bg-red-100/60 dark:bg-red-950/20 text-red-600 dark:text-red-400 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-3xs"
-                            >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                                <span>Fermer le foyer</span>
-                            </button>
-                        )}
                     </div>
-                    {isFoyerAdmin && (
-                        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-                            En tant qu'administrateur, la fermeture définitive du foyer supprimera l'intégralité des dépenses, cagnottes et comptes membres rattachés.
-                        </p>
-                    )}
                 </div>
             )}
 
@@ -621,8 +604,11 @@ const UserManagement: React.FC<{
                         }
                     }
                 }}
-                title="Supprimer mon compte"
-                message="Attention : Voulez-vous vraiment supprimer votre compte ? Votre profil et votre session seront définitivement effacés."
+                title={isFoyerAdmin && currentFoyer && currentFoyer.id !== 'foyer_vincent_sophie' ? "⚠️ Supprimer mon compte et fermer le foyer" : "Supprimer mon compte"}
+                message={isFoyerAdmin && currentFoyer && currentFoyer.id !== 'foyer_vincent_sophie'
+                    ? `ATTENTION DANGER : En tant qu'administrateur, supprimer votre compte fermera définitivement le foyer « ${currentFoyer.name} » et supprimera l'intégralité de ses membres ainsi que TOUTES ses données (dépenses, cagnottes, rappels). Êtes-vous certain de vouloir continuer ?`
+                    : "Attention : Voulez-vous vraiment supprimer votre compte ? Votre profil et votre session seront définitivement effacés."
+                }
             />
 
             <ConfirmationModal

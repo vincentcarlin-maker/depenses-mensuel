@@ -27,7 +27,7 @@ export function generateFoyerCode(name?: string): string {
 }
 
 // Get cached foyers from localStorage
-function getLocalFoyers(): Record<string, Foyer> {
+export function getLocalFoyers(): Record<string, Foyer> {
   try {
     const raw = localStorage.getItem(LOCAL_FOYERS_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
@@ -40,7 +40,7 @@ function getLocalFoyers(): Record<string, Foyer> {
   }
 }
 
-function saveLocalFoyers(foyers: Record<string, Foyer>): void {
+export function saveLocalFoyers(foyers: Record<string, Foyer>): void {
   try {
     localStorage.setItem(LOCAL_FOYERS_KEY, JSON.stringify(foyers));
   } catch (e) {
