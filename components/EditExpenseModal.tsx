@@ -579,12 +579,20 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                                     </svg>
                                                 </span>
-                                                <span 
-                                                    title={isOnline ? `${m.name} est en ligne` : `${m.name} est hors ligne`}
-                                                    className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full border-2 border-white dark:border-slate-800 absolute -bottom-0.5 -right-0.5 transition-colors duration-300 ${
-                                                        isOnline ? 'bg-emerald-500 shadow-xs animate-pulse' : 'bg-slate-300 dark:bg-slate-600'
-                                                    }`} 
-                                                />
+                                                {isOnline ? (
+                                                    <span 
+                                                        title={`${m.name} est en ligne`}
+                                                        className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 sm:h-4 sm:w-4 items-center justify-center"
+                                                    >
+                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-80" />
+                                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-emerald-500 border-2 border-white dark:border-slate-800 shadow-xs shadow-emerald-500" />
+                                                    </span>
+                                                ) : (
+                                                    <span 
+                                                        title={`${m.name} est hors ligne`}
+                                                        className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border-2 border-white dark:border-slate-800 absolute -bottom-0.5 -right-0.5 bg-slate-300 dark:bg-slate-600 transition-colors" 
+                                                    />
+                                                )}
                                             </div>
                                             <span className="truncate" style={isSelected ? { color: userColor } : {}}>{m.name}</span>
                                         </button>

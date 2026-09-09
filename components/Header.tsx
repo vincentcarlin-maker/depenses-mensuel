@@ -32,14 +32,14 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ 
   onOpenSearch, 
-  loggedInUser, 
+  loggedInUser: _loggedInUser, 
   activityItems, 
   unreadCount, 
   onMarkAsRead, 
   realtimeStatus, 
   onDeleteActivity,
-  onlineUsers = [],
-  foyerMembers = []
+  onlineUsers: _onlineUsers = [],
+  foyerMembers: _foyerMembers = []
 }) => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
@@ -163,22 +163,6 @@ const Header: React.FC<HeaderProps> = ({
         </div>
         
         <div className="flex items-center space-x-1 sm:space-x-2 ml-2">
-            {/* Direct member online status indicators */}
-            <div className="hidden xs:flex items-center gap-1.5 px-2.5 py-1 bg-slate-100/90 dark:bg-slate-700/60 rounded-full text-[11px] font-bold text-slate-700 dark:text-slate-200 border border-slate-200/60 dark:border-slate-600/60 mr-1">
-              {(foyerMembers && foyerMembers.length > 0 ? foyerMembers : [{ id: '1', name: User.Sophie }, { id: '2', name: User.Vincent }]).map(m => {
-                const isOnline = onlineUsers.some(
-                  u => String(u).trim().toLowerCase() === String(m.name).trim().toLowerCase()
-                ) || (loggedInUser && String(loggedInUser).trim().toLowerCase() === String(m.name).trim().toLowerCase());
-
-                return (
-                  <div key={m.id || m.name} className="flex items-center gap-1" title={`${m.name} : ${isOnline ? 'En ligne' : 'Hors ligne'}`}>
-                    <span className={`w-2 h-2 rounded-full transition-colors duration-300 ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-500'}`} />
-                    <span className="hidden md:inline">{m.name}</span>
-                  </div>
-                );
-              })}
-            </div>
-
             <button
                 onClick={onOpenSearch}
                 className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 dark:focus:ring-offset-slate-800"

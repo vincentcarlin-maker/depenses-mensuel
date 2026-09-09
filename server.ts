@@ -270,7 +270,7 @@ async function startServer() {
         const distPath = path.join(process.cwd(), 'dist');
         app.use(express.static(distPath));
         // Important: Use * for Express v4, *all for Express v5
-        app.get('*', (_req, res) => {
+        app.get('*all', (_req, res) => {
             res.sendFile(path.join(distPath, 'index.html'));
         });
     }

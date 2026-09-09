@@ -1655,10 +1655,10 @@ const App: React.FC = () => {
     username,
     isAdmin,
     currentFoyer,
-    login, 
     loginWithResult, 
     registerWithNewFoyer,
     registerWithJoinFoyer,
+    loginWithOAuth,
     logout, 
     isLoading, 
     profiles, 
@@ -1692,6 +1692,7 @@ const App: React.FC = () => {
         onLogin={loginWithResult} 
         onRegisterNewFoyer={registerWithNewFoyer}
         onRegisterJoinFoyer={registerWithJoinFoyer}
+        onLoginWithOAuth={loginWithOAuth}
       />
     );
   }

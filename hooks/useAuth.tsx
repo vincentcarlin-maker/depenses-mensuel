@@ -29,6 +29,8 @@ export interface Profile {
     foyer_code?: string;
     color?: string;
     blocked?: boolean;
+    email?: string;
+    provider?: string;
 }
 
 export interface LoginEvent {
@@ -232,7 +234,12 @@ export const useAuth = () => {
         initSession();
     }, [logVisit]);
 
-    const logout = useCallback(() => {
+    const logout = useCallback(async () => {
+        try {
+            await supabase.auth.signOut();
+        } catch {
+            // ignore
+        }
         window.localStorage.removeItem(SESSION_KEY);
         window.localStorage.removeItem('expense-app-session');
         if (user) {
@@ -419,6 +426,257 @@ export const useAuth = () => {
             }
         }
     }, [user, profiles, logout]);
+
+    const handleOAuthUser = useCallback(async (authUser: any) => {
+        if (!authUser) return;
+        const email: string = authUser.email || '';
+        const metadata = authUser.user_metadata || {};
+        const fullName: string = metadata.full_name || metadata.name || (email ? email.split('@')[0] : 'Membre');
+        const provider: string = authUser.app_metadata?.provider || 'oauth';
+        
+        let baseUsername = email ? email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '') : `user_${String(authUser.id).slice(0, 6)}`;
+        if (!baseUsername) baseUsername = 'membre';
+
+        // Find existing profile by username, email, name, or oauth id
+        let profile = profiles.find(p => 
+            p.username === baseUsername || 
+            ((p as any).email && email && (p as any).email.toLowerCase() === email.toLowerCase()) || 
+            p.username === `oauth_${authUser.id}` ||
+            String(p.user).toLowerCase() === fullName.toLowerCase() ||
+            p.username === fullName.toLowerCase().replace(/[^a-z0-9]/g, '')
+        );
+
+        if (!profile) {
+            // Check direct profile row in push_subscriptions
+            try {
+                const { data } = await (supabase.from('push_subscriptions') as any)
+                    .select('subscription')
+                    .eq('user_id', `profile_${baseUsername}`)
+                    .maybeSingle();
+                if (data?.subscription) {
+                    profile = data.subscription as Profile;
+                }
+            } catch {}
+        }
+
+        let foyer: Foyer | null = null;
+
+        if (!profile) {
+            // New user registration via Google / Apple OAuth
+            let finalUsername = baseUsername;
+            let counter = 1;
+            while (profiles.some(p => p.username === finalUsername)) {
+                finalUsername = `${baseUsername}${counter}`;
+                counter++;
+            }
+
+            const foyerName = `Foyer de ${fullName}`;
+            const createRes = await createNewFoyer(foyerName, {
+                name: fullName,
+                username: finalUsername,
+                color: '#0ea5e9'
+            });
+
+            if (createRes.success && createRes.foyer) {
+                foyer = createRes.foyer;
+            } else {
+                foyer = DEFAULT_FOYER;
+            }
+
+            const newProfile: Profile = {
+                username: finalUsername,
+                password: `oauth_${authUser.id}`,
+                user: fullName,
+                foyer_id: foyer.id,
+                foyer_name: foyer.name,
+                foyer_code: foyer.code,
+                color: '#0ea5e9',
+                email: email,
+                provider: provider
+            };
+
+            const updated = [...profiles, newProfile];
+            setProfiles(updated);
+            syncProfilesToCloud(updated);
+            profile = newProfile;
+        } else {
+            const foyerId = profile.foyer_id || DEFAULT_FOYER_ID;
+            foyer = await fetchFoyerById(foyerId);
+            if (!foyer) foyer = DEFAULT_FOYER;
+        }
+
+        const oneYearFromNow = Date.now() + 365 * 24 * 60 * 60 * 1000;
+        const session: Session = {
+            user: profile.user,
+            username: profile.username,
+            foyer_id: foyer.id,
+            expiresAt: oneYearFromNow,
+        };
+        window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        setUser(profile.user);
+        setUsername(profile.username);
+        setCurrentFoyer(foyer);
+        setStoredActiveFoyerId(foyer.id);
+        logVisit(profile.user);
+    }, [profiles, setProfiles, syncProfilesToCloud, logVisit]);
+
+    // Listen for Supabase OAuth login events or existing session
+    useEffect(() => {
+        // Check if current URL contains access_token (e.g. from OAuth redirect with # or %23)
+        if (typeof window !== 'undefined') {
+            const fullUrl = window.location.href;
+            if (fullUrl.includes('access_token=') || fullUrl.includes('%23access_token=')) {
+                try {
+                    const cleanFragment = fullUrl.replace(/.*(%23|#|\?)/, '');
+                    const params = new URLSearchParams(cleanFragment);
+                    const rawAccess = params.get('access_token') || fullUrl.match(/access_token=([^&]+)/)?.[1];
+                    const rawRefresh = params.get('refresh_token') || fullUrl.match(/refresh_token=([^&]+)/)?.[1];
+
+                    if (rawAccess && rawRefresh) {
+                        const access_token = decodeURIComponent(rawAccess);
+                        const refresh_token = decodeURIComponent(rawRefresh);
+                        
+                        supabase.auth.setSession({
+                            access_token,
+                            refresh_token
+                        }).then(({ data }) => {
+                            if (data?.session?.user) {
+                                handleOAuthUser(data.session.user);
+                                if (window.opener) {
+                                    try {
+                                        window.opener.postMessage({ type: 'SUPABASE_AUTH_SUCCESS' }, '*');
+                                    } catch {}
+                                    window.close();
+                                }
+                            }
+                        }).catch(err => {
+                            console.warn("Could not restore session from URL tokens:", err);
+                        });
+
+                        // Clean URL in the browser
+                        try {
+                            const cleanPath = window.location.pathname.split('%23')[0].split('#')[0] || '/';
+                            window.history.replaceState(null, '', cleanPath);
+                        } catch {}
+                    }
+                } catch (err) {
+                    console.warn("Could not parse tokens from URL:", err);
+                }
+            }
+        }
+
+        // If this window is an OAuth popup callback, notify the opener and close
+        if (typeof window !== 'undefined' && window.opener) {
+            try {
+                supabase.auth.getSession().then(({ data: { session } }) => {
+                    if (session?.user) {
+                        try {
+                            window.opener.postMessage({ type: 'SUPABASE_AUTH_SUCCESS' }, '*');
+                        } catch {}
+                        window.close();
+                    }
+                }).catch(() => {});
+            } catch {}
+        }
+
+        try {
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                if (session?.user) {
+                    handleOAuthUser(session.user);
+                }
+            }).catch(err => {
+                console.warn("Could not check Supabase auth session:", err);
+            });
+        } catch {}
+
+        const handleMessage = (event: MessageEvent) => {
+            if (event.data?.type === 'SUPABASE_AUTH_SUCCESS') {
+                supabase.auth.getSession().then(({ data: { session } }) => {
+                    if (session?.user) {
+                        handleOAuthUser(session.user);
+                    }
+                });
+            }
+        };
+        window.addEventListener('message', handleMessage);
+
+        let unsubscribeListener: (() => void) | undefined;
+        try {
+            const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+                if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
+                    handleOAuthUser(session.user);
+                }
+            });
+
+            unsubscribeListener = () => {
+                authListener?.subscription?.unsubscribe();
+            };
+        } catch {}
+
+        return () => {
+            window.removeEventListener('message', handleMessage);
+            if (unsubscribeListener) unsubscribeListener();
+        };
+    }, [handleOAuthUser]);
+
+    const loginWithOAuth = useCallback(async (provider: 'google' | 'apple'): Promise<{ success: boolean; error?: string; redirected?: boolean; authUrl?: string }> => {
+        try {
+            const redirectTo = window.location.origin;
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider,
+                options: {
+                    redirectTo,
+                    skipBrowserRedirect: true
+                }
+            });
+            if (error) {
+                return { success: false, error: error.message };
+            }
+            if (data?.url) {
+                const isIframe = window.self !== window.top;
+                if (isIframe) {
+                    const width = 520;
+                    const height = 650;
+                    const left = Math.max(0, (window.screen.width - width) / 2);
+                    const top = Math.max(0, (window.screen.height - height) / 2);
+                    const popup = window.open(
+                        data.url, 
+                        `oauth_${provider}`, 
+                        `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes,scrollbars=yes`
+                    );
+                    if (!popup) {
+                        window.open(data.url, '_blank');
+                    }
+                } else {
+                    window.location.href = data.url;
+                }
+                return { success: true, redirected: true, authUrl: data.url };
+            }
+            return { success: true };
+        } catch (err: any) {
+            return { success: false, error: err?.message || 'Erreur de connexion OAuth' };
+        }
+    }, [handleOAuthUser]);
+
+    const registerOrLoginOAuthUserDirect = useCallback(async (params: {
+        provider: 'google' | 'apple';
+        name: string;
+        email: string;
+    }): Promise<{ success: boolean; error?: string; foyer?: Foyer }> => {
+        const syntheticAuthUser = {
+            id: `${params.provider}_${Date.now()}`,
+            email: params.email,
+            user_metadata: {
+                full_name: params.name,
+                name: params.name
+            },
+            app_metadata: {
+                provider: params.provider
+            }
+        };
+        await handleOAuthUser(syntheticAuthUser);
+        return { success: true };
+    }, [handleOAuthUser]);
 
     const loginWithResult = useCallback(async (username: string, password: string): Promise<{ success: boolean; error?: string; foyer?: Foyer }> => {
         const normalizedUsername = username.toLowerCase().trim();
@@ -994,6 +1252,8 @@ export const useAuth = () => {
         deleteOwnAccount,
         registerWithNewFoyer,
         registerWithJoinFoyer,
+        loginWithOAuth,
+        registerOrLoginOAuthUserDirect,
         updateFoyer,
         updateUserColor,
         leaveFoyer,

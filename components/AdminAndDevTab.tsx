@@ -1801,8 +1801,11 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
               <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700/60 space-y-1">
                 <span className="text-slate-400 font-medium">Connectivité</span>
-                <p className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                <p className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <span className="relative flex h-3 w-3 items-center justify-center">
+                    {isOnline && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />}
+                    <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isOnline ? 'bg-emerald-500 ring-2 ring-emerald-200 dark:ring-emerald-900' : 'bg-rose-500'}`} />
+                  </span>
                   {isOnline ? 'En ligne' : 'Hors-ligne'}
                 </p>
               </div>
