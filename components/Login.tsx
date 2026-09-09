@@ -4,7 +4,6 @@ import EyeSlashIcon from './icons/EyeSlashIcon';
 import ArrowLeftIcon from './icons/ArrowLeftIcon';
 import ChevronRightIcon from './icons/ChevronRightIcon';
 import GoogleIcon from './icons/GoogleIcon';
-import AppleIcon from './icons/AppleIcon';
 import { APP_LOGO_BASE64 } from '../constants/logoBase64';
 import CoinOIcon from './icons/CoinOIcon';
 import { fetchFoyerByCode } from '../utils/foyerService';
@@ -13,24 +12,21 @@ import { USER_COLORS } from '../utils/userColors';
 import { PendingOAuthUser } from '../hooks/useAuth';
 
 const SocialAuthButtons: React.FC<{
-    onSelect: (provider: 'google' | 'apple') => void;
-    loadingProvider: 'google' | 'apple' | null;
+    onSelect: (provider: 'google') => void;
+    loadingProvider: 'google' | null;
     actionLabel?: 'connecter' | 'inscrire' | 'continuer';
 }> = ({ onSelect, loadingProvider, actionLabel = 'continuer' }) => {
     const textGoogle = actionLabel === 'inscrire' 
         ? "S'inscrire avec Google" 
         : (actionLabel === 'connecter' ? "Se connecter avec Google" : "Continuer avec Google");
-    const textApple = actionLabel === 'inscrire' 
-        ? "S'inscrire avec Apple" 
-        : (actionLabel === 'connecter' ? "Se connecter avec Apple" : "Continuer avec Apple");
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full">
+        <div className="w-full">
             <button
                 type="button"
                 onClick={() => onSelect('google')}
                 disabled={Boolean(loadingProvider)}
-                className="flex items-center justify-center gap-2.5 py-3 px-3.5 rounded-2xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-100 font-bold text-xs sm:text-sm border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 shadow-2xs hover:shadow-xs transition-all active:scale-98 disabled:opacity-50 cursor-pointer"
+                className="w-full flex items-center justify-center gap-2.5 py-3 px-3.5 rounded-2xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-100 font-bold text-xs sm:text-sm border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 shadow-2xs hover:shadow-xs transition-all active:scale-98 disabled:opacity-50 cursor-pointer"
             >
                 {loadingProvider === 'google' ? (
                     <div className="w-4 h-4 border-2 border-slate-400/40 border-t-slate-700 dark:border-t-white rounded-full animate-spin" />
@@ -38,20 +34,6 @@ const SocialAuthButtons: React.FC<{
                     <GoogleIcon className="w-5 h-5 shrink-0" />
                 )}
                 <span className="truncate">{textGoogle}</span>
-            </button>
-
-            <button
-                type="button"
-                onClick={() => onSelect('apple')}
-                disabled={Boolean(loadingProvider)}
-                className="flex items-center justify-center gap-2.5 py-3 px-3.5 rounded-2xl bg-black hover:bg-slate-900 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-black font-bold text-xs sm:text-sm border border-transparent shadow-2xs hover:shadow-xs transition-all active:scale-98 disabled:opacity-50 cursor-pointer"
-            >
-                {loadingProvider === 'apple' ? (
-                    <div className="w-4 h-4 border-2 border-white/40 dark:border-black/40 border-t-white dark:border-t-black rounded-full animate-spin" />
-                ) : (
-                    <AppleIcon className="w-5 h-5 shrink-0" />
-                )}
-                <span className="truncate">{textApple}</span>
             </button>
         </div>
     );
@@ -101,7 +83,7 @@ interface LoginProps {
     onLogin: (username: string, password: string) => Promise<boolean | { success: boolean; error?: string; foyer?: Foyer }>;
     onRegisterNewFoyer?: (params: { name: string; username: string; password: string; foyerName: string; color?: string; email?: string }) => Promise<{ success: boolean; error?: string; foyer?: Foyer }>;
     onRegisterJoinFoyer?: (params: { name: string; username: string; password: string; inviteCode: string; color?: string; email?: string }) => Promise<{ success: boolean; error?: string; foyer?: Foyer }>;
-    onLoginWithOAuth?: (provider: 'google' | 'apple') => Promise<{ success: boolean; error?: string; redirected?: boolean }>;
+    onLoginWithOAuth?: (provider: 'google') => Promise<{ success: boolean; error?: string; redirected?: boolean }>;
     pendingOAuthUser?: PendingOAuthUser | null;
     onCompleteOAuthRegisterNewFoyer?: (params: { foyerName: string; name: string; username: string; color?: string; email?: string }) => Promise<{ success: boolean; error?: string; foyer?: Foyer }>;
     onCompleteOAuthJoinFoyer?: (params: { inviteCode: string; name: string; username: string; color?: string; email?: string }) => Promise<{ success: boolean; error?: string; foyer?: Foyer }>;
@@ -121,7 +103,7 @@ export const Login: React.FC<LoginProps> = ({
     const [view, setView] = useState<'welcome' | 'login' | 'create' | 'join'>('welcome');
 
     // OAuth loading state
-    const [oauthLoadingProvider, setOauthLoadingProvider] = useState<'google' | 'apple' | null>(null);
+    const [oauthLoadingProvider, setOauthLoadingProvider] = useState<'google' | null>(null);
 
     // OAuth Onboarding State (for new OAuth users)
     const [oauthTab, setOauthTab] = useState<'create' | 'join'>('create');
@@ -246,7 +228,7 @@ export const Login: React.FC<LoginProps> = ({
         };
     }, [inviteCode]);
 
-    const handleOAuth = async (provider: 'google' | 'apple') => {
+    const handleOAuth = async (provider: 'google') => {
         setError('');
         setOauthLoadingProvider(provider);
         try {
@@ -457,12 +439,8 @@ export const Login: React.FC<LoginProps> = ({
                         <div className="space-y-5 animate-fade-in">
                             <div className="text-center space-y-1.5 pb-3 border-b border-slate-100 dark:border-slate-700">
                                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold mb-1">
-                                    {pendingOAuthUser.provider === 'apple' ? (
-                                        <AppleIcon className="w-3.5 h-3.5" />
-                                    ) : (
-                                        <GoogleIcon className="w-3.5 h-3.5" />
-                                    )}
-                                    <span>Connecté avec {pendingOAuthUser.provider === 'apple' ? 'Apple' : 'Google'}</span>
+                                    <GoogleIcon className="w-3.5 h-3.5" />
+                                    <span>Connecté avec Google</span>
                                 </div>
                                 <h2 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white tracking-tight">
                                     Finaliser votre inscription

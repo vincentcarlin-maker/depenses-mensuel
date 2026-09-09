@@ -816,7 +816,7 @@ export const useAuth = () => {
         };
     }, [handleOAuthUser]);
 
-    const loginWithOAuth = useCallback(async (provider: 'google' | 'apple'): Promise<{ success: boolean; error?: string; redirected?: boolean; authUrl?: string }> => {
+    const loginWithOAuth = useCallback(async (provider: 'google' = 'google'): Promise<{ success: boolean; error?: string; redirected?: boolean; authUrl?: string }> => {
         try {
             const redirectTo = window.location.origin;
             const isIframe = typeof window !== 'undefined' && window.self !== window.top;

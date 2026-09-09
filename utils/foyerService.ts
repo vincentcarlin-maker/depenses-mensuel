@@ -459,14 +459,34 @@ export async function fetchAllFoyers(): Promise<Foyer[]> {
         [DEFAULT_FOYER_ID]: DEFAULT_FOYER
       };
 
+      const orphanedGhostFoyerIds: string[] = [];
+
       for (const item of data) {
         if (item?.subscription && item.subscription.id) {
           const cloudFoyer = item.subscription as Foyer;
+          if (cloudFoyer.id !== DEFAULT_FOYER_ID && cloudFoyer.id !== 'foyer_vincent_sophie') {
+            // If foyer has no members left, mark as ghost/orphaned and do not display
+            if (!cloudFoyer.members || !Array.isArray(cloudFoyer.members) || cloudFoyer.members.length === 0) {
+              orphanedGhostFoyerIds.push(cloudFoyer.id);
+              continue;
+            }
+          }
           cloudMap[cloudFoyer.id] = cloudFoyer;
         }
       }
 
-      // Overwrite local map with current cloud source of truth (plus any local-only foyers)
+      // Purge ghost foyers asynchronously from cloud
+      if (orphanedGhostFoyerIds.length > 0) {
+        (async () => {
+          for (const ghostId of orphanedGhostFoyerIds) {
+            try {
+              await deleteFoyer(ghostId);
+            } catch {}
+          }
+        })();
+      }
+
+      // Overwrite local map with current cloud source of truth
       saveLocalFoyers(cloudMap);
       return Object.values(cloudMap).sort((a, b) => {
         if (a.id === DEFAULT_FOYER_ID) return -1;
@@ -478,7 +498,11 @@ export async function fetchAllFoyers(): Promise<Foyer[]> {
     console.error('Error fetching all foyers from cloud:', e);
   }
 
-  const foyers = Object.values(localMap);
+  const foyers = Object.values(localMap).filter(f => {
+    if (f.id === DEFAULT_FOYER_ID || f.id === 'foyer_vincent_sophie') return true;
+    return f.members && Array.isArray(f.members) && f.members.length > 0;
+  });
+
   return foyers.sort((a, b) => {
     if (a.id === DEFAULT_FOYER_ID) return -1;
     if (b.id === DEFAULT_FOYER_ID) return 1;
