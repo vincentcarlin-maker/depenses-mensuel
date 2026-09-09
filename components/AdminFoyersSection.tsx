@@ -252,7 +252,7 @@ export const AdminFoyersSection: React.FC<AdminFoyersSectionProps> = ({
     try {
       const res = await deleteFoyer(foyerToDelete.id);
       if (res.success) {
-        setToastInfo({ message: `Le foyer « ${foyerToDelete.name} » a été supprimé avec succès.`, type: 'info' });
+        setToastInfo({ message: `Le foyer « ${foyerToDelete.name} » et tous ses utilisateurs rattachés ont été définitivement supprimés.`, type: 'info' });
         setFoyerToDelete(null);
         await loadFoyers();
       } else {
@@ -1045,14 +1045,14 @@ export const AdminFoyersSection: React.FC<AdminFoyersSectionProps> = ({
         isOpen={!!foyerToDelete}
         onClose={() => setFoyerToDelete(null)}
         onConfirm={handleConfirmDeleteFoyer}
-        title="Supprimer définitivement ce foyer ?"
+        title="Supprimer définitivement ce foyer et ses utilisateurs ?"
         message={
           <div className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
             <p>
               Êtes-vous certain de vouloir supprimer le foyer <strong>« {foyerToDelete?.name} »</strong> (Code: {foyerToDelete?.code}) ?
             </p>
-            <p className="text-rose-500 font-bold">
-              Attention : Cette opération est irréversible. Les données orphelines liées à ce foyer ne seront plus associées.
+            <p className="text-rose-600 dark:text-rose-400 font-bold">
+              Attention : Cette opération est irréversible. Tous les utilisateurs et comptes rattachés à ce foyer ainsi que leurs dépenses, rappels et données seront définitivement supprimés.
             </p>
           </div>
         }

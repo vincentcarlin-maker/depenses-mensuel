@@ -99,12 +99,12 @@ const Logo = () => {
 
 interface LoginProps {
     onLogin: (username: string, password: string) => Promise<boolean | { success: boolean; error?: string; foyer?: Foyer }>;
-    onRegisterNewFoyer?: (params: { name: string; username: string; password: string; foyerName: string; color?: string }) => Promise<{ success: boolean; error?: string; foyer?: Foyer }>;
-    onRegisterJoinFoyer?: (params: { name: string; username: string; password: string; inviteCode: string; color?: string }) => Promise<{ success: boolean; error?: string; foyer?: Foyer }>;
+    onRegisterNewFoyer?: (params: { name: string; username: string; password: string; foyerName: string; color?: string; email?: string }) => Promise<{ success: boolean; error?: string; foyer?: Foyer }>;
+    onRegisterJoinFoyer?: (params: { name: string; username: string; password: string; inviteCode: string; color?: string; email?: string }) => Promise<{ success: boolean; error?: string; foyer?: Foyer }>;
     onLoginWithOAuth?: (provider: 'google' | 'apple') => Promise<{ success: boolean; error?: string; redirected?: boolean }>;
     pendingOAuthUser?: PendingOAuthUser | null;
-    onCompleteOAuthRegisterNewFoyer?: (params: { foyerName: string; name: string; username: string; color?: string }) => Promise<{ success: boolean; error?: string; foyer?: Foyer }>;
-    onCompleteOAuthJoinFoyer?: (params: { inviteCode: string; name: string; username: string; color?: string }) => Promise<{ success: boolean; error?: string; foyer?: Foyer }>;
+    onCompleteOAuthRegisterNewFoyer?: (params: { foyerName: string; name: string; username: string; color?: string; email?: string }) => Promise<{ success: boolean; error?: string; foyer?: Foyer }>;
+    onCompleteOAuthJoinFoyer?: (params: { inviteCode: string; name: string; username: string; color?: string; email?: string }) => Promise<{ success: boolean; error?: string; foyer?: Foyer }>;
     onCancelOAuthPending?: () => void;
 }
 
@@ -191,6 +191,7 @@ export const Login: React.FC<LoginProps> = ({
     // Create / Join state
     const [regName, setRegName] = useState('');
     const [regUsername, setRegUsername] = useState('');
+    const [regEmail, setRegEmail] = useState('');
     const [regPassword, setRegPassword] = useState('');
     const [foyerName, setFoyerName] = useState('');
     const [inviteCode, setInviteCode] = useState('');
@@ -291,6 +292,11 @@ export const Login: React.FC<LoginProps> = ({
             return;
         }
 
+        if (regEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regEmail.trim())) {
+            setError('Veuillez renseigner une adresse email valide.');
+            return;
+        }
+
         if (!onRegisterNewFoyer) {
             setError('Service de création de foyer indisponible.');
             return;
@@ -303,7 +309,8 @@ export const Login: React.FC<LoginProps> = ({
                 username: regUsername.trim(),
                 password: regPassword,
                 foyerName: foyerName.trim() || `Foyer de ${regName.trim()}`,
-                color: selectedColor
+                color: selectedColor,
+                email: regEmail.trim() || undefined
             });
 
             if (!res.success) {
@@ -330,6 +337,11 @@ export const Login: React.FC<LoginProps> = ({
             return;
         }
 
+        if (regEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regEmail.trim())) {
+            setError('Veuillez renseigner une adresse email valide.');
+            return;
+        }
+
         if (!onRegisterJoinFoyer) {
             setError('Service de liaison au foyer indisponible.');
             return;
@@ -342,7 +354,8 @@ export const Login: React.FC<LoginProps> = ({
                 username: regUsername.trim(),
                 password: regPassword,
                 inviteCode: inviteCode.trim(),
-                color: selectedColor
+                color: selectedColor,
+                email: regEmail.trim() || undefined
             });
 
             if (!res.success) {
@@ -415,6 +428,7 @@ export const Login: React.FC<LoginProps> = ({
         setError('');
         setCodeError('');
         setFoundFoyer(null);
+        setRegEmail('');
     };
 
     return (
@@ -887,6 +901,26 @@ export const Login: React.FC<LoginProps> = ({
 
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">
+                                        Adresse email <span className="text-slate-400 font-normal">(optionnelle / récupération)</span>
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="email"
+                                            value={regEmail}
+                                            onChange={(e) => setRegEmail(e.target.value)}
+                                            placeholder="ex: alexandre@exemple.com"
+                                            className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                        />
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400">
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">
                                         Mot de passe <span className="text-rose-500">*</span>
                                     </label>
                                     <div className="relative">
@@ -1058,6 +1092,26 @@ export const Login: React.FC<LoginProps> = ({
                                             placeholder="ex: sophie"
                                             className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-pink-500"
                                         />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">
+                                        Adresse email <span className="text-slate-400 font-normal">(optionnelle / récupération)</span>
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="email"
+                                            value={regEmail}
+                                            onChange={(e) => setRegEmail(e.target.value)}
+                                            placeholder="ex: sophie@exemple.com"
+                                            className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                        />
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400">
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                            </svg>
+                                        </div>
                                     </div>
                                 </div>
 

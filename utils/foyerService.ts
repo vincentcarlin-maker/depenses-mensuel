@@ -222,7 +222,7 @@ export async function isUsernameAlreadyUsed(username: string): Promise<boolean> 
 // Create a brand new Foyer
 export async function createNewFoyer(
   foyerName: string,
-  creator: { name: string; username: string; color?: string }
+  creator: { name: string; username: string; color?: string; email?: string }
 ): Promise<{ success: boolean; foyer?: Foyer; error?: string }> {
   try {
     const normalizedUsername = creator.username.toLowerCase().trim();
@@ -239,7 +239,8 @@ export async function createNewFoyer(
       username: normalizedUsername,
       color: creator.color || '#0ea5e9',
       role: 'admin',
-      joined_at: new Date().toISOString()
+      joined_at: new Date().toISOString(),
+      email: creator.email?.trim() || undefined
     };
 
     const newFoyer: Foyer = {
@@ -281,7 +282,7 @@ export async function createNewFoyer(
 // Join an existing Foyer using an invite code
 export async function joinFoyerWithCode(
   inviteCode: string,
-  newMemberData: { name: string; username: string; color?: string }
+  newMemberData: { name: string; username: string; color?: string; email?: string }
 ): Promise<{ success: boolean; foyer?: Foyer; error?: string }> {
   try {
     const normalizedUsername = newMemberData.username.toLowerCase().trim();
@@ -305,7 +306,8 @@ export async function joinFoyerWithCode(
       username: normalizedUsername,
       color: newMemberData.color || '#ec4899',
       role: 'member',
-      joined_at: new Date().toISOString()
+      joined_at: new Date().toISOString(),
+      email: newMemberData.email?.trim() || undefined
     };
 
     let updatedMembers: FoyerMember[];
@@ -533,11 +535,70 @@ export async function deleteFoyer(foyerId: string): Promise<{ success: boolean; 
     }
 
     const code = foyer?.code;
-    const memberUsernames = (foyer?.members || [])
-      .map(m => m.username?.toLowerCase().trim())
-      .filter(u => u && u !== 'vincent' && u !== 'sophie');
 
-    // 2. Remove from local cache
+    // Discover all usernames belonging to this foyer from multiple sources
+    const targetUsernames = new Set<string>();
+    (foyer?.members || []).forEach(m => {
+      if (m.username) targetUsernames.add(m.username.toLowerCase().trim());
+    });
+
+    // Check global app_user_profiles_v2
+    let globalProfiles: any[] = [];
+    try {
+      const { data: globalData } = await (supabase.from('push_subscriptions') as any)
+        .select('subscription')
+        .eq('user_id', 'app_user_profiles_v2')
+        .maybeSingle();
+
+      if (globalData?.subscription?.profiles && Array.isArray(globalData.subscription.profiles)) {
+        globalProfiles = globalData.subscription.profiles;
+        globalProfiles.forEach((p: any) => {
+          if (p.foyer_id === foyerId && p.username) {
+            targetUsernames.add(p.username.toLowerCase().trim());
+          }
+        });
+      }
+    } catch {}
+
+    // Check individual profile rows in push_subscriptions
+    const individualProfileRowsToDelete: string[] = [];
+    try {
+      const { data: individualRows } = await (supabase.from('push_subscriptions') as any)
+        .select('user_id, subscription')
+        .like('user_id', 'profile_%');
+
+      if (Array.isArray(individualRows)) {
+        individualRows.forEach((row: any) => {
+          if (row?.subscription?.foyer_id === foyerId && row?.subscription?.username) {
+            targetUsernames.add(row.subscription.username.toLowerCase().trim());
+            individualProfileRowsToDelete.push(row.user_id);
+          }
+        });
+      }
+    } catch {}
+
+    // Check local storage profiles
+    try {
+      const rawProfiles = localStorage.getItem('expense-app-profiles-v2');
+      if (rawProfiles) {
+        const parsed = JSON.parse(rawProfiles);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((p: any) => {
+            if (p.foyer_id === foyerId && p.username) {
+              targetUsernames.add(p.username.toLowerCase().trim());
+            }
+          });
+        }
+      }
+    } catch {}
+
+    // Protect master admins
+    targetUsernames.delete('vincent');
+    targetUsernames.delete('sophie');
+
+    const memberUsernames = Array.from(targetUsernames);
+
+    // 2. Remove foyer from local cache
     delete local[foyerId];
     saveLocalFoyers(local);
 
@@ -572,18 +633,21 @@ export async function deleteFoyer(foyerId: string): Promise<{ success: boolean; 
     for (const uName of memberUsernames) {
       try {
         await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_${uName}`);
+        localStorage.removeItem(`profile_${uName}`);
+      } catch {}
+    }
+
+    for (const rowUserId of individualProfileRowsToDelete) {
+      try {
+        await (supabase.from('push_subscriptions') as any).delete().eq('user_id', rowUserId);
       } catch {}
     }
 
     // 7. Update merged app_user_profiles_v2 in Supabase
+    let cleanedProfiles: any[] = [];
     try {
-      const { data: globalData } = await (supabase.from('push_subscriptions') as any)
-        .select('subscription')
-        .eq('user_id', 'app_user_profiles_v2')
-        .maybeSingle();
-
-      if (globalData?.subscription?.profiles && Array.isArray(globalData.subscription.profiles)) {
-        const cleanedProfiles = globalData.subscription.profiles.filter((p: any) => {
+      if (globalProfiles.length > 0) {
+        cleanedProfiles = globalProfiles.filter((p: any) => {
           const pFoyerId = p.foyer_id;
           const pUsername = p.username?.toLowerCase().trim();
           if (pUsername === 'vincent' || pUsername === 'sophie') return true;
@@ -608,7 +672,7 @@ export async function deleteFoyer(foyerId: string): Promise<{ success: boolean; 
       if (rawProfiles) {
         const parsed = JSON.parse(rawProfiles);
         if (Array.isArray(parsed)) {
-          const cleaned = parsed.filter((p: any) => {
+          const localCleaned = parsed.filter((p: any) => {
             const pFoyerId = p.foyer_id;
             const pUsername = p.username?.toLowerCase().trim();
             if (pUsername === 'vincent' || pUsername === 'sophie') return true;
@@ -616,7 +680,10 @@ export async function deleteFoyer(foyerId: string): Promise<{ success: boolean; 
             if (memberUsernames.includes(pUsername)) return false;
             return true;
           });
-          localStorage.setItem('expense-app-profiles-v2', JSON.stringify(cleaned));
+          localStorage.setItem('expense-app-profiles-v2', JSON.stringify(localCleaned));
+          if (cleanedProfiles.length === 0) {
+            cleanedProfiles = localCleaned;
+          }
         }
       }
     } catch {}
@@ -630,13 +697,25 @@ export async function deleteFoyer(foyerId: string): Promise<{ success: boolean; 
       console.warn('Could not delete foyer table rows:', err);
     }
 
-    // 10. Real-time broadcast deletion
+    // 10. Broadcast profile changes so active clients immediately remove deleted accounts
+    if (cleanedProfiles.length > 0) {
+      try {
+        const profilesChannel = supabase.channel('duobudget_profiles_channel_v2');
+        profilesChannel.send({
+          type: 'broadcast',
+          event: 'user_profiles_changed',
+          payload: { profiles: cleanedProfiles }
+        });
+      } catch {}
+    }
+
+    // 11. Real-time broadcast deletion to sync and admin channels
     try {
       const channel = supabase.channel('foyer_sync_channel');
       channel.send({
         type: 'broadcast',
         event: 'foyer_deleted',
-        payload: { foyerId }
+        payload: { foyerId, deletedUsernames: memberUsernames }
       });
     } catch {
       // Best effort broadcast
@@ -646,7 +725,7 @@ export async function deleteFoyer(foyerId: string): Promise<{ success: boolean; 
       adminChannel.send({
         type: 'broadcast',
         event: 'foyer_deleted',
-        payload: { foyerId }
+        payload: { foyerId, deletedUsernames: memberUsernames }
       });
     } catch {}
 

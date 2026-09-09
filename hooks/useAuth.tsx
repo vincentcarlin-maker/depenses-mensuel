@@ -420,13 +420,41 @@ export const useAuth = () => {
             })
             .subscribe();
 
+        const foyerSyncChannel = supabase.channel('foyer_sync_channel_auth')
+            .on('broadcast', { event: 'foyer_deleted' }, (payload: any) => {
+                const data = payload?.payload || payload;
+                const deletedFoyerId = data?.foyerId;
+                const deletedUsernames: string[] = (data?.deletedUsernames || []).map((u: string) => u.toLowerCase().trim());
+
+                if (deletedFoyerId) {
+                    setProfiles(prev => prev.filter(p => {
+                        const pFoyerId = p.foyer_id;
+                        const pUser = p.username?.toLowerCase().trim();
+                        if (pUser === 'vincent' || pUser === 'sophie') return true;
+                        if (pFoyerId === deletedFoyerId) return false;
+                        if (deletedUsernames.includes(pUser)) return false;
+                        return true;
+                    }));
+
+                    // If currently logged in user belongs to deleted foyer, log out
+                    const curUserNorm = username ? username.toLowerCase().trim() : '';
+                    if (curUserNorm && curUserNorm !== 'vincent' && curUserNorm !== 'sophie') {
+                        if (deletedUsernames.includes(curUserNorm) || currentFoyer?.id === deletedFoyerId) {
+                            logout();
+                        }
+                    }
+                }
+            })
+            .subscribe();
+
         const intervalId = setInterval(fetchProfilesFromCloud, 10000);
 
         return () => {
             supabase.removeChannel(channel);
+            supabase.removeChannel(foyerSyncChannel);
             clearInterval(intervalId);
         };
-    }, [setProfiles]);
+    }, [setProfiles, username, currentFoyer, logout]);
 
     // Check if active user profile has been blocked by admin
     useEffect(() => {
@@ -989,10 +1017,10 @@ export const useAuth = () => {
 
             setLoginHistory(prev => [newLogEntry, ...prev]);
 
-            supabase.from('login_logs').insert({
+            (supabase.from('login_logs') as any).insert({
                 user_name: String(profile.user),
                 timestamp: newLogEntry.timestamp
-            }).then(({ error }) => {
+            }).then(({ error }: any) => {
                 if (!error) {
                      sessionStorage.setItem(`last_visit_log_v3_${profile.user}`, Date.now().toString());
                 }
@@ -1016,6 +1044,7 @@ export const useAuth = () => {
         password: string;
         foyerName: string;
         color?: string;
+        email?: string;
     }): Promise<{ success: boolean; error?: string; foyer?: Foyer }> => {
         const normalizedUsername = params.username.toLowerCase().trim();
 
@@ -1023,10 +1052,13 @@ export const useAuth = () => {
             return { success: false, error: 'Cet identifiant est déjà utilisé par un autre compte. Veuillez en choisir un autre.' };
         }
 
+        const cleanEmail = params.email?.trim() || undefined;
+
         const createRes = await createNewFoyer(params.foyerName, {
             name: params.name,
             username: normalizedUsername,
-            color: params.color
+            color: params.color,
+            email: cleanEmail
         });
 
         if (!createRes.success || !createRes.foyer) {
@@ -1041,11 +1073,23 @@ export const useAuth = () => {
             foyer_name: createRes.foyer.name,
             foyer_code: createRes.foyer.code,
             color: params.color || '#0ea5e9',
+            email: cleanEmail
         };
 
         const updated = [...profiles, newProfile];
         setProfiles(updated);
         syncProfilesToCloud(updated);
+
+        // Save email pointer if present
+        if (cleanEmail) {
+            try {
+                await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_email_${cleanEmail.toLowerCase()}`);
+                await (supabase.from('push_subscriptions') as any).insert({
+                    user_id: `profile_email_${cleanEmail.toLowerCase()}`,
+                    subscription: newProfile
+                });
+            } catch {}
+        }
 
         // Initialize strictly 3 categories for the new foyer: Dépenses récurrentes, Courses, Carburant
         const initialCategories = ["Dépenses récurrentes", "Courses", "Carburant"];
@@ -1092,6 +1136,7 @@ export const useAuth = () => {
         password: string;
         inviteCode: string;
         color?: string;
+        email?: string;
     }): Promise<{ success: boolean; error?: string; foyer?: Foyer }> => {
         const normalizedUsername = params.username.toLowerCase().trim();
 
@@ -1099,10 +1144,13 @@ export const useAuth = () => {
             return { success: false, error: 'Cet identifiant est déjà utilisé par un autre compte. Veuillez en choisir un autre.' };
         }
 
+        const cleanEmail = params.email?.trim() || undefined;
+
         const joinRes = await joinFoyerWithCode(params.inviteCode, {
             name: params.name,
             username: normalizedUsername,
-            color: params.color
+            color: params.color,
+            email: cleanEmail
         });
 
         if (!joinRes.success || !joinRes.foyer) {
@@ -1117,11 +1165,23 @@ export const useAuth = () => {
             foyer_name: joinRes.foyer.name,
             foyer_code: joinRes.foyer.code,
             color: params.color || '#ec4899',
+            email: cleanEmail
         };
 
         const updated = [...profiles, newProfile];
         setProfiles(updated);
         syncProfilesToCloud(updated);
+
+        // Save email pointer if present
+        if (cleanEmail) {
+            try {
+                await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_email_${cleanEmail.toLowerCase()}`);
+                await (supabase.from('push_subscriptions') as any).insert({
+                    user_id: `profile_email_${cleanEmail.toLowerCase()}`,
+                    subscription: newProfile
+                });
+            } catch {}
+        }
 
         // Auto login
         const oneYearFromNow = Date.now() + 365 * 24 * 60 * 60 * 1000;

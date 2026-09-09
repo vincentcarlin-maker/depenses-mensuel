@@ -1014,6 +1014,7 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
     return (
       p.username.toLowerCase().includes(term) ||
       (p.user && p.user.toLowerCase().includes(term)) ||
+      (p.email && p.email.toLowerCase().includes(term)) ||
       (p.foyer_id && p.foyer_id.toLowerCase().includes(term))
     );
   });
@@ -1254,7 +1255,7 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
                             </span>
                           </div>
                           <p className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate">
-                            Rôle : {p.user || p.username}
+                            Rôle : {p.user || p.username} {p.email ? `• ✉️ ${p.email}` : ''}
                           </p>
                         </div>
                       </div>

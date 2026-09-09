@@ -11,6 +11,7 @@ export interface FoyerMember {
   id: string;
   name: string;
   username: string;
+  email?: string;
   color?: string;
   role?: 'admin' | 'member';
   joined_at?: string;
