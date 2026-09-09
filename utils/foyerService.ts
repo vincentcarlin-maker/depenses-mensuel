@@ -388,8 +388,22 @@ export async function removeMemberFromFoyer(
   // Clean up user profile for removed member (unless Vincent / Sophie)
   if (normalizedUsername !== 'vincent' && normalizedUsername !== 'sophie') {
     try {
-      // 1. Delete individual profile row from Supabase
+      // 1. Delete individual profile row and any email/oauth lookup rows from Supabase
       await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_${normalizedUsername}`);
+
+      const { data: allProfileRows } = await (supabase.from('push_subscriptions') as any)
+        .select('user_id, subscription')
+        .like('user_id', 'profile_%');
+
+      if (Array.isArray(allProfileRows)) {
+        for (const row of allProfileRows) {
+          if (row.subscription?.username?.toLowerCase().trim() === normalizedUsername) {
+            await (supabase.from('push_subscriptions') as any)
+              .delete()
+              .eq('user_id', row.user_id);
+          }
+        }
+      }
 
       // 2. Remove from app_user_profiles_v2
       const { data: globalData } = await (supabase.from('push_subscriptions') as any)
@@ -610,9 +624,11 @@ export async function deleteFoyer(foyerId: string): Promise<{ success: boolean; 
       localStorage.removeItem(`moneyPotTransactions_${foyerId}`);
     } catch {}
 
-    // 4. If deleted foyer was currently active in localStorage, reset to default
+    // 4. If deleted foyer was currently active in localStorage, remove active foyer key
     if (getStoredActiveFoyerId() === foyerId) {
-      setStoredActiveFoyerId(DEFAULT_FOYER_ID);
+      try {
+        localStorage.removeItem('duobudget_active_foyer_id');
+      } catch {}
     }
 
     // 5. Clean up Supabase push_subscriptions (foyer registration, code, settings)

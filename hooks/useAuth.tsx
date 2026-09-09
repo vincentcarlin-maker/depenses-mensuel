@@ -375,7 +375,7 @@ export const useAuth = () => {
 
                 // Fetch individually saved profiles first (safe against overwrites)
                 const { data: individualRows } = await (supabase.from('push_subscriptions') as any)
-                    .select('subscription')
+                    .select('user_id, subscription')
                     .like('user_id', 'profile_%');
 
                 // Also fetch global app_user_profiles_v2
@@ -389,6 +389,10 @@ export const useAuth = () => {
 
                 if (Array.isArray(individualRows)) {
                     for (const row of individualRows) {
+                        // Skip lookup rows (like profile_email_ or profile_oauth_) so they aren't parsed as primary profile records
+                        if (row.user_id && (row.user_id.startsWith('profile_email_') || row.user_id.startsWith('profile_oauth_'))) {
+                            continue;
+                        }
                         if (row.subscription && row.subscription.username) {
                             const gp = row.subscription as Profile;
                             const fid = gp.foyer_id;
@@ -480,7 +484,7 @@ export const useAuth = () => {
             })
             .subscribe();
 
-        const foyerSyncChannel = supabase.channel('foyer_sync_channel_auth')
+        const foyerSyncChannel = supabase.channel('foyer_sync_channel')
             .on('broadcast', { event: 'foyer_deleted' }, (payload: any) => {
                 const data = payload?.payload || payload;
                 const deletedFoyerId = data?.foyerId;
@@ -496,8 +500,8 @@ export const useAuth = () => {
                         return true;
                     }));
 
-                    // If currently logged in user belongs to deleted foyer, log out
-                    const curUserNorm = username ? username.toLowerCase().trim() : '';
+                    // If currently logged in user belongs to deleted foyer or deleted usernames, log out immediately
+                    const curUserNorm = username ? username.toLowerCase().trim() : (typeof user === 'string' ? user.toLowerCase().trim() : '');
                     if (curUserNorm && curUserNorm !== 'vincent' && curUserNorm !== 'sophie') {
                         if (deletedUsernames.includes(curUserNorm) || currentFoyer?.id === deletedFoyerId) {
                             logout();
@@ -514,16 +518,19 @@ export const useAuth = () => {
             supabase.removeChannel(foyerSyncChannel);
             clearInterval(intervalId);
         };
-    }, [setProfiles, username, currentFoyer, logout]);
+    }, [setProfiles, username, user, currentFoyer, logout]);
 
-    // Check if active user profile has been blocked by admin or removed
+    // Check if active user profile has been blocked by admin
     useEffect(() => {
-        if (user) {
+        if (user && profiles.length > 0) {
             const currentNorm = username ? username.toLowerCase().trim() : (typeof user === 'string' ? user.toLowerCase().trim() : '');
             if (currentNorm && currentNorm !== 'vincent' && currentNorm !== 'sophie') {
                 const currentProfile = profiles.find(p => p.username?.toLowerCase().trim() === currentNorm);
+                
+                // If profile is explicitly blocked by admin
                 if (currentProfile && currentProfile.blocked) {
                     logout();
+                    return;
                 }
             }
         }
@@ -1367,13 +1374,28 @@ export const useAuth = () => {
             return false; // Impossible de supprimer l'administrateur principal
         }
         
-        // 1. Delete individual profile row from Supabase push_subscriptions
+        // 1. Delete individual profile row and any email/oauth lookup rows from Supabase push_subscriptions
         try {
             await (supabase.from('push_subscriptions') as any)
                 .delete()
                 .eq('user_id', `profile_${normalizedUsername}`);
+
+            // Find any email or OAuth lookup rows that reference this username and delete them
+            const { data: allProfileRows } = await (supabase.from('push_subscriptions') as any)
+                .select('user_id, subscription')
+                .like('user_id', 'profile_%');
+
+            if (Array.isArray(allProfileRows)) {
+                for (const row of allProfileRows) {
+                    if (row.subscription?.username?.toLowerCase().trim() === normalizedUsername) {
+                        await (supabase.from('push_subscriptions') as any)
+                            .delete()
+                            .eq('user_id', row.user_id);
+                    }
+                }
+            }
         } catch (e) {
-            console.warn(`Could not delete profile_${normalizedUsername} from Supabase:`, e);
+            console.warn(`Could not delete profile rows for ${normalizedUsername} from Supabase:`, e);
         }
 
         // 2. Remove member from current foyer ONLY if currentFoyer actually has this member
@@ -1622,33 +1644,9 @@ export const useAuth = () => {
             return await closeFoyer();
         }
 
-        // 1. Remove from foyer members list
-        const res = await removeMemberFromFoyer(currentFoyer.id, currentUsername);
-        if (!res.success) {
-            return { success: false, error: res.error || 'Impossible de quitter le foyer.' };
-        }
-
-        // 2. Update profile to be associated with DEFAULT_FOYER
-        const updatedProfiles = profiles.map(p => {
-            if (p.username.toLowerCase().trim() === currentUsername) {
-                return {
-                    ...p,
-                    foyer_id: DEFAULT_FOYER_ID,
-                    foyer_name: DEFAULT_FOYER.name,
-                    foyer_code: DEFAULT_FOYER.code
-                };
-            }
-            return p;
-        });
-        setProfiles(updatedProfiles);
-        await syncProfilesToCloud(updatedProfiles);
-
-        // 3. Switch active foyer back to DEFAULT_FOYER
-        setCurrentFoyer(DEFAULT_FOYER);
-        setStoredActiveFoyerId(DEFAULT_FOYER_ID);
-
-        return { success: true };
-    }, [user, currentFoyer, profiles, setProfiles, syncProfilesToCloud, closeFoyer]);
+        // Pour un membre classique, quitter le foyer supprime définitivement son compte et le déconnecte
+        return await deleteOwnAccount();
+    }, [user, currentFoyer, closeFoyer, deleteOwnAccount]);
 
     // Only the exact account "vincent" is Super Administrator (never Vincent1, VincentA, etc.)
     const normalizedUsername = username ? username.toLowerCase().trim() : '';

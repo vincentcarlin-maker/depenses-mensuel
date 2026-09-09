@@ -626,7 +626,7 @@ const UserManagement: React.FC<{
                 title={isFoyerAdmin ? "⚠️ Fermeture & Sortie du Foyer" : "Quitter le foyer"}
                 message={isFoyerAdmin 
                     ? "Attention danger : En tant qu'administrateur, quitter ce foyer entraînera sa fermeture définitive ainsi que la suppression complète et irréversible de l'ensemble de ses données (dépenses, cagnottes, rappels et comptes membres). Souhaitez-vous continuer ?"
-                    : "Êtes-vous sûr de vouloir quitter ce foyer ? Vos dépenses personnelles ne seront plus associées à ce foyer et vous serez redirigé vers le foyer principal par défaut."
+                    : "Êtes-vous sûr de vouloir quitter ce foyer ? En quittant le foyer, votre compte sera définitivement supprimé et vous serez déconnecté."
                 }
             />
 
