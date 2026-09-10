@@ -133,27 +133,205 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
   const formattedDatePart = dateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
   const formattedTimePart = dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
-  const renderDiffLine = (label: string, oldVal: any, newVal: any, isCurrency = false) => {
-      if (oldVal === newVal || oldVal === undefined) return null;
-      const formatVal = (val: any) => {
-          if (val === undefined || val === null) return "Inconnu";
-          if (isCurrency && typeof val === 'number') return val.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
-          return String(val);
-      };
-      return (
-          <div className="flex flex-col text-[11px] mt-2 bg-slate-100 dark:bg-slate-700/50 p-2 rounded-lg border border-slate-200 dark:border-slate-600">
-             <span className="text-[9px] uppercase text-slate-500 dark:text-slate-400 font-bold mb-1">{label}</span>
-             <div className="grid grid-cols-[min-content_1fr] gap-x-2 gap-y-0.5">
-                 <span className="text-[8px] uppercase text-rose-500 font-bold self-center bg-rose-50 dark:bg-rose-900/20 px-1 py-0.5 rounded">AVANT</span>
-                 <span className="text-slate-500 dark:text-slate-400 line-through self-center break-all">{formatVal(oldVal)}</span>
-                 <span className="text-[8px] uppercase text-emerald-600 dark:text-emerald-400 font-bold self-center bg-emerald-50 dark:bg-emerald-900/20 px-1 py-0.5 rounded">APRÈS</span>
-                 <span className="font-bold text-slate-800 dark:text-slate-100 self-center break-all">{formatVal(newVal)}</span>
-             </div>
-          </div>
-      );
+  const getUserColor = (u: User | string) => {
+    const theme = resolveUserTheme(u, foyerMembers);
+    return theme.textClass;
   };
 
-  const getUserColor = (u: User) => u === User.Sophie ? 'text-pink-600 dark:text-pink-400' : (u === User.Vincent ? 'text-sky-600 dark:text-sky-400' : 'text-purple-600 dark:text-purple-400');
+  const renderActivityChanges = (act: Activity) => {
+    if (act.type === 'add') {
+      return (
+        <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex flex-wrap gap-1.5 text-xs">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-200/50 dark:border-emerald-800/40">
+            <span>Montant :</span>
+            <span>{Math.abs(act.expense.amount ?? expense.amount).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+          </span>
+          {act.expense.category && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-200 font-medium">
+              <span className="text-[10px] text-slate-400 font-bold uppercase">Cat.</span>
+              <span>{act.expense.category}</span>
+            </span>
+          )}
+          {act.expense.subtracted_items && act.expense.subtracted_items.length > 0 && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 font-medium border border-amber-200/50 dark:border-amber-800/40">
+              <ScissorsIcon className="w-3 h-3 inline" />
+              <span>{act.expense.subtracted_items.length} article(s) déduit(s)</span>
+            </span>
+          )}
+        </div>
+      );
+    }
+
+    if (act.type === 'delete') {
+      return (
+        <div className="mt-2 pt-2 border-t border-rose-200/60 dark:border-rose-900/60 flex flex-wrap gap-1.5 text-xs">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-bold border border-rose-200/50 dark:border-rose-800/40">
+            <span>Dépense supprimée ({Math.abs(act.expense.amount ?? expense.amount).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})</span>
+          </span>
+        </div>
+      );
+    }
+
+    // Type === 'update'
+    const oldExp = act.oldExpense;
+    const newExp = act.expense;
+
+    if (!oldExp) {
+      return (
+        <div className="mt-1.5 text-[11px] text-slate-400 dark:text-slate-500 italic">
+          Détails de la transaction mis à jour
+        </div>
+      );
+    }
+
+    const changeRows: React.ReactNode[] = [];
+
+    // 1. Montant
+    if (oldExp.amount !== undefined && newExp.amount !== undefined && oldExp.amount !== newExp.amount) {
+      changeRows.push(
+        <div key="amount" className="flex items-center justify-between gap-2 py-1 text-xs">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Montant</span>
+          <div className="flex items-center gap-1.5 font-bold">
+            <span className="text-rose-500 dark:text-rose-400 line-through bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.5 rounded-md text-[11px]">
+              {Math.abs(oldExp.amount).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+            </span>
+            <span className="text-slate-400 text-xs">➔</span>
+            <span className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded-md text-xs font-black">
+              {Math.abs(newExp.amount).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // 2. Catégorie
+    if (oldExp.category && newExp.category && oldExp.category !== newExp.category) {
+      changeRows.push(
+        <div key="category" className="flex items-center justify-between gap-2 py-1 text-xs">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Catégorie</span>
+          <div className="flex items-center gap-1.5 font-bold">
+            <span className="text-rose-500 dark:text-rose-400 line-through bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.5 rounded-md text-[11px]">
+              {oldExp.category}
+            </span>
+            <span className="text-slate-400 text-xs">➔</span>
+            <span className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded-md text-xs font-black">
+              {newExp.category}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // 3. Description
+    if (oldExp.description && newExp.description && oldExp.description !== newExp.description) {
+      changeRows.push(
+        <div key="description" className="flex flex-col gap-0.5 py-1 text-xs">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Description</span>
+          <div className="flex items-center gap-1.5 font-medium flex-wrap">
+            <span className="text-rose-500 dark:text-rose-400 line-through bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.5 rounded-md text-[11px] break-all">
+              {oldExp.description}
+            </span>
+            <span className="text-slate-400 text-xs">➔</span>
+            <span className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded-md text-xs font-bold break-all">
+              {newExp.description}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // 4. Payé par
+    if (oldExp.user && newExp.user && oldExp.user !== newExp.user) {
+      changeRows.push(
+        <div key="user" className="flex items-center justify-between gap-2 py-1 text-xs">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Payé par</span>
+          <div className="flex items-center gap-1.5 font-bold">
+            <span className="text-rose-500 dark:text-rose-400 line-through bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.5 rounded-md text-[11px]">
+              {oldExp.user}
+            </span>
+            <span className="text-slate-400 text-xs">➔</span>
+            <span className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded-md text-xs font-black">
+              {newExp.user}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // 5. Date
+    if (oldExp.date && newExp.date) {
+      const oldD = new Date(oldExp.date);
+      const newD = new Date(newExp.date);
+      if (Math.abs(oldD.getTime() - newD.getTime()) > 60000) {
+        const fmtOld = oldD.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ' ' + oldD.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        const fmtNew = newD.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ' ' + newD.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        changeRows.push(
+          <div key="date" className="flex items-center justify-between gap-2 py-1 text-xs">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Date</span>
+            <div className="flex items-center gap-1.5 font-bold">
+              <span className="text-rose-500 dark:text-rose-400 line-through bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.5 rounded-md text-[11px]">
+                {fmtOld}
+              </span>
+              <span className="text-slate-400 text-xs">➔</span>
+              <span className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded-md text-xs font-black">
+                {fmtNew}
+              </span>
+            </div>
+          </div>
+        );
+      }
+    }
+
+    // 6. Subtracted items (Articles déduits ou supprimés du ticket)
+    const oldItems = oldExp.subtracted_items || [];
+    const newItems = newExp.subtracted_items || [];
+    
+    // Articles déduits supprimés
+    oldItems.forEach((oldIt, idx) => {
+      const stillExists = newItems.some(n => n.description === oldIt.description && Math.abs(n.amount - oldIt.amount) < 0.01);
+      if (!stillExists) {
+        changeRows.push(
+          <div key={`del_item_${idx}`} className="flex items-center gap-1.5 py-1 text-xs text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 p-2 rounded-xl border border-rose-200/50 dark:border-rose-900/50">
+            <span className="font-extrabold text-sm">🗑️</span>
+            <div className="flex-1 min-w-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider block text-rose-500">Article déduit supprimé</span>
+              <span className="font-medium line-through">{oldIt.description} ({oldIt.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})</span>
+            </div>
+          </div>
+        );
+      }
+    });
+
+    // Articles déduits ajoutés
+    newItems.forEach((newIt, idx) => {
+      const wasExisting = oldItems.some(o => o.description === newIt.description && Math.abs(o.amount - newIt.amount) < 0.01);
+      if (!wasExisting) {
+        changeRows.push(
+          <div key={`add_item_${idx}`} className="flex items-center gap-1.5 py-1 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-2 rounded-xl border border-emerald-200/50 dark:border-emerald-900/50">
+            <span className="font-extrabold text-sm">➕</span>
+            <div className="flex-1 min-w-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider block text-emerald-500">Article déduit ajouté</span>
+              <span className="font-bold">{newIt.description} ({newIt.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })})</span>
+            </div>
+          </div>
+        );
+      }
+    });
+
+    if (changeRows.length === 0) {
+      return (
+        <div className="mt-1.5 text-[11px] text-slate-400 dark:text-slate-500 italic">
+          Mise à jour des informations
+        </div>
+      );
+    }
+
+    return (
+      <div className="mt-2.5 pt-2 border-t border-slate-200/70 dark:border-slate-700/70 space-y-1">
+        {changeRows}
+      </div>
+    );
+  };
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[150] flex justify-center items-center p-4">
@@ -315,28 +493,47 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
             </div>
 
             {history && history.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {history.map(act => (
-                  <div key={act.id} className="bg-slate-50 dark:bg-slate-700/40 p-3 rounded-2xl flex items-center justify-between text-xs sm:text-sm border border-slate-100 dark:border-slate-700/50">
-                    <div className="font-bold">
-                      <span className={getUserColor(act.performedBy)}>{act.performedBy}</span>
-                      <span className="text-slate-500 font-normal"> a {act.type === 'add' ? 'ajouté' : 'modifié'}</span>
+                  <div key={act.id} className="bg-slate-50 dark:bg-slate-700/40 p-3.5 rounded-2xl text-xs sm:text-sm border border-slate-100 dark:border-slate-700/60 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <div className="font-bold flex items-center gap-1.5">
+                        <span className={getUserColor(act.performedBy)}>{act.performedBy}</span>
+                        <span className="text-slate-500 dark:text-slate-400 font-normal">
+                          {act.type === 'add' ? 'a créé la transaction' : act.type === 'delete' ? 'a supprimé la transaction' : 'a modifié la transaction'}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                        {new Date(act.timestamp).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} à {new Date(act.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
-                    <span className="text-[11px] text-slate-400 font-medium">
-                      {new Date(act.timestamp).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} à {new Date(act.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                    {renderActivityChanges(act)}
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="bg-slate-50 dark:bg-slate-700/40 p-3 rounded-2xl flex items-center justify-between text-xs sm:text-sm border border-slate-100 dark:border-slate-700/50">
-                <div className="font-bold">
-                  <span className={getUserColor(expense.user)}>{expense.user}</span>
-                  <span className="text-slate-500 font-normal"> a ajouté</span>
+              <div className="bg-slate-50 dark:bg-slate-700/40 p-3.5 rounded-2xl text-xs sm:text-sm border border-slate-100 dark:border-slate-700/60 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <span className={getUserColor(expense.user)}>{expense.user}</span>
+                    <span className="text-slate-500 dark:text-slate-400 font-normal"> a créé la transaction</span>
+                  </div>
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                    {new Date(expense.created_at || expense.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} à {new Date(expense.created_at || expense.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
                 </div>
-                <span className="text-[11px] text-slate-400 font-medium">
-                  {new Date(expense.created_at || expense.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} à {new Date(expense.created_at || expense.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                </span>
+                <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex flex-wrap gap-1.5 text-xs">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-200/50 dark:border-emerald-800/40">
+                    <span>Montant :</span>
+                    <span>{Math.abs(expense.amount).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+                  </span>
+                  {expense.category && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-200 font-medium">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">Cat.</span>
+                      <span>{expense.category}</span>
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </div>

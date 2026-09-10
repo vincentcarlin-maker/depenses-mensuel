@@ -101,12 +101,12 @@ DROP POLICY IF EXISTS "Allow all access" ON public.money_pot;
 DROP POLICY IF EXISTS "Allow all access" ON public.activities;
 DROP POLICY IF EXISTS "Allow all access" ON public.app_settings;
 
-CREATE POLICY "Allow all access" ON public.expenses FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access" ON public.reminders FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access" ON public.login_logs FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access" ON public.money_pot FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access" ON public.activities FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access" ON public.app_settings FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all access" ON public.expenses FOR ALL TO anon, authenticated, public USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all access" ON public.reminders FOR ALL TO anon, authenticated, public USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all access" ON public.login_logs FOR ALL TO anon, authenticated, public USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all access" ON public.money_pot FOR ALL TO anon, authenticated, public USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all access" ON public.activities FOR ALL TO anon, authenticated, public USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all access" ON public.app_settings FOR ALL TO anon, authenticated, public USING (true) WITH CHECK (true);
 
 -- 9. MULTI-UTILISATEURS & ISOLATION DES FOYERS (App Store / Déploiement)
 -- Ajoute la colonne 'foyer_id' pour séparer les données de chaque foyer/couple

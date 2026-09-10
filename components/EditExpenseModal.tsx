@@ -8,6 +8,7 @@ import SegmentedControl from './SegmentedControl';
 import PiggyBankIcon from './icons/PiggyBankIcon';
 import ScissorsIcon from './icons/ScissorsIcon';
 import CalendarDaysIcon from './icons/CalendarDaysIcon';
+import ItemDeductionSection from './ItemDeductionSection';
 import { 
     MandatoryIcon, 
     FuelIcon, 
@@ -670,165 +671,33 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                         )}
 
                         {['Courses', 'Divers'].includes(category) && (
-                            <div className="animate-fade-in mt-4">
-                                <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/80 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-700/60">
-                                    <label htmlFor="edit-toggle-sub" className="font-bold text-sm text-slate-800 dark:text-slate-200 cursor-pointer flex items-center gap-2">
-                                        <ScissorsIcon />
-                                        <span>Déduire des articles ?</span>
-                                    </label>
-                                    <button
-                                        type="button"
-                                        id="edit-toggle-sub"
-                                        onClick={() => setShowSubtractions(!showSubtractions)}
-                                        className={`${showSubtractions ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none`}
-                                        role="switch"
-                                        aria-checked={showSubtractions}
-                                    >
-                                        <span className={`${showSubtractions ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`} />
-                                    </button>
-                                </div>
+                            <ItemDeductionSection
+                                showSubtractions={showSubtractions}
+                                setShowSubtractions={setShowSubtractions}
+                                subtractedItems={subtractedItems}
+                                setSubtractedItems={setSubtractedItems}
+                                receiptTotal={receiptTotal}
+                                setReceiptTotal={setReceiptTotal}
+                                categories={categories}
+                                currentCategory={category}
+                            />
+                        )}
+
+                        {['Courses', 'Divers'].includes(category) && showSubtractions && category === 'Divers' && (
+                            <div className="mt-3">
+                                <label htmlFor="edit-divers-subtraction-description" className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Description de la dépense</label>
+                                <input
+                                    type="text"
+                                    id="edit-divers-subtraction-description"
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                    className="block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl font-semibold sm:text-base"
+                                    placeholder="Ex: Action, Leroy Merlin..."
+                                />
                             </div>
                         )}
 
-                        {['Courses', 'Divers'].includes(category) && showSubtractions ? (
-                            <div className="animate-fade-in space-y-4">
-                                 <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-700/60 space-y-4">
-                                    <div className="flex items-center gap-2 text-slate-800 dark:text-slate-200 font-bold text-sm">
-                                      <ScissorsIcon />
-                                      <h4>Articles à déduire</h4>
-                                    </div>
-                                     {subtractedItems.length > 0 && (
-                                      <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
-                                        <div className="flex justify-between items-center text-xs text-slate-500 pb-1">
-                                          <button type="button" onClick={() => setSelectedItems(selectedItems.length === subtractedItems.length ? [] : subtractedItems.map((_, i) => i))} className="hover:text-blue-600 font-semibold">
-                                            {selectedItems.length === subtractedItems.length ? 'Désélectionner tout' : 'Tout sélectionner'}
-                                          </button>
-                                          {selectedItems.length > 0 && (
-                                            <button type="button" onClick={() => {
-                                              setSubtractedItems(subtractedItems.filter((_, i) => !selectedItems.includes(i)));
-                                              setSelectedItems([]);
-                                            }} className="text-red-500 hover:text-red-700 font-semibold">
-                                              Supprimer la sélection ({selectedItems.length})
-                                            </button>
-                                          )}
-                                        </div>
-                                        {subtractedItems.map((item, index) => (
-                                          <div key={index} 
-                                               className={`p-3 rounded-xl border transition-colors space-y-2 ${item.is_subtracted !== false ? 'bg-red-50/70 dark:bg-red-900/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600'}`}>
-                                            <div className="flex items-center justify-between">
-                                              <div className="flex items-center gap-2">
-                                                  <input type="checkbox" checked={selectedItems.includes(index)} onChange={(e) => {
-                                                    if (e.target.checked) setSelectedItems([...selectedItems, index]);
-                                                    else setSelectedItems(selectedItems.filter(i => i !== index));
-                                                  }} className="rounded text-blue-600 focus:ring-blue-500" />
-                                                  <div className="flex flex-col cursor-pointer" onClick={() => handleToggleSubtractedItem(index)}>
-                                                      <span className={`text-sm ${item.is_subtracted !== false ? 'text-red-700 dark:text-red-300 font-medium line-through opacity-70' : 'text-slate-800 dark:text-slate-100'}`}>{item.description}</span>
-                                                      {item.category && <span className="text-[10px] text-slate-400 dark:text-slate-400">{item.category}</span>}
-                                                  </div>
-                                              </div>
-                                              <div className="flex items-center gap-2">
-                                                <span className={`text-sm font-bold ${item.is_subtracted !== false ? 'text-red-700 dark:text-red-300' : 'text-slate-800 dark:text-slate-100'}`}>{item.amount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})}</span>
-                                                <button type="button" onClick={() => handleRemoveSubtractedItem(index)} className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full">
-                                                  <TrashIcon />
-                                                </button>
-                                              </div>
-                                            </div>
-
-                                            {/* Destination category config */}
-                                            <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-2 border-t border-slate-200/60 dark:border-slate-600/60">
-                                              <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
-                                                <span className="text-slate-500 dark:text-slate-400 font-semibold text-[11px]">➡️ Réattribuer dans :</span>
-                                                <select 
-                                                  value={item.target_category || ''} 
-                                                  onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    const updated = [...subtractedItems];
-                                                    updated[index].target_category = val || undefined;
-                                                    updated[index].create_expense = (val && !updated[index].expense_created) ? true : false;
-                                                    setSubtractedItems(updated);
-                                                  }}
-                                                  className="px-2 py-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-500 rounded-lg text-xs text-slate-800 dark:text-slate-100 font-semibold focus:ring-1 focus:ring-blue-500"
-                                                >
-                                                  <option value="">Aucune (déduction seule)</option>
-                                                  {categories.filter(c => c !== category).map(c => (
-                                                    <option key={c} value={c}>{c}</option>
-                                                  ))}
-                                                </select>
-                                              </div>
-
-                                              {item.target_category && (
-                                                <div className="flex items-center gap-2">
-                                                  {item.expense_created && (
-                                                    <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded-full">
-                                                      ✓ Dépense créée
-                                                    </span>
-                                                  )}
-                                                  <label className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 font-bold cursor-pointer bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800/50">
-                                                    <input 
-                                                      type="checkbox" 
-                                                      checked={item.create_expense === true} 
-                                                      onChange={(e) => {
-                                                        const updated = [...subtractedItems];
-                                                        updated[index].create_expense = e.target.checked;
-                                                        setSubtractedItems(updated);
-                                                      }}
-                                                      className="rounded text-emerald-600 focus:ring-emerald-500"
-                                                    />
-                                                    <span>{item.expense_created ? 'Recréer la dépense' : 'Créer la dépense'}</span>
-                                                  </label>
-                                                </div>
-                                              )}
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                     )}
-
-                                     <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                                       <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">Ajouter un article à déduire :</span>
-                                       <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-                                         <div className="sm:col-span-4">
-                                             <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Article</label>
-                                             <input ref={itemDescriptionInputRef} type="text" value={itemDescription} onChange={e => setItemDescription(e.target.value)} onKeyDown={handleItemInputKeyDown} placeholder="Ex: Sweat Nathan" className="block w-full px-3 py-2 bg-white dark:bg-slate-700 text-sm rounded-xl border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100 font-semibold"/>
-                                         </div>
-                                         <div className="sm:col-span-3">
-                                             <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Montant (€)</label>
-                                             <input type="text" inputMode="decimal" value={itemAmount} onChange={e => setItemAmount(e.target.value)} onKeyDown={handleItemInputKeyDown} placeholder="0,00" className="block w-full px-3 py-2 bg-white dark:bg-slate-700 text-sm rounded-xl border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100 font-semibold"/>
-                                         </div>
-                                         <div className="sm:col-span-4">
-                                             <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Nouvelle Catégorie</label>
-                                             <select value={itemTargetCategory} onChange={e => setItemTargetCategory(e.target.value)} className="block w-full px-3 py-2 bg-white dark:bg-slate-700 text-sm rounded-xl border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100 font-semibold">
-                                                 <option value="">Déduction seule</option>
-                                                 {categories.filter(c => c !== category).map(cat => (
-                                                     <option key={cat} value={cat}>{cat}</option>
-                                                 ))}
-                                             </select>
-                                         </div>
-                                         <div className="sm:col-span-1 flex justify-end">
-                                             <button type="button" onClick={handleAddSubtractedItem} className="w-full py-2 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 flex items-center justify-center gap-1 shadow-sm">+</button>
-                                         </div>
-                                       </div>
-                                     </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div><label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-1.5">Ticket (€)</label><input type="text" inputMode="decimal" value={receiptTotal} onChange={e => setReceiptTotal(e.target.value)} className="block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl font-bold sm:text-base"/></div>
-                                    <div><label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-1.5">Montant final</label><input type="text" value={finalCalculatedAmount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})} readOnly className="block w-full px-4 py-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-900/40 rounded-2xl font-extrabold sm:text-base"/></div>
-                                </div>
-                                {category === 'Divers' && (
-                                    <div>
-                                        <label htmlFor="edit-divers-subtraction-description" className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Description de la dépense</label>
-                                        <input
-                                            type="text"
-                                            id="edit-divers-subtraction-description"
-                                            value={description}
-                                            onChange={(e) => setDescription(e.target.value)}
-                                            className="block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl font-semibold sm:text-base"
-                                            placeholder="Ex: Action, Leroy Merlin..."
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
+                        {!showSubtractions && (
                             <div className="space-y-4">
                                 {category === 'Chauffage' && (
                                     <div className="animate-fade-in">

@@ -101,6 +101,9 @@ const Header: React.FC<HeaderProps> = ({
                const newD = newDesc.length > 15 ? newDesc.substring(0, 12) + '...' : newDesc;
                changes.push(`${oldD} ➔ ${newD}`);
           }
+          if (old.category && curr.category && old.category !== curr.category) {
+               changes.push(`${old.category} ➔ ${curr.category}`);
+          }
           
           return (
               <div className="flex-grow min-w-0">

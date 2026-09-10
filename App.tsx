@@ -707,6 +707,12 @@ const MainApp: React.FC<{
       timestamp: new Date().toISOString(),
       foyer_id: activeFoyerId,
     };
+
+    // 1. Optimistically update local state & broadcast for real-time sync across devices
+    setActivities(prev => mergeAndDedupeActivities(prev, [newActivity]));
+    broadcastChange('activities', 'INSERT', newActivity, user);
+
+    // 2. Persist to Supabase with fallback and graceful error logging
     let { error } = await supabase.from('activities').insert(newActivity);
     if (error && (error.code === 'PGRST204' || error.message?.includes('foyer_id'))) {
       const { foyer_id: _, ...fallbackActivity } = newActivity;
@@ -714,11 +720,10 @@ const MainApp: React.FC<{
       error = res.error;
     }
     if (error) {
-      console.error("Failed to log activity:", error.message);
-      return null;
+      console.warn("Activity saved locally (Supabase write note):", error.message);
     }
     return id;
-  }, [activeFoyerId]);
+  }, [activeFoyerId, mergeAndDedupeActivities, broadcastChange, user]);
 
   // Multi-route Unified Push Notification Dispatcher (Sequential single-route dispatch to avoid duplicate triggers)
   const dispatchPushNotification = useCallback(async (payload: { type: 'add' | 'delete' | 'update' | 'moneypot'; expense?: any; moneyPotTransaction?: any; performedBy?: string; foyer_id?: string }) => {
@@ -1600,7 +1605,15 @@ const MainApp: React.FC<{
           setExpenseToView(exp);
         }}
       />
-      {expenseToView && (<ExpenseDetailModal expense={expenseToView} history={expenseHistory} onClose={() => setExpenseToView(null)} onEdit={() => { setExpenseToEdit(expenseToView); setExpenseToView(null); }} />)}
+      {expenseToView && (
+        <ExpenseDetailModal 
+          expense={expenseToView} 
+          history={expenseHistory} 
+          foyerMembers={currentFoyer?.members}
+          onClose={() => setExpenseToView(null)} 
+          onEdit={() => { setExpenseToEdit(expenseToView); setExpenseToView(null); }} 
+        />
+      )}
       {expenseToEdit && (
         <EditExpenseModal 
           expense={expenseToEdit} 

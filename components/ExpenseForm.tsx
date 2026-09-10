@@ -8,6 +8,7 @@ import PiggyBankIcon from './icons/PiggyBankIcon';
 import ScissorsIcon from './icons/ScissorsIcon';
 import TrashIcon from './icons/TrashIcon';
 import CalendarDaysIcon from './icons/CalendarDaysIcon';
+import ItemDeductionSection from './ItemDeductionSection';
 import { 
     MandatoryIcon, 
     FuelIcon, 
@@ -666,137 +667,19 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             )}
 
             {['Courses', 'Divers'].includes(category) && (
-                <div className="animate-fade-in mt-4">
-                    <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-700/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
-                        <label htmlFor="toggle-subtractions" className="font-medium text-slate-700 dark:text-slate-200 cursor-pointer flex items-center gap-2">
-                            <ScissorsIcon />
-                            <span>Déduire des articles personnels ?</span>
-                        </label>
-                        <button
-                            type="button"
-                            id="toggle-subtractions"
-                            onClick={() => setShowSubtractions(!showSubtractions)}
-                            className={`${showSubtractions ? 'bg-brand-600' : 'bg-slate-300 dark:bg-slate-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800`}
-                            role="switch"
-                            aria-checked={showSubtractions}
-                        >
-                            <span className={`${showSubtractions ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`} />
-                        </button>
-                    </div>
-                </div>
+                <ItemDeductionSection
+                    showSubtractions={showSubtractions}
+                    setShowSubtractions={setShowSubtractions}
+                    subtractedItems={subtractedItems}
+                    setSubtractedItems={setSubtractedItems}
+                    receiptTotal={receiptTotal}
+                    setReceiptTotal={setReceiptTotal}
+                    categories={categories}
+                    currentCategory={category}
+                />
             )}
-            
-            {['Courses', 'Divers'].includes(category) && showSubtractions ? (
-              <div className="animate-fade-in space-y-4">
-                 <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-700 space-y-4">
-                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                      <ScissorsIcon />
-                      <h4 className="font-semibold">Articles à déduire</h4>
-                    </div>
 
-                     {subtractedItems.length > 0 && (
-                      <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
-                        {subtractedItems.map((item, index) => (
-                          <div key={index} 
-                               className={`p-2.5 rounded-lg border transition-colors space-y-2 ${item.is_subtracted !== false ? 'bg-red-50/70 dark:bg-red-900/20 border-red-200 dark:border-red-800' : 'bg-white dark:bg-slate-600 border-slate-200 dark:border-slate-500'}`}>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2 cursor-pointer" onClick={() => handleToggleSubtractedItem(index)}>
-                                  <input type="checkbox" checked={item.is_subtracted !== false} readOnly className="rounded text-brand-500 focus:ring-brand-500" />
-                                  <div className="flex flex-col">
-                                      <span className={`text-sm ${item.is_subtracted !== false ? 'text-red-700 dark:text-red-300 font-medium line-through opacity-70' : 'text-slate-700 dark:text-slate-200'}`}>{item.description}</span>
-                                      {item.category && <span className="text-[10px] text-slate-400 dark:text-slate-400">{item.category}</span>}
-                                  </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className={`text-sm font-bold ${item.is_subtracted !== false ? 'text-red-700 dark:text-red-300' : 'text-slate-800 dark:text-slate-100'}`}>{item.amount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})}</span>
-                                <button type="button" onClick={(e) => { e.stopPropagation(); handleRemoveSubtractedItem(index); }} className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full">
-                                  <TrashIcon />
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Destination category config */}
-                            <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-1.5 border-t border-slate-200/60 dark:border-slate-600/60">
-                              <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
-                                <span className="text-slate-500 dark:text-slate-400 font-medium text-[11px]">➡️ Réattribuer dans :</span>
-                                <select 
-                                  value={item.target_category || ''} 
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    const updated = [...subtractedItems];
-                                    updated[index].target_category = val || undefined;
-                                    updated[index].create_expense = val ? true : false;
-                                    setSubtractedItems(updated);
-                                  }}
-                                  className="px-2 py-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-500 rounded text-xs text-slate-800 dark:text-slate-100 font-medium focus:ring-1 focus:ring-brand-500"
-                                >
-                                  <option value="">Aucune (déduction seule)</option>
-                                  {categories.filter(c => c !== category).map(c => (
-                                    <option key={c} value={c}>{c}</option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              {item.target_category && (
-                                <label className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 font-semibold cursor-pointer bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/50">
-                                  <input 
-                                    type="checkbox" 
-                                    checked={item.create_expense === true} 
-                                    onChange={(e) => {
-                                      const updated = [...subtractedItems];
-                                      updated[index].create_expense = e.target.checked;
-                                      setSubtractedItems(updated);
-                                    }}
-                                    className="rounded text-emerald-600 focus:ring-emerald-500"
-                                  />
-                                  <span>Créer la dépense</span>
-                                </label>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 block">Ajouter un article à déduire :</span>
-                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-                        <div className="sm:col-span-4">
-                            <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">Article</label>
-                            <input ref={itemDescriptionInputRef} type="text" value={itemDescription} onChange={e => setItemDescription(e.target.value)} onKeyDown={handleItemInputKeyDown} placeholder="Ex: Sweat Nathan" className="block w-full px-2.5 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border border-slate-300 dark:border-slate-500 text-slate-800 dark:text-slate-100"/>
-                        </div>
-                        <div className="sm:col-span-3">
-                            <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">Montant (€)</label>
-                            <input type="text" inputMode="decimal" value={itemAmount} onChange={e => setItemAmount(e.target.value)} onKeyDown={handleItemInputKeyDown} placeholder="0.00" className="block w-full px-2.5 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border border-slate-300 dark:border-slate-500 text-slate-800 dark:text-slate-100"/>
-                        </div>
-                        <div className="sm:col-span-4">
-                            <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">Nouvelle Catégorie</label>
-                            <select value={itemTargetCategory} onChange={e => setItemTargetCategory(e.target.value)} className="block w-full px-2.5 py-1.5 bg-white dark:bg-slate-600 text-sm rounded-md border border-slate-300 dark:border-slate-500 text-slate-800 dark:text-slate-100">
-                                <option value="">Déduction seule (sans création)</option>
-                                {categories.filter(c => c !== category).map(cat => (
-                                    <option key={cat} value={cat}>{cat}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="sm:col-span-1 flex justify-end">
-                            <button type="button" onClick={handleAddSubtractedItem} className="w-full py-1.5 bg-brand-500 text-white text-sm font-semibold rounded-md hover:bg-brand-600 flex items-center justify-center gap-1 shadow-sm">+</button>
-                        </div>
-                      </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Ticket (€)</label>
-                        <input type="text" inputMode="decimal" value={receiptTotal} onChange={e => setReceiptTotal(e.target.value)} className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg font-semibold"/>
-                    </div>
-                     <div>
-                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Montant final</label>
-                        <input type="text" value={finalCalculatedAmount.toLocaleString('fr-FR', {style: 'currency', currency: 'EUR'})} readOnly className="block w-full px-3 py-2.5 bg-slate-200 dark:bg-slate-600 text-brand-600 dark:text-brand-400 border-transparent rounded-lg font-bold"/>
-                    </div>
-                </div>
-              </div>
-            ) : (
+            {!showSubtractions && (
                 <div className="animate-fade-in space-y-4">
                   {category === 'Chauffage' && (
                       <div className="animate-fade-in">
