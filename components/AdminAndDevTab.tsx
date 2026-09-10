@@ -39,6 +39,59 @@ import {
   LeafOutlineIcon,
   DumbbellOutlineIcon
 } from './icons/CategoryIcons';
+import ChevronRightIcon from './icons/ChevronRightIcon';
+import ArrowLeftIcon from './icons/ArrowLeftIcon';
+
+// --- Reusable Settings-Style Menu Row Component ---
+const AdminMenuItemRow: React.FC<{
+  iconBg: string;
+  iconColor: string;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  value?: string | React.ReactNode;
+  titleColor?: string;
+  badge?: string;
+  badgeColor?: string;
+  onClick: () => void;
+}> = ({ iconBg, iconColor, icon, title, description, value, titleColor, badge, badgeColor, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="w-full flex items-center justify-between p-3.5 sm:p-4.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60 text-left focus:outline-none focus:bg-slate-50 dark:focus:bg-slate-800/60 group cursor-pointer"
+  >
+    <div className="flex items-center gap-3 min-w-0 pr-2">
+      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 ${iconBg} ${iconColor} transition-transform group-hover:scale-105`}>
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className={`font-bold text-sm sm:text-base leading-snug break-words ${titleColor || 'text-slate-900 dark:text-slate-100'}`}>
+          {title}
+        </p>
+        <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 font-medium leading-tight mt-0.5 line-clamp-2">
+          {description}
+        </p>
+      </div>
+    </div>
+    <div className="flex items-center gap-2 shrink-0">
+      {badge && (
+        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${badgeColor || 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'}`}>
+          {badge}
+        </span>
+      )}
+      {value && typeof value === 'string' ? (
+        <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">
+          {value}
+        </span>
+      ) : (
+        value
+      )}
+      <div className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
+        <ChevronRightIcon className="w-5 h-5" />
+      </div>
+    </div>
+  </button>
+);
 
 // --- Category Icon Management Section Component ---
 const CategoryIconManagementSection: React.FC<{
@@ -671,8 +724,7 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
   // Active Admin Tab & Sub-menus
-  const [activeAdminTab, setActiveAdminTab] = useState<'messages' | 'foyers' | 'database' | 'config' | 'diagnostics' | 'all'>('messages');
-  const [isMasterMenuOpen, setIsMasterMenuOpen] = useState(false);
+  const [activeAdminTab, setActiveAdminTab] = useState<'menu' | 'messages' | 'foyers' | 'database' | 'config' | 'diagnostics' | 'all'>('menu');
   const [foyersSubTab, setFoyersSubTab] = useState<'foyers' | 'accounts' | 'sessions' | 'all'>('foyers');
   const [databaseSubTab, setDatabaseSubTab] = useState<'supabase' | 'migrations' | 'sync' | 'push' | 'all'>('supabase');
   const [configSubTab, setConfigSubTab] = useState<'maintenance' | 'icons' | 'cache' | 'all'>('maintenance');
@@ -1074,628 +1126,335 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
     );
   });
 
+  const adminTabTitles: Record<string, string> = {
+    messages: 'Boîte de réception Support',
+    foyers: 'Foyers & Utilisateurs',
+    database: 'Base de données & Synchronisation',
+    config: 'Outils & Configuration',
+    diagnostics: 'Diagnostics & Sécurité',
+    all: 'Toutes les rubriques (Vue complète)'
+  };
+
   return (
     <div className="space-y-5 animate-fade-in pb-12">
-      {/* Header matching Apparence & Utilisateurs style */}
-      <div className="space-y-1 pt-1 pb-1">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Administration & Développement
-          </h1>
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
-            ADMIN
-          </span>
-        </div>
-        <p className="text-slate-500 dark:text-slate-400 font-medium text-xs sm:text-sm">
-          Centre de supervision technique et gestion multi-foyers réservé à Vincent
-        </p>
-      </div>
+      {/* ========================================================= */}
+      {/* SETTINGS-STYLE ADMIN MENU (when activeAdminTab === 'menu') */}
+      {/* ========================================================= */}
+      {activeAdminTab === 'menu' && (
+        <div className="space-y-5 animate-fade-in">
+          {/* Header matching Réglages tab */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                Administration & Dév
+              </h1>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                ADMIN
+              </span>
+            </div>
+            <p className="text-slate-500 dark:text-slate-400 font-medium text-xs sm:text-sm">
+              Espace réservé à Vincent • Centre de contrôle technique, support et base de données
+            </p>
+          </div>
 
-      {/* ========================================================= */}
-      {/* TOP QUICK STATUS PILL BAR                                 */}
-      {/* ========================================================= */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-2.5 sm:p-3 border border-slate-100/90 dark:border-slate-700/60 shadow-xs">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-bold">
-          {/* Supabase status */}
-          <button
-            type="button"
+          {/* Quick System Status Card */}
+          <div
             onClick={() => {
               setActiveAdminTab('database');
               setDatabaseSubTab('supabase');
             }}
-            className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-50/80 hover:bg-blue-50/70 dark:bg-slate-700/40 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer transition-colors text-left"
-            title="Aller au sous-menu Supabase"
+            className="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 flex items-center justify-between transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/90 cursor-pointer group"
           >
-            <div className="flex items-center gap-2 truncate">
-              <span className="text-base shrink-0">🗄️</span>
-              <span className={`w-2 h-2 rounded-full shrink-0 ${dbStatus === 'connected' ? 'bg-emerald-500' : dbStatus === 'checking' ? 'bg-amber-500 animate-ping' : 'bg-rose-500'}`} />
-              <span className="truncate">{dbStatus === 'connected' ? 'Supabase' : dbStatus === 'checking' ? 'Vérif...' : 'Supabase HS'}</span>
-            </div>
-            {latencyMs !== null && dbStatus === 'connected' && (
-              <span className="text-[10px] text-slate-400 font-mono ml-auto shrink-0">{latencyMs}ms</span>
-            )}
-          </button>
-
-          {/* Push status */}
-          <button
-            type="button"
-            onClick={() => {
-              setActiveAdminTab('database');
-              setDatabaseSubTab('push');
-            }}
-            className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-50/80 hover:bg-blue-50/70 dark:bg-slate-700/40 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer transition-colors text-left"
-            title="Aller au sous-menu Push & Notifications"
-          >
-            <div className="flex items-center gap-2 truncate">
-              <span className="text-base shrink-0">📡</span>
-              <span className={`w-2 h-2 rounded-full shrink-0 ${pushPermission === 'granted' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-              <span className="truncate">{pushPermission === 'granted' ? 'Push actif' : 'Push en attente'}</span>
-            </div>
-          </button>
-
-          {/* Synchro status */}
-          <button
-            type="button"
-            onClick={() => {
-              setActiveAdminTab('database');
-              setDatabaseSubTab('sync');
-            }}
-            className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-50/80 hover:bg-blue-50/70 dark:bg-slate-700/40 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer transition-colors text-left"
-            title="Aller au sous-menu Synchronisation Cloud"
-          >
-            <div className="flex items-center gap-2 truncate">
-              <span className="text-base shrink-0">🔄</span>
-              <span className="truncate">Synchro Cloud</span>
-            </div>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 ml-auto shrink-0" />
-          </button>
-
-          {/* Maintenance status */}
-          <button
-            type="button"
-            onClick={() => {
-              setActiveAdminTab('config');
-              setConfigSubTab('maintenance');
-            }}
-            className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-50/80 hover:bg-amber-50/70 dark:bg-slate-700/40 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer transition-colors text-left"
-            title="Aller au sous-menu Mode Maintenance"
-          >
-            <div className="flex items-center gap-2 truncate">
-              <span className="text-base shrink-0">🛠️</span>
-              <span className="truncate">{isMaintenanceMode ? 'Maintenance ON' : 'Accès public'}</span>
-            </div>
-            <span className={`w-2 h-2 rounded-full ml-auto shrink-0 ${isMaintenanceMode ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
-          </button>
-        </div>
-      </div>
-
-      {/* ========================================================= */}
-      {/* ADMIN NAVIGATION MENU & MENU HUB                          */}
-      {/* ========================================================= */}
-      <div className="space-y-3">
-        {/* Main Menu Bar */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-2.5 sm:p-3 border border-slate-200/80 dark:border-slate-700/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-2.5">
-          {/* Left: Active Section & Menu Hub Trigger */}
-          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-            <button
-              type="button"
-              onClick={() => setIsMasterMenuOpen(!isMasterMenuOpen)}
-              className={`px-3.5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer shadow-3xs ${
-                isMasterMenuOpen
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600'
-              }`}
-            >
-              <span>{isMasterMenuOpen ? '✕' : '☰'}</span>
-              <span>{isMasterMenuOpen ? 'Fermer le menu' : 'Menu Administration'}</span>
-              <span className="text-[10px] opacity-80 font-normal">▼</span>
-            </button>
-
-            {/* Current Section Badge */}
-            <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-700/50 text-xs font-bold text-slate-700 dark:text-slate-200 border border-slate-200/50 dark:border-slate-600/40">
-              <span className="text-slate-400 dark:text-slate-500 font-semibold text-[10px] uppercase tracking-wider hidden xs:inline">
-                Rubrique :
-              </span>
-              <span className="font-extrabold text-blue-600 dark:text-blue-400">
-                {activeAdminTab === 'messages' && '💬 Messages & Support'}
-                {activeAdminTab === 'foyers' && '🏠 Foyers & Utilisateurs'}
-                {activeAdminTab === 'database' && '🗄️ Base & Synchronisation'}
-                {activeAdminTab === 'config' && '🛠️ Outils & Configuration'}
-                {activeAdminTab === 'diagnostics' && '🩺 Diagnostics & Sécurité'}
-                {activeAdminTab === 'all' && '📋 Vue Globale (Tout)'}
-              </span>
-              {activeAdminTab === 'messages' && unreadAdminCount > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 rounded-md text-[10px] bg-amber-500 text-white font-black animate-pulse">
-                  {unreadAdminCount} en attente
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Right: Direct Menu Selector Dropdown & Global View */}
-          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-            {/* Quick Select Menu */}
-            <div className="relative flex-1 sm:flex-initial">
-              <select
-                value={
-                  activeAdminTab === 'messages' ? 'messages'
-                  : activeAdminTab === 'foyers' ? `foyers:${foyersSubTab}`
-                  : activeAdminTab === 'database' ? `database:${databaseSubTab}`
-                  : activeAdminTab === 'config' ? `config:${configSubTab}`
-                  : activeAdminTab === 'diagnostics' ? `diagnostics:${diagnosticsSubTab}`
-                  : 'all'
-                }
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setIsMasterMenuOpen(false);
-                  if (val === 'all') {
-                    setActiveAdminTab('all');
-                  } else if (val.startsWith('foyers:')) {
-                    setActiveAdminTab('foyers');
-                    setFoyersSubTab(val.split(':')[1] as any);
-                  } else if (val.startsWith('database:')) {
-                    setActiveAdminTab('database');
-                    setDatabaseSubTab(val.split(':')[1] as any);
-                  } else if (val.startsWith('config:')) {
-                    setActiveAdminTab('config');
-                    setConfigSubTab(val.split(':')[1] as any);
-                  } else if (val.startsWith('diagnostics:')) {
-                    setActiveAdminTab('diagnostics');
-                    setDiagnosticsSubTab(val.split(':')[1] as any);
-                  } else if (val === 'messages') {
-                    setActiveAdminTab('messages');
-                  }
-                }}
-                className="w-full sm:w-auto px-3 py-2 rounded-xl text-xs font-extrabold bg-slate-50 dark:bg-slate-700/70 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-100 cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-blue-500/30"
-              >
-                <optgroup label="💬 Support & Contact">
-                  <option value="messages">💬 Boîte de réception {unreadAdminCount > 0 ? `(${unreadAdminCount} non lus)` : ''}</option>
-                </optgroup>
-                <optgroup label="🏠 Foyers & Utilisateurs">
-                  <option value="foyers:foyers">🏠 Foyers partagés ({foyersCount})</option>
-                  <option value="foyers:accounts">👤 Comptes & Mots de passe ({profiles.length})</option>
-                  <option value="foyers:sessions">🔐 Sessions & Foyers inactifs</option>
-                </optgroup>
-                <optgroup label="🗄️ Base de données & Synchro">
-                  <option value="database:supabase">🗄️ Statut Supabase & Connexion</option>
-                  <option value="database:migrations">⚡ Scripts & Migrations SQL</option>
-                  <option value="database:sync">🔄 Synchronisation Cloud</option>
-                  <option value="database:push">📡 Serveur Web Push</option>
-                </optgroup>
-                <optgroup label="🛠️ Outils & Configuration">
-                  <option value="config:maintenance">🛠️ Mode Maintenance {isMaintenanceMode ? '(ON)' : ''}</option>
-                  <option value="config:icons">🏷️ Icônes de Catégorie</option>
-                  <option value="config:cache">💾 Cache & Stockage technique</option>
-                </optgroup>
-                <optgroup label="🩺 Diagnostics & Sécurité">
-                  <option value="diagnostics:logs">📊 Journaux & Alertes système</option>
-                  <option value="diagnostics:environment">💻 Environnement & Système</option>
-                  <option value="diagnostics:danger">⚠️ Zone critique & Purge</option>
-                </optgroup>
-                <optgroup label="📋 Vue Complète">
-                  <option value="all">📋 Tout afficher sur une page</option>
-                </optgroup>
-              </select>
-            </div>
-
-            {/* Quick Toggle Global View */}
-            <button
-              type="button"
-              onClick={() => {
-                setIsMasterMenuOpen(false);
-                setActiveAdminTab(activeAdminTab === 'all' ? 'messages' : 'all');
-              }}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-                activeAdminTab === 'all'
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300'
-              }`}
-              title={activeAdminTab === 'all' ? 'Revenir à la vue ciblée' : 'Afficher toutes les rubriques ensemble'}
-            >
-              <span>{activeAdminTab === 'all' ? '🔍 Vue ciblée' : '📋 Tout voir'}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* ========================================================= */}
-        {/* EXPANDED MASTER MENU HUB (BENTO DIRECTORY)                */}
-        {/* ========================================================= */}
-        {isMasterMenuOpen && (
-          <div className="bg-white dark:bg-slate-800 rounded-3xl p-4 sm:p-6 border-2 border-blue-200 dark:border-blue-900/60 shadow-lg space-y-5 animate-fade-in">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/60 pb-3">
-              <div>
-                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-                  <span>📂</span>
-                  <span>Menu Principal d'Administration</span>
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                  Sélectionnez directement une rubrique ou un sous-menu pour y accéder instantanément.
+            <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-black text-xl flex items-center justify-center shrink-0 border border-indigo-100 dark:border-indigo-900/40">
+                ⚡
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-extrabold text-slate-900 dark:text-slate-100 text-sm sm:text-base truncate">
+                    Système DuoBudget Cloud
+                  </h3>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black ${
+                    dbStatus === 'connected'
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                      : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
+                  }`}>
+                    ● {dbStatus === 'connected' ? 'En ligne' : 'Vérification'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
+                  Supabase {latencyMs ? `(${latencyMs}ms)` : ''} • {foyersCount} foyer{foyersCount > 1 ? 's' : ''} • {profiles.length} comptes {unreadAdminCount > 0 ? `• 📬 ${unreadAdminCount} msg` : ''}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsMasterMenuOpen(false)}
-                className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-extrabold hover:bg-slate-200 cursor-pointer"
-              >
-                ✕ Fermer
-              </button>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              {/* 1. Support & Messages */}
-              <div className="bg-sky-50/50 dark:bg-slate-700/30 rounded-2xl p-3.5 border border-sky-100 dark:border-slate-700/70 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-sky-900 dark:text-sky-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <span>💬</span>
-                    <span>Support & Messages</span>
-                  </span>
-                  {unreadAdminCount > 0 && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white animate-pulse">
-                      {unreadAdminCount} nouveau{unreadAdminCount > 1 ? 'x' : ''}
-                    </span>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('messages');
-                      setIsMasterMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'messages'
-                        ? 'bg-sky-500 text-white shadow-xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-sky-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>📬</span>
-                      <span>Boîte de réception</span>
-                    </span>
-                    <span className="text-[11px] opacity-80">{contactMessages.length} msg</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* 2. Foyers & Utilisateurs */}
-              <div className="bg-indigo-50/50 dark:bg-slate-700/30 rounded-2xl p-3.5 border border-indigo-100 dark:border-slate-700/70 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-indigo-900 dark:text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <span>🏠</span>
-                    <span>Foyers & Utilisateurs</span>
-                  </span>
-                  <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
-                    {foyersCount} foyers
-                  </span>
-                </div>
-                <div className="space-y-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('foyers');
-                      setFoyersSubTab('foyers');
-                      setIsMasterMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'foyers' && foyersSubTab === 'foyers'
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-indigo-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>🏠</span>
-                      <span>Foyers partagés</span>
-                    </span>
-                    <span className="text-[11px] opacity-80">{foyersCount}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('foyers');
-                      setFoyersSubTab('accounts');
-                      setIsMasterMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'foyers' && foyersSubTab === 'accounts'
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-indigo-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>👤</span>
-                      <span>Comptes & Mots de passe</span>
-                    </span>
-                    <span className="text-[11px] opacity-80">{profiles.length}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('foyers');
-                      setFoyersSubTab('sessions');
-                      setIsMasterMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'foyers' && foyersSubTab === 'sessions'
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-indigo-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>🔐</span>
-                      <span>Purger foyers inactifs</span>
-                    </span>
-                    <span className="text-[11px] opacity-80">Sécurité</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* 3. Base de données & Synchronisation */}
-              <div className="bg-blue-50/50 dark:bg-slate-700/30 rounded-2xl p-3.5 border border-blue-100 dark:border-slate-700/70 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-blue-900 dark:text-blue-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <span>🗄️</span>
-                    <span>Base & Synchronisation</span>
-                  </span>
-                  <span className={`w-2 h-2 rounded-full ${dbStatus === 'connected' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                </div>
-                <div className="space-y-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('database');
-                      setDatabaseSubTab('supabase');
-                      setIsMasterMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'database' && databaseSubTab === 'supabase'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-blue-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>🗄️</span>
-                      <span>Statut & Connexion Supabase</span>
-                    </span>
-                    <span className="text-[11px] opacity-80">{dbStatus === 'connected' ? 'OK' : 'HS'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('database');
-                      setDatabaseSubTab('migrations');
-                      setIsMasterMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'database' && databaseSubTab === 'migrations'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-blue-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>⚡</span>
-                      <span>Scripts & Migrations SQL</span>
-                    </span>
-                    <span className="text-[11px] opacity-80">SQL</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('database');
-                      setDatabaseSubTab('sync');
-                      setIsMasterMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'database' && databaseSubTab === 'sync'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-blue-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>🔄</span>
-                      <span>Synchronisation Cloud</span>
-                    </span>
-                    <span className="text-[11px] opacity-80">Sync</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('database');
-                      setDatabaseSubTab('push');
-                      setIsMasterMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'database' && databaseSubTab === 'push'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-blue-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>📡</span>
-                      <span>Serveur Push & Notifications</span>
-                    </span>
-                    <span className="text-[11px] opacity-80">VAPID</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* 4. Outils & Configuration */}
-              <div className="bg-amber-50/50 dark:bg-slate-700/30 rounded-2xl p-3.5 border border-amber-100 dark:border-slate-700/70 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-amber-900 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <span>🛠️</span>
-                    <span>Outils & Configuration</span>
-                  </span>
-                  {isMaintenanceMode && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white animate-pulse">
-                      Maintenance ON
-                    </span>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('config');
-                      setConfigSubTab('maintenance');
-                      setIsMasterMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'config' && configSubTab === 'maintenance'
-                        ? 'bg-amber-600 text-white shadow-xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-amber-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>🛠️</span>
-                      <span>Mode Maintenance</span>
-                    </span>
-                    <span className="text-[11px] opacity-80">{isMaintenanceMode ? 'Actif' : 'Off'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('config');
-                      setConfigSubTab('icons');
-                      setIsMasterMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'config' && configSubTab === 'icons'
-                        ? 'bg-amber-600 text-white shadow-xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-amber-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>🏷️</span>
-                      <span>Icônes de Catégorie</span>
-                    </span>
-                    <span className="text-[11px] opacity-80">Design</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('config');
-                      setConfigSubTab('cache');
-                      setIsMasterMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'config' && configSubTab === 'cache'
-                        ? 'bg-amber-600 text-white shadow-xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-amber-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>💾</span>
-                      <span>Cache & Stockage technique</span>
-                    </span>
-                    <span className="text-[11px] opacity-80">Purge</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* 5. Diagnostics & Sécurité */}
-              <div className="bg-rose-50/50 dark:bg-slate-700/30 rounded-2xl p-3.5 border border-rose-100 dark:border-slate-700/70 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-rose-900 dark:text-rose-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <span>🩺</span>
-                    <span>Diagnostics & Sécurité</span>
-                  </span>
-                  {errorLogs.length > 0 && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white">
-                      {errorLogs.length} logs
-                    </span>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('diagnostics');
-                      setDiagnosticsSubTab('logs');
-                      setIsMasterMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'diagnostics' && diagnosticsSubTab === 'logs'
-                        ? 'bg-rose-600 text-white shadow-xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-rose-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>📊</span>
-                      <span>Journaux & Alertes système</span>
-                    </span>
-                    <span className="text-[11px] opacity-80">{errorLogs.length}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('diagnostics');
-                      setDiagnosticsSubTab('environment');
-                      setIsMasterMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'diagnostics' && diagnosticsSubTab === 'environment'
-                        ? 'bg-rose-600 text-white shadow-xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-rose-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>💻</span>
-                      <span>Environnement & Système</span>
-                    </span>
-                    <span className="text-[11px] opacity-80">PWA</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveAdminTab('diagnostics');
-                      setDiagnosticsSubTab('danger');
-                      setIsMasterMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                      activeAdminTab === 'diagnostics' && diagnosticsSubTab === 'danger'
-                        ? 'bg-rose-600 text-white shadow-xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-rose-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span>⚠️</span>
-                      <span>Zone critique & Danger</span>
-                    </span>
-                    <span className="text-[11px] opacity-80">Reset</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* 6. Vue globale */}
-              <div className="bg-slate-50/50 dark:bg-slate-700/30 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700/70 flex flex-col justify-between space-y-2">
-                <div>
-                  <span className="text-xs font-black text-slate-900 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <span>📋</span>
-                    <span>Vue Développeur Globale</span>
-                  </span>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1">
-                    Affiche toutes les sections d'administration sans pagination sur une seule page continue.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveAdminTab('all');
-                    setIsMasterMenuOpen(false);
-                  }}
-                  className={`w-full text-center py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                    activeAdminTab === 'all'
-                      ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500'
-                  }`}
-                >
-                  Afficher toutes les rubriques
-                </button>
-              </div>
+            <div className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors shrink-0">
+              <ChevronRightIcon className="w-5 h-5" />
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Section 1: Support & Assistance */}
+          <div className="space-y-2">
+            <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+              Support & Assistance
+            </h4>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
+              <AdminMenuItemRow
+                iconBg="bg-sky-50 dark:bg-sky-950/60"
+                iconColor="text-sky-600 dark:text-sky-400"
+                icon={<span className="text-xl">📬</span>}
+                title="Boîte de réception Support"
+                description="Consulter et répondre aux messages et questions des utilisateurs"
+                badge={unreadAdminCount > 0 ? `${unreadAdminCount} nouveau${unreadAdminCount > 1 ? 'x' : ''}` : undefined}
+                badgeColor="bg-amber-500 text-white"
+                value={`${contactMessages.length} msg`}
+                onClick={() => setActiveAdminTab('messages')}
+              />
+            </div>
+          </div>
+
+          {/* Section 2: Foyers & Utilisateurs */}
+          <div className="space-y-2">
+            <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+              Foyers & Utilisateurs
+            </h4>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
+              <AdminMenuItemRow
+                iconBg="bg-indigo-50 dark:bg-indigo-950/60"
+                iconColor="text-indigo-600 dark:text-indigo-400"
+                icon={<span className="text-xl">🏠</span>}
+                title="Foyers partagés"
+                description="Gérer les foyers existants, changer de foyer actif et créer des codes"
+                value={`${foyersCount} foyer${foyersCount > 1 ? 's' : ''}`}
+                onClick={() => {
+                  setActiveAdminTab('foyers');
+                  setFoyersSubTab('foyers');
+                }}
+              />
+              <AdminMenuItemRow
+                iconBg="bg-violet-50 dark:bg-violet-950/60"
+                iconColor="text-violet-600 dark:text-violet-400"
+                icon={<span className="text-xl">👤</span>}
+                title="Comptes & Mots de passe"
+                description="Liste des profils enregistrés, réinitialisation de mots de passe"
+                value={`${profiles.length} comptes`}
+                onClick={() => {
+                  setActiveAdminTab('foyers');
+                  setFoyersSubTab('accounts');
+                }}
+              />
+              <AdminMenuItemRow
+                iconBg="bg-slate-100 dark:bg-slate-700/60"
+                iconColor="text-slate-600 dark:text-slate-300"
+                icon={<span className="text-xl">🔐</span>}
+                title="Sessions & Foyers inactifs"
+                description="Historique des connexions récentes et purge des foyers sans données"
+                value="Sécurité"
+                onClick={() => {
+                  setActiveAdminTab('foyers');
+                  setFoyersSubTab('sessions');
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Section 3: Base de données & Synchro */}
+          <div className="space-y-2">
+            <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+              Base de données & Synchronisation
+            </h4>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
+              <AdminMenuItemRow
+                iconBg="bg-emerald-50 dark:bg-emerald-950/60"
+                iconColor="text-emerald-600 dark:text-emerald-400"
+                icon={<span className="text-xl">🗄️</span>}
+                title="Statut & Diagnostic Supabase"
+                description="Vérifier la connectivité aux tables PostgreSQL et la latence"
+                value={dbStatus === 'connected' ? 'En ligne' : 'Erreur'}
+                onClick={() => {
+                  setActiveAdminTab('database');
+                  setDatabaseSubTab('supabase');
+                }}
+              />
+              <AdminMenuItemRow
+                iconBg="bg-teal-50 dark:bg-teal-950/60"
+                iconColor="text-teal-600 dark:text-teal-400"
+                icon={<span className="text-xl">⚡</span>}
+                title="Scripts & Migrations SQL"
+                description="Schémas SQL prêts à exécuter pour les nouvelles fonctionnalités"
+                value="SQL"
+                onClick={() => {
+                  setActiveAdminTab('database');
+                  setDatabaseSubTab('migrations');
+                }}
+              />
+              <AdminMenuItemRow
+                iconBg="bg-cyan-50 dark:bg-cyan-950/60"
+                iconColor="text-cyan-600 dark:text-cyan-400"
+                icon={<span className="text-xl">🔄</span>}
+                title="Synchronisation Cloud"
+                description="Forcer la synchronisation manuelle et tester la persistance"
+                value="Sync"
+                onClick={() => {
+                  setActiveAdminTab('database');
+                  setDatabaseSubTab('sync');
+                }}
+              />
+              <AdminMenuItemRow
+                iconBg="bg-amber-50 dark:bg-amber-950/60"
+                iconColor="text-amber-600 dark:text-amber-400"
+                icon={<span className="text-xl">📡</span>}
+                title="Serveur Web Push (VAPID)"
+                description="Configuration des notifications push et envoi de push de test"
+                value={pushPermission === 'granted' ? 'Actif' : 'En attente'}
+                onClick={() => {
+                  setActiveAdminTab('database');
+                  setDatabaseSubTab('push');
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Section 4: Outils & Configuration */}
+          <div className="space-y-2">
+            <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+              Outils & Configuration
+            </h4>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
+              <AdminMenuItemRow
+                iconBg="bg-orange-50 dark:bg-orange-950/60"
+                iconColor="text-orange-600 dark:text-orange-400"
+                icon={<span className="text-xl">🛠️</span>}
+                title="Mode Maintenance"
+                description="Bloquer l'accès aux utilisateurs pendant les mises à jour"
+                badge={isMaintenanceMode ? 'Activé' : undefined}
+                badgeColor="bg-orange-500 text-white"
+                value={isMaintenanceMode ? 'Verrouillé' : 'Public'}
+                onClick={() => {
+                  setActiveAdminTab('config');
+                  setConfigSubTab('maintenance');
+                }}
+              />
+              <AdminMenuItemRow
+                iconBg="bg-fuchsia-50 dark:bg-fuchsia-950/60"
+                iconColor="text-fuchsia-600 dark:text-fuchsia-400"
+                icon={<span className="text-xl">🏷️</span>}
+                title="Icônes de Catégorie"
+                description="Bibliothèque d'icônes, import SVG/PNG et assignations personnalisées"
+                value="Design"
+                onClick={() => {
+                  setActiveAdminTab('config');
+                  setConfigSubTab('icons');
+                }}
+              />
+              <AdminMenuItemRow
+                iconBg="bg-blue-50 dark:bg-blue-950/60"
+                iconColor="text-blue-600 dark:text-blue-400"
+                icon={<span className="text-xl">💾</span>}
+                title="Cache & Stockage technique"
+                description="Vider le cache applicatif, IndexedDB et rafraîchir le Service Worker"
+                value={cacheSizeMb}
+                onClick={() => {
+                  setActiveAdminTab('config');
+                  setConfigSubTab('cache');
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Section 5: Diagnostics & Sécurité */}
+          <div className="space-y-2">
+            <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+              Diagnostics & Sécurité
+            </h4>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
+              <AdminMenuItemRow
+                iconBg="bg-rose-50 dark:bg-rose-950/60"
+                iconColor="text-rose-600 dark:text-rose-400"
+                icon={<span className="text-xl">📊</span>}
+                title="Journaux & Alertes système"
+                description="Journal des erreurs JavaScript et historique des alertes"
+                value={`${errorLogs.length} logs`}
+                onClick={() => {
+                  setActiveAdminTab('diagnostics');
+                  setDiagnosticsSubTab('logs');
+                }}
+              />
+              <AdminMenuItemRow
+                iconBg="bg-slate-100 dark:bg-slate-700/60"
+                iconColor="text-slate-600 dark:text-slate-300"
+                icon={<span className="text-xl">💻</span>}
+                title="Environnement & Système"
+                description="Détails du navigateur, mode PWA autonome et Service Worker"
+                value={isPwa ? 'PWA' : 'Navigateur'}
+                onClick={() => {
+                  setActiveAdminTab('diagnostics');
+                  setDiagnosticsSubTab('environment');
+                }}
+              />
+              <AdminMenuItemRow
+                iconBg="bg-red-50 dark:bg-red-950/60"
+                iconColor="text-red-600 dark:text-red-400"
+                icon={<span className="text-xl">⚠️</span>}
+                title="Zone critique & Danger"
+                description="Réinitialisation des jeux de données de test et purge d'urgence"
+                titleColor="text-red-600 dark:text-red-400"
+                value="Danger"
+                onClick={() => {
+                  setActiveAdminTab('diagnostics');
+                  setDiagnosticsSubTab('danger');
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Section 6: Vue Globale */}
+          <div className="space-y-2">
+            <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+              Affichage
+            </h4>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
+              <AdminMenuItemRow
+                iconBg="bg-slate-100 dark:bg-slate-700/60"
+                iconColor="text-slate-700 dark:text-slate-300"
+                icon={<span className="text-xl">📋</span>}
+                title="Afficher toutes les rubriques"
+                description="Dérouler toutes les sections d'administration sur une seule page continue"
+                value="Tout voir"
+                onClick={() => setActiveAdminTab('all')}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* TOP NAVIGATION BAR FOR SUB-VIEWS                           */}
+      {/* ========================================================= */}
+      {activeAdminTab !== 'menu' && (
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+          <button
+            type="button"
+            onClick={() => setActiveAdminTab('menu')}
+            className="px-3 py-1.5 -ml-2 rounded-xl text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors flex items-center gap-1.5 font-bold text-sm cursor-pointer"
+            aria-label="Retour au menu administration"
+          >
+            <ArrowLeftIcon className="w-4 h-4" />
+            <span>Menu Administration</span>
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider hidden sm:inline">
+              {adminTabTitles[activeAdminTab] || 'Administration'}
+            </span>
+            <button
+              type="button"
+              onClick={() => setActiveAdminTab('menu')}
+              className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-700/60 transition-colors cursor-pointer"
+            >
+              Menu ☰
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================= */}
       {/* 0. SECTION : MESSAGES REÇUS & SUPPORT (CONTACT)            */}
@@ -1783,9 +1542,9 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
               <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
                 <button
                   type="button"
-                  onClick={() => setIsMasterMenuOpen(true)}
+                  onClick={() => setActiveAdminTab('menu')}
                   className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-1 cursor-pointer transition-all"
-                  title="Ouvrir le menu principal"
+                  title="Revenir au menu principal"
                 >
                   <span>☰</span>
                   <span className="hidden xs:inline">Menu</span>
@@ -2059,9 +1818,9 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
               <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
                 <button
                   type="button"
-                  onClick={() => setIsMasterMenuOpen(true)}
+                  onClick={() => setActiveAdminTab('menu')}
                   className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-1 cursor-pointer transition-all"
-                  title="Ouvrir le menu principal"
+                  title="Revenir au menu principal"
                 >
                   <span>☰</span>
                   <span className="hidden xs:inline">Menu</span>
@@ -2409,9 +2168,9 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
               <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
                 <button
                   type="button"
-                  onClick={() => setIsMasterMenuOpen(true)}
+                  onClick={() => setActiveAdminTab('menu')}
                   className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-1 cursor-pointer transition-all"
-                  title="Ouvrir le menu principal"
+                  title="Revenir au menu principal"
                 >
                   <span>☰</span>
                   <span className="hidden xs:inline">Menu</span>
@@ -2612,9 +2371,9 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
               <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
                 <button
                   type="button"
-                  onClick={() => setIsMasterMenuOpen(true)}
+                  onClick={() => setActiveAdminTab('menu')}
                   className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-1 cursor-pointer transition-all"
-                  title="Ouvrir le menu principal"
+                  title="Revenir au menu principal"
                 >
                   <span>☰</span>
                   <span className="hidden xs:inline">Menu</span>
