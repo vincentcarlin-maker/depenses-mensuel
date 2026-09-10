@@ -21,34 +21,37 @@ interface ContactTabProps {
   currentUsername?: string;
 }
 
-const SUBJECT_OPTIONS: { id: ContactSubject; label: string; icon: string; desc: string; color: string }[] = [
+interface SubjectOption {
+  id: ContactSubject;
+  label: string;
+  desc: string;
+  image3D: string;
+}
+
+const SUBJECT_OPTIONS: SubjectOption[] = [
   {
     id: 'bug',
     label: 'Bug technique',
-    icon: '🐞',
-    desc: 'Un problème, affichage anormal ou dysfonctionnement',
-    color: 'hover:border-rose-300 dark:hover:border-rose-700 peer-checked:border-rose-500 peer-checked:bg-rose-50/50 dark:peer-checked:bg-rose-950/30',
+    desc: 'Signaler un problème',
+    image3D: '/contact-bug-3d.jpg',
   },
   {
     id: 'suggestion',
     label: 'Suggestion',
-    icon: '💡',
-    desc: 'Une idée de fonctionnalité ou d\'amélioration',
-    color: 'hover:border-purple-300 dark:hover:border-purple-700 peer-checked:border-purple-500 peer-checked:bg-purple-50/50 dark:peer-checked:bg-purple-950/30',
+    desc: 'Proposer une amélioration',
+    image3D: '/contact-suggestion-3d.jpg',
   },
   {
     id: 'question',
     label: 'Question / Aide',
-    icon: '❓',
-    desc: 'Besoin d\'assistance pour utiliser DuoBudget',
-    color: 'hover:border-sky-300 dark:hover:border-sky-700 peer-checked:border-sky-500 peer-checked:bg-sky-50/50 dark:peer-checked:bg-sky-950/30',
+    desc: 'Besoin d\'assistance',
+    image3D: '/contact-question-3d.jpg',
   },
   {
     id: 'other',
     label: 'Autre demande',
-    icon: '💬',
-    desc: 'Toute autre question ou mot pour le créateur',
-    color: 'hover:border-emerald-300 dark:hover:border-emerald-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-50/50 dark:peer-checked:bg-emerald-950/30',
+    desc: 'Contacter le créateur',
+    image3D: '/contact-chat-3d.jpg',
   },
 ];
 
@@ -64,7 +67,7 @@ export const ContactTab: React.FC<ContactTabProps> = ({
   currentUsername: _currentUsername = '',
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'new' | 'list'>(
-    unreadRepliesCount > 0 || userMessages.length > 0 ? 'list' : 'new'
+    unreadRepliesCount > 0 ? 'list' : 'new'
   );
 
   // Form State
@@ -91,17 +94,36 @@ export const ContactTab: React.FC<ContactTabProps> = ({
     }
   }, [expandedMessageId, onMarkAsRead]);
 
+  // Compute Device Summary
+  const getDeviceSummary = () => {
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    const ua = navigator.userAgent;
+    let os = 'Appareil';
+    if (/iPhone|iPad|iPod/.test(ua)) os = 'iPhone / iOS';
+    else if (/Android/.test(ua)) os = 'Android';
+    else if (/Macintosh|Mac OS X/.test(ua)) os = 'Mac';
+    else if (/Windows/.test(ua)) os = 'Windows';
+
+    let browser = '';
+    if (/Chrome/.test(ua) && !/Edge|Edg|OPR/.test(ua)) browser = 'Chrome';
+    else if (/Safari/.test(ua) && !/Chrome/.test(ua)) browser = 'Safari';
+    else if (/Firefox/.test(ua)) browser = 'Firefox';
+    else if (/Edg/.test(ua)) browser = 'Edge';
+
+    return `${os} • ${browser || 'Web'}${isPWA ? ' • PWA' : ''} (${window.innerWidth}x${window.innerHeight})`;
+  };
+
   // Handle Send Form
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
     if (!title.trim()) {
-      setFormError('Veuillez indiquer l\'objet de votre message.');
+      setFormError('Veuillez indiquer l\'objet de votre demande.');
       return;
     }
     if (!message.trim()) {
-      setFormError('Veuillez rédiger votre message.');
+      setFormError('Veuillez rédiger votre message détaillé.');
       return;
     }
 
@@ -125,7 +147,7 @@ export const ContactTab: React.FC<ContactTabProps> = ({
     if (res.success) {
       setTitle('');
       setMessage('');
-      setSuccessNotice('Votre message a bien été envoyé à Vincent. Vous recevrez sa réponse directement ici !');
+      setSuccessNotice('Votre message a bien été envoyé ! Vincent vous répondra directement ici.');
       setActiveSubTab('list');
       if (res.messageId) {
         setExpandedMessageId(res.messageId);
@@ -150,66 +172,91 @@ export const ContactTab: React.FC<ContactTabProps> = ({
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in pb-10">
-      {/* Top Header */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+    <div className="space-y-5 animate-fade-in max-w-2xl mx-auto w-full pb-10">
+      {/* Top Header matching screenshot */}
+      <div className="flex items-center justify-between gap-2.5 pt-1">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          {/* Round Back Button */}
           <button
             type="button"
             onClick={onBack}
-            className="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700/80 shadow-xs flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors shrink-0 cursor-pointer"
             title="Retour aux réglages"
           >
-            <ArrowLeftIcon className="w-5 h-5" />
+            <ArrowLeftIcon className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
           </button>
-          <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-              <span>Nous contacter</span>
-              <span className="text-base">💬</span>
-            </h2>
-            <p className="text-slate-500 dark:text-slate-400 font-medium text-xs sm:text-sm">
-              Signalez un bug, posez une question ou proposez une idée à Vincent.
+
+          {/* Squircle with blue chat bubble matching screenshot */}
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#e3eeff] dark:bg-sky-950/70 border border-blue-100/90 dark:border-sky-800/40 flex items-center justify-center text-[#2563eb] dark:text-sky-400 shrink-0 shadow-3xs">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 3.5C6.753 3.5 2.5 7.306 2.5 12c0 2.016.793 3.868 2.128 5.305-.308 1.57-1.077 3.16-2.052 4.298-.186.217-.037.552.251.529 2.456-.2 4.793-1.127 6.305-2.22.89.262 1.86.405 2.868.405 5.247 0 9.5-3.806 9.5-8.5s-4.253-8.5-9.5-8.5z" />
+              <circle cx="8" cy="12" r="1.3" fill="white" />
+              <circle cx="12" cy="12" r="1.3" fill="white" />
+              <circle cx="16" cy="12" r="1.3" fill="white" />
+            </svg>
+          </div>
+
+          {/* Title & Subtitle */}
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+              Nous contacter
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 text-[11px] sm:text-sm font-medium leading-tight pt-1">
+              Une question, un problème ou une idée ?<br />
+              Nous sommes à votre écoute.
             </p>
+          </div>
+        </div>
+
+        {/* 3D Customer Support Headset Illustration */}
+        <div className="relative shrink-0">
+          <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl overflow-hidden flex items-center justify-center">
+            <img
+              src="/contact-headset-bubble.jpg"
+              alt="Support DuoBudget"
+              className="w-full h-full object-contain rounded-2xl drop-shadow-xs"
+              referrerPolicy="no-referrer"
+            />
           </div>
         </div>
       </div>
 
-      {/* Tabs Switcher */}
-      <div className="flex items-center gap-2 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200/70 dark:border-slate-700/60">
-        <button
-          type="button"
-          onClick={() => {
-            setActiveSubTab('new');
-            setSuccessNotice(null);
-          }}
-          className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
-            activeSubTab === 'new'
-              ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          <span>✏️</span>
-          <span>Nouveau message</span>
-        </button>
+      {/* Tabs Switcher if user has tickets or wants to see previous discussions */}
+      {userMessages.length > 0 && (
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200/70 dark:border-slate-700/60">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveSubTab('new');
+              setSuccessNotice(null);
+            }}
+            className={`flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              activeSubTab === 'new'
+                ? 'bg-white dark:bg-slate-700 text-[#2563eb] dark:text-sky-300 shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <span>✏️ Nouveau message</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveSubTab('list')}
-          className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer relative ${
-            activeSubTab === 'list'
-              ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          <span>📬</span>
-          <span>Mes échanges ({userMessages.length})</span>
-          {unreadRepliesCount > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500 text-white animate-pulse">
-              {unreadRepliesCount} nouvelle{unreadRepliesCount > 1 ? 's' : ''}
-            </span>
-          )}
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('list')}
+            className={`flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer relative ${
+              activeSubTab === 'list'
+                ? 'bg-white dark:bg-slate-700 text-[#2563eb] dark:text-sky-300 shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <span>📬 Mes échanges ({userMessages.length})</span>
+            {unreadRepliesCount > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-white animate-pulse">
+                {unreadRepliesCount} rép.
+              </span>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Success banner */}
       {successNotice && (
@@ -221,7 +268,7 @@ export const ContactTab: React.FC<ContactTabProps> = ({
           <button
             type="button"
             onClick={() => setSuccessNotice(null)}
-            className="text-emerald-600 dark:text-emerald-400 hover:opacity-75 text-xs font-bold"
+            className="text-emerald-600 dark:text-emerald-400 hover:opacity-75 text-xs font-bold cursor-pointer"
           >
             Fermer
           </button>
@@ -229,180 +276,244 @@ export const ContactTab: React.FC<ContactTabProps> = ({
       )}
 
       {/* ========================================================= */}
-      {/* TAB 1: NOUVEAU MESSAGE                                    */}
+      {/* TAB 1: FORMULAIRE EXACT SCREENSHOT                         */}
       {/* ========================================================= */}
       {activeSubTab === 'new' && (
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 animate-fade-in">
-          {/* Card: Choix du Sujet */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-3">
-            <div>
-              <label className="block text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-200 mb-1">
-                Sujet de votre message <span className="text-rose-500">*</span>
-              </label>
-              <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                Sélectionnez la catégorie qui correspond le mieux à votre demande.
-              </p>
-            </div>
+          {/* Section 1: Choisissez le sujet de votre demande */}
+          <div className="space-y-2.5">
+            <label className="block text-sm sm:text-base font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+              Choisissez le sujet de votre demande
+            </label>
 
-            {/* Grid of Subject Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-              {SUBJECT_OPTIONS.map((opt) => (
-                <label
-                  key={opt.id}
-                  className="relative flex items-start gap-3 p-3 sm:p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-slate-750"
-                >
-                  <input
-                    type="radio"
-                    name="contactSubject"
-                    value={opt.id}
-                    checked={selectedSubject === opt.id}
-                    onChange={() => setSelectedSubject(opt.id)}
-                    className="sr-only peer"
-                  />
-                  <div
-                    className={`absolute inset-0 rounded-2xl border-2 pointer-events-none transition-all ${
-                      selectedSubject === opt.id
-                        ? opt.id === 'bug'
-                          ? 'border-rose-500 bg-rose-50/40 dark:bg-rose-950/20'
-                          : opt.id === 'suggestion'
-                          ? 'border-purple-500 bg-purple-50/40 dark:bg-purple-950/20'
-                          : opt.id === 'question'
-                          ? 'border-sky-500 bg-sky-50/40 dark:bg-sky-950/20'
-                          : 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20'
-                        : 'border-transparent'
-                    }`}
-                  />
-                  <span className="text-xl sm:text-2xl shrink-0 mt-0.5">{opt.icon}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100">
-                      {opt.label}
-                    </p>
-                    <p className="text-[11px] sm:text-xs text-slate-400 dark:text-slate-500 font-medium leading-snug">
-                      {opt.desc}
-                    </p>
-                  </div>
-                  <div
-                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 mt-1 transition-all ${
-                      selectedSubject === opt.id
-                        ? 'border-sky-500 bg-sky-500'
-                        : 'border-slate-300 dark:border-slate-600'
+            {/* 2 per line Grid matching screenshot */}
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+              {SUBJECT_OPTIONS.map((opt) => {
+                const isSelected = selectedSubject === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setSelectedSubject(opt.id)}
+                    className={`w-full text-left p-2.5 sm:p-3.5 rounded-2xl flex items-center justify-between gap-2 transition-all cursor-pointer relative ${
+                      isSelected
+                        ? 'border-2 border-[#2563eb] bg-[#f0f6ff] dark:bg-sky-950/40 shadow-xs'
+                        : 'border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750/70 shadow-3xs'
                     }`}
                   >
-                    {selectedSubject === opt.id && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                  </div>
-                </label>
-              ))}
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                      {/* 3D Icon Box */}
+                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-white dark:bg-slate-900 p-0.5 flex items-center justify-center overflow-hidden shrink-0 shadow-3xs border border-slate-100 dark:border-slate-800">
+                        <img
+                          src={opt.image3D}
+                          alt={opt.label}
+                          className="w-full h-full object-contain rounded-lg"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11.5px] sm:text-sm font-extrabold text-slate-900 dark:text-white leading-tight truncate">
+                          {opt.label}
+                        </p>
+                        <p className="text-[9.5px] sm:text-xs text-slate-400 dark:text-slate-400 font-medium pt-0.5 leading-tight truncate">
+                          {opt.desc}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Right indicator: checkmark circle or chevron */}
+                    <div className="shrink-0 ml-0.5">
+                      {isSelected ? (
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#2563eb] text-white flex items-center justify-center shadow-xs">
+                          <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      ) : (
+                        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                        </svg>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Card: Message Content */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
-            <div>
-              <label htmlFor="contact-title" className="block text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-200 mb-1.5">
-                Objet / Résumé court <span className="text-rose-500">*</span>
-              </label>
+          {/* Section 2: Objet de votre demande */}
+          <div className="space-y-1.5">
+            <label htmlFor="contact-title" className="block text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100">
+              Objet de votre demande <span className="text-rose-500 font-bold">*</span>
+            </label>
+            <div className="flex items-center gap-3 px-4 py-3 sm:py-3.5 bg-[#f8fafc] dark:bg-slate-900/70 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl focus-within:border-[#2563eb] focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white dark:focus-within:bg-slate-900 transition-all">
+              <svg className="w-5 h-5 text-slate-400 dark:text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
               <input
                 id="contact-title"
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder={
-                  selectedSubject === 'bug'
-                    ? 'Ex: Erreur lors de l\'ajout d\'une dépense ou écran blanc'
-                    : selectedSubject === 'suggestion'
-                    ? 'Ex: Possibilité de filtrer par magasin dans les statistiques'
-                    : selectedSubject === 'question'
-                    ? 'Ex: Comment inviter un autre membre dans mon foyer ?'
-                    : 'Ex: Question sur la synchronisation'
-                }
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium"
+                placeholder="En quelques mots, votre demande..."
+                className="w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 font-medium"
               />
             </div>
+          </div>
 
-            <div>
-              <label htmlFor="contact-message" className="block text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-200 mb-1.5">
-                Votre message détaillé <span className="text-rose-500">*</span>
-              </label>
-              <textarea
-                id="contact-message"
-                rows={5}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder={
-                  selectedSubject === 'bug'
-                    ? 'Décrivez ce qui s\'est passé : sur quel onglet étiez-vous ? que cherchiez-vous à faire ? avez-vous vu un message d\'erreur ?'
-                    : selectedSubject === 'suggestion'
-                    ? 'Décrivez votre idée : quel besoin cela résout-il pour vous dans votre gestion de budget ?'
-                    : 'Expliquez votre demande ou votre question en quelques lignes...'
-                }
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium resize-y"
-              />
+          {/* Section 3: Votre message détaillé */}
+          <div className="space-y-1.5">
+            <label htmlFor="contact-message" className="block text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100">
+              Votre message détaillé <span className="text-rose-500 font-bold">*</span>
+            </label>
+            <div className="p-3.5 sm:p-4 bg-[#f8fafc] dark:bg-slate-900/70 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl focus-within:border-[#2563eb] focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white dark:focus-within:bg-slate-900 transition-all">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-slate-400 dark:text-slate-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <textarea
+                  id="contact-message"
+                  rows={4}
+                  maxLength={1000}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Décrivez votre problème ou votre idée en détail..."
+                  className="w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 font-medium resize-none min-h-[90px]"
+                />
+              </div>
+              <div className="text-right text-[11px] text-slate-400 dark:text-slate-500 font-medium pt-1">
+                {message.length}/1000
+              </div>
+            </div>
+          </div>
+
+          {/* Section 4: Informations techniques (optionnel) */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-700/80 shadow-3xs space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-700/60 flex items-center justify-center text-slate-700 dark:text-slate-300 shrink-0 mt-0.5">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
+                      Informations techniques
+                    </span>
+                    <span className="text-xs text-slate-400 font-medium">
+                      (optionnel)
+                    </span>
+                  </div>
+                  <p className="text-[11px] sm:text-xs text-slate-400 dark:text-slate-400 font-medium leading-relaxed pt-0.5">
+                    Autoriser l'envoi du modèle de votre appareil et de votre navigateur pour nous aider à résoudre le problème.
+                  </p>
+                </div>
+              </div>
+
+              {/* Toggle switch */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={includeDeviceInfo}
+                onClick={() => setIncludeDeviceInfo(!includeDeviceInfo)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  includeDeviceInfo ? 'bg-[#2563eb]' : 'bg-slate-200 dark:bg-slate-700'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                    includeDeviceInfo ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
             </div>
 
-            {/* Email contact optional */}
-            <div>
-              <label htmlFor="contact-email" className="block text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-200 mb-1">
-                Adresse e-mail (optionnelle)
-              </label>
-              <p className="text-xs text-slate-400 dark:text-slate-500 font-medium mb-1.5">
-                La réponse arrivera directement dans l'application, mais vous pouvez aussi laisser un e-mail de contact.
-              </p>
+            {/* Device summary badge */}
+            <div className="bg-[#f1f5f9] dark:bg-slate-750/70 rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 font-medium">
+              <svg className="w-4 h-4 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <rect x="5" y="2" width="14" height="20" rx="3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <line x1="12" y1="18" x2="12.01" y2="18" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+              <span className="truncate">
+                {includeDeviceInfo ? getDeviceSummary() : 'Joindre les informations techniques'}
+              </span>
+            </div>
+          </div>
+
+          {/* Section 5: E-mail de réponse (facultatif) */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-700/80 shadow-3xs space-y-3">
+            <div className="flex items-start gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-700/60 flex items-center justify-center text-slate-700 dark:text-slate-300 shrink-0 mt-0.5">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
+                    E-mail de réponse
+                  </span>
+                  <span className="text-xs text-slate-400 font-medium">
+                    (facultatif)
+                  </span>
+                </div>
+                <p className="text-[11px] sm:text-xs text-slate-400 dark:text-slate-400 font-medium leading-relaxed pt-0.5">
+                  Recevez également notre réponse par e-mail.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 px-3.5 py-2.5 sm:py-3 bg-[#f8fafc] dark:bg-slate-900/70 border border-slate-200/90 dark:border-slate-700/80 rounded-xl focus-within:border-[#2563eb] focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white dark:focus-within:bg-slate-900 transition-all">
+              <svg className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
               <input
                 id="contact-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="votre.email@exemple.com"
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium"
+                placeholder="votre@email.com"
+                className="w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 font-medium"
               />
             </div>
+          </div>
 
-            {/* Device Info toggle */}
-            <label className="flex items-center gap-2.5 pt-1 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={includeDeviceInfo}
-                onChange={(e) => setIncludeDeviceInfo(e.target.checked)}
-                className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500 border-slate-300 dark:border-slate-600 dark:bg-slate-900"
-              />
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                Transmettre les infos de diagnostic (modèle d'écran & navigateur pour aider à corriger le bug)
-              </span>
-            </label>
-
-            {/* Error Message */}
-            {formError && (
-              <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 text-xs font-bold">
-                ⚠️ {formError}
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-3.5 px-6 rounded-2xl bg-sky-600 hover:bg-sky-700 active:scale-[0.99] text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    <span>Envoi en cours...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Envoyer mon message</span>
-                    <span>🚀</span>
-                  </>
-                )}
-              </button>
+          {/* Form Error notice */}
+          {formError && (
+            <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 text-xs font-bold">
+              ⚠️ {formError}
             </div>
+          )}
+
+          {/* Submit Button */}
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-3.5 sm:py-4 px-6 rounded-2xl bg-[#2563eb] hover:bg-blue-700 active:scale-[0.99] text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-lg shadow-blue-500/25 transition-all disabled:opacity-50 cursor-pointer"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Envoi en cours...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5 -rotate-45 fill-current" viewBox="0 0 24 24">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                  </svg>
+                  <span>Envoyer le message</span>
+                </>
+              )}
+            </button>
           </div>
         </form>
       )}
 
       {/* ========================================================= */}
-      {/* TAB 2: MES MESSAGES ET REPONSES                          */}
+      {/* TAB 2: MES ÉCHANGES & FIL DE DISCUSSION                   */}
       {/* ========================================================= */}
       {activeSubTab === 'list' && (
         <div className="space-y-4 animate-fade-in">
@@ -420,7 +531,7 @@ export const ContactTab: React.FC<ContactTabProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveSubTab('new')}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-xs"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-xs"
               >
                 <span>✏️ Rédiger un message</span>
               </button>
@@ -540,9 +651,9 @@ export const ContactTab: React.FC<ContactTabProps> = ({
                                 <div key={reply.id} className="space-y-1.5">
                                   <div className="flex items-center gap-2 text-xs font-extrabold">
                                     {isAdminReply ? (
-                                      <span className="text-sky-600 dark:text-sky-400 flex items-center gap-1.5">
+                                      <span className="text-[#2563eb] dark:text-sky-400 flex items-center gap-1.5">
                                         <span>🛠️ Vincent</span>
-                                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 font-black">
+                                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-black">
                                           DÉVELOPPEUR
                                         </span>
                                       </span>
@@ -558,7 +669,7 @@ export const ContactTab: React.FC<ContactTabProps> = ({
                                   <div
                                     className={`p-3.5 sm:p-4 rounded-2xl text-xs sm:text-sm whitespace-pre-wrap leading-relaxed shadow-3xs ${
                                       isAdminReply
-                                        ? 'bg-sky-50/90 dark:bg-sky-950/40 border border-sky-200/80 dark:border-sky-800/60 text-sky-950 dark:text-sky-100 rounded-tr-sm'
+                                        ? 'bg-blue-50/90 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/60 text-blue-950 dark:text-blue-100 rounded-tr-sm'
                                         : 'bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-tl-sm'
                                     }`}
                                   >
@@ -574,7 +685,7 @@ export const ContactTab: React.FC<ContactTabProps> = ({
                         {(!msg.replies || msg.replies.length === 0) && msg.status === 'pending' && (
                           <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-200 text-xs font-medium flex items-center gap-2">
                             <span>⏳</span>
-                            <span>Votre message est entre les mains de Vincent. Dès qu'il aura répondu, vous recevrez une alerte directe.</span>
+                            <span>Votre message est entre les mains de Vincent. Dès qu'il aura répondu, vous recevrez une notification directe.</span>
                           </div>
                         )}
 
@@ -598,13 +709,13 @@ export const ContactTab: React.FC<ContactTabProps> = ({
                                 }
                               }}
                               placeholder="Ajouter une précision ou répondre à Vincent..."
-                              className="flex-1 px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium"
+                              className="flex-1 px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
                             />
                             <button
                               type="button"
                               onClick={() => handleReplySubmit(msg.id)}
                               disabled={isReplying || !(replyTextMap[msg.id] || '').trim()}
-                              className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer shrink-0"
+                              className="px-4 py-2.5 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer shrink-0"
                             >
                               <span>Envoyer</span>
                               <span>💬</span>
