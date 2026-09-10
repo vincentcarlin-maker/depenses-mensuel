@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Expense, Reminder, MoneyPotTransaction, Category, User, Foyer } from '../types';
 import { supabase } from '../supabase/client';
+import { getLocalFoyers } from '../utils/foyerService';
 import { Profile, LoginEvent } from '../hooks/useAuth';
 import ConfirmationModal from './ConfirmationModal';
 import SupabaseInstructionsModal from './SupabaseInstructionsModal';
@@ -694,6 +695,17 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
     onToast: setToastInfo,
   });
 
+  // Calculate stored foyers count safely
+  const foyersCount = useMemo(() => {
+    try {
+      const stored = getLocalFoyers();
+      const count = Object.keys(stored).length;
+      return count > 0 ? count : 1;
+    } catch {
+      return 1;
+    }
+  }, []);
+
   // Initialize environment detection
   useEffect(() => {
     // Check PWA mode
@@ -1240,7 +1252,7 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
                   <option value="messages">💬 Boîte de réception {unreadAdminCount > 0 ? `(${unreadAdminCount} non lus)` : ''}</option>
                 </optgroup>
                 <optgroup label="🏠 Foyers & Utilisateurs">
-                  <option value="foyers:foyers">🏠 Foyers partagés ({foyers.length})</option>
+                  <option value="foyers:foyers">🏠 Foyers partagés ({foyersCount})</option>
                   <option value="foyers:accounts">👤 Comptes & Mots de passe ({profiles.length})</option>
                   <option value="foyers:sessions">🔐 Sessions & Foyers inactifs</option>
                 </optgroup>
@@ -1353,7 +1365,7 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
                     <span>Foyers & Utilisateurs</span>
                   </span>
                   <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
-                    {foyers.length} foyers
+                    {foyersCount} foyers
                   </span>
                 </div>
                 <div className="space-y-1">
@@ -1374,7 +1386,7 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
                       <span>🏠</span>
                       <span>Foyers partagés</span>
                     </span>
-                    <span className="text-[11px] opacity-80">{foyers.length}</span>
+                    <span className="text-[11px] opacity-80">{foyersCount}</span>
                   </button>
                   <button
                     type="button"

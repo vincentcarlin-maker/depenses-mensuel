@@ -1,7 +1,6 @@
 
 import React, { useMemo, useState } from 'react';
 import { type Expense, User, type FoyerMember } from '../types';
-import { DEFAULT_FOYER } from '../utils/foyerService';
 import ExpenseList from './ExpenseList';
 import CloseIcon from './icons/CloseIcon';
 import ChevronRightIcon from './icons/ChevronRightIcon';
@@ -35,8 +34,6 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
   const memberB = members[1] || null;
 
   const {
-    historicDifference,
-    cumulativeDifference,
     statusType,
     message,
     historyBadgeText,
