@@ -7,6 +7,9 @@ import {
   broadcastContactUpdate,
   dispatchContactPushNotification,
   getLocalContactMessages,
+  getMyContactMessageIds,
+  addMyContactMessageId,
+  removeMyContactMessageId,
   getContactSubjectLabel,
 } from '../utils/contactService';
 
@@ -77,7 +80,10 @@ export function useContactMessages({
           prev.map((m) => (m.id === payload.id ? payload : m))
         );
         // If current user is the author and admin replied, notify in-app
-        if (!isAdmin && payload.userId.toLowerCase() === normUser) {
+        const isTarget =
+          payload.userId?.toLowerCase() === normUser ||
+          getMyContactMessageIds().includes(payload.id);
+        if (!isAdmin && isTarget) {
           onToast?.({
             message: `Vincent vous a répondu dans "Nous contacter" !`,
             type: 'info',
@@ -93,15 +99,37 @@ export function useContactMessages({
 
     channelRef.current = channel;
 
+    // Periodic auto-sync and visibility sync to never miss a developer reply
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        refreshMessages();
+      }
+    };
+    window.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('focus', onVisibility);
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        refreshMessages();
+      }
+    }, 25000);
+
     return () => {
+      window.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('focus', onVisibility);
+      clearInterval(interval);
       channel.unsubscribe();
     };
   }, [refreshMessages, isAdmin, normUser, onToast]);
 
   // Messages created by current user
   const userMessages = messages.filter((m) => {
+    // 1. Any message created on this device is always displayed
+    const myDeviceIds = getMyContactMessageIds();
+    if (myDeviceIds.includes(m.id)) return true;
+
     if (!normUser) return true;
-    const isUser = m.userId.toLowerCase() === normUser;
+    const isUser = m.userId?.toLowerCase() === normUser;
     const isEmail = currentUserEmail && m.userEmail?.toLowerCase() === currentUserEmail.toLowerCase();
     const isFoyer = currentFoyerId && m.foyerId === currentFoyerId;
     return isUser || isEmail || isFoyer;
@@ -158,6 +186,9 @@ export function useContactMessages({
         deviceInfo,
       };
 
+      // Record on device so user always sees it
+      addMyContactMessageId(newId);
+
       const updated = [newMsg, ...messages];
       setMessages(updated);
 
@@ -172,6 +203,8 @@ export function useContactMessages({
         title: newMsg.title,
         snippet: newMsg.message.slice(0, 120),
         targetUser: 'Vincent',
+        targetUserName: 'Vincent',
+        foyerId: newMsg.foyerId,
         messageId: newId,
       });
 
@@ -231,7 +264,7 @@ export function useContactMessages({
 
       // Send Push notification
       if (asAdmin) {
-        // Notify recipient user
+        // Notify recipient user with full metadata so server can target their subscription accurately
         await dispatchContactPushNotification({
           type: 'admin_reply',
           senderName: 'Vincent',
@@ -239,6 +272,9 @@ export function useContactMessages({
           title: target.title,
           snippet: replyText.slice(0, 120),
           targetUser: target.userId,
+          targetUserName: target.userName,
+          targetEmail: target.userEmail,
+          foyerId: target.foyerId,
           messageId: target.id,
         });
       } else {
@@ -250,6 +286,8 @@ export function useContactMessages({
           title: `Réponse : ${target.title}`,
           snippet: replyText.slice(0, 120),
           targetUser: 'Vincent',
+          targetUserName: 'Vincent',
+          foyerId: target.foyerId,
           messageId: target.id,
         });
       }
@@ -312,6 +350,7 @@ export function useContactMessages({
   // Delete message
   const deleteMessage = useCallback(
     async (messageId: string) => {
+      removeMyContactMessageId(messageId);
       const updatedList = messages.filter((m) => m.id !== messageId);
       setMessages(updatedList);
       await persistContactMessages(updatedList);

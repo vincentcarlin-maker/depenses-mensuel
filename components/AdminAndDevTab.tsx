@@ -1239,6 +1239,7 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
             onDeleteMessage={handleContactDelete}
             onMarkAsRead={handleContactMarkAsRead}
             onRefresh={handleContactRefresh}
+            onBack={() => setActiveAdminTab('all')}
           />
         </div>
       )}

@@ -64,7 +64,7 @@ async function startServer() {
     app.post("/api/send-contact-notification", async (req, res) => {
         try {
             console.log("Requête de notification de contact reçue:", req.body);
-            const { type, senderName, subject, title, snippet, targetUser, messageId } = req.body || {};
+            const { type, senderName, subject, title, snippet, targetUser, targetUserName, targetEmail, foyerId, messageId } = req.body || {};
 
             const { data: subscriptions, error: subsError } = await supabase
                 .from('push_subscriptions')
@@ -81,22 +81,53 @@ async function startServer() {
 
             // Target subscription filtering:
             // If type === 'new_message', recipient is Admin (Vincent)
-            // If type === 'admin_reply', recipient is targetUser
-            const targetSubs = subscriptions.filter((s: any) => {
-                const subObj = typeof s.subscription === 'string' ? JSON.parse(s.subscription) : s.subscription;
-                if (!subObj || !subObj.endpoint) return false;
+            // If type === 'admin_reply', recipient is the user who requested help
+            let targetSubs: any[] = [];
 
-                const uId = (s.user_id || '').toLowerCase().trim();
-                if (type === 'new_message') {
-                    // Send to admin (Vincent)
+            if (type === 'new_message') {
+                targetSubs = subscriptions.filter((s: any) => {
+                    const subObj = typeof s.subscription === 'string' ? JSON.parse(s.subscription) : s.subscription;
+                    if (!subObj || !subObj.endpoint) return false;
+                    const uId = (s.user_id || '').toLowerCase().trim();
                     return uId === 'vincent' || uId.includes('vincent');
-                } else {
-                    // Send to targetUser
-                    if (!targetUser) return false;
-                    const targetLower = targetUser.toLowerCase().trim();
-                    return uId === targetLower || uId.includes(targetLower);
+                });
+            } else {
+                // Admin reply -> send to user
+                const targetLower = (targetUser || '').toLowerCase().trim();
+                const nameLower = (targetUserName || '').toLowerCase().trim();
+                const emailLower = (targetEmail || '').toLowerCase().trim();
+                const foyerTarget = (foyerId || '').trim();
+
+                // 1. Direct match by user_id, email, or username
+                targetSubs = subscriptions.filter((s: any) => {
+                    const subObj = typeof s.subscription === 'string' ? JSON.parse(s.subscription) : s.subscription;
+                    if (!subObj || !subObj.endpoint) return false;
+                    const uId = (s.user_id || '').toLowerCase().trim();
+
+                    // Never send the notification back to Vincent (the sender of the reply)
+                    if (uId === 'vincent' || uId.includes('vincent')) return false;
+
+                    const matchUser = targetLower && (uId === targetLower || uId.includes(targetLower) || targetLower.includes(uId));
+                    const matchName = nameLower && (uId === nameLower || uId.includes(nameLower));
+                    const matchEmail = emailLower && (uId.includes(emailLower) || (subObj.user_email && subObj.user_email.toLowerCase() === emailLower));
+                    const matchFoyer = foyerTarget && (subObj.foyer_id === foyerTarget);
+
+                    return matchUser || matchName || matchEmail || matchFoyer;
+                });
+
+                // 2. Fallback: If no specific subscriber found (e.g. user subscribed as 'Commun' or under generic profile), notify non-admin subscribers of the foyer or all non-admin subscribers
+                if (targetSubs.length === 0) {
+                    console.log("Fallback send-contact-notification: ciblage des abonnés non-admin...");
+                    targetSubs = subscriptions.filter((s: any) => {
+                        const subObj = typeof s.subscription === 'string' ? JSON.parse(s.subscription) : s.subscription;
+                        if (!subObj || !subObj.endpoint) return false;
+                        const uId = (s.user_id || '').toLowerCase().trim();
+                        if (uId === 'vincent' || uId.includes('vincent')) return false;
+                        if (foyerTarget && subObj.foyer_id && subObj.foyer_id !== foyerTarget) return false;
+                        return true;
+                    });
                 }
-            });
+            }
 
             if (targetSubs.length === 0) {
                 console.log("Aucun abonné trouvé pour la notification de contact.");
@@ -105,11 +136,11 @@ async function startServer() {
 
             const notifTitle = type === 'new_message' 
                 ? `💬 Nouveau message : ${subject || 'Support'}`
-                : `💬 Réponse du support DuoBudget`;
+                : `💬 Réponse du développeur (Vincent)`;
 
             const notifBody = type === 'new_message'
-                ? `${senderName} : ${title || snippet || 'Nouveau message reçu'}`
-                : `Vincent a répondu à votre message : "${title || ''}"`;
+                ? `${senderName || 'Utilisateur'} : ${title || snippet || 'Nouveau message reçu'}`
+                : `Vincent a répondu à votre demande : "${title || ''}"`;
 
             const payload = JSON.stringify({
                 title: notifTitle,

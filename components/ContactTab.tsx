@@ -16,6 +16,7 @@ interface ContactTabProps {
   }) => Promise<{ success: boolean; messageId?: string; error?: string }>;
   onSendReply: (messageId: string, replyText: string) => Promise<{ success: boolean; error?: string }>;
   onUpdateStatus: (messageId: string, status: ContactMessage['status']) => Promise<boolean>;
+  onDeleteMessage?: (messageId: string) => Promise<boolean>;
   onMarkAsRead: (messageId: string) => Promise<void>;
   currentUserEmail?: string;
   currentUsername?: string;
@@ -62,6 +63,7 @@ export const ContactTab: React.FC<ContactTabProps> = ({
   onSendMessage,
   onSendReply,
   onUpdateStatus,
+  onDeleteMessage,
   onMarkAsRead,
   currentUserEmail = '',
   currentUsername: _currentUsername = '',
@@ -86,6 +88,8 @@ export const ContactTab: React.FC<ContactTabProps> = ({
   );
   const [replyTextMap, setReplyTextMap] = useState<Record<string, string>>({});
   const [isReplying, setIsReplying] = useState(false);
+  const [messageIdToDelete, setMessageIdToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // When expanding message, mark as read
   useEffect(() => {
@@ -612,7 +616,22 @@ export const ContactTab: React.FC<ContactTabProps> = ({
                         )}
                       </div>
 
-                      <div className="shrink-0 text-slate-400 pt-1">
+                      <div className="shrink-0 flex items-center gap-1 text-slate-400 pt-0.5">
+                        {onDeleteMessage && (
+                          <button
+                            type="button"
+                            title="Supprimer ce message"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMessageIdToDelete(msg.id);
+                            }}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        )}
                         <svg
                           className={`w-5 h-5 transition-transform duration-200 ${
                             isExpanded ? 'rotate-180' : ''
@@ -722,18 +741,27 @@ export const ContactTab: React.FC<ContactTabProps> = ({
                             </button>
                           </div>
 
-                          {/* Quick resolution button */}
-                          {msg.status !== 'closed' && msg.replies && msg.replies.length > 0 && (
-                            <div className="flex justify-end pt-1">
+                          {/* Quick action buttons: Delete + Resolution */}
+                          <div className="flex items-center justify-between pt-1">
+                            {onDeleteMessage && (
+                              <button
+                                type="button"
+                                onClick={() => setMessageIdToDelete(msg.id)}
+                                className="text-[11px] text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <span>🗑️ Supprimer ce message</span>
+                              </button>
+                            )}
+                            {msg.status !== 'closed' && msg.replies && msg.replies.length > 0 && (
                               <button
                                 type="button"
                                 onClick={() => onUpdateStatus(msg.id, 'closed')}
-                                className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 font-bold flex items-center gap-1 cursor-pointer"
+                                className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 font-bold flex items-center gap-1 cursor-pointer ml-auto"
                               >
                                 <span>✅ Mon problème est résolu / Clôturer</span>
                               </button>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
                       </div>
                     )}
@@ -742,6 +770,49 @@ export const ContactTab: React.FC<ContactTabProps> = ({
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal for User */}
+      {messageIdToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 dark:border-slate-700 text-center space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center text-2xl mx-auto">
+              🗑️
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-base font-extrabold text-slate-900 dark:text-white">
+                Supprimer ce message ?
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                Cette action supprimera définitivement votre message ainsi que l'historique des réponses associées.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setMessageIdToDelete(null)}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold text-xs transition-all cursor-pointer"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={async () => {
+                  if (!messageIdToDelete || !onDeleteMessage) return;
+                  setIsDeleting(true);
+                  await onDeleteMessage(messageIdToDelete);
+                  setIsDeleting(false);
+                  setMessageIdToDelete(null);
+                }}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-all cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                {isDeleting ? 'Suppression...' : 'Supprimer'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

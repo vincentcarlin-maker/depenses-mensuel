@@ -2,6 +2,7 @@ import { supabase } from '../supabase/client';
 import { ContactMessage, ContactSubject } from '../types';
 
 const LOCAL_STORAGE_KEY = 'duobudget_contact_messages_v1';
+const MY_MESSAGE_IDS_KEY = 'duobudget_my_contact_message_ids_v1';
 const CLOUD_STORAGE_KEY = 'app_contact_messages_v1';
 const REALTIME_CHANNEL = 'contact_messages_channel';
 
@@ -27,6 +28,37 @@ export function saveLocalContactMessages(messages: ContactMessage[]): void {
   }
 }
 
+// Track IDs of messages created on this device (so they never disappear for the user)
+export function getMyContactMessageIds(): string[] {
+  try {
+    const raw = localStorage.getItem(MY_MESSAGE_IDS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function addMyContactMessageId(messageId: string): void {
+  try {
+    const current = getMyContactMessageIds();
+    if (!current.includes(messageId)) {
+      localStorage.setItem(MY_MESSAGE_IDS_KEY, JSON.stringify([...current, messageId]));
+    }
+  } catch {}
+}
+
+export function removeMyContactMessageId(messageId: string): void {
+  try {
+    const current = getMyContactMessageIds();
+    localStorage.setItem(
+      MY_MESSAGE_IDS_KEY,
+      JSON.stringify(current.filter((id) => id !== messageId))
+    );
+  } catch {}
+}
+
 // Dispatch push notification via backend server
 export async function dispatchContactPushNotification(payload: {
   type: 'new_message' | 'admin_reply';
@@ -35,6 +67,9 @@ export async function dispatchContactPushNotification(payload: {
   title: string;
   snippet: string;
   targetUser?: string;
+  targetUserName?: string;
+  targetEmail?: string;
+  foyerId?: string;
   messageId: string;
 }): Promise<boolean> {
   try {
@@ -60,16 +95,19 @@ export async function fetchContactMessages(): Promise<ContactMessage[]> {
     const { data, error } = await (supabase.from('push_subscriptions') as any)
       .select('subscription')
       .eq('user_id', CLOUD_STORAGE_KEY)
-      .maybeSingle();
+      .order('id', { ascending: false })
+      .limit(1);
 
-    if (!error && data?.subscription?.messages && Array.isArray(data.subscription.messages)) {
-      const cloudList: ContactMessage[] = data.subscription.messages;
+    const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
+
+    if (!error && row?.subscription?.messages && Array.isArray(row.subscription.messages)) {
+      const cloudList: ContactMessage[] = row.subscription.messages;
       // Merge with local list based on latest updatedAt
       const map = new Map<string, ContactMessage>();
-      cloudList.forEach(msg => map.set(msg.id, msg));
-      localList.forEach(msg => {
+      cloudList.forEach((msg) => map.set(msg.id, msg));
+      localList.forEach((msg) => {
         const existing = map.get(msg.id);
-        if (!existing || new Date(msg.updatedAt) > new Date(existing.updatedAt)) {
+        if (!existing || new Date(msg.updatedAt).getTime() > new Date(existing.updatedAt).getTime()) {
           map.set(msg.id, msg);
         }
       });

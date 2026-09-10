@@ -208,6 +208,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     sendMessage: handleContactSend,
     sendReply: handleContactReply,
     updateStatus: handleContactStatus,
+    deleteMessage: handleContactDelete,
     markAsRead: handleContactMarkAsRead,
   } = useContactMessages({
     currentUser: props.loggedInUser,
@@ -796,6 +797,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         onSendMessage={handleContactSend}
                         onSendReply={handleContactReply}
                         onUpdateStatus={handleContactStatus}
+                        onDeleteMessage={handleContactDelete}
                         onMarkAsRead={handleContactMarkAsRead}
                         currentUserEmail={currentUserProfile?.email}
                         currentUsername={props.loggedInUsername || props.loggedInUser}

@@ -176,6 +176,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
     sendMessage: handleContactSend,
     sendReply: handleContactReply,
     updateStatus: handleContactStatus,
+    deleteMessage: handleContactDelete,
     markAsRead: handleContactMarkAsRead,
   } = useContactMessages({
     currentUser: props.loggedInUser,
@@ -783,6 +784,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             onSendMessage={handleContactSend}
             onSendReply={handleContactReply}
             onUpdateStatus={handleContactStatus}
+            onDeleteMessage={handleContactDelete}
             onMarkAsRead={handleContactMarkAsRead}
             currentUserEmail={currentUserProfile?.email}
             currentUsername={props.loggedInUsername || props.loggedInUser}
