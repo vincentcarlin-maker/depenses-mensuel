@@ -101,7 +101,16 @@ export function useCustomCategoryIcons(foyerId?: string) {
 
           const uniqueMap = new Map<string, CustomCategoryIcon>();
           combined.forEach(item => {
-            const key = item.category ? `cat_${item.category.toLowerCase().trim()}` : `id_${item.id}`;
+            let key = item.id;
+            if (item.category === 'deleted_system_icon') {
+              key = `deleted_${item.name.toLowerCase()}`;
+            } else if (item.id?.startsWith('mapping_') && item.category) {
+              key = `mapping_${item.category.toLowerCase().trim()}`;
+            } else if (item.id) {
+              key = item.id;
+            } else if (item.name) {
+              key = `icon_${item.name.toLowerCase().trim()}`;
+            }
             if (!uniqueMap.has(key)) {
               uniqueMap.set(key, item);
             }
@@ -155,15 +164,22 @@ export function useCustomCategoryIcons(foyerId?: string) {
   }, [storageKey, normalizedFoyerId, foyerId]);
 
   const addCustomIcon = useCallback((iconData: Omit<CustomCategoryIcon, 'id' | 'createdAt'>) => {
+    const isDeletedSystem = iconData.category === 'deleted_system_icon';
     const newIcon: CustomCategoryIcon = {
       ...iconData,
-      id: `custom_icon_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: isDeletedSystem 
+        ? `deleted_${iconData.name.toLowerCase().trim()}` 
+        : `custom_icon_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       createdAt: new Date().toISOString()
     };
 
     setCustomIcons(prev => {
-      // Replace if same name or category exists
-      const filtered = prev.filter(i => i.name.toLowerCase() !== newIcon.name.toLowerCase());
+      let filtered = prev;
+      if (isDeletedSystem) {
+        filtered = prev.filter(i => !(i.category === 'deleted_system_icon' && i.name.toLowerCase() === newIcon.name.toLowerCase()));
+      } else {
+        filtered = prev.filter(i => i.id !== newIcon.id && i.name.toLowerCase() !== newIcon.name.toLowerCase());
+      }
       const updated = [newIcon, ...filtered];
       syncToCloud(updated);
       return updated;
