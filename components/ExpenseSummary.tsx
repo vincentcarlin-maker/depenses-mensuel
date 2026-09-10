@@ -30,14 +30,16 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
   }, [foyerMembers, loggedInUser]);
   const [userExpensesModal, setUserExpensesModal] = useState<{ user: string, expenses: Expense[] } | null>(null);
 
+  const isSingleMember = members.length <= 1;
   const memberA = members[0] || { name: String(loggedInUser || 'Moi') };
-  const memberB = members[1] || { name: 'ton partenaire' };
+  const memberB = members[1] || null;
 
   const {
     historicDifference,
     cumulativeDifference,
     statusType,
     message,
+    historyBadgeText,
     communTotalMonth,
     memberStats,
     totalExpenses
@@ -71,11 +73,44 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
     const totalMonthIndividual = memberStats.reduce((sum, ms) => sum + ms.monthTotal, 0);
     const totalExpenses = totalMonthIndividual + communTotalMonth;
 
-    // Primary balance difference between memberA and memberB
+    // --- CASE 1: FOYER INDIVIDUEL (1 SEULE PERSONNE) ---
+    if (isSingleMember) {
+      const aHist = memberStats[0]?.histTotal || 0;
+      const formattedTotalMonth = totalExpenses.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+      const currentUserName = String(loggedInUser || '');
+      const isUserMemberA = !currentUserName || currentUserName === memberA.name;
+
+      let message: string;
+      if (totalExpenses === 0) {
+        message = isUserMemberA 
+          ? "Foyer individuel : aucune dépense enregistrée pour le moment ce mois-ci." 
+          : `Foyer individuel : aucune dépense enregistrée pour ${memberA.name} ce mois-ci.`;
+      } else {
+        message = isUserMemberA
+          ? `Foyer individuel : tu as engagé un total de ${formattedTotalMonth} ce mois-ci.`
+          : `Foyer individuel : ${memberA.name} a engagé un total de ${formattedTotalMonth} ce mois-ci.`;
+      }
+
+      const historyBadgeText = `Dépenses antérieures cumulées : ${aHist.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`;
+
+      return {
+        historicDifference: aHist,
+        cumulativeDifference: 0,
+        statusType: 'balanced' as const,
+        message,
+        historyBadgeText,
+        communTotalMonth,
+        memberStats,
+        totalExpenses
+      };
+    }
+
+    // --- CASE 2: FOYER À 2 PERSONNES (EQUILIBRAGE DUO) ---
+    const actualMemberB = memberB || { name: 'Partenaire' };
     const aHist = memberStats.find(ms => ms.member.name === memberA.name)?.histTotal || 0;
-    const bHist = memberStats.find(ms => ms.member.name === memberB.name)?.histTotal || 0;
+    const bHist = memberStats.find(ms => ms.member.name === actualMemberB.name)?.histTotal || 0;
     const aMonth = memberStats.find(ms => ms.member.name === memberA.name)?.monthTotal || 0;
-    const bMonth = memberStats.find(ms => ms.member.name === memberB.name)?.monthTotal || 0;
+    const bMonth = memberStats.find(ms => ms.member.name === actualMemberB.name)?.monthTotal || 0;
 
     const historicDifference = aHist - bHist;
     const currentMonthDifference = aMonth - bMonth;
@@ -85,7 +120,7 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
     let statusType: 'ahead' | 'behind' | 'balanced' = 'balanced';
 
     if (Math.abs(cumulativeDifference) < 0.01) {
-      message = "Les comptes sont parfaitement équilibrés.";
+      message = "Les comptes sont parfaitement équilibrés entre vous deux.";
       statusType = 'balanced';
     } else {
       const aAhead = cumulativeDifference > 0;
@@ -93,13 +128,11 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
       
       const currentUserName = String(loggedInUser || '');
       const isUserMemberA = currentUserName === memberA.name;
-      const isUserMemberB = members.length > 1 && currentUserName === memberB.name;
+      const isUserMemberB = currentUserName === actualMemberB.name;
 
       if (isUserMemberA || isUserMemberB) {
         const isAhead = (isUserMemberA && aAhead) || (isUserMemberB && !aAhead);
-        const otherUser = isUserMemberA 
-          ? (members.length > 1 ? memberB.name : 'ton partenaire') 
-          : memberA.name;
+        const otherUser = isUserMemberA ? actualMemberB.name : memberA.name;
         
         if (isAhead) {
           message = `Tu as une avance de ${amount} par rapport à ${otherUser}.`;
@@ -108,36 +141,30 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
           message = `Tu as un retard de ${amount} par rapport à ${otherUser}.`;
           statusType = 'behind';
         }
-      } else if (members.length >= 2) {
-        if (aAhead) {
-          message = `${memberA.name} a dépensé ${amount} de plus par rapport à ${memberB.name}.`;
-          statusType = 'ahead';
-        } else {
-          message = `${memberB.name} a dépensé ${amount} de plus par rapport à ${memberA.name}.`;
-          statusType = 'ahead';
-        }
       } else {
-        const otherUser = 'ton partenaire';
         if (aAhead) {
-          message = `Tu as une avance de ${amount} par rapport à ${otherUser}.`;
+          message = `${memberA.name} a dépensé ${amount} de plus par rapport à ${actualMemberB.name}.`;
           statusType = 'ahead';
         } else {
-          message = `Tu as un retard de ${amount} par rapport à ${otherUser}.`;
-          statusType = 'behind';
+          message = `${actualMemberB.name} a dépensé ${amount} de plus par rapport à ${memberA.name}.`;
+          statusType = 'ahead';
         }
       }
     }
+
+    const historyBadgeText = `Report des mois précédents : ${historicDifference.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}`;
     
     return {
       historicDifference,
       cumulativeDifference,
       statusType,
       message,
+      historyBadgeText,
       communTotalMonth,
       memberStats,
       totalExpenses
     };
-  }, [allExpenses, currentYear, currentMonth, loggedInUser, members, memberA.name, memberB.name]);
+  }, [allExpenses, currentYear, currentMonth, loggedInUser, members, memberA.name, memberB, isSingleMember]);
 
   return (
     <div className="bg-white dark:bg-slate-800 p-4 sm:p-7 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-6 sm:space-y-7">
@@ -145,7 +172,10 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
         <div>
             <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Balance des comptes</h2>
             <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-              Répartition et solde {members.length >= 2 ? `entre ${memberA.name} et ${memberB.name}` : 'du foyer'}
+              {isSingleMember 
+                ? `Suivi des dépenses personnelles (${memberA.name})` 
+                : `Répartition et solde entre ${memberA.name} et ${memberB?.name || 'partenaire'}`
+              }
             </p>
             
             {/* Status Banner */}
@@ -211,7 +241,7 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                         : 'bg-white/80 dark:bg-blue-950/80 text-blue-900 dark:text-blue-100 border border-blue-200/60 dark:border-blue-800/40'
                     }`}>
                       <TrendingUpIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                      <span className="leading-tight">Report des mois précédents : {historicDifference.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+                      <span className="leading-tight">{historyBadgeText}</span>
                     </div>
                   </div>
                 </div>

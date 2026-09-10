@@ -383,6 +383,7 @@ export const DataAndBackupTab: React.FC<DataAndBackupTabProps> = ({
 
   const handleExportBalanceHistory = () => {
     const dateStr = new Date().toISOString().split('T')[0];
+    const isSingle = (currentFoyer?.members?.length || 0) <= 1;
     const m1Name = currentFoyer?.members[0]?.name || 'Membre 1';
     const m2Name = currentFoyer?.members[1]?.name || 'Membre 2';
 
@@ -397,7 +398,7 @@ export const DataAndBackupTab: React.FC<DataAndBackupTabProps> = ({
       }
       monthlyGroups[key].total += e.amount;
       if (e.user === m1Name) monthlyGroups[key].m1 += e.amount;
-      else if (e.user === m2Name) monthlyGroups[key].m2 += e.amount;
+      else if (!isSingle && e.user === m2Name) monthlyGroups[key].m2 += e.amount;
       else monthlyGroups[key].commun += e.amount;
     });
 
@@ -406,9 +407,22 @@ export const DataAndBackupTab: React.FC<DataAndBackupTabProps> = ({
     if (exportFormat === 'json') {
       downloadJSON(monthlyGroups, `DuoBudget_Balance_Historique_${dateStr}`);
     } else {
-      const headers = ['Mois', 'Total Dépenses (€)', `Total ${m1Name} (€)`, `Total ${m2Name} (€)`, 'Total Commun (€)', `Équilibre ${m1Name} / ${m2Name} (€)`];
+      const headers = isSingle 
+        ? ['Mois', 'Total Dépenses (€)', `Total ${m1Name} (€)`, 'Total Commun (€)', 'Statut Solde']
+        : ['Mois', 'Total Dépenses (€)', `Total ${m1Name} (€)`, `Total ${m2Name} (€)`, 'Total Commun (€)', `Équilibre ${m1Name} / ${m2Name} (€)`];
+      
       const rows = sortedMonths.map(month => {
         const data = monthlyGroups[month];
+        if (isSingle) {
+          return [
+            month,
+            data.total.toFixed(2).replace('.', ','),
+            data.m1.toFixed(2).replace('.', ','),
+            data.commun.toFixed(2).replace('.', ','),
+            `Foyer individuel (${m1Name})`,
+          ];
+        }
+
         const diff = (data.m1 - data.m2) / 2;
         const balanceText =
           diff > 0
