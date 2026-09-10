@@ -53,13 +53,13 @@ export const CategoryIconPicker: React.FC<CategoryIconPickerProps> = ({
       if (custom.type === 'svg' && custom.svgContent) {
         return (
           <div
-            className="w-5 h-5 flex items-center justify-center [&>svg]:w-5 [&>svg]:h-5"
+            className="w-6 h-6 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full"
             dangerouslySetInnerHTML={{ __html: custom.svgContent }}
           />
         );
       }
       if (custom.imageUrl) {
-        return <img src={custom.imageUrl} className="w-5 h-5 object-contain" alt={custom.name} />;
+        return <img src={custom.imageUrl} className="w-full h-full object-contain p-0.5 rounded-xl" alt={custom.name} />;
       }
       return <span className="text-sm">✨</span>;
     }

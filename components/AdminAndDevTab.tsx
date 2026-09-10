@@ -139,24 +139,11 @@ const CategoryIconManagementSection: React.FC<{
 
   const [iconName, setIconName] = useState('');
   const [associatedCategory, setAssociatedCategory] = useState<string>('');
-  const [selectedColor, setSelectedColor] = useState('bg-pink-500');
   const [rawSvgContent, setRawSvgContent] = useState('');
   const [imageDataUrl, setImageDataUrl] = useState('');
   const [fileName, setFileName] = useState('');
   const [activeTab, setActiveTab] = useState<'upload' | 'gallery'>('upload');
   const [copiedId, setCopiedId] = useState<string | null>(null);
-
-  const COLOR_OPTIONS = [
-    { label: 'Rose', value: 'bg-pink-500' },
-    { label: 'Bleu', value: 'bg-blue-500' },
-    { label: 'Émeraude', value: 'bg-emerald-500' },
-    { label: 'Orange', value: 'bg-orange-500' },
-    { label: 'Violet', value: 'bg-purple-500' },
-    { label: 'Ambre', value: 'bg-amber-500' },
-    { label: 'Teal', value: 'bg-teal-500' },
-    { label: 'Indigo', value: 'bg-indigo-500' },
-    { label: 'Gris', value: 'bg-slate-500' },
-  ];
 
   const BUILTIN_ICONS = [
     { name: 'MandatoryIcon', label: 'Dép. récurrentes', icon: MandatoryIcon, color: 'bg-slate-500' },
@@ -297,7 +284,6 @@ const CategoryIconManagementSection: React.FC<{
       type: isSvg ? 'svg' : 'image',
       svgContent: isSvg ? rawSvgContent : undefined,
       imageUrl: !isSvg ? imageDataUrl : undefined,
-      color: selectedColor
     });
 
     setToastInfo({ message: `Icône « ${formattedName} » ajoutée et disponible dans l'application !`, type: 'info' });
@@ -470,50 +456,33 @@ const CategoryIconManagementSection: React.FC<{
             />
           </div>
 
-          {/* Color & Preview */}
-          <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-700/40 border border-slate-200/80 dark:border-slate-700/60 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="space-y-2 w-full sm:w-auto">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                Couleur d'arrière-plan du macaron
-              </label>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {COLOR_OPTIONS.map(c => (
-                  <button
-                    key={c.value}
-                    type="button"
-                    onClick={() => setSelectedColor(c.value)}
-                    className={`w-7 h-7 rounded-xl ${c.value} transition-transform cursor-pointer ${
-                      selectedColor === c.value ? 'ring-2 ring-offset-2 ring-fuchsia-500 scale-110' : 'opacity-80 hover:opacity-100'
-                    }`}
-                    title={c.label}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Preview Box */}
-            <div className="flex items-center gap-3 shrink-0 bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-2xs">
-              <div className="text-right">
+          {/* Preview */}
+          {(rawSvgContent || imageDataUrl) && (
+            <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-700/40 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between gap-4">
+              <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Aperçu en direct</p>
-                <p className="text-xs font-extrabold text-slate-900 dark:text-white truncate max-w-[120px]">
+                <p className="text-sm font-extrabold text-slate-900 dark:text-white truncate max-w-[200px]">
                   {iconName || 'NouvelleIcône'}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  {associatedCategory.trim() ? `Catégorie : ${associatedCategory}` : 'Icône prête'}
                 </p>
               </div>
 
-              <div className={`w-11 h-11 rounded-2xl ${selectedColor} text-white flex items-center justify-center shrink-0 shadow-2xs overflow-hidden`}>
+              <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 shadow-xs overflow-hidden p-1.5">
                 {rawSvgContent ? (
                   <div
-                    className="w-6 h-6 flex items-center justify-center [&>svg]:w-6 [&>svg]:h-6 [&>svg]:stroke-current [&>svg]:fill-current"
+                    className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full text-slate-800 dark:text-white"
                     dangerouslySetInnerHTML={{ __html: rawSvgContent }}
                   />
                 ) : imageDataUrl ? (
-                  <img src={imageDataUrl} className="w-6 h-6 object-contain" alt="Aperçu" />
+                  <img src={imageDataUrl} className="w-full h-full object-contain rounded-xl" alt="Aperçu" />
                 ) : (
-                  <span className="text-lg">✨</span>
+                  <span className="text-xl">✨</span>
                 )}
               </div>
             </div>
-          </div>
+          )}
 
           {/* Action buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-2">
@@ -562,14 +531,14 @@ const CategoryIconManagementSection: React.FC<{
                       className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-700 flex flex-col justify-between gap-2.5 relative group"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div className={`w-10 h-10 rounded-xl ${icon.color || 'bg-fuchsia-500'} text-white flex items-center justify-center shrink-0 overflow-hidden shadow-2xs`}>
+                        <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs p-1">
                           {icon.type === 'svg' && icon.svgContent ? (
                             <div
-                              className="w-5 h-5 flex items-center justify-center [&>svg]:w-5 [&>svg]:h-5"
+                              className="w-8 h-8 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full text-slate-800 dark:text-white"
                               dangerouslySetInnerHTML={{ __html: icon.svgContent }}
                             />
                           ) : icon.imageUrl ? (
-                            <img src={icon.imageUrl} className="w-5 h-5 object-contain" alt={icon.name} />
+                            <img src={icon.imageUrl} className="w-full h-full object-contain rounded-xl" alt={icon.name} />
                           ) : (
                             <span>✨</span>
                           )}
