@@ -669,8 +669,12 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
   // Expandable sections
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
-  // Active Admin Sub-tab
+  // Active Admin Tab & Sub-menus
   const [activeAdminTab, setActiveAdminTab] = useState<'messages' | 'foyers' | 'database' | 'config' | 'diagnostics' | 'all'>('messages');
+  const [foyersSubTab, setFoyersSubTab] = useState<'foyers' | 'accounts' | 'sessions' | 'all'>('foyers');
+  const [databaseSubTab, setDatabaseSubTab] = useState<'supabase' | 'migrations' | 'sync' | 'push' | 'all'>('supabase');
+  const [configSubTab, setConfigSubTab] = useState<'maintenance' | 'icons' | 'cache' | 'all'>('maintenance');
+  const [diagnosticsSubTab, setDiagnosticsSubTab] = useState<'logs' | 'environment' | 'danger' | 'all'>('logs');
   const [userSearchTerm, setUserSearchTerm] = useState('');
 
   // Contact Messages Support System
@@ -1078,45 +1082,77 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
       {/* TOP QUICK STATUS PILL BAR                                 */}
       {/* ========================================================= */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-2.5 sm:p-3 border border-slate-100/90 dark:border-slate-700/60 shadow-xs">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs font-bold">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-bold">
           {/* Supabase status */}
-          <div className="flex items-center justify-between sm:justify-start gap-2 px-3 py-2 rounded-xl bg-slate-50/80 dark:bg-slate-700/40 text-slate-700 dark:text-slate-200">
-            <div className="flex items-center gap-2">
-              <span className="text-base">🗄️</span>
-              <span className={`w-2 h-2 rounded-full ${dbStatus === 'connected' ? 'bg-emerald-500' : dbStatus === 'checking' ? 'bg-amber-500 animate-ping' : 'bg-rose-500'}`} />
-              <span>{dbStatus === 'connected' ? 'Supabase' : dbStatus === 'checking' ? 'Vérif...' : 'Supabase HS'}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveAdminTab('database');
+              setDatabaseSubTab('supabase');
+            }}
+            className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-50/80 hover:bg-blue-50/70 dark:bg-slate-700/40 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer transition-colors text-left"
+            title="Aller au sous-menu Supabase"
+          >
+            <div className="flex items-center gap-2 truncate">
+              <span className="text-base shrink-0">🗄️</span>
+              <span className={`w-2 h-2 rounded-full shrink-0 ${dbStatus === 'connected' ? 'bg-emerald-500' : dbStatus === 'checking' ? 'bg-amber-500 animate-ping' : 'bg-rose-500'}`} />
+              <span className="truncate">{dbStatus === 'connected' ? 'Supabase' : dbStatus === 'checking' ? 'Vérif...' : 'Supabase HS'}</span>
             </div>
             {latencyMs !== null && dbStatus === 'connected' && (
-              <span className="text-[10px] text-slate-400 font-mono ml-auto">{latencyMs}ms</span>
+              <span className="text-[10px] text-slate-400 font-mono ml-auto shrink-0">{latencyMs}ms</span>
             )}
-          </div>
+          </button>
 
           {/* Push status */}
-          <div className="flex items-center justify-between sm:justify-start gap-2 px-3 py-2 rounded-xl bg-slate-50/80 dark:bg-slate-700/40 text-slate-700 dark:text-slate-200">
-            <div className="flex items-center gap-2">
-              <span className="text-base">📡</span>
-              <span className={`w-2 h-2 rounded-full ${pushPermission === 'granted' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-              <span>{pushPermission === 'granted' ? 'Push actif' : 'Push en attente'}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveAdminTab('database');
+              setDatabaseSubTab('push');
+            }}
+            className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-50/80 hover:bg-blue-50/70 dark:bg-slate-700/40 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer transition-colors text-left"
+            title="Aller au sous-menu Push & Notifications"
+          >
+            <div className="flex items-center gap-2 truncate">
+              <span className="text-base shrink-0">📡</span>
+              <span className={`w-2 h-2 rounded-full shrink-0 ${pushPermission === 'granted' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+              <span className="truncate">{pushPermission === 'granted' ? 'Push actif' : 'Push en attente'}</span>
             </div>
-          </div>
+          </button>
 
           {/* Synchro status */}
-          <div className="flex items-center justify-between sm:justify-start gap-2 px-3 py-2 rounded-xl bg-slate-50/80 dark:bg-slate-700/40 text-slate-700 dark:text-slate-200">
-            <div className="flex items-center gap-2">
-              <span className="text-base">🔄</span>
-              <span>Synchro Cloud</span>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveAdminTab('database');
+              setDatabaseSubTab('sync');
+            }}
+            className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-50/80 hover:bg-blue-50/70 dark:bg-slate-700/40 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer transition-colors text-left"
+            title="Aller au sous-menu Synchronisation Cloud"
+          >
+            <div className="flex items-center gap-2 truncate">
+              <span className="text-base shrink-0">🔄</span>
+              <span className="truncate">Synchro Cloud</span>
             </div>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 ml-auto" />
-          </div>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 ml-auto shrink-0" />
+          </button>
 
           {/* Maintenance status */}
-          <div className="flex items-center justify-between sm:justify-start gap-2 px-3 py-2 rounded-xl bg-slate-50/80 dark:bg-slate-700/40 text-slate-700 dark:text-slate-200">
-            <div className="flex items-center gap-2">
-              <span className="text-base">🛠️</span>
-              <span>{isMaintenanceMode ? 'Maintenance ON' : 'Accès public'}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveAdminTab('config');
+              setConfigSubTab('maintenance');
+            }}
+            className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-50/80 hover:bg-amber-50/70 dark:bg-slate-700/40 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer transition-colors text-left"
+            title="Aller au sous-menu Mode Maintenance"
+          >
+            <div className="flex items-center gap-2 truncate">
+              <span className="text-base shrink-0">🛠️</span>
+              <span className="truncate">{isMaintenanceMode ? 'Maintenance ON' : 'Accès public'}</span>
             </div>
-            <span className={`w-2 h-2 rounded-full ml-auto ${isMaintenanceMode ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
-          </div>
+            <span className={`w-2 h-2 rounded-full ml-auto shrink-0 ${isMaintenanceMode ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
+          </button>
         </div>
       </div>
 
@@ -1249,16 +1285,95 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
       {/* ========================================================= */}
       {(activeAdminTab === 'foyers' || activeAdminTab === 'all') && (
         <div className="space-y-4 animate-fade-in">
+          {/* Sous-menus Foyers & Utilisateurs */}
+          {activeAdminTab === 'foyers' && (
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-2 border border-sky-100 dark:border-slate-700/60 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2 hidden sm:inline-block">
+                  Sous-menus :
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setFoyersSubTab('foyers')}
+                  className={`px-3.5 py-2 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                    foyersSubTab === 'foyers'
+                      ? 'bg-sky-500 text-white shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <span>🏠</span>
+                  <span>Foyers partagés</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFoyersSubTab('accounts')}
+                  className={`px-3.5 py-2 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                    foyersSubTab === 'accounts'
+                      ? 'bg-sky-500 text-white shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <span>👤</span>
+                  <span>Comptes & Mots de passe</span>
+                  <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                    foyersSubTab === 'accounts'
+                      ? 'bg-sky-600 text-white'
+                      : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
+                  }`}>
+                    {profiles.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFoyersSubTab('sessions')}
+                  className={`px-3.5 py-2 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                    foyersSubTab === 'sessions'
+                      ? 'bg-sky-500 text-white shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <span>🔐</span>
+                  <span>Sessions récentes</span>
+                  <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                    foyersSubTab === 'sessions'
+                      ? 'bg-sky-600 text-white'
+                      : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300'
+                  }`}>
+                    {loginHistory.length}
+                  </span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setFoyersSubTab(foyersSubTab === 'all' ? 'foyers' : 'all')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 self-end sm:self-auto cursor-pointer ${
+                  foyersSubTab === 'all'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                }`}
+                title="Afficher toutes les cartes de cette rubrique"
+              >
+                <span>{foyersSubTab === 'all' ? '✓ Vue ciblée' : '📋 Tout afficher'}</span>
+              </button>
+            </div>
+          )}
+
           {/* 1.A. ADMINISTRATION DES FOYERS */}
-          <AdminFoyersSection
-            expenses={expenses}
-            reminders={reminders}
-            currentFoyer={currentFoyer}
-            setToastInfo={setToastInfo}
-            onSwitchFoyer={onSwitchFoyer}
-          />
+          {(foyersSubTab === 'foyers' || foyersSubTab === 'all' || activeAdminTab === 'all') && (
+            <AdminFoyersSection
+              expenses={expenses}
+              reminders={reminders}
+              currentFoyer={currentFoyer}
+              setToastInfo={setToastInfo}
+              onSwitchFoyer={onSwitchFoyer}
+            />
+          )}
 
           {/* 1.B. GESTION DES COMPTES & MOTS DE PASSE */}
+          {(foyersSubTab === 'accounts' || foyersSubTab === 'all' || activeAdminTab === 'all') && (
           <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3.5 min-w-0">
@@ -1381,8 +1496,10 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
               )}
             </div>
           </div>
+          )}
 
           {/* 1.C. SESSIONS & CONNEXIONS RÉCENTES */}
+          {(foyersSubTab === 'sessions' || foyersSubTab === 'all' || activeAdminTab === 'all') && (
           <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3.5">
@@ -1424,6 +1541,7 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
               </div>
             )}
           </div>
+          )}
         </div>
       )}
 
@@ -1432,7 +1550,84 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
       {/* ========================================================= */}
       {(activeAdminTab === 'database' || activeAdminTab === 'all') && (
         <div className="space-y-4 animate-fade-in">
+          {/* Sous-menus Base & Synchro */}
+          {activeAdminTab === 'database' && (
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-2 border border-blue-100 dark:border-slate-700/60 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2 hidden sm:inline-block">
+                  Sous-menus :
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setDatabaseSubTab('supabase')}
+                  className={`px-3.5 py-2 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                    databaseSubTab === 'supabase'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <span>⚡</span>
+                  <span>Supabase & Tables</span>
+                  <span className={`w-2 h-2 rounded-full ${dbStatus === 'connected' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDatabaseSubTab('migrations')}
+                  className={`px-3.5 py-2 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                    databaseSubTab === 'migrations'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <span>🔀</span>
+                  <span>Migrations SQL</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDatabaseSubTab('sync')}
+                  className={`px-3.5 py-2 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                    databaseSubTab === 'sync'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <span>🔄</span>
+                  <span>Synchro Cloud</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDatabaseSubTab('push')}
+                  className={`px-3.5 py-2 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                    databaseSubTab === 'push'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <span>📡</span>
+                  <span>Push & Notifications</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setDatabaseSubTab(databaseSubTab === 'all' ? 'supabase' : 'all')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 self-end sm:self-auto cursor-pointer ${
+                  databaseSubTab === 'all'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                }`}
+                title="Afficher toutes les cartes de cette rubrique"
+              >
+                <span>{databaseSubTab === 'all' ? '✓ Vue ciblée' : '📋 Tout afficher'}</span>
+              </button>
+            </div>
+          )}
+
           {/* 2.A. BASE DE DONNÉES SUPABASE */}
+          {(databaseSubTab === 'supabase' || databaseSubTab === 'all' || activeAdminTab === 'all') && (
           <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3.5">
@@ -1523,8 +1718,10 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
               </div>
             )}
           </div>
+          )}
 
           {/* 2.B. MIGRATIONS & STRUCTURE SQL */}
+          {(databaseSubTab === 'migrations' || databaseSubTab === 'all' || activeAdminTab === 'all') && (
           <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3.5">
@@ -1619,8 +1816,10 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
               </div>
             )}
           </div>
+          )}
 
           {/* 2.C. SYNCHRONISATION */}
+          {(databaseSubTab === 'sync' || databaseSubTab === 'all' || activeAdminTab === 'all') && (
           <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-start sm:items-center gap-3.5">
@@ -1655,8 +1854,10 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
               </button>
             </div>
           </div>
+          )}
 
           {/* 2.D. PUSH & NOTIFICATIONS */}
+          {(databaseSubTab === 'push' || databaseSubTab === 'all' || activeAdminTab === 'all') && (
           <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-start sm:items-center gap-3.5">
@@ -1692,6 +1893,7 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
               </button>
             </div>
           </div>
+          )}
         </div>
       )}
 
@@ -1700,7 +1902,71 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
       {/* ========================================================= */}
       {(activeAdminTab === 'config' || activeAdminTab === 'all') && (
         <div className="space-y-4 animate-fade-in">
+          {/* Sous-menus Configuration */}
+          {activeAdminTab === 'config' && (
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-2 border border-amber-100 dark:border-slate-700/60 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2 hidden sm:inline-block">
+                  Sous-menus :
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setConfigSubTab('maintenance')}
+                  className={`px-3.5 py-2 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                    configSubTab === 'maintenance'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <span>🛠️</span>
+                  <span>Mode Maintenance</span>
+                  <span className={`w-2 h-2 rounded-full ${isMaintenanceMode ? 'bg-amber-300 animate-pulse' : 'bg-emerald-400'}`} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setConfigSubTab('icons')}
+                  className={`px-3.5 py-2 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                    configSubTab === 'icons'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <span>🎨</span>
+                  <span>Icônes de Catégorie</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setConfigSubTab('cache')}
+                  className={`px-3.5 py-2 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                    configSubTab === 'cache'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <span>💾</span>
+                  <span>Cache & Stockage</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setConfigSubTab(configSubTab === 'all' ? 'maintenance' : 'all')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 self-end sm:self-auto cursor-pointer ${
+                  configSubTab === 'all'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                }`}
+                title="Afficher toutes les cartes de cette rubrique"
+              >
+                <span>{configSubTab === 'all' ? '✓ Vue ciblée' : '📋 Tout afficher'}</span>
+              </button>
+            </div>
+          )}
+
           {/* 3.A. MODE MAINTENANCE */}
+          {(configSubTab === 'maintenance' || configSubTab === 'all' || activeAdminTab === 'all') && (
           <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3.5 min-w-0">
@@ -1760,11 +2026,15 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
               </p>
             </div>
           </div>
+          )}
 
           {/* 3.B. GESTION DES ICÔNES DE CATÉGORIE */}
-          <CategoryIconManagementSection categories={categories} setToastInfo={setToastInfo} />
+          {(configSubTab === 'icons' || configSubTab === 'all' || activeAdminTab === 'all') && (
+            <CategoryIconManagementSection categories={categories} setToastInfo={setToastInfo} />
+          )}
 
           {/* 3.C. CACHE & STOCKAGE TECHNIQUE */}
+          {(configSubTab === 'cache' || configSubTab === 'all' || activeAdminTab === 'all') && (
           <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-start sm:items-center gap-3.5">
@@ -1811,6 +2081,7 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
               </div>
             </div>
           </div>
+          )}
         </div>
       )}
 
@@ -1819,7 +2090,75 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
       {/* ========================================================= */}
       {(activeAdminTab === 'diagnostics' || activeAdminTab === 'all') && (
         <div className="space-y-4 animate-fade-in">
+          {/* Sous-menus Diagnostics */}
+          {activeAdminTab === 'diagnostics' && (
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-2 border border-slate-200/80 dark:border-slate-700/60 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2 hidden sm:inline-block">
+                  Sous-menus :
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setDiagnosticsSubTab('logs')}
+                  className={`px-3.5 py-2 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                    diagnosticsSubTab === 'logs'
+                      ? 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <span>📋</span>
+                  <span>Journaux & Alertes</span>
+                  {errorLogs.length > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-rose-500 text-white font-bold">
+                      {errorLogs.length}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDiagnosticsSubTab('environment')}
+                  className={`px-3.5 py-2 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                    diagnosticsSubTab === 'environment'
+                      ? 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <span>🌐</span>
+                  <span>Environnement & Système</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDiagnosticsSubTab('danger')}
+                  className={`px-3.5 py-2 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                    diagnosticsSubTab === 'danger'
+                      ? 'bg-rose-600 text-white shadow-xs'
+                      : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/40'
+                  }`}
+                >
+                  <span>⚠️</span>
+                  <span>Zone critique</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setDiagnosticsSubTab(diagnosticsSubTab === 'all' ? 'logs' : 'all')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 self-end sm:self-auto cursor-pointer ${
+                  diagnosticsSubTab === 'all'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                }`}
+                title="Afficher toutes les cartes de cette rubrique"
+              >
+                <span>{diagnosticsSubTab === 'all' ? '✓ Vue ciblée' : '📋 Tout afficher'}</span>
+              </button>
+            </div>
+          )}
+
           {/* 4.A. JOURNAUX & DIAGNOSTICS */}
+          {(diagnosticsSubTab === 'logs' || diagnosticsSubTab === 'all' || activeAdminTab === 'all') && (
           <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-start sm:items-center gap-3.5">
@@ -1870,8 +2209,10 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
               </div>
             )}
           </div>
+          )}
 
           {/* 4.B. ENVIRONNEMENT & MÉTRIQUES SYSTÈME */}
+          {(diagnosticsSubTab === 'environment' || diagnosticsSubTab === 'all' || activeAdminTab === 'all') && (
           <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-3">
             <h4 className="font-extrabold text-slate-900 dark:text-white text-sm">
               Environnement d'exécution
@@ -1901,8 +2242,10 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
               </div>
             </div>
           </div>
+          )}
 
           {/* 4.C. ZONE CRITIQUE */}
+          {(diagnosticsSubTab === 'danger' || diagnosticsSubTab === 'all' || activeAdminTab === 'all') && (
           <div className="bg-[#fef2f2] dark:bg-rose-950/25 border border-rose-200/90 dark:border-rose-900/60 rounded-[26px] p-5 sm:p-6 space-y-4 shadow-2xs">
             <div className="flex items-center gap-3.5">
               <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-900/70 flex items-center justify-center text-[#ef4444] dark:text-rose-400 shrink-0">
@@ -1954,6 +2297,7 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
               <span>Confirmation requise avant toute action</span>
             </div>
           </div>
+          )}
         </div>
       )}
 

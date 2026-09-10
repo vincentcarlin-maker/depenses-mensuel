@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { ContactMessage, ContactSubject } from '../types';
 import { getContactSubjectBadge } from '../utils/contactService';
-import mailbox3DImg from '../src/assets/images/contact_mailbox_3d_1789042457133.jpg';
-import chatHeart3DImg from '../src/assets/images/contact_chat_heart_3d_1789042477464.jpg';
+
+const mailbox3DImg = '/contact-mailbox-3d.jpg';
+const chatHeart3DImg = '/contact-chat-heart-3d.jpg';
 
 interface AdminContactMessagesSectionProps {
   messages: ContactMessage[];
@@ -157,24 +158,19 @@ export const AdminContactMessagesSection: React.FC<AdminContactMessagesSectionPr
           {/* 3D Mailbox Asset */}
           <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 flex items-center justify-center rounded-2xl overflow-hidden bg-white/40 dark:bg-slate-700/40 p-1 shadow-3xs">
             <img
-              src={mailbox3DImg || './contact-mailbox-3d.jpg'}
+              src="/contact-mailbox-3d.jpg"
               alt="Boîte aux lettres support"
               className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal drop-shadow-xs"
               loading="eager"
               onError={(e) => {
                 const target = e.currentTarget;
-                if (!target.dataset.retried) {
-                  target.dataset.retried = 'true';
-                  target.src = './contact-mailbox-3d.jpg';
-                } else {
-                  target.style.display = 'none';
-                  const parent = target.parentElement;
-                  if (parent && !parent.querySelector('.mailbox-fallback')) {
-                    const fallback = document.createElement('span');
-                    fallback.className = 'mailbox-fallback text-2xl sm:text-3xl select-none';
-                    fallback.innerText = '📬';
-                    parent.appendChild(fallback);
-                  }
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent && !parent.querySelector('.mailbox-fallback')) {
+                  const fallback = document.createElement('span');
+                  fallback.className = 'mailbox-fallback text-2xl sm:text-3xl select-none';
+                  fallback.innerText = '📬';
+                  parent.appendChild(fallback);
                 }
               }}
             />
@@ -197,24 +193,19 @@ export const AdminContactMessagesSection: React.FC<AdminContactMessagesSectionPr
         {/* Right section: 3D Chat Heart Asset */}
         <div className="shrink-0 hidden xs:flex sm:flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-2xl overflow-hidden bg-white/40 dark:bg-slate-700/40 p-1 shadow-3xs">
           <img
-            src={chatHeart3DImg || './contact-chat-heart-3d.jpg'}
+            src="/contact-chat-heart-3d.jpg"
             alt="Bulle contact"
             className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal drop-shadow-xs"
             loading="eager"
             onError={(e) => {
               const target = e.currentTarget;
-              if (!target.dataset.retried) {
-                target.dataset.retried = 'true';
-                target.src = './contact-chat-heart-3d.jpg';
-              } else {
-                target.style.display = 'none';
-                const parent = target.parentElement;
-                if (parent && !parent.querySelector('.chat-fallback')) {
-                  const fallback = document.createElement('span');
-                  fallback.className = 'chat-fallback text-2xl sm:text-3xl select-none';
-                  fallback.innerText = '💬';
-                  parent.appendChild(fallback);
-                }
+              target.style.display = 'none';
+              const parent = target.parentElement;
+              if (parent && !parent.querySelector('.chat-fallback')) {
+                const fallback = document.createElement('span');
+                fallback.className = 'chat-fallback text-2xl sm:text-3xl select-none';
+                fallback.innerText = '💬';
+                parent.appendChild(fallback);
               }
             }}
           />
@@ -242,50 +233,50 @@ export const AdminContactMessagesSection: React.FC<AdminContactMessagesSectionPr
       </div>
 
       {/* ========================================================= */}
-      {/* 3. THE 4 METRIC CARDS (KPI) (Card 3) - Compact & Elegant  */}
+      {/* 3. THE 4 METRIC CARDS (KPI) - Taille diminuée et compacte */}
       {/* ========================================================= */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-2">
         {/* TOTAL REÇUS */}
         <div
           onClick={() => {
             setSelectedStatusFilter('all');
             setSelectedSubjectFilter('all');
           }}
-          className={`bg-[#eff6ff] dark:bg-blue-950/30 border border-[#dbeafe] dark:border-blue-900/50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 cursor-pointer hover:shadow-xs active:scale-[0.98] transition-all flex flex-col justify-between ${
+          className={`bg-[#eff6ff] dark:bg-blue-950/30 border border-[#dbeafe] dark:border-blue-900/50 rounded-xl p-2 sm:p-2.5 cursor-pointer hover:shadow-xs active:scale-[0.98] transition-all flex items-center justify-between gap-2 ${
             selectedStatusFilter === 'all' && selectedSubjectFilter === 'all' ? 'ring-2 ring-blue-500/40 shadow-xs' : ''
           }`}
         >
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">
+          <div className="min-w-0">
+            <span className="text-[9px] sm:text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate">
               TOTAL REÇUS
             </span>
-            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md sm:rounded-lg bg-[#3b82f6] text-white flex items-center justify-center text-[10px] sm:text-xs shadow-2xs shrink-0">
-              💬
-            </div>
+            <p className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-tight mt-0.5">
+              {stats.total}
+            </p>
           </div>
-          <p className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1.5 leading-none">
-            {stats.total}
-          </p>
+          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#3b82f6] text-white flex items-center justify-center text-xs shadow-2xs shrink-0">
+            💬
+          </div>
         </div>
 
         {/* EN ATTENTE */}
         <div
           onClick={() => setSelectedStatusFilter('pending')}
-          className={`bg-[#fffbeb] dark:bg-amber-950/30 border border-[#fef3c7] dark:border-amber-900/50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 cursor-pointer hover:shadow-xs active:scale-[0.98] transition-all flex flex-col justify-between ${
+          className={`bg-[#fffbeb] dark:bg-amber-950/30 border border-[#fef3c7] dark:border-amber-900/50 rounded-xl p-2 sm:p-2.5 cursor-pointer hover:shadow-xs active:scale-[0.98] transition-all flex items-center justify-between gap-2 ${
             selectedStatusFilter === 'pending' ? 'ring-2 ring-amber-500/40 shadow-xs' : ''
           }`}
         >
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">
+          <div className="min-w-0">
+            <span className="text-[9px] sm:text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate">
               EN ATTENTE
             </span>
-            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md sm:rounded-lg bg-[#f59e0b] text-white flex items-center justify-center text-[10px] sm:text-xs shadow-2xs shrink-0">
-              ⏱️
-            </div>
+            <p className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-tight mt-0.5">
+              {stats.pending}
+            </p>
           </div>
-          <p className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1.5 leading-none">
-            {stats.pending}
-          </p>
+          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#f59e0b] text-white flex items-center justify-center text-xs shadow-2xs shrink-0">
+            ⏱️
+          </div>
         </div>
 
         {/* BUGS SIGNALÉS */}
@@ -294,41 +285,41 @@ export const AdminContactMessagesSection: React.FC<AdminContactMessagesSectionPr
             setSelectedSubjectFilter('bug');
             setSelectedStatusFilter('all');
           }}
-          className={`bg-[#fff1f2] dark:bg-rose-950/30 border border-[#ffe4e6] dark:border-rose-900/50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 cursor-pointer hover:shadow-xs active:scale-[0.98] transition-all flex flex-col justify-between ${
+          className={`bg-[#fff1f2] dark:bg-rose-950/30 border border-[#ffe4e6] dark:border-rose-900/50 rounded-xl p-2 sm:p-2.5 cursor-pointer hover:shadow-xs active:scale-[0.98] transition-all flex items-center justify-between gap-2 ${
             selectedSubjectFilter === 'bug' ? 'ring-2 ring-rose-500/40 shadow-xs' : ''
           }`}
         >
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">
+          <div className="min-w-0">
+            <span className="text-[9px] sm:text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate">
               BUGS SIGNALÉS
             </span>
-            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md sm:rounded-lg bg-[#f43f5e] text-white flex items-center justify-center text-[10px] sm:text-xs shadow-2xs shrink-0">
-              🐞
-            </div>
+            <p className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-tight mt-0.5">
+              {stats.bugs}
+            </p>
           </div>
-          <p className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1.5 leading-none">
-            {stats.bugs}
-          </p>
+          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#f43f5e] text-white flex items-center justify-center text-xs shadow-2xs shrink-0">
+            🐞
+          </div>
         </div>
 
-        {/* RÉSOLUS / CLÔTURÉS */}
+        {/* RÉSOLUS / CLOS */}
         <div
           onClick={() => setSelectedStatusFilter('closed')}
-          className={`bg-[#f0fdf4] dark:bg-emerald-950/30 border border-[#dcfce7] dark:border-emerald-900/50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 cursor-pointer hover:shadow-xs active:scale-[0.98] transition-all flex flex-col justify-between ${
+          className={`bg-[#f0fdf4] dark:bg-emerald-950/30 border border-[#dcfce7] dark:border-emerald-900/50 rounded-xl p-2 sm:p-2.5 cursor-pointer hover:shadow-xs active:scale-[0.98] transition-all flex items-center justify-between gap-2 ${
             selectedStatusFilter === 'closed' ? 'ring-2 ring-emerald-500/40 shadow-xs' : ''
           }`}
         >
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">
+          <div className="min-w-0">
+            <span className="text-[9px] sm:text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate">
               RÉSOLUS / CLOS
             </span>
-            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md sm:rounded-lg bg-[#10b981] text-white flex items-center justify-center text-[10px] sm:text-xs shadow-2xs shrink-0">
-              ✓
-            </div>
+            <p className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-tight mt-0.5">
+              {stats.closed}
+            </p>
           </div>
-          <p className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1.5 leading-none">
-            {stats.closed}
-          </p>
+          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#10b981] text-white flex items-center justify-center text-xs shadow-2xs shrink-0">
+            ✓
+          </div>
         </div>
       </div>
 
@@ -442,24 +433,19 @@ export const AdminContactMessagesSection: React.FC<AdminContactMessagesSectionPr
         <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-10 text-center border border-slate-100/90 dark:border-slate-700/60 shadow-3xs space-y-3">
           <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto flex items-center justify-center rounded-2xl overflow-hidden bg-slate-50 dark:bg-slate-700/50 p-1.5 shadow-3xs">
             <img
-              src={mailbox3DImg || './contact-mailbox-3d.jpg'}
+              src="/contact-mailbox-3d.jpg"
               alt="Boîte aux lettres vide"
               className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal"
               loading="eager"
               onError={(e) => {
                 const target = e.currentTarget;
-                if (!target.dataset.retried) {
-                  target.dataset.retried = 'true';
-                  target.src = './contact-mailbox-3d.jpg';
-                } else {
-                  target.style.display = 'none';
-                  const parent = target.parentElement;
-                  if (parent && !parent.querySelector('.empty-mailbox-fallback')) {
-                    const fallback = document.createElement('div');
-                    fallback.className = 'empty-mailbox-fallback w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 flex items-center justify-center text-3xl shadow-3xs';
-                    fallback.innerText = '📬';
-                    parent.appendChild(fallback);
-                  }
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent && !parent.querySelector('.empty-mailbox-fallback')) {
+                  const fallback = document.createElement('div');
+                  fallback.className = 'empty-mailbox-fallback w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 flex items-center justify-center text-3xl shadow-3xs';
+                  fallback.innerText = '📬';
+                  parent.appendChild(fallback);
                 }
               }}
             />
