@@ -16,7 +16,24 @@ export default defineConfig({
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp}']
       },
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo.png', 'piggy-bank.png', 'banner-avance.png', 'banner-retard.png', 'yellow-coin.png', 'cagnotte-pig.jpg', 'cagnotte-pig-3d.jpg'],
+      includeAssets: [
+        'favicon.ico',
+        'apple-touch-icon.png',
+        'logo.png',
+        'piggy-bank.png',
+        'banner-avance.png',
+        'banner-retard.png',
+        'yellow-coin.png',
+        'cagnotte-pig.jpg',
+        'cagnotte-pig-3d.jpg',
+        'contact-mailbox-3d.jpg',
+        'contact-chat-heart-3d.jpg',
+        'contact-headset-bubble.jpg',
+        'contact-bug-3d.jpg',
+        'contact-suggestion-3d.jpg',
+        'contact-question-3d.jpg',
+        'contact-chat-3d.jpg'
+      ],
       manifest: {
         name: 'DuoBudget',
         short_name: 'DuoBudget',

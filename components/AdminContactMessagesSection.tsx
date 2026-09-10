@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { ContactMessage, ContactSubject } from '../types';
 import { getContactSubjectBadge } from '../utils/contactService';
+import mailbox3DImg from '../src/assets/images/contact_mailbox_3d_1789042457133.jpg';
+import chatHeart3DImg from '../src/assets/images/contact_chat_heart_3d_1789042477464.jpg';
 
 interface AdminContactMessagesSectionProps {
   messages: ContactMessage[];
@@ -153,12 +155,28 @@ export const AdminContactMessagesSection: React.FC<AdminContactMessagesSectionPr
           )}
 
           {/* 3D Mailbox Asset */}
-          <div className="w-14 h-14 sm:w-16 sm:h-16 shrink-0 flex items-center justify-center">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 flex items-center justify-center rounded-2xl overflow-hidden bg-white/40 dark:bg-slate-700/40 p-1 shadow-3xs">
             <img
-              src="/contact-mailbox-3d.jpg"
+              src={mailbox3DImg || './contact-mailbox-3d.jpg'}
               alt="Boîte aux lettres support"
-              className="w-full h-full object-contain drop-shadow-sm"
+              className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal drop-shadow-xs"
               loading="eager"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (!target.dataset.retried) {
+                  target.dataset.retried = 'true';
+                  target.src = './contact-mailbox-3d.jpg';
+                } else {
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent && !parent.querySelector('.mailbox-fallback')) {
+                    const fallback = document.createElement('span');
+                    fallback.className = 'mailbox-fallback text-2xl sm:text-3xl select-none';
+                    fallback.innerText = '📬';
+                    parent.appendChild(fallback);
+                  }
+                }
+              }}
             />
           </div>
 
@@ -177,12 +195,28 @@ export const AdminContactMessagesSection: React.FC<AdminContactMessagesSectionPr
         </div>
 
         {/* Right section: 3D Chat Heart Asset */}
-        <div className="shrink-0 hidden xs:flex sm:flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20">
+        <div className="shrink-0 hidden xs:flex sm:flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-2xl overflow-hidden bg-white/40 dark:bg-slate-700/40 p-1 shadow-3xs">
           <img
-            src="/contact-chat-heart-3d.jpg"
+            src={chatHeart3DImg || './contact-chat-heart-3d.jpg'}
             alt="Bulle contact"
-            className="w-full h-full object-contain drop-shadow-sm"
+            className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal drop-shadow-xs"
             loading="eager"
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (!target.dataset.retried) {
+                target.dataset.retried = 'true';
+                target.src = './contact-chat-heart-3d.jpg';
+              } else {
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent && !parent.querySelector('.chat-fallback')) {
+                  const fallback = document.createElement('span');
+                  fallback.className = 'chat-fallback text-2xl sm:text-3xl select-none';
+                  fallback.innerText = '💬';
+                  parent.appendChild(fallback);
+                }
+              }
+            }}
           />
         </div>
       </div>
@@ -208,50 +242,50 @@ export const AdminContactMessagesSection: React.FC<AdminContactMessagesSectionPr
       </div>
 
       {/* ========================================================= */}
-      {/* 3. THE 4 METRIC CARDS (KPI) (Card 3)                      */}
+      {/* 3. THE 4 METRIC CARDS (KPI) (Card 3) - Compact & Elegant  */}
       {/* ========================================================= */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5">
         {/* TOTAL REÇUS */}
         <div
           onClick={() => {
             setSelectedStatusFilter('all');
             setSelectedSubjectFilter('all');
           }}
-          className={`bg-[#eff6ff] dark:bg-blue-950/30 border border-[#dbeafe] dark:border-blue-900/50 rounded-2xl p-4 sm:p-5 flex flex-col justify-between cursor-pointer hover:shadow-2xs transition-all ${
-            selectedStatusFilter === 'all' && selectedSubjectFilter === 'all' ? 'ring-2 ring-blue-500/30' : ''
+          className={`bg-[#eff6ff] dark:bg-blue-950/30 border border-[#dbeafe] dark:border-blue-900/50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 cursor-pointer hover:shadow-xs active:scale-[0.98] transition-all flex flex-col justify-between ${
+            selectedStatusFilter === 'all' && selectedSubjectFilter === 'all' ? 'ring-2 ring-blue-500/40 shadow-xs' : ''
           }`}
         >
-          <div className="w-9 h-9 rounded-full bg-[#3b82f6] text-white flex items-center justify-center text-sm shadow-xs">
-            💬
-          </div>
-          <div>
-            <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 dark:text-slate-400 uppercase tracking-wider mt-3">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">
               TOTAL REÇUS
-            </p>
-            <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1 leading-none">
-              {stats.total}
-            </p>
+            </span>
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md sm:rounded-lg bg-[#3b82f6] text-white flex items-center justify-center text-[10px] sm:text-xs shadow-2xs shrink-0">
+              💬
+            </div>
           </div>
+          <p className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1.5 leading-none">
+            {stats.total}
+          </p>
         </div>
 
         {/* EN ATTENTE */}
         <div
           onClick={() => setSelectedStatusFilter('pending')}
-          className={`bg-[#fffbeb] dark:bg-amber-950/30 border border-[#fef3c7] dark:border-amber-900/50 rounded-2xl p-4 sm:p-5 flex flex-col justify-between cursor-pointer hover:shadow-2xs transition-all ${
-            selectedStatusFilter === 'pending' ? 'ring-2 ring-amber-500/30' : ''
+          className={`bg-[#fffbeb] dark:bg-amber-950/30 border border-[#fef3c7] dark:border-amber-900/50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 cursor-pointer hover:shadow-xs active:scale-[0.98] transition-all flex flex-col justify-between ${
+            selectedStatusFilter === 'pending' ? 'ring-2 ring-amber-500/40 shadow-xs' : ''
           }`}
         >
-          <div className="w-9 h-9 rounded-full bg-[#f59e0b] text-white flex items-center justify-center text-sm shadow-xs">
-            ⏱️
-          </div>
-          <div>
-            <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 dark:text-slate-400 uppercase tracking-wider mt-3">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">
               EN ATTENTE
-            </p>
-            <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1 leading-none">
-              {stats.pending}
-            </p>
+            </span>
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md sm:rounded-lg bg-[#f59e0b] text-white flex items-center justify-center text-[10px] sm:text-xs shadow-2xs shrink-0">
+              ⏱️
+            </div>
           </div>
+          <p className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1.5 leading-none">
+            {stats.pending}
+          </p>
         </div>
 
         {/* BUGS SIGNALÉS */}
@@ -260,41 +294,41 @@ export const AdminContactMessagesSection: React.FC<AdminContactMessagesSectionPr
             setSelectedSubjectFilter('bug');
             setSelectedStatusFilter('all');
           }}
-          className={`bg-[#fff1f2] dark:bg-rose-950/30 border border-[#ffe4e6] dark:border-rose-900/50 rounded-2xl p-4 sm:p-5 flex flex-col justify-between cursor-pointer hover:shadow-2xs transition-all ${
-            selectedSubjectFilter === 'bug' ? 'ring-2 ring-rose-500/30' : ''
+          className={`bg-[#fff1f2] dark:bg-rose-950/30 border border-[#ffe4e6] dark:border-rose-900/50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 cursor-pointer hover:shadow-xs active:scale-[0.98] transition-all flex flex-col justify-between ${
+            selectedSubjectFilter === 'bug' ? 'ring-2 ring-rose-500/40 shadow-xs' : ''
           }`}
         >
-          <div className="w-9 h-9 rounded-full bg-[#f43f5e] text-white flex items-center justify-center text-sm shadow-xs">
-            🐞
-          </div>
-          <div>
-            <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 dark:text-slate-400 uppercase tracking-wider mt-3">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">
               BUGS SIGNALÉS
-            </p>
-            <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1 leading-none">
-              {stats.bugs}
-            </p>
+            </span>
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md sm:rounded-lg bg-[#f43f5e] text-white flex items-center justify-center text-[10px] sm:text-xs shadow-2xs shrink-0">
+              🐞
+            </div>
           </div>
+          <p className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1.5 leading-none">
+            {stats.bugs}
+          </p>
         </div>
 
         {/* RÉSOLUS / CLÔTURÉS */}
         <div
           onClick={() => setSelectedStatusFilter('closed')}
-          className={`bg-[#f0fdf4] dark:bg-emerald-950/30 border border-[#dcfce7] dark:border-emerald-900/50 rounded-2xl p-4 sm:p-5 flex flex-col justify-between cursor-pointer hover:shadow-2xs transition-all ${
-            selectedStatusFilter === 'closed' ? 'ring-2 ring-emerald-500/30' : ''
+          className={`bg-[#f0fdf4] dark:bg-emerald-950/30 border border-[#dcfce7] dark:border-emerald-900/50 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 cursor-pointer hover:shadow-xs active:scale-[0.98] transition-all flex flex-col justify-between ${
+            selectedStatusFilter === 'closed' ? 'ring-2 ring-emerald-500/40 shadow-xs' : ''
           }`}
         >
-          <div className="w-9 h-9 rounded-full bg-[#10b981] text-white flex items-center justify-center text-sm shadow-xs">
-            ✓
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">
+              RÉSOLUS / CLOS
+            </span>
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md sm:rounded-lg bg-[#10b981] text-white flex items-center justify-center text-[10px] sm:text-xs shadow-2xs shrink-0">
+              ✓
+            </div>
           </div>
-          <div>
-            <p className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 dark:text-slate-400 uppercase tracking-wider mt-3">
-              RÉSOLUS / CLÔTURÉS
-            </p>
-            <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1 leading-none">
-              {stats.closed}
-            </p>
-          </div>
+          <p className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1.5 leading-none">
+            {stats.closed}
+          </p>
         </div>
       </div>
 
@@ -405,13 +439,29 @@ export const AdminContactMessagesSection: React.FC<AdminContactMessagesSectionPr
       {/* 5. MESSAGES LIST OR EMPTY STATE (Card 5)                  */}
       {/* ========================================================= */}
       {filteredMessages.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 sm:p-14 text-center border border-slate-100/90 dark:border-slate-700/60 shadow-3xs space-y-4">
-          <div className="w-28 h-28 sm:w-36 sm:h-36 mx-auto flex items-center justify-center">
+        <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-10 text-center border border-slate-100/90 dark:border-slate-700/60 shadow-3xs space-y-3">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto flex items-center justify-center rounded-2xl overflow-hidden bg-slate-50 dark:bg-slate-700/50 p-1.5 shadow-3xs">
             <img
-              src="/contact-mailbox-3d.jpg"
+              src={mailbox3DImg || './contact-mailbox-3d.jpg'}
               alt="Boîte aux lettres vide"
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal"
               loading="eager"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (!target.dataset.retried) {
+                  target.dataset.retried = 'true';
+                  target.src = './contact-mailbox-3d.jpg';
+                } else {
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent && !parent.querySelector('.empty-mailbox-fallback')) {
+                    const fallback = document.createElement('div');
+                    fallback.className = 'empty-mailbox-fallback w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 flex items-center justify-center text-3xl shadow-3xs';
+                    fallback.innerText = '📬';
+                    parent.appendChild(fallback);
+                  }
+                }
+              }}
             />
           </div>
           <div className="space-y-1">
@@ -425,7 +475,7 @@ export const AdminContactMessagesSection: React.FC<AdminContactMessagesSectionPr
           <button
             type="button"
             onClick={handleResetFilters}
-            className="px-5 py-2.5 rounded-full bg-[#eaf2ff] hover:bg-blue-100 active:scale-95 text-[#2563eb] font-extrabold text-xs sm:text-sm inline-flex items-center gap-2 transition-all cursor-pointer border border-blue-200/60 shadow-3xs"
+            className="px-5 py-2 rounded-full bg-[#eaf2ff] hover:bg-blue-100 active:scale-95 text-[#2563eb] font-extrabold text-xs sm:text-sm inline-flex items-center gap-2 transition-all cursor-pointer border border-blue-200/60 shadow-3xs"
           >
             <span>🔄</span>
             <span>Réinitialiser les filtres</span>
