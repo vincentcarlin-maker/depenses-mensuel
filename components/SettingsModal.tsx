@@ -11,6 +11,8 @@ import { type Profile, type LoginEvent } from '../hooks/useAuth';
 import ManagementTab from './ManagementTab';
 import NotificationsTab from './NotificationsTab';
 import ConfirmationModal from './ConfirmationModal';
+import ContactTab from './ContactTab';
+import { useContactMessages } from '../hooks/useContactMessages';
 import { TabId } from './BottomNavigation';
 import BottomNavigation from './BottomNavigation';
 import { useTheme } from '../hooks/useTheme';
@@ -54,7 +56,7 @@ interface SettingsModalProps {
   onLogout: () => void;
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
-  initialView?: 'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin' | 'keywords';
+  initialView?: 'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin' | 'keywords' | 'contact';
   currentFoyer?: Foyer;
   onDeleteOwnAccount?: (confirmPassword?: string) => Promise<{ success: boolean; error?: string } | boolean>;
   onUpdateUserColor?: (username: string, newColor: string) => Promise<boolean>;
@@ -118,7 +120,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     activeTab,
     onTabChange,
   } = props;
-  const [activeView, setActiveView] = useState<'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin' | 'keywords'>('main');
+  const [activeView, setActiveView] = useState<'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin' | 'keywords' | 'contact'>('main');
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const { themeSetting } = useTheme();
 
@@ -180,7 +182,8 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
       lists: 'Contenu des listes',
       data: 'Données & sauvegarde',
       admin: 'Administration & Développement',
-      management: 'Gestion de l\'application'
+      management: 'Gestion de l\'application',
+      contact: 'Nous contacter'
   };
 
   const activeRemindersCount = reminders.filter(r => r.is_active !== false).length;
@@ -194,6 +197,27 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
           ? props.loggedInUsername.toLowerCase().trim() === 'vincent'
           : ((props.loggedInUser as any) === User.Vincent || (props.loggedInUser as any) === 'Vincent' || (props.loggedInUser as any) === 'vincent'))
   );
+
+  const currentUserProfile = (props.profiles || []).find(
+    p => p.username.toLowerCase() === (props.loggedInUsername || props.loggedInUser || '').toLowerCase()
+  );
+
+  const {
+    userMessages: userContactMessages,
+    unreadRepliesCount: unreadContactRepliesCount,
+    sendMessage: handleContactSend,
+    sendReply: handleContactReply,
+    updateStatus: handleContactStatus,
+    markAsRead: handleContactMarkAsRead,
+  } = useContactMessages({
+    currentUser: props.loggedInUser,
+    currentUsername: props.loggedInUsername,
+    currentUserEmail: currentUserProfile?.email,
+    currentFoyerId: props.currentFoyer?.id,
+    currentFoyerName: props.currentFoyer?.name,
+    isAdmin: isVincentAdmin,
+    onToast: props.setToastInfo,
+  });
 
   return (
     <div 
@@ -395,6 +419,28 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         onClick={() => setActiveView('admin')}
                       />
                     )}
+                  </div>
+                </div>
+
+                {/* Section: Support & Contact */}
+                <div className="space-y-2">
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+                    Assistance & Support
+                  </h4>
+                  <div className="bg-white dark:bg-slate-800 rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden">
+                    <SettingsItemRow
+                      iconBg="bg-[#eff6ff] dark:bg-sky-950/60"
+                      iconColor="text-[#0284c7] dark:text-sky-400"
+                      icon={
+                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                      }
+                      title="Nous contacter"
+                      description="Signaler un bug, poser une question ou suggérer une idée"
+                      value={unreadContactRepliesCount > 0 ? `${unreadContactRepliesCount} réponse${unreadContactRepliesCount > 1 ? 's' : ''}` : undefined}
+                      onClick={() => setActiveView('contact')}
+                    />
                   </div>
                 </div>
 
@@ -737,6 +783,22 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         onDeleteOwnAccount={props.onDeleteOwnAccount}
                         onLeaveFoyer={props.onLeaveFoyer}
                         onCloseFoyer={props.onCloseFoyer}
+                    />
+                </div>
+            )}
+
+            {activeView === 'contact' && (
+                <div className="animate-fade-in">
+                    <ContactTab
+                        onBack={() => setActiveView('main')}
+                        userMessages={userContactMessages}
+                        unreadRepliesCount={unreadContactRepliesCount}
+                        onSendMessage={handleContactSend}
+                        onSendReply={handleContactReply}
+                        onUpdateStatus={handleContactStatus}
+                        onMarkAsRead={handleContactMarkAsRead}
+                        currentUserEmail={currentUserProfile?.email}
+                        currentUsername={props.loggedInUsername || props.loggedInUser}
                     />
                 </div>
             )}

@@ -5,6 +5,8 @@ import { Profile, LoginEvent } from '../hooks/useAuth';
 import ConfirmationModal from './ConfirmationModal';
 import SupabaseInstructionsModal from './SupabaseInstructionsModal';
 import AdminFoyersSection from './AdminFoyersSection';
+import AdminContactMessagesSection from './AdminContactMessagesSection';
+import { useContactMessages } from '../hooks/useContactMessages';
 import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
 import {
   MandatoryIcon,
@@ -668,8 +670,24 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
   // Active Admin Sub-tab
-  const [activeAdminTab, setActiveAdminTab] = useState<'foyers' | 'database' | 'config' | 'diagnostics' | 'all'>('foyers');
+  const [activeAdminTab, setActiveAdminTab] = useState<'messages' | 'foyers' | 'database' | 'config' | 'diagnostics' | 'all'>('messages');
   const [userSearchTerm, setUserSearchTerm] = useState('');
+
+  // Contact Messages Support System
+  const {
+    allMessages: contactMessages,
+    unreadAdminCount,
+    sendReply: handleContactReply,
+    updateStatus: handleContactStatus,
+    deleteMessage: handleContactDelete,
+    markAsRead: handleContactMarkAsRead,
+    refreshMessages: handleContactRefresh,
+  } = useContactMessages({
+    currentUser: loggedInUser,
+    currentUsername: loggedInUsername,
+    isAdmin: true,
+    onToast: setToastInfo,
+  });
 
   // Initialize environment detection
   useEffect(() => {
@@ -1108,6 +1126,28 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
       <div className="flex items-center gap-1.5 p-1.5 bg-slate-100/90 dark:bg-slate-800/90 rounded-2xl border border-slate-200/70 dark:border-slate-700/60 overflow-x-auto scrollbar-none">
         <button
           type="button"
+          onClick={() => setActiveAdminTab('messages')}
+          className={`px-3.5 py-2.5 rounded-xl font-extrabold text-xs flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
+            activeAdminTab === 'messages'
+              ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <span>💬</span>
+          <span>Messages reçus</span>
+          {unreadAdminCount > 0 ? (
+            <span className="px-1.5 py-0.5 rounded-md text-[10px] bg-amber-500 text-white font-black animate-pulse">
+              {unreadAdminCount} en attente
+            </span>
+          ) : (
+            <span className="px-1.5 py-0.5 rounded-md text-[10px] bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300 font-bold">
+              {contactMessages.length}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveAdminTab('foyers')}
           className={`px-3.5 py-2.5 rounded-xl font-extrabold text-xs flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
             activeAdminTab === 'foyers'
@@ -1186,6 +1226,22 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
           <span>Tout voir</span>
         </button>
       </div>
+
+      {/* ========================================================= */}
+      {/* 0. SECTION : MESSAGES REÇUS & SUPPORT (CONTACT)            */}
+      {/* ========================================================= */}
+      {(activeAdminTab === 'messages' || (activeAdminTab === 'all' && contactMessages.length > 0)) && (
+        <div className="space-y-4 animate-fade-in">
+          <AdminContactMessagesSection
+            messages={contactMessages}
+            onSendReply={handleContactReply}
+            onUpdateStatus={handleContactStatus}
+            onDeleteMessage={handleContactDelete}
+            onMarkAsRead={handleContactMarkAsRead}
+            onRefresh={handleContactRefresh}
+          />
+        </div>
+      )}
 
       {/* ========================================================= */}
       {/* 1. SECTION : FOYERS & UTILISATEURS                        */}

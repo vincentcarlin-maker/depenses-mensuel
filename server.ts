@@ -61,6 +61,90 @@ async function startServer() {
         }
     });
 
+    app.post("/api/send-contact-notification", async (req, res) => {
+        try {
+            console.log("Requête de notification de contact reçue:", req.body);
+            const { type, senderName, subject, title, snippet, targetUser, messageId } = req.body || {};
+
+            const { data: subscriptions, error: subsError } = await supabase
+                .from('push_subscriptions')
+                .select('subscription, user_id');
+
+            if (subsError) {
+                console.error("Erreur lecture Supabase:", subsError);
+                return res.status(500).json({ error: subsError.message });
+            }
+
+            if (!subscriptions || subscriptions.length === 0) {
+                return res.status(200).json({ message: "Aucun abonné enregistré." });
+            }
+
+            // Target subscription filtering:
+            // If type === 'new_message', recipient is Admin (Vincent)
+            // If type === 'admin_reply', recipient is targetUser
+            const targetSubs = subscriptions.filter((s: any) => {
+                const subObj = typeof s.subscription === 'string' ? JSON.parse(s.subscription) : s.subscription;
+                if (!subObj || !subObj.endpoint) return false;
+
+                const uId = (s.user_id || '').toLowerCase().trim();
+                if (type === 'new_message') {
+                    // Send to admin (Vincent)
+                    return uId === 'vincent' || uId.includes('vincent');
+                } else {
+                    // Send to targetUser
+                    if (!targetUser) return false;
+                    const targetLower = targetUser.toLowerCase().trim();
+                    return uId === targetLower || uId.includes(targetLower);
+                }
+            });
+
+            if (targetSubs.length === 0) {
+                console.log("Aucun abonné trouvé pour la notification de contact.");
+                return res.status(200).json({ message: "Aucun abonné correspondant." });
+            }
+
+            const notifTitle = type === 'new_message' 
+                ? `💬 Nouveau message : ${subject || 'Support'}`
+                : `💬 Réponse du support DuoBudget`;
+
+            const notifBody = type === 'new_message'
+                ? `${senderName} : ${title || snippet || 'Nouveau message reçu'}`
+                : `Vincent a répondu à votre message : "${title || ''}"`;
+
+            const payload = JSON.stringify({
+                title: notifTitle,
+                body: notifBody,
+                icon: '/icon-192x192.png',
+                badge: '/icon-192x192.png',
+                data: { 
+                    url: type === 'new_message' ? '/?view=admin&subtab=messages' : '/?view=contact',
+                    messageId
+                }
+            });
+
+            const sendPromises = targetSubs.map(async (s: any) => {
+                const subscription = typeof s.subscription === 'string' ? JSON.parse(s.subscription) : s.subscription;
+                try {
+                    await webpush.sendNotification(subscription, payload);
+                    console.log('Push contact envoyé avec succès à', s.user_id);
+                } catch (error: any) {
+                    console.error('Erreur envoi push contact à', s.user_id, error?.message || error);
+                    if (error?.statusCode === 410 || error?.statusCode === 404) {
+                        try {
+                            await supabase.from('push_subscriptions').delete().eq('user_id', s.user_id);
+                        } catch {}
+                    }
+                }
+            });
+
+            await Promise.all(sendPromises);
+            return res.status(200).json({ success: true, count: targetSubs.length });
+        } catch (err: any) {
+            console.error("Erreur send-contact-notification:", err);
+            return res.status(500).json({ error: err.message || String(err) });
+        }
+    });
+
     app.post("/api/send-notification", async (req, res) => {
         try {
             console.log("Requête de notification reçue:", req.body);

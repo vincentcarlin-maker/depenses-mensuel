@@ -123,3 +123,33 @@ export type Activity = {
     oldExpense?: Partial<Expense>; // Used to show diff on updates
     timestamp: string;
 };
+
+export type ContactSubject = 'bug' | 'suggestion' | 'question' | 'other';
+
+export interface ContactReply {
+  id: string;
+  authorName: string;
+  authorUsername: string;
+  authorRole: 'admin' | 'user';
+  message: string;
+  createdAt: string;
+}
+
+export interface ContactMessage {
+  id: string;
+  userId: string; // username
+  userName: string; // display name
+  userEmail?: string;
+  foyerId?: string;
+  foyerName?: string;
+  subject: ContactSubject;
+  title: string;
+  message: string;
+  status: 'pending' | 'in_progress' | 'replied' | 'closed';
+  createdAt: string;
+  updatedAt: string;
+  replies: ContactReply[];
+  isReadByAdmin: boolean;
+  isReadByUser: boolean;
+  deviceInfo?: string;
+}

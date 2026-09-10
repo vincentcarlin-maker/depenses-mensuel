@@ -12,9 +12,11 @@ import NotificationsTab from './NotificationsTab';
 import ConfirmationModal from './ConfirmationModal';
 import { useTheme } from '../hooks/useTheme';
 import { KeywordIconRulesTab } from './KeywordIconRulesTab';
+import ContactTab from './ContactTab';
+import { useContactMessages } from '../hooks/useContactMessages';
 import { USER_COLORS } from '../utils/userColors';
 
-export type SettingsViewType = 'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin' | 'keywords';
+export type SettingsViewType = 'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin' | 'keywords' | 'contact';
 
 interface SettingsTabProps {
   initialView?: SettingsViewType;
@@ -148,7 +150,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
     data: 'Données & sauvegarde',
     admin: 'Administration & Développement',
     management: 'Gestion de l\'application',
-    keywords: 'Mots-clés & Icônes'
+    keywords: 'Mots-clés & Icônes',
+    contact: 'Nous contacter'
   };
 
   const activeRemindersCount = reminders.filter(r => r.is_active !== false).length;
@@ -162,6 +165,27 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
           ? props.loggedInUsername.toLowerCase().trim() === 'vincent'
           : ((props.loggedInUser as any) === User.Vincent || (props.loggedInUser as any) === 'Vincent' || (props.loggedInUser as any) === 'vincent'))
   );
+
+  const currentUserProfile = (props.profiles || []).find(
+    p => p.username.toLowerCase() === (props.loggedInUsername || props.loggedInUser || '').toLowerCase()
+  );
+
+  const {
+    userMessages: userContactMessages,
+    unreadRepliesCount: unreadContactRepliesCount,
+    sendMessage: handleContactSend,
+    sendReply: handleContactReply,
+    updateStatus: handleContactStatus,
+    markAsRead: handleContactMarkAsRead,
+  } = useContactMessages({
+    currentUser: props.loggedInUser,
+    currentUsername: props.loggedInUsername,
+    currentUserEmail: currentUserProfile?.email,
+    currentFoyerId: props.currentFoyer?.id,
+    currentFoyerName: props.currentFoyer?.name,
+    isAdmin: isVincentAdmin,
+    onToast: props.setToastInfo,
+  });
 
   return (
     <div className="space-y-5 animate-fade-in max-w-2xl mx-auto w-full">
@@ -366,6 +390,28 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
                   onClick={() => setView('admin')}
                 />
               )}
+            </div>
+          </div>
+
+          {/* Section: Support & Contact */}
+          <div className="space-y-2">
+            <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+              Assistance & Support
+            </h4>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden">
+              <SettingsItemRow
+                iconBg="bg-[#eff6ff] dark:bg-sky-950/60"
+                iconColor="text-[#0284c7] dark:text-sky-400"
+                icon={
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                }
+                title="Nous contacter"
+                description="Signaler un bug, poser une question ou suggérer une idée"
+                value={unreadContactRepliesCount > 0 ? `${unreadContactRepliesCount} réponse${unreadContactRepliesCount > 1 ? 's' : ''}` : undefined}
+                onClick={() => setView('contact')}
+              />
             </div>
           </div>
 
@@ -724,6 +770,23 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
       {activeView === 'keywords' && (
         <div className="space-y-4 sm:space-y-5 animate-fade-in">
           <KeywordIconRulesTab setToastInfo={props.setToastInfo} />
+        </div>
+      )}
+
+      {/* Subview: Nous contacter */}
+      {activeView === 'contact' && (
+        <div className="space-y-4 sm:space-y-5 animate-fade-in">
+          <ContactTab
+            onBack={() => setView('main')}
+            userMessages={userContactMessages}
+            unreadRepliesCount={unreadContactRepliesCount}
+            onSendMessage={handleContactSend}
+            onSendReply={handleContactReply}
+            onUpdateStatus={handleContactStatus}
+            onMarkAsRead={handleContactMarkAsRead}
+            currentUserEmail={currentUserProfile?.email}
+            currentUsername={props.loggedInUsername || props.loggedInUser}
+          />
         </div>
       )}
 
