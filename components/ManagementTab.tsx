@@ -698,8 +698,9 @@ const CategoryManagement: React.FC<{
 
     const handleSaveEdit = (newName: string, iconId: string, color: string) => {
         if (editingCategory) {
-            if (onUpdateCategory(editingCategory, newName)) {
-                saveCategoryIconMapping(newName, iconId, color);
+            const oldName = editingCategory;
+            if (onUpdateCategory(oldName, newName)) {
+                saveCategoryIconMapping(newName, iconId, color, oldName);
                 setEditingCategory(null);
             }
         }

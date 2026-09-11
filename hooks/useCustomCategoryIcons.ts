@@ -53,6 +53,16 @@ export function useCustomCategoryIcons(foyerId?: string) {
         payload: { icons, foyerId: foyerId || DEFAULT_FOYER_ID }
       });
     }
+
+    // Bridge with App.tsx main foyer broadcast channel
+    try {
+      window.dispatchEvent(new CustomEvent('duobudget_icons_local_change', {
+        detail: { icons, foyerId: foyerId || DEFAULT_FOYER_ID }
+      }));
+    } catch {
+      // ignore
+    }
+
     try {
       await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `setting_${storageKey}`);
       await (supabase.from('push_subscriptions') as any).insert({
@@ -69,8 +79,22 @@ export function useCustomCategoryIcons(foyerId?: string) {
           created_at: new Date().toISOString()
         });
       }
+
+      // Also upsert into app_settings as secondary persistence store
+      await (supabase.from('app_settings') as any).upsert({
+        key: storageKey,
+        value: JSON.stringify(icons),
+        updated_at: new Date().toISOString()
+      });
+      if (storageKey !== DEFAULT_STORAGE_KEY) {
+        await (supabase.from('app_settings') as any).upsert({
+          key: DEFAULT_STORAGE_KEY,
+          value: JSON.stringify(icons),
+          updated_at: new Date().toISOString()
+        });
+      }
     } catch (e) {
-      console.warn(`Could not sync ${storageKey} to Supabase push_subscriptions:`, e);
+      console.warn(`Could not sync ${storageKey} to Supabase:`, e);
     }
   }, [storageKey, foyerId]);
 
@@ -82,12 +106,40 @@ export function useCustomCategoryIcons(foyerId?: string) {
           ? [`setting_${storageKey}`] 
           : [`setting_${DEFAULT_STORAGE_KEY}`, `setting_custom_category_icons_foyer_vincent_sophie`];
 
+        const appSettingsKeys = normalizedFoyerId
+          ? [storageKey]
+          : [DEFAULT_STORAGE_KEY, 'custom_category_icons_foyer_vincent_sophie'];
+
+        let combined: CustomCategoryIcon[] = [];
+
+        // 1. Fetch from app_settings
+        try {
+          const { data: appSettingsData } = await (supabase.from('app_settings') as any)
+            .select('key, value')
+            .in('key', appSettingsKeys);
+
+          if (appSettingsData && appSettingsData.length > 0) {
+            appSettingsData.forEach((row: any) => {
+              if (row.value) {
+                try {
+                  const parsed = JSON.parse(row.value);
+                  if (Array.isArray(parsed)) {
+                    combined = [...combined, ...parsed];
+                  }
+                } catch {}
+              }
+            });
+          }
+        } catch {
+          // ignore
+        }
+
+        // 2. Fetch from push_subscriptions
         const { data, error } = await (supabase.from('push_subscriptions') as any)
           .select('user_id, subscription')
           .in('user_id', keysToFetch);
 
         if (!error && data && data.length > 0) {
-          let combined: CustomCategoryIcon[] = [];
           data.forEach((row: any) => {
             if (row.subscription?.icons) {
               try {
@@ -98,7 +150,9 @@ export function useCustomCategoryIcons(foyerId?: string) {
               } catch {}
             }
           });
+        }
 
+        if (combined.length > 0) {
           const uniqueMap = new Map<string, CustomCategoryIcon>();
           combined.forEach(item => {
             let key = item.id;
@@ -156,10 +210,34 @@ export function useCustomCategoryIcons(foyerId?: string) {
           }
         }
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'app_settings' }, (payload: any) => {
+        if (payload.new && (payload.new.key === storageKey || payload.new.key === DEFAULT_STORAGE_KEY) && payload.new.value) {
+          try {
+            const parsed = JSON.parse(payload.new.value);
+            if (Array.isArray(parsed)) {
+              setCustomIcons(parsed);
+              localStorage.setItem(storageKey, JSON.stringify(parsed));
+            }
+          } catch {
+            // ignore
+          }
+        }
+      })
       .subscribe();
+
+    // Listen to local / App.tsx cross-channel event
+    const handleCrossChannelSync = (event: any) => {
+      const icons = event.detail?.icons;
+      if (Array.isArray(icons)) {
+        setCustomIcons(icons);
+        localStorage.setItem(storageKey, JSON.stringify(icons));
+      }
+    };
+    window.addEventListener('duobudget_icons_sync', handleCrossChannelSync);
 
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener('duobudget_icons_sync', handleCrossChannelSync);
     };
   }, [storageKey, normalizedFoyerId, foyerId]);
 
@@ -188,7 +266,7 @@ export function useCustomCategoryIcons(foyerId?: string) {
     return newIcon;
   }, [syncToCloud]);
 
-  const saveCategoryIconMapping = useCallback((categoryName: string, iconId: string, color?: string) => {
+  const saveCategoryIconMapping = useCallback((categoryName: string, iconId: string, color?: string, oldCategoryName?: string) => {
     const trimmedCat = categoryName.trim();
     if (!trimmedCat) return;
 
@@ -196,8 +274,17 @@ export function useCustomCategoryIcons(foyerId?: string) {
       // Find if iconId refers to an existing uploaded custom icon
       const foundCustom = prev.find(i => i.id === iconId || i.name === iconId || i.name.toLowerCase().replace(/icon$/, '') === iconId.toLowerCase());
 
-      // Filter out any previous mapping specifically assigned to this category (keep pure icon assets that have no category or different category)
-      const filtered = prev.filter(i => !i.category || i.category.toLowerCase() !== trimmedCat.toLowerCase());
+      // Filter out any previous mapping specifically assigned to this category (or old category if renamed)
+      const oldTrimmed = oldCategoryName?.trim().toLowerCase();
+      const newTrimmed = trimmedCat.toLowerCase();
+
+      const filtered = prev.filter(i => {
+        if (!i.category) return true;
+        const cLower = i.category.toLowerCase();
+        if (cLower === newTrimmed) return false;
+        if (oldTrimmed && cLower === oldTrimmed) return false;
+        return true;
+      });
 
       const newMapping: CustomCategoryIcon = {
         id: `mapping_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,

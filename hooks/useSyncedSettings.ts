@@ -48,13 +48,18 @@ export function useSyncedSettings<T>(key: string, initialValue: T): [T, (value: 
         });
       }
 
-      // Save to Supabase (using durable push_subscriptions key-value table)
+      // Save to Supabase (using durable push_subscriptions & app_settings)
       (async () => {
         try {
           await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `setting_${key}`);
           await (supabase.from('push_subscriptions') as any).insert({
             user_id: `setting_${key}`,
             subscription: { value: nextValue }
+          });
+          await (supabase.from('app_settings') as any).upsert({
+            key: key,
+            value: JSON.stringify(nextValue),
+            updated_at: new Date().toISOString()
           });
         } catch (e) {
           console.warn(`Could not sync ${key} to Supabase:`, e);
@@ -69,6 +74,22 @@ export function useSyncedSettings<T>(key: string, initialValue: T): [T, (value: 
   useEffect(() => {
     const fetchFromCloud = async () => {
       try {
+        // Try app_settings first
+        const { data: appData } = await (supabase.from('app_settings') as any)
+          .select('value')
+          .eq('key', key)
+          .maybeSingle();
+
+        if (appData && appData.value) {
+          try {
+            const parsed = JSON.parse(appData.value);
+            setStoredValue(parsed);
+            window.localStorage.setItem(key, JSON.stringify(parsed));
+            return;
+          } catch {}
+        }
+
+        // Fallback to push_subscriptions
         const { data, error } = await (supabase.from('push_subscriptions') as any)
           .select('subscription')
           .eq('user_id', `setting_${key}`)

@@ -576,7 +576,7 @@ interface CategoryVisualsContextType {
   updateRule: (id: string, keyword: string, iconId: string, color: string) => boolean;
   addCustomIcon: (iconData: Omit<CustomCategoryIcon, 'id' | 'createdAt'>) => CustomCategoryIcon;
   deleteCustomIcon: (iconId: string) => void;
-  saveCategoryIconMapping: (categoryName: string, iconId: string, color?: string) => void;
+  saveCategoryIconMapping: (categoryName: string, iconId: string, color?: string, oldCategoryName?: string) => void;
 }
 
 const CategoryVisualsContext = createContext<CategoryVisualsContextType | null>(null);

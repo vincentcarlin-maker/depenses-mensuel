@@ -679,6 +679,28 @@ const MainApp: React.FC<{
             handleReminderChange({ eventType, new: data, old: data });
         } else if (table === 'money_pot') {
             handleMoneyPotChange({ eventType, new: data, old: data });
+        } else if (table === 'category_rename') {
+            const { oldName, newName } = data || {};
+            if (oldName && newName) {
+                setCategories(prev => prev.map(c => c.toLowerCase() === oldName.toLowerCase() ? newName : c));
+                setExpenses(prev => prev.map(e => e.category?.toLowerCase() === oldName.toLowerCase() ? { ...e, category: newName } : e));
+                setReminders(prev => prev.map(r => r.category?.toLowerCase() === oldName.toLowerCase() ? { ...r, category: newName } : r));
+            }
+        } else if (table === 'category_add') {
+            const { name } = data || {};
+            if (name && typeof name === 'string') {
+                setCategories(prev => prev.some(c => c.toLowerCase() === name.toLowerCase()) ? prev : [...prev, name]);
+            }
+        } else if (table === 'category_delete') {
+            const { name } = data || {};
+            if (name && typeof name === 'string') {
+                setCategories(prev => prev.filter(c => c.toLowerCase() !== name.toLowerCase()));
+            }
+        } else if (table === 'category_visuals') {
+            const { icons } = data || {};
+            if (icons && Array.isArray(icons)) {
+                window.dispatchEvent(new CustomEvent('duobudget_icons_sync', { detail: { icons } }));
+            }
         }
       })
       .subscribe((status, err) => {
@@ -701,6 +723,21 @@ const MainApp: React.FC<{
       allChangesChannelRef.current = null;
     };
   }, [highlightExpense, user, syncData, mergeAndDedupeActivities, belongsToCurrentFoyer, activeFoyerId]);
+
+  // Listen to local category visual changes to broadcast instantly to other devices in foyer
+  useEffect(() => {
+    const handleLocalIconChange = (event: any) => {
+      const { icons, foyerId } = event.detail || {};
+      if (icons && Array.isArray(icons) && (!foyerId || belongsToCurrentFoyer({ foyer_id: foyerId }))) {
+        broadcastChange('category_visuals', 'UPDATE', { icons, foyer_id: activeFoyerId });
+      }
+    };
+
+    window.addEventListener('duobudget_icons_local_change', handleLocalIconChange);
+    return () => {
+      window.removeEventListener('duobudget_icons_local_change', handleLocalIconChange);
+    };
+  }, [broadcastChange, belongsToCurrentFoyer, activeFoyerId]);
 
   const logActivity = useCallback(async (activityPayload: Omit<Activity, 'id' | 'timestamp'>) => {
     const id = crypto.randomUUID();
@@ -1215,6 +1252,7 @@ const MainApp: React.FC<{
     const trimmedName = name.trim();
     if (trimmedName && !categories.find(c => c.toLowerCase() === trimmedName.toLowerCase())) {
         setCategories(prev => [...prev, trimmedName]);
+        broadcastChange('category_add', 'INSERT', { name: trimmedName, foyer_id: activeFoyerId });
         return true;
     }
     return false;
@@ -1224,20 +1262,53 @@ const MainApp: React.FC<{
     const trimmedNewName = newName.trim();
     if (!trimmedNewName) return false;
     if (oldName === trimmedNewName) return true;
-    if (oldName.toLowerCase() === trimmedNewName.toLowerCase()) {
-      setCategories(prev => prev.map(c => c === oldName ? trimmedNewName : c));
-      return true;
-    }
-    if (categories.find(c => c.toLowerCase() === trimmedNewName.toLowerCase())) {
+    
+    // Check if another category with the same name already exists
+    if (categories.find(c => c.toLowerCase() === trimmedNewName.toLowerCase() && c.toLowerCase() !== oldName.toLowerCase())) {
         setToastInfo({ message: `La catégorie "${trimmedNewName}" existe déjà.`, type: 'error' });
         return false;
     }
-    setCategories(prev => prev.map(c => c === oldName ? trimmedNewName : c));
+    
+    setCategories(prev => prev.map(c => c.toLowerCase() === oldName.toLowerCase() ? trimmedNewName : c));
+
+    // Update local expenses and reminders state (case-insensitive match)
+    setExpenses(prev => prev.map(e => e.category?.toLowerCase() === oldName.toLowerCase() ? { ...e, category: trimmedNewName } : e));
+    setReminders(prev => prev.map(r => r.category?.toLowerCase() === oldName.toLowerCase() ? { ...r, category: trimmedNewName } : r));
+
+    // Update database
+    (async () => {
+      try {
+        let queryExp = supabase.from('expenses').update({ category: trimmedNewName }).ilike('category', oldName);
+        if (activeFoyerId && activeFoyerId !== DEFAULT_FOYER_ID) {
+          queryExp = queryExp.eq('foyer_id', activeFoyerId);
+        }
+        const resExp = await queryExp;
+        if (resExp.error) {
+          await supabase.from('expenses').update({ category: trimmedNewName }).eq('category', oldName);
+        }
+
+        let queryRem = supabase.from('reminders').update({ category: trimmedNewName }).ilike('category', oldName);
+        if (activeFoyerId && activeFoyerId !== DEFAULT_FOYER_ID) {
+          queryRem = queryRem.eq('foyer_id', activeFoyerId);
+        }
+        const resRem = await queryRem;
+        if (resRem.error) {
+          await supabase.from('reminders').update({ category: trimmedNewName }).eq('category', oldName);
+        }
+      } catch (e) {
+        console.warn("Could not sync category update to Supabase:", e);
+      }
+    })();
+
+    // Broadcast change to other devices
+    broadcastChange('category_rename', 'UPDATE', { oldName, newName: trimmedNewName, foyer_id: activeFoyerId });
+
     return true;
   };
 
   const deleteCategory = (name: string) => {
-    setCategories(prev => prev.filter(c => c !== name));
+    setCategories(prev => prev.filter(c => c.toLowerCase() !== name.toLowerCase()));
+    broadcastChange('category_delete', 'DELETE', { name, foyer_id: activeFoyerId });
   };
 
   const isConnected = realtimeStatus === 'SUBSCRIBED';
