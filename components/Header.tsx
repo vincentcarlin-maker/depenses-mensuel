@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import BellIcon from './icons/BellIcon';
-import { User, type Activity } from '../types';
+import { User, type Activity, type Expense, type FoyerJoinRequest } from '../types';
 import CloseIcon from './icons/CloseIcon';
 import SearchIcon from './icons/SearchIcon';
 import ActivityDetailModal from './ActivityDetailModal';
@@ -28,6 +28,9 @@ interface HeaderProps {
   onDeleteActivity: (activityId: string) => void;
   onlineUsers?: (User | string)[];
   foyerMembers?: { id: string; name: string }[];
+  pendingJoinRequests?: FoyerJoinRequest[];
+  onOpenJoinRequests?: () => void;
+  onExpenseClick?: (expense: Expense, activity?: Activity) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -39,7 +42,10 @@ const Header: React.FC<HeaderProps> = ({
   realtimeStatus, 
   onDeleteActivity,
   onlineUsers: _onlineUsers = [],
-  foyerMembers: _foyerMembers = []
+  foyerMembers: _foyerMembers = [],
+  pendingJoinRequests = [],
+  onOpenJoinRequests,
+  onExpenseClick
 }) => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
@@ -66,8 +72,19 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   const handleActivityClick = (activity: Activity) => {
-      setSelectedActivity(activity);
       setIsNotificationsOpen(false);
+      if (onExpenseClick && activity.expense) {
+        onExpenseClick(activity.expense as Expense, activity);
+      } else {
+        setSelectedActivity(activity);
+      }
+  };
+
+  const handleJoinRequestNotificationClick = () => {
+      setIsNotificationsOpen(false);
+      if (onOpenJoinRequests) {
+        onOpenJoinRequests();
+      }
   };
   
   const realtimeStatusStyles = {
@@ -129,6 +146,9 @@ const Header: React.FC<HeaderProps> = ({
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 italic truncate">
                        sur {activity.expense.description}
                   </p>
+                  <p className="text-[11px] text-sky-600 dark:text-sky-400 font-semibold mt-1">
+                       👉 Cliquer pour voir la dépense
+                  </p>
               </div>
           );
       }
@@ -143,10 +163,12 @@ const Header: React.FC<HeaderProps> = ({
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     {new Date(activity.timestamp).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                 </p>
+                <p className="text-[11px] text-sky-600 dark:text-sky-400 font-semibold mt-0.5">
+                    👉 Cliquer pour voir la dépense
+                </p>
             </div>
       );
   }
-
 
   return (
     <header className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-sm shadow-sm sticky top-0 z-20">
@@ -180,18 +202,72 @@ const Header: React.FC<HeaderProps> = ({
                 >
                     <BellIcon className={`h-6 w-6 transition-colors ${currentStatusStyle?.textClass || 'text-slate-500 dark:text-slate-400'}`} />
                     {unreadCount > 0 && (
-                        <span className="absolute top-1 right-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-800">
+                        <span className="absolute top-1 right-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-800 animate-pulse">
                             {unreadCount > 9 ? '9+' : unreadCount}
                         </span>
                     )}
                 </button>
 
                 {isNotificationsOpen && (
-                    <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-lg shadow-xl z-30 border border-slate-200 dark:border-slate-700 animate-fade-in">
-                        <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-                            <h3 className="font-semibold text-slate-800 dark:text-slate-100">Activité Récente</h3>
+                    <div className="absolute right-0 mt-2 w-84 sm:w-96 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl z-30 border border-slate-200 dark:border-slate-700 animate-fade-in overflow-hidden">
+                        <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+                            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">Notifications</h3>
+                            {pendingJoinRequests.length > 0 && (
+                                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
+                                    {pendingJoinRequests.length} demande{pendingJoinRequests.length > 1 ? 's' : ''}
+                                </span>
+                            )}
                         </div>
-                        <div className="max-h-96 overflow-y-auto">
+
+                        <div className="max-h-[32rem] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/80">
+                            {/* Pending Join Requests section */}
+                            {pendingJoinRequests.length > 0 && (
+                                <div className="p-2.5 bg-amber-50/70 dark:bg-amber-950/30 space-y-2">
+                                    <div className="px-2 pt-1 pb-0.5 flex items-center justify-between">
+                                        <span className="text-xs font-black text-amber-900 dark:text-amber-200 uppercase tracking-wider flex items-center gap-1.5">
+                                            <span>⏳</span> Demande d’intégration
+                                        </span>
+                                        <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300">Action requise</span>
+                                    </div>
+                                    {pendingJoinRequests.map(req => {
+                                        const initial = req.name.charAt(0).toUpperCase() || 'U';
+                                        return (
+                                            <div
+                                                key={req.id}
+                                                onClick={handleJoinRequestNotificationClick}
+                                                className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-800/60 shadow-2xs hover:bg-amber-50/50 dark:hover:bg-slate-700/80 transition-all cursor-pointer flex items-center justify-between gap-3 group"
+                                            >
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div 
+                                                        className="w-9 h-9 rounded-full font-black flex items-center justify-center text-sm shrink-0 text-white shadow-2xs"
+                                                        style={{ backgroundColor: req.color || '#ec4899' }}
+                                                    >
+                                                        {initial}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                                            {req.name} <span className="font-mono font-medium text-slate-500">(@{req.username})</span>
+                                                        </p>
+                                                        <p className="text-[11px] text-amber-800 dark:text-amber-300 font-medium truncate">
+                                                            Souhaite rejoindre votre foyer
+                                                        </p>
+                                                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+                                                            {new Date(req.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="shrink-0 flex items-center">
+                                                    <span className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-2xs transition-transform group-hover:scale-105">
+                                                        Valider
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {/* Activities / Expenses section */}
                             {activityItems.length > 0 ? (
                                 <ul className="divide-y divide-slate-100 dark:divide-slate-700">
                                     {activityItems.map((activity) => (
@@ -206,18 +282,19 @@ const Header: React.FC<HeaderProps> = ({
                                                     e.stopPropagation();
                                                     onDeleteActivity(activity.id);
                                                 }}
-                                                className="flex-shrink-0 p-1.5 rounded-full text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600 opacity-0 group-hover:opacity-100"
+                                                title="Supprimer la notification"
+                                                className="flex-shrink-0 p-1.5 rounded-full text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600 opacity-0 group-hover:opacity-100 transition-opacity"
                                             >
                                                 <CloseIcon />
                                             </button>
                                         </li>
                                     ))}
                                 </ul>
-                            ) : (
+                            ) : !pendingJoinRequests.length ? (
                                 <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-8">
                                     Aucune activité récente.
                                 </p>
-                            )}
+                            ) : null}
                         </div>
                     </div>
                 )}

@@ -104,6 +104,7 @@ const MainApp: React.FC<{
     onSwitchFoyer
 }) => {
   const activeFoyerId = currentFoyer?.id || DEFAULT_FOYER_ID;
+  const isMainFoyer = activeFoyerId === DEFAULT_FOYER_ID;
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<any[]>([]);
@@ -221,7 +222,8 @@ const MainApp: React.FC<{
 
   // Persistent Activity Log states
   const [lastBellCheck, setLastBellCheck] = useLocalStorage('lastBellCheck', new Date().toISOString());
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const activitiesKey = activeFoyerId === DEFAULT_FOYER_ID ? 'activities' : `activities_${activeFoyerId}`;
+  const [activities, setActivities] = useSyncedSettings<Activity[]>(activitiesKey, []);
   
   // Dynamic categories and lists scoped per foyer
   const categoriesKey = activeFoyerId === DEFAULT_FOYER_ID ? 'expenseCategories' : `expenseCategories_${activeFoyerId}`;
@@ -293,24 +295,52 @@ const MainApp: React.FC<{
     expensesRef.current = expenses;
   }, [expenses]);
 
+  const pendingJoinRequests = useMemo(() => {
+    if (!currentFoyer?.pending_requests) return [];
+    return (currentFoyer.pending_requests || []).filter(r => 
+      r.status === 'pending' && 
+      !currentFoyer.members?.some(m => m.username?.toLowerCase().trim() === r.username?.toLowerCase().trim())
+    );
+  }, [currentFoyer]);
+
   const { unreadCount, activityItemsForHeader } = useMemo(() => {
     if (!user) return { unreadCount: 0, activityItemsForHeader: [] };
     
-    // Filter activities where the other user (actor) did something
-    const otherUserActivities = activities.filter(act => 
-        act.performedBy !== user
-    );
+    // Filter activities where the other user (actor) did something (case-insensitive & trimmed)
+    const otherUserActivities = activities.filter(act => {
+        const actor = String(act.performedBy || '').toLowerCase().trim();
+        const currUser = String(user || '').toLowerCase().trim();
+        return actor !== currUser;
+    });
     
-    const unread = otherUserActivities.filter(act => 
+    const unreadActivities = otherUserActivities.filter(act => 
         new Date(act.timestamp) > new Date(lastBellCheck)
     ).length;
+
+    const unreadRequests = pendingJoinRequests.filter(req =>
+        new Date(req.created_at) > new Date(lastBellCheck)
+    ).length;
+
+    const totalUnread = unreadActivities + (pendingJoinRequests.length > 0 ? Math.max(unreadRequests, pendingJoinRequests.length) : 0);
     
     const items = otherUserActivities
-        .slice(0, 10) // Show last 10 activities
-        .map(act => act);
+        .slice(0, 10);
         
-    return { unreadCount: unread, activityItemsForHeader: items };
-  }, [activities, lastBellCheck, user]);
+    return { unreadCount: totalUnread, activityItemsForHeader: items };
+  }, [activities, lastBellCheck, user, pendingJoinRequests]);
+
+  const handleOpenJoinRequests = useCallback(() => {
+    setSettingsInitialView('management');
+    setSettingsResetTrigger(prev => prev + 1);
+    setIsSettingsOpen(false);
+    setActiveTab('settings');
+  }, []);
+
+  const handleExpenseClickFromHeader = useCallback((expense: Expense) => {
+    if (!expense) return;
+    const found = expenses.find(e => e.id === expense.id) || expense;
+    setExpenseToView(found);
+  }, [expenses]);
 
   // Compute detailed modification info for expenses to show the correct icon (clock or pencil)
   const modifiedExpenseInfo = useMemo(() => {
@@ -441,12 +471,13 @@ const MainApp: React.FC<{
 
     const [expensesResponse, remindersResponse, moneyPotResponse, activitiesResponse] = await Promise.all([expensesPromise, remindersPromise, moneyPotPromise, activitiesPromise]);
 
+    let scopedExpenses: Expense[] = [];
     if (expensesResponse.error) {
         console.error('Error fetching expenses:', expensesResponse.error.message);
         setToastInfo({ message: "Erreur lors de la récupération des dépenses.", type: 'error' });
     } else if (expensesResponse.data) {
         // Isolation des dépenses : Vincent & Sophie voient leur historique, un autre foyer voit uniquement ses dépenses
-        const scopedExpenses = (expensesResponse.data as Expense[]).filter(belongsToCurrentFoyer);
+        scopedExpenses = (expensesResponse.data as Expense[]).filter(belongsToCurrentFoyer);
         setExpenses(scopedExpenses);
     }
     
@@ -467,11 +498,24 @@ const MainApp: React.FC<{
     
     if (activitiesResponse.error) {
         console.error('Error fetching activities:', activitiesResponse.error.message);
-    } else if (activitiesResponse.data) {
-        const scopedActivities = (activitiesResponse.data as Activity[]).filter(belongsToCurrentFoyer);
-        setActivities(scopedActivities);
     }
-  }, [belongsToCurrentFoyer, activeFoyerId]);
+    
+    const dbActivities = activitiesResponse.data ? (activitiesResponse.data as Activity[]).filter(belongsToCurrentFoyer) : [];
+    
+    // Generate synthetic activities from current expenses so that even if the activities table fails,
+    // or is delayed, we still show correct notifications in the bell icon.
+    const syntheticActivities: Activity[] = scopedExpenses.slice(0, 50).map(expense => ({
+        id: `act_${expense.id}`,
+        type: 'add',
+        performedBy: expense.user,
+        expense: expense,
+        timestamp: expense.created_at || expense.date || new Date().toISOString(),
+        foyer_id: expense.foyer_id || activeFoyerId,
+    }));
+    
+    const merged = mergeAndDedupeActivities(dbActivities, syntheticActivities);
+    setActivities(merged);
+  }, [belongsToCurrentFoyer, activeFoyerId, mergeAndDedupeActivities]);
 
   useEffect(() => {
     const performInitialSync = async () => {
@@ -556,6 +600,17 @@ const MainApp: React.FC<{
     }, [mergeAndDedupeActivities, belongsToCurrentFoyer, activeFoyerId]);
 
   useEffect(() => {
+    const handleActivityInsert = (payload: any) => {
+      const newActivity = payload.new as Activity;
+      if (!newActivity || !belongsToCurrentFoyer(newActivity)) return;
+      setActivities(prev => mergeAndDedupeActivities(prev, [newActivity]));
+    };
+
+    const handleActivityDelete = (payload: any) => {
+      if (!payload?.old?.id) return;
+      setActivities(prev => prev.filter(a => a.id !== payload.old.id));
+    };
+
     const handleExpenseInsert = (payload: any) => {
       const newExpense = payload.new as Expense;
       if (!newExpense?.id) return;
@@ -570,6 +625,17 @@ const MainApp: React.FC<{
         }
       });
       highlightExpense(newExpense.id);
+
+      const actor = payload.performedBy || newExpense.user || 'Membre';
+      const syntheticActivity: Activity = {
+        id: `act_${newExpense.id}`,
+        type: 'add',
+        performedBy: actor,
+        expense: newExpense,
+        timestamp: newExpense.created_at || new Date().toISOString(),
+        foyer_id: activeFoyerId,
+      };
+      setActivities(prev => mergeAndDedupeActivities(prev, [syntheticActivity]));
     };
 
     const handleExpenseUpdate = (payload: any) => {
@@ -667,7 +733,13 @@ const MainApp: React.FC<{
         const { table, eventType, payload: data, foyer_id } = payload.payload || {};
         if (foyer_id && !belongsToCurrentFoyer({ foyer_id })) return;
         if (data && typeof data === 'object' && !belongsToCurrentFoyer(data)) return;
-        if (table === 'expenses') {
+        if (table === 'activities') {
+            if (eventType === 'INSERT') {
+                handleActivityInsert({ new: data });
+            } else if (eventType === 'DELETE') {
+                handleActivityDelete({ old: data });
+            }
+        } else if (table === 'expenses') {
             if (eventType === 'INSERT') {
                 handleExpenseInsert({ new: data });
             } else if (eventType === 'UPDATE') {
@@ -1369,6 +1441,9 @@ const MainApp: React.FC<{
           onDeleteActivity={deleteActivity} 
           onlineUsers={onlineUsers}
           foyerMembers={currentFoyer?.members}
+          pendingJoinRequests={pendingJoinRequests}
+          onOpenJoinRequests={handleOpenJoinRequests}
+          onExpenseClick={handleExpenseClickFromHeader}
         />
         <main className="container mx-auto p-4 md:p-8 pb-32">
           {activeTab !== 'settings' && (
@@ -1413,7 +1488,15 @@ const MainApp: React.FC<{
                   </svg>
                 </button>
               </div>
-              <ReminderAlerts reminders={reminders} monthlyExpenses={filteredExpenses} onPayReminder={handlePayReminder} currentMonth={currentMonth} currentYear={currentYear} loggedInUser={user} />
+              <ReminderAlerts 
+                reminders={reminders} 
+                monthlyExpenses={filteredExpenses} 
+                onPayReminder={handlePayReminder} 
+                currentMonth={currentMonth} 
+                currentYear={currentYear} 
+                loggedInUser={user} 
+                onOpenReminders={() => { setSettingsInitialView('reminders'); setIsSettingsOpen(true); }}
+              />
               {activeTab === 'dashboard' && (
                 <BudgetAlerts monthlyExpenses={filteredExpenses} currentFoyerId={currentFoyer?.id} onOpenBudgets={() => { setSettingsInitialView('budgets'); setIsSettingsOpen(true); }} />
               )}
@@ -1437,6 +1520,7 @@ const MainApp: React.FC<{
                     cars={cars} 
                     heatingTypes={heatingTypes}
                     foyerMembers={currentFoyer?.members}
+                    isMainFoyer={isMainFoyer}
                   />
                   <ExpenseSummary 
                     allExpenses={expenses} 
@@ -1573,11 +1657,11 @@ const MainApp: React.FC<{
                         onClick={() => setFilterUser(User.Commun)}
                         className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all border shrink-0 cursor-pointer ${
                           filterUser === User.Commun
-                            ? 'bg-purple-100/90 dark:bg-purple-950/80 border-purple-200/90 dark:border-purple-800 text-purple-600 dark:text-purple-300 shadow-2xs'
-                            : 'bg-purple-50/50 dark:bg-purple-950/20 border-purple-100/80 dark:border-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100/60'
+                            ? 'bg-emerald-100/90 dark:bg-emerald-950/80 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 shadow-2xs ring-1 ring-emerald-500/20'
+                            : 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200/80 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100/70 hover:border-emerald-300'
                         }`}
                       >
-                        <PiggyBankIcon className="w-4 h-4 text-purple-500" />
+                        <PiggyBankIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                         <span>Cagnotte</span>
                       </button>
                     </div>
@@ -1633,7 +1717,7 @@ const MainApp: React.FC<{
                 onDeleteCategory={deleteCategory} 
                 profiles={foyerProfiles} 
                 allProfiles={profiles}
-                loggedInUser={user} 
+                loggedInUser={user as User} 
                 loggedInUsername={username || undefined}
                 isAdmin={isAdmin}
                 onAddProfile={onAddProfile} 
@@ -1713,6 +1797,7 @@ const MainApp: React.FC<{
           onlineUsers={onlineUsers}
           onAddExpense={addExpense} 
           foyerMembers={currentFoyer?.members}
+          isMainFoyer={isMainFoyer}
         />
       )}
       {toastInfo && (<Toast message={toastInfo.message} type={toastInfo.type} onClose={() => setToastInfo(null)} />)}
@@ -1742,7 +1827,7 @@ const MainApp: React.FC<{
         onDeleteCategory={deleteCategory} 
         profiles={foyerProfiles} 
         allProfiles={profiles}
-        loggedInUser={user} 
+        loggedInUser={user as User} 
         loggedInUsername={username || undefined}
         isAdmin={isAdmin}
         onAddProfile={onAddProfile} 

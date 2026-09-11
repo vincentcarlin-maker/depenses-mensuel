@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { User, Foyer } from '../types';
+import { User, Foyer, FoyerJoinRequest } from '../types';
 import { useLocalStorage } from './useLocalStorage';
 import { supabase } from '../supabase/client';
 import { 
@@ -7,7 +7,10 @@ import {
     DEFAULT_FOYER_ID, 
     fetchFoyerById, 
     createNewFoyer, 
-    joinFoyerWithCode, 
+    requestJoinFoyer,
+    approveJoinRequest,
+    rejectJoinRequest,
+    cancelJoinRequest,
     saveFoyerToCloudAndLocal,
     getStoredActiveFoyerId,
     setStoredActiveFoyerId,
@@ -369,65 +372,38 @@ export const useAuth = () => {
         }
     }, []);
 
-    useEffect(() => {
-        const fetchProfilesFromCloud = async () => {
-            try {
-                // Fetch existing foyers to identify orphaned accounts
-                const existingFoyers = await fetchAllFoyers();
-                const existingFoyerIds = existingFoyers.map(f => f.id);
+    const fetchProfilesFromCloud = useCallback(async () => {
+        try {
+            // Fetch existing foyers to identify orphaned accounts
+            const existingFoyers = await fetchAllFoyers();
+            const existingFoyerIds = existingFoyers.map(f => f.id);
 
-                // Fetch individually saved profiles first (safe against overwrites)
-                const { data: individualRows } = await (supabase.from('push_subscriptions') as any)
-                    .select('user_id, subscription')
-                    .like('user_id', 'profile_%');
+            // Fetch individually saved profiles first (safe against overwrites)
+            const { data: individualRows } = await (supabase.from('push_subscriptions') as any)
+                .select('user_id, subscription')
+                .like('user_id', 'profile_%');
 
-                // Also fetch global app_user_profiles_v2
-                const { data: globalData } = await (supabase.from('push_subscriptions') as any)
-                    .select('subscription')
-                    .eq('user_id', 'app_user_profiles_v2')
-                    .maybeSingle();
+            // Also fetch global app_user_profiles_v2
+            const { data: globalData } = await (supabase.from('push_subscriptions') as any)
+                .select('subscription')
+                .eq('user_id', 'app_user_profiles_v2')
+                .maybeSingle();
 
-                const discoveredProfiles: Profile[] = [];
-                const orphanedUsernames: string[] = [];
+            const discoveredProfiles: Profile[] = [];
+            const orphanedUsernames: string[] = [];
 
-                if (Array.isArray(individualRows)) {
-                    for (const row of individualRows) {
-                        // Skip lookup rows (like profile_email_ or profile_oauth_) so they aren't parsed as primary profile records
-                        if (row.user_id && (row.user_id.startsWith('profile_email_') || row.user_id.startsWith('profile_oauth_'))) {
-                            continue;
-                        }
-                        if (row.subscription && row.subscription.username) {
-                            const gp = row.subscription as Profile;
-                            const fid = gp.foyer_id;
-                            const isOrphaned = fid && fid !== DEFAULT_FOYER_ID && !existingFoyerIds.includes(fid);
-                            if (isOrphaned) {
-                                orphanedUsernames.push(gp.username.toLowerCase().trim());
-                            } else {
-                                const normUser = gp.username.toLowerCase().trim();
-                                const existingIdx = discoveredProfiles.findIndex(dp => dp.username.toLowerCase().trim() === normUser);
-                                if (existingIdx >= 0) {
-                                    discoveredProfiles[existingIdx] = {
-                                        ...discoveredProfiles[existingIdx],
-                                        ...gp,
-                                        email: gp.email || discoveredProfiles[existingIdx].email
-                                    };
-                                } else {
-                                    discoveredProfiles.push(gp);
-                                }
-                            }
-                        }
+            if (Array.isArray(individualRows)) {
+                for (const row of individualRows) {
+                    // Skip lookup rows (like profile_email_ or profile_oauth_) so they aren't parsed as primary profile records
+                    if (row.user_id && (row.user_id.startsWith('profile_email_') || row.user_id.startsWith('profile_oauth_'))) {
+                        continue;
                     }
-                }
-
-                if (globalData?.subscription?.profiles && Array.isArray(globalData.subscription.profiles)) {
-                    for (const gp of globalData.subscription.profiles) {
+                    if (row.subscription && row.subscription.username) {
+                        const gp = row.subscription as Profile;
                         const fid = gp.foyer_id;
                         const isOrphaned = fid && fid !== DEFAULT_FOYER_ID && !existingFoyerIds.includes(fid);
                         if (isOrphaned) {
-                            const uName = gp.username.toLowerCase().trim();
-                            if (!orphanedUsernames.includes(uName)) {
-                                orphanedUsernames.push(uName);
-                            }
+                            orphanedUsernames.push(gp.username.toLowerCase().trim());
                         } else {
                             const normUser = gp.username.toLowerCase().trim();
                             const existingIdx = discoveredProfiles.findIndex(dp => dp.username.toLowerCase().trim() === normUser);
@@ -443,33 +419,60 @@ export const useAuth = () => {
                         }
                     }
                 }
+            }
 
-                // Purge orphaned profiles from cloud push_subscriptions
-                if (orphanedUsernames.length > 0) {
-                    for (const uName of orphanedUsernames) {
-                        try {
-                            await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_${uName}`);
-                        } catch (err) {
-                            console.warn('Could not delete orphaned profile from Supabase:', err);
+            if (globalData?.subscription?.profiles && Array.isArray(globalData.subscription.profiles)) {
+                for (const gp of globalData.subscription.profiles) {
+                    const fid = gp.foyer_id;
+                    const isOrphaned = fid && fid !== DEFAULT_FOYER_ID && !existingFoyerIds.includes(fid);
+                    if (isOrphaned) {
+                        const uName = gp.username.toLowerCase().trim();
+                        if (!orphanedUsernames.includes(uName)) {
+                            orphanedUsernames.push(uName);
+                        }
+                    } else {
+                        const normUser = gp.username.toLowerCase().trim();
+                        const existingIdx = discoveredProfiles.findIndex(dp => dp.username.toLowerCase().trim() === normUser);
+                        if (existingIdx >= 0) {
+                            discoveredProfiles[existingIdx] = {
+                                ...discoveredProfiles[existingIdx],
+                                ...gp,
+                                email: gp.email || discoveredProfiles[existingIdx].email
+                            };
+                        } else {
+                            discoveredProfiles.push(gp);
                         }
                     }
-                    // Trigger a clean save of the merged profiles v2 without the orphans
-                    const cleanedProfiles = deduplicateProfiles(discoveredProfiles.filter(p => !orphanedUsernames.includes(p.username.toLowerCase().trim())));
-                    await (supabase.from('push_subscriptions') as any).delete().eq('user_id', 'app_user_profiles_v2');
-                    await (supabase.from('push_subscriptions') as any).insert({
-                        user_id: 'app_user_profiles_v2',
-                        subscription: { profiles: cleanedProfiles }
-                    });
                 }
-
-                if (discoveredProfiles.length > 0) {
-                    setProfiles(() => deduplicateProfiles(discoveredProfiles));
-                }
-            } catch {
-                // Ignore missing table or network error
             }
-        };
 
+            // Purge orphaned profiles from cloud push_subscriptions
+            if (orphanedUsernames.length > 0) {
+                for (const uName of orphanedUsernames) {
+                    try {
+                        await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_${uName}`);
+                    } catch (err) {
+                        console.warn('Could not delete orphaned profile from Supabase:', err);
+                    }
+                }
+                // Trigger a clean save of the merged profiles v2 without the orphans
+                const cleanedProfiles = deduplicateProfiles(discoveredProfiles.filter(p => !orphanedUsernames.includes(p.username.toLowerCase().trim())));
+                await (supabase.from('push_subscriptions') as any).delete().eq('user_id', 'app_user_profiles_v2');
+                await (supabase.from('push_subscriptions') as any).insert({
+                    user_id: 'app_user_profiles_v2',
+                    subscription: { profiles: cleanedProfiles }
+                });
+            }
+
+            if (discoveredProfiles.length > 0) {
+                setProfiles(() => deduplicateProfiles(discoveredProfiles));
+            }
+        } catch {
+            // Ignore missing table or network error
+        }
+    }, [setProfiles]);
+
+    useEffect(() => {
         fetchProfilesFromCloud();
 
         const channel = supabase.channel('duobudget_profiles_channel_v2', {
@@ -518,6 +521,43 @@ export const useAuth = () => {
                         if (deletedUsernames.includes(curUserNorm) || currentFoyer?.id === deletedFoyerId) {
                             logout();
                         }
+                    }
+                }
+            })
+            .on('broadcast', { event: 'foyer_join_requested' }, async (payload: any) => {
+                const data = payload?.payload || payload;
+                if (data?.foyerId && currentFoyer?.id === data.foyerId) {
+                    const refreshed = await fetchFoyerById(data.foyerId);
+                    if (refreshed) {
+                        setCurrentFoyer(refreshed);
+                    }
+                }
+            })
+            .on('broadcast', { event: 'foyer_join_approved' }, async (payload: any) => {
+                const data = payload?.payload || payload;
+                if (data?.foyerId && currentFoyer?.id === data.foyerId) {
+                    const refreshed = await fetchFoyerById(data.foyerId);
+                    if (refreshed) {
+                        setCurrentFoyer(refreshed);
+                    }
+                    await fetchProfilesFromCloud();
+                }
+            })
+            .on('broadcast', { event: 'foyer_join_rejected' }, async (payload: any) => {
+                const data = payload?.payload || payload;
+                if (data?.foyerId && currentFoyer?.id === data.foyerId) {
+                    const refreshed = await fetchFoyerById(data.foyerId);
+                    if (refreshed) {
+                        setCurrentFoyer(refreshed);
+                    }
+                }
+            })
+            .on('broadcast', { event: 'foyer_updated' }, async (payload: any) => {
+                const data = payload?.payload || payload;
+                if (data?.foyerId && currentFoyer?.id === data.foyerId) {
+                    const refreshed = await fetchFoyerById(data.foyerId);
+                    if (refreshed) {
+                        setCurrentFoyer(refreshed);
                     }
                 }
             })
@@ -941,7 +981,7 @@ export const useAuth = () => {
         name: string;
         username: string;
         color?: string;
-    }): Promise<{ success: boolean; error?: string; foyer?: Foyer }> => {
+    }): Promise<{ success: boolean; error?: string; request?: FoyerJoinRequest; foyer?: Foyer }> => {
         if (!pendingOAuthUser) {
             return { success: false, error: 'Session de connexion OAuth expirée. Veuillez réessayer.' };
         }
@@ -952,65 +992,17 @@ export const useAuth = () => {
             return { success: false, error: 'Cet identifiant est déjà utilisé par un autre compte. Veuillez en choisir un autre.' };
         }
 
-        const joinRes = await joinFoyerWithCode(params.inviteCode, {
+        const reqRes = await requestJoinFoyer(params.inviteCode, {
             name: params.name.trim(),
             username: normalizedUsername,
-            color: params.color || '#ec4899'
-        });
-
-        if (!joinRes.success || !joinRes.foyer) {
-            return { success: false, error: joinRes.error || 'Code d’invitation introuvable.' };
-        }
-
-        const newProfile: Profile = {
-            username: normalizedUsername,
-            password: `oauth_${authUser.id}`,
-            user: params.name.trim(),
-            foyer_id: joinRes.foyer.id,
-            foyer_name: joinRes.foyer.name,
-            foyer_code: joinRes.foyer.code,
             color: params.color || '#ec4899',
             email: email,
-            provider: provider
-        };
+            provider: provider,
+            oauth_id: authUser.id
+        });
 
-        const updated = [...profiles, newProfile];
-        setProfiles(updated);
-        syncProfilesToCloud(updated);
-
-        // Save email & oauth pointers
-        try {
-            if (email) {
-                await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_email_${email.toLowerCase().trim()}`);
-                await (supabase.from('push_subscriptions') as any).insert({
-                    user_id: `profile_email_${email.toLowerCase().trim()}`,
-                    subscription: newProfile
-                });
-            }
-            await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_oauth_${authUser.id}`);
-            await (supabase.from('push_subscriptions') as any).insert({
-                user_id: `profile_oauth_${authUser.id}`,
-                subscription: newProfile
-            });
-        } catch {}
-
-        const oneYearFromNow = Date.now() + 365 * 24 * 60 * 60 * 1000;
-        const session: Session = {
-            user: newProfile.user,
-            username: newProfile.username,
-            foyer_id: joinRes.foyer.id,
-            expiresAt: oneYearFromNow,
-        };
-        window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-        setUser(newProfile.user);
-        setUsername(newProfile.username);
-        setCurrentFoyer(joinRes.foyer);
-        setStoredActiveFoyerId(joinRes.foyer.id);
-        setPendingOAuthUser(null);
-        logVisit(newProfile.user);
-
-        return { success: true, foyer: joinRes.foyer };
-    }, [pendingOAuthUser, profiles, setProfiles, syncProfilesToCloud, logVisit]);
+        return reqRes;
+    }, [pendingOAuthUser, profiles]);
 
     const cancelOAuthPending = useCallback(async () => {
         try {
@@ -1062,6 +1054,22 @@ export const useAuth = () => {
         await new Promise(resolve => setTimeout(resolve, 300));
 
         if (!profile) {
+            // Check if user has an active pending join request waiting for foyer admin approval
+            try {
+                const allFoyers = await fetchAllFoyers();
+                for (const f of allFoyers) {
+                    const pendingReq = (f.pending_requests || []).find(
+                        r => r.username.toLowerCase().trim() === normalizedUsername && r.status === 'pending'
+                    );
+                    if (pendingReq) {
+                        return { 
+                            success: false, 
+                            error: `Votre demande d'intégration au foyer « ${f.name} » est en cours de validation par l'administrateur. Veuillez patienter.` 
+                        };
+                    }
+                }
+            } catch {}
+
             return { success: false, error: 'Nom d’utilisateur ou mot de passe incorrect.' };
         }
 
@@ -1215,7 +1223,7 @@ export const useAuth = () => {
         return { success: true, foyer: createRes.foyer };
     }, [profiles, setProfiles, syncProfilesToCloud]);
 
-    // Register a new user and join an existing Foyer with an invite code
+    // Send a join request to an existing Foyer with an invite code (requires foyer admin approval)
     const registerWithJoinFoyer = useCallback(async (params: {
         name: string;
         username: string;
@@ -1223,7 +1231,7 @@ export const useAuth = () => {
         inviteCode: string;
         color?: string;
         email?: string;
-    }): Promise<{ success: boolean; error?: string; foyer?: Foyer }> => {
+    }): Promise<{ success: boolean; error?: string; request?: FoyerJoinRequest; foyer?: Foyer }> => {
         const normalizedUsername = params.username.toLowerCase().trim();
 
         if (profiles.some(p => p.username === normalizedUsername) || await isUsernameAlreadyUsed(normalizedUsername)) {
@@ -1232,59 +1240,47 @@ export const useAuth = () => {
 
         const cleanEmail = params.email?.trim() || undefined;
 
-        const joinRes = await joinFoyerWithCode(params.inviteCode, {
+        const reqRes = await requestJoinFoyer(params.inviteCode, {
             name: params.name,
             username: normalizedUsername,
+            password: params.password,
             color: params.color,
             email: cleanEmail
         });
 
-        if (!joinRes.success || !joinRes.foyer) {
-            return { success: false, error: joinRes.error || 'Code d’invitation introuvable.' };
+        return reqRes;
+    }, [profiles]);
+
+    const approveFoyerJoinRequest = useCallback(async (foyerId: string, requestId: string): Promise<{ success: boolean; error?: string; foyer?: Foyer }> => {
+        const targetFoyerId = foyerId || currentFoyer?.id;
+        if (!targetFoyerId) return { success: false, error: 'Foyer introuvable.' };
+
+        const res = await approveJoinRequest(targetFoyerId, requestId);
+        if (res.success && res.foyer) {
+            if (currentFoyer && currentFoyer.id === targetFoyerId) {
+                setCurrentFoyer(res.foyer);
+            }
+            await fetchProfilesFromCloud();
         }
+        return res;
+    }, [currentFoyer]);
 
-        const newProfile: Profile = {
-            username: normalizedUsername,
-            password: params.password,
-            user: params.name.trim(),
-            foyer_id: joinRes.foyer.id,
-            foyer_name: joinRes.foyer.name,
-            foyer_code: joinRes.foyer.code,
-            color: params.color || '#ec4899',
-            email: cleanEmail
-        };
+    const rejectFoyerJoinRequest = useCallback(async (foyerId: string, requestId: string): Promise<{ success: boolean; error?: string; foyer?: Foyer }> => {
+        const targetFoyerId = foyerId || currentFoyer?.id;
+        if (!targetFoyerId) return { success: false, error: 'Foyer introuvable.' };
 
-        const updated = [...profiles, newProfile];
-        setProfiles(updated);
-        syncProfilesToCloud(updated);
-
-        // Save email pointer if present
-        if (cleanEmail) {
-            try {
-                await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_email_${cleanEmail.toLowerCase()}`);
-                await (supabase.from('push_subscriptions') as any).insert({
-                    user_id: `profile_email_${cleanEmail.toLowerCase()}`,
-                    subscription: newProfile
-                });
-            } catch {}
+        const res = await rejectJoinRequest(targetFoyerId, requestId);
+        if (res.success && res.foyer) {
+            if (currentFoyer && currentFoyer.id === targetFoyerId) {
+                setCurrentFoyer(res.foyer);
+            }
         }
+        return res;
+    }, [currentFoyer]);
 
-        // Auto login
-        const oneYearFromNow = Date.now() + 365 * 24 * 60 * 60 * 1000;
-        const session: Session = {
-            user: newProfile.user,
-            username: newProfile.username,
-            foyer_id: joinRes.foyer.id,
-            expiresAt: oneYearFromNow,
-        };
-        window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-        setUser(newProfile.user);
-        setUsername(newProfile.username);
-        setCurrentFoyer(joinRes.foyer);
-        setStoredActiveFoyerId(joinRes.foyer.id);
-
-        return { success: true, foyer: joinRes.foyer };
-    }, [profiles, setProfiles, syncProfilesToCloud]);
+    const cancelFoyerJoinRequest = useCallback(async (foyerId: string, requestId: string): Promise<{ success: boolean; error?: string }> => {
+        return await cancelJoinRequest(foyerId, requestId);
+    }, []);
 
     const updateFoyer = useCallback(async (updatedFoyer: Foyer) => {
         setCurrentFoyer(updatedFoyer);
@@ -1727,6 +1723,9 @@ export const useAuth = () => {
         deleteOwnAccount,
         registerWithNewFoyer,
         registerWithJoinFoyer,
+        approveFoyerJoinRequest,
+        rejectFoyerJoinRequest,
+        cancelFoyerJoinRequest,
         loginWithOAuth,
         pendingOAuthUser,
         completeOAuthRegisterNewFoyer,

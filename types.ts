@@ -17,12 +17,27 @@ export interface FoyerMember {
   joined_at?: string;
 }
 
+export interface FoyerJoinRequest {
+  id: string;
+  foyer_id: string;
+  name: string;
+  username: string;
+  password?: string;
+  email?: string;
+  color?: string;
+  provider?: 'google' | 'apple';
+  oauth_id?: string;
+  created_at: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
 export interface Foyer {
   id: string;
   name: string;
   code: string;
   created_at: string;
   members: FoyerMember[];
+  pending_requests?: FoyerJoinRequest[];
 }
 
 // Les catégories sont maintenant dynamiques.

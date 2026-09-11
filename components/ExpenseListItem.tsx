@@ -113,8 +113,8 @@ const ExpenseListItem: React.FC<{
                             {(expense.category === 'Dépenses obligatoires' || expense.category === 'Dép. récurrentes') ? 'Dép. recurentes' : expense.category}
                         </span>
                         {isCommun ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 text-[11px] sm:text-xs font-bold shrink-0">
-                                <PiggyBankIcon className="w-3 h-3" />
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-[11px] sm:text-xs font-bold shrink-0">
+                                <PiggyBankIcon className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                                 <span>Cagnotte</span>
                             </span>
                         ) : (

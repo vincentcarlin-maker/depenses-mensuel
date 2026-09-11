@@ -306,9 +306,9 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
 
                 {/* Cagnotte if > 0 */}
                 {communTotalMonth > 0 && (
-                  <div className="flex items-center justify-between p-3.5 sm:p-5 bg-purple-50/60 dark:bg-purple-950/30 border border-purple-100/80 dark:border-purple-900/40 rounded-2xl sm:rounded-3xl transition-all shadow-xs min-w-0">
+                  <div className="flex items-center justify-between p-3.5 sm:p-5 bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-100/80 dark:border-emerald-900/40 rounded-2xl sm:rounded-3xl transition-all shadow-xs min-w-0">
                     <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1 pr-2">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
                         <PiggyBankIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                       </div>
                       <div className="min-w-0">
@@ -317,7 +317,7 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="font-extrabold text-base sm:text-2xl text-purple-600 dark:text-purple-400 whitespace-nowrap">
+                      <span className="font-extrabold text-base sm:text-2xl text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                           {communTotalMonth.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                       </span>
                     </div>

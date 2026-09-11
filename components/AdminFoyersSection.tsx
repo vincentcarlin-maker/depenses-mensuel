@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Foyer, FoyerMember, Expense, Reminder } from '../types';
+import { Foyer, FoyerMember, Expense, Reminder, FoyerJoinRequest } from '../types';
 import { supabase } from '../supabase/client';
 import {
   DEFAULT_FOYER_ID,
@@ -13,7 +13,9 @@ import {
   generateFoyerCode,
   createNewFoyer,
   setStoredActiveFoyerId,
-  getStoredActiveFoyerId
+  getStoredActiveFoyerId,
+  approveJoinRequest,
+  rejectJoinRequest
 } from '../utils/foyerService';
 import ConfirmationModal from './ConfirmationModal';
 
@@ -330,6 +332,42 @@ export const AdminFoyersSection: React.FC<AdminFoyersSectionProps> = ({
       }
     } catch {
       setToastInfo({ message: 'Erreur lors de la mise à jour du rôle.', type: 'error' });
+    }
+  };
+
+  // Approve pending join request
+  const handleApproveRequest = async (foyerId: string, request: FoyerJoinRequest) => {
+    try {
+      const res = await approveJoinRequest(foyerId, request.id);
+      if (res.success) {
+        setToastInfo({
+          message: `Demande de ${request.name} (@${request.username}) validée avec succès !`,
+          type: 'info'
+        });
+        await loadFoyers();
+      } else {
+        setToastInfo({ message: res.error || 'Erreur lors de la validation.', type: 'error' });
+      }
+    } catch {
+      setToastInfo({ message: 'Erreur lors de la validation de la demande.', type: 'error' });
+    }
+  };
+
+  // Reject pending join request
+  const handleRejectRequest = async (foyerId: string, request: FoyerJoinRequest) => {
+    try {
+      const res = await rejectJoinRequest(foyerId, request.id);
+      if (res.success) {
+        setToastInfo({
+          message: `Demande de ${request.name} refusée.`,
+          type: 'info'
+        });
+        await loadFoyers();
+      } else {
+        setToastInfo({ message: res.error || 'Erreur lors du refus.', type: 'error' });
+      }
+    } catch {
+      setToastInfo({ message: 'Erreur lors du refus de la demande.', type: 'error' });
     }
   };
 
@@ -711,6 +749,68 @@ export const AdminFoyersSection: React.FC<AdminFoyersSectionProps> = ({
                   })}
                 </div>
               </div>
+
+              {/* Pending Requests Section if any */}
+              {f.pending_requests && f.pending_requests.length > 0 && (
+                <div className="space-y-2.5 pt-2 border-t border-amber-200/60 dark:border-amber-900/40">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <span>⏳</span>
+                      <span>Demandes d’intégration en attente ({f.pending_requests.length})</span>
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                      Validation requise
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {f.pending_requests.map((req) => (
+                      <div
+                        key={req.id}
+                        className="flex items-center justify-between p-3 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 gap-2"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div
+                            className="w-9 h-9 rounded-full flex items-center justify-center font-black text-xs text-white shrink-0 shadow-xs"
+                            style={{ backgroundColor: req.color || '#ec4899' }}
+                          >
+                            {req.name.charAt(0).toUpperCase() || 'U'}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-xs text-slate-900 dark:text-white truncate">
+                              {req.name}
+                            </p>
+                            <p className="font-mono text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                              @{req.username} {req.email ? `• ${req.email}` : ''}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleApproveRequest(f.id, req)}
+                            className="px-2.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[11px] flex items-center gap-1 transition-all active:scale-95 shadow-2xs cursor-pointer"
+                            title="Valider l’adhésion de cet utilisateur"
+                          >
+                            <span>✓</span>
+                            <span>Valider</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRejectRequest(f.id, req)}
+                            className="px-2 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 dark:bg-rose-950 dark:hover:bg-rose-900 text-rose-700 dark:text-rose-300 font-bold text-[11px] transition-all cursor-pointer"
+                            title="Refuser la demande"
+                          >
+                            <span>✕</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}

@@ -1,5 +1,5 @@
 import { supabase } from '../supabase/client';
-import { Foyer, FoyerMember } from '../types';
+import { Foyer, FoyerMember, FoyerJoinRequest } from '../types';
 
 export const DEFAULT_FOYER_ID = 'foyer_vincent_sophie';
 
@@ -329,6 +329,305 @@ export async function joinFoyerWithCode(
     return { success: true, foyer: updatedFoyer };
   } catch (e: any) {
     return { success: false, error: e?.message || 'Erreur lors de la liaison au foyer.' };
+  }
+}
+
+// Request to join a foyer (creates a pending request awaiting foyer admin validation)
+export async function requestJoinFoyer(
+  inviteCode: string,
+  applicant: { 
+    name: string; 
+    username: string; 
+    password?: string; 
+    color?: string; 
+    email?: string;
+    provider?: 'google' | 'apple';
+    oauth_id?: string;
+  }
+): Promise<{ success: boolean; request?: FoyerJoinRequest; foyer?: Foyer; error?: string }> {
+  try {
+    const normalizedUsername = applicant.username.toLowerCase().trim();
+    if (await isUsernameAlreadyUsed(normalizedUsername)) {
+      return { success: false, error: 'Cet identifiant est déjà utilisé par un autre compte actif. Veuillez en choisir un autre.' };
+    }
+
+    const foyer = await fetchFoyerByCode(inviteCode);
+    if (!foyer) {
+      return { 
+        success: false, 
+        error: `Code « ${inviteCode.toUpperCase().trim()} » introuvable. Vérifiez le code fourni par votre partenaire.` 
+      };
+    }
+
+    // Check if user is already an approved member
+    if (foyer.members?.some(m => m.username.toLowerCase().trim() === normalizedUsername)) {
+      return { success: false, error: 'Vous êtes déjà membre de ce foyer.' };
+    }
+
+    const existingPending = (foyer.pending_requests || []).find(
+      r => r.username.toLowerCase().trim() === normalizedUsername && r.status === 'pending'
+    );
+    if (existingPending) {
+      return { 
+        success: true, 
+        request: existingPending, 
+        foyer 
+      };
+    }
+
+    const newRequest: FoyerJoinRequest = {
+      id: `req_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      foyer_id: foyer.id,
+      name: applicant.name.trim(),
+      username: normalizedUsername,
+      password: applicant.password,
+      email: applicant.email?.trim() || undefined,
+      color: applicant.color || '#ec4899',
+      provider: applicant.provider,
+      oauth_id: applicant.oauth_id,
+      created_at: new Date().toISOString(),
+      status: 'pending'
+    };
+
+    const updatedRequests = [
+      ...(foyer.pending_requests || []).filter(r => r.username.toLowerCase().trim() !== normalizedUsername),
+      newRequest
+    ];
+    const updatedFoyer: Foyer = {
+      ...foyer,
+      pending_requests: updatedRequests
+    };
+
+    await saveFoyerToCloudAndLocal(updatedFoyer);
+
+    // Broadcast join request event to notify active admins
+    try {
+      const channel = supabase.channel('foyer_sync_channel');
+      await channel.send({
+        type: 'broadcast',
+        event: 'foyer_join_requested',
+        payload: { foyerId: foyer.id, request: newRequest }
+      });
+    } catch (err) {
+      console.warn('Could not broadcast join request event:', err);
+    }
+
+    return { success: true, request: newRequest, foyer: updatedFoyer };
+  } catch (e: any) {
+    return { success: false, error: e?.message || "Erreur lors de l'envoi de la demande d'intégration." };
+  }
+}
+
+// Fetch current status of a join request
+export async function fetchJoinRequestStatus(
+  foyerIdOrCode: string,
+  username: string
+): Promise<{ status: 'pending' | 'approved' | 'rejected' | 'not_found'; foyer?: Foyer; request?: FoyerJoinRequest; member?: FoyerMember }> {
+  try {
+    const normalizedUsername = username.toLowerCase().trim();
+    let foyer: Foyer | null = null;
+    if (foyerIdOrCode.includes('-')) {
+      foyer = await fetchFoyerByCode(foyerIdOrCode);
+    } else {
+      foyer = await fetchFoyerById(foyerIdOrCode);
+    }
+
+    if (!foyer) {
+      return { status: 'not_found' };
+    }
+
+    // 1. Check if approved member
+    const approvedMember = foyer.members?.find(m => m.username?.toLowerCase().trim() === normalizedUsername);
+    if (approvedMember) {
+      return { status: 'approved', foyer, member: approvedMember };
+    }
+
+    // 2. Check pending_requests
+    const req = (foyer.pending_requests || []).find(r => r.username?.toLowerCase().trim() === normalizedUsername);
+    if (req) {
+      return { status: req.status, foyer, request: req };
+    }
+
+    return { status: 'not_found', foyer };
+  } catch (e) {
+    return { status: 'not_found' };
+  }
+}
+
+// Approve a join request by the foyer administrator
+export async function approveJoinRequest(
+  foyerId: string,
+  requestId: string
+): Promise<{ success: boolean; foyer?: Foyer; approvedMember?: FoyerMember; error?: string }> {
+  try {
+    const foyer = await fetchFoyerById(foyerId);
+    if (!foyer) return { success: false, error: 'Foyer introuvable.' };
+
+    const req = (foyer.pending_requests || []).find(r => r.id === requestId);
+    if (!req) return { success: false, error: 'Demande introuvable.' };
+
+    const normalizedUsername = req.username.toLowerCase().trim();
+
+    const newMember: FoyerMember = {
+      id: normalizedUsername,
+      name: req.name.trim(),
+      username: normalizedUsername,
+      color: req.color || '#ec4899',
+      role: 'member',
+      joined_at: new Date().toISOString(),
+      email: req.email?.trim() || undefined
+    };
+
+    const existingMemberIdx = foyer.members.findIndex(m => m.username.toLowerCase().trim() === normalizedUsername);
+    let updatedMembers: FoyerMember[];
+    if (existingMemberIdx >= 0) {
+      updatedMembers = [...foyer.members];
+      updatedMembers[existingMemberIdx] = newMember;
+    } else {
+      updatedMembers = [...foyer.members, newMember];
+    }
+
+    // Remove the validated request from pending_requests list so it disappears immediately
+    const updatedRequests = (foyer.pending_requests || []).filter(r => 
+      r.id !== requestId && r.username.toLowerCase().trim() !== normalizedUsername
+    );
+
+    const updatedFoyer: Foyer = {
+      ...foyer,
+      members: updatedMembers,
+      pending_requests: updatedRequests
+    };
+
+    await saveFoyerToCloudAndLocal(updatedFoyer);
+
+    // Create the profile in push_subscriptions and profiles store so the applicant can log in
+    const newProfile = {
+      username: normalizedUsername,
+      password: req.password || (req.oauth_id ? `oauth_${req.oauth_id}` : '123456'),
+      user: req.name.trim(),
+      foyer_id: foyer.id,
+      foyer_name: foyer.name,
+      foyer_code: foyer.code,
+      color: req.color || '#ec4899',
+      email: req.email,
+      provider: req.provider
+    };
+
+    try {
+      await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_${normalizedUsername}`);
+      await (supabase.from('push_subscriptions') as any).insert({
+        user_id: `profile_${normalizedUsername}`,
+        subscription: newProfile
+      });
+
+      if (req.email) {
+        await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_email_${req.email.toLowerCase().trim()}`);
+        await (supabase.from('push_subscriptions') as any).insert({
+          user_id: `profile_email_${req.email.toLowerCase().trim()}`,
+          subscription: newProfile
+        });
+      }
+
+      if (req.oauth_id) {
+        await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_oauth_${req.oauth_id}`);
+        await (supabase.from('push_subscriptions') as any).insert({
+          user_id: `profile_oauth_${req.oauth_id}`,
+          subscription: newProfile
+        });
+      }
+
+      // Add to app_user_profiles_v2
+      const { data: globalData } = await (supabase.from('push_subscriptions') as any)
+        .select('subscription')
+        .eq('user_id', 'app_user_profiles_v2')
+        .maybeSingle();
+
+      const existingProfiles = (globalData?.subscription?.profiles && Array.isArray(globalData.subscription.profiles))
+        ? globalData.subscription.profiles.filter((p: any) => p.username !== normalizedUsername)
+        : [];
+      
+      existingProfiles.push(newProfile);
+
+      await (supabase.from('push_subscriptions') as any).delete().eq('user_id', 'app_user_profiles_v2');
+      await (supabase.from('push_subscriptions') as any).insert({
+        user_id: 'app_user_profiles_v2',
+        subscription: { profiles: existingProfiles }
+      });
+    } catch (err) {
+      console.warn('Could not auto-create profile row in push_subscriptions:', err);
+    }
+
+    // Broadcast approval event in real-time
+    try {
+      const channel = supabase.channel('foyer_sync_channel');
+      await channel.send({
+        type: 'broadcast',
+        event: 'foyer_join_approved',
+        payload: { foyerId: foyer.id, requestId, username: normalizedUsername, member: newMember }
+      });
+    } catch (err) {
+      console.warn('Could not broadcast approval event:', err);
+    }
+
+    return { success: true, foyer: updatedFoyer, approvedMember: newMember };
+  } catch (e: any) {
+    return { success: false, error: e?.message || "Erreur lors de la validation de la demande d'intégration." };
+  }
+}
+
+// Reject a join request by the foyer administrator
+export async function rejectJoinRequest(
+  foyerId: string,
+  requestId: string
+): Promise<{ success: boolean; foyer?: Foyer; error?: string }> {
+  try {
+    const foyer = await fetchFoyerById(foyerId);
+    if (!foyer) return { success: false, error: 'Foyer introuvable.' };
+
+    const req = (foyer.pending_requests || []).find(r => r.id === requestId);
+    const updatedRequests = (foyer.pending_requests || []).filter(r => r.id !== requestId);
+
+    const updatedFoyer: Foyer = {
+      ...foyer,
+      pending_requests: updatedRequests
+    };
+
+    await saveFoyerToCloudAndLocal(updatedFoyer);
+
+    try {
+      const channel = supabase.channel('foyer_sync_channel');
+      await channel.send({
+        type: 'broadcast',
+        event: 'foyer_join_rejected',
+        payload: { foyerId: foyer.id, requestId, username: req?.username }
+      });
+    } catch (err) {}
+
+    return { success: true, foyer: updatedFoyer };
+  } catch (e: any) {
+    return { success: false, error: e?.message || 'Erreur lors du refus de la demande.' };
+  }
+}
+
+// Cancel a join request (by the applicant)
+export async function cancelJoinRequest(
+  foyerId: string,
+  requestId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const foyer = await fetchFoyerById(foyerId);
+    if (!foyer) return { success: false, error: 'Foyer introuvable.' };
+
+    const updatedRequests = (foyer.pending_requests || []).filter(r => r.id !== requestId);
+    const updatedFoyer: Foyer = {
+      ...foyer,
+      pending_requests: updatedRequests
+    };
+
+    await saveFoyerToCloudAndLocal(updatedFoyer);
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e?.message || 'Erreur lors de l’annulation.' };
   }
 }
 

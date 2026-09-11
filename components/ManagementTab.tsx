@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
-import { User, type Category, type Expense, type CustomCategoryIcon, type Foyer } from '../types';
+import { User, type Category, type Expense, type CustomCategoryIcon, type Foyer, type FoyerJoinRequest } from '../types';
 import { type Profile, type LoginEvent } from '../hooks/useAuth';
+import { approveJoinRequest, rejectJoinRequest } from '../utils/foyerService';
 import ConfirmationModal from './ConfirmationModal';
 import ArrowDownTrayIcon from './icons/ArrowDownTrayIcon';
 import SupabaseInstructionsModal from './SupabaseInstructionsModal';
@@ -187,6 +188,59 @@ const UserManagement: React.FC<{
     const [isDeletingOwnAccount, setIsDeletingOwnAccount] = useState(false);
     const [isLeavingFoyer, setIsLeavingFoyer] = useState(false);
     const [isClosingFoyer, setIsClosingFoyer] = useState(false);
+    const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
+
+    const handleApproveJoinReq = async (req: FoyerJoinRequest) => {
+        if (!currentFoyer) return;
+        setProcessingRequestId(req.id);
+        try {
+            const res = await approveJoinRequest(currentFoyer.id, req.id);
+            if (res.success) {
+                if (setToastInfo) {
+                    setToastInfo({
+                        message: `Demande de ${req.name} (@${req.username}) validée avec succès !`,
+                        type: 'info'
+                    });
+                }
+            } else {
+                if (setToastInfo) {
+                    setToastInfo({ message: res.error || 'Erreur lors de la validation.', type: 'error' });
+                }
+            }
+        } catch {
+            if (setToastInfo) {
+                setToastInfo({ message: 'Erreur lors de la validation de la demande.', type: 'error' });
+            }
+        } finally {
+            setProcessingRequestId(null);
+        }
+    };
+
+    const handleRejectJoinReq = async (req: FoyerJoinRequest) => {
+        if (!currentFoyer) return;
+        setProcessingRequestId(req.id);
+        try {
+            const res = await rejectJoinRequest(currentFoyer.id, req.id);
+            if (res.success) {
+                if (setToastInfo) {
+                    setToastInfo({
+                        message: `Demande de ${req.name} refusée.`,
+                        type: 'info'
+                    });
+                }
+            } else {
+                if (setToastInfo) {
+                    setToastInfo({ message: res.error || 'Erreur lors du refus.', type: 'error' });
+                }
+            }
+        } catch {
+            if (setToastInfo) {
+                setToastInfo({ message: 'Erreur lors du refus de la demande.', type: 'error' });
+            }
+        } finally {
+            setProcessingRequestId(null);
+        }
+    };
 
     const currentUsernameNormalized = (loggedInUsername || (typeof loggedInUser === 'string' ? loggedInUser : '')).toLowerCase().trim();
     const currentDisplayNameNormalized = (typeof loggedInUser === 'string' ? loggedInUser : '').toLowerCase().trim();
@@ -357,6 +411,97 @@ const UserManagement: React.FC<{
                     </button>
                 </div>
             </div>
+
+            {/* Section: Demandes d'adhésion en attente de validation */}
+            {(() => {
+                const pendingRequests = (currentFoyer?.pending_requests || []).filter(req => 
+                    req.status === 'pending' && 
+                    !currentFoyer?.members?.some(m => m.username?.toLowerCase().trim() === req.username?.toLowerCase().trim())
+                );
+                if (pendingRequests.length === 0) return null;
+
+                return (
+                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 rounded-[26px] p-5 sm:p-6 border border-amber-200/90 dark:border-amber-800/60 shadow-xs space-y-4 animate-fade-in">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div className="flex items-center gap-3">
+                                <div className="w-11 h-11 rounded-2xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center font-black text-xl shrink-0">
+                                    ⏳
+                                </div>
+                                <div>
+                                    <h3 className="font-extrabold text-amber-950 dark:text-amber-100 text-base sm:text-lg leading-tight">
+                                        Demandes d’intégration en attente
+                                    </h3>
+                                    <p className="text-xs text-amber-700 dark:text-amber-300 font-medium">
+                                        Validez l’accès des nouveaux membres souhaitant rejoindre ce foyer
+                                    </p>
+                                </div>
+                            </div>
+                            <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-200/80 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 animate-pulse">
+                                {pendingRequests.length} en attente
+                            </span>
+                        </div>
+
+                        <div className="space-y-2.5 pt-1">
+                            {pendingRequests.map((req) => {
+                                const isProcessing = processingRequestId === req.id;
+                                const initial = req.name.charAt(0).toUpperCase() || 'U';
+
+                                return (
+                                    <div
+                                        key={req.id}
+                                        className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-amber-200 dark:border-amber-800/60 shadow-2xs gap-3.5"
+                                    >
+                                        <div className="flex items-center gap-3.5 min-w-0">
+                                            <div
+                                                className="w-11 h-11 rounded-full font-black flex items-center justify-center text-base shrink-0 text-white shadow-xs"
+                                                style={{ backgroundColor: req.color || '#ec4899' }}
+                                            >
+                                                {initial}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base truncate">
+                                                        {req.name}
+                                                    </span>
+                                                    <span className="font-mono text-xs px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold">
+                                                        @{req.username}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                    {req.email && <span>{req.email} •</span>}
+                                                    <span>Demande du {new Date(req.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Action Buttons */}
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleApproveJoinReq(req)}
+                                                disabled={isProcessing}
+                                                className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 disabled:opacity-60 cursor-pointer"
+                                            >
+                                                <span>✓</span>
+                                                <span>{isProcessing ? 'Validation...' : 'Valider'}</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRejectJoinReq(req)}
+                                                disabled={isProcessing}
+                                                className="px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-300 font-bold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 disabled:opacity-60 cursor-pointer"
+                                            >
+                                                <span>✕</span>
+                                                <span>Refuser</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* Section 2: Membres du Foyer & Sécurité des Comptes */}
             <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
