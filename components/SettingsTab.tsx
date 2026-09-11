@@ -16,7 +16,11 @@ import ContactTab from './ContactTab';
 import { useContactMessages } from '../hooks/useContactMessages';
 import { USER_COLORS } from '../utils/userColors';
 
-export type SettingsViewType = 'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin' | 'keywords' | 'contact';
+import CategoryBudgetsTab from './CategoryBudgetsTab';
+import { useCategoryBudgets } from '../hooks/useCategoryBudgets';
+import { useSyncedSettings } from '../hooks/useSyncedSettings';
+
+export type SettingsViewType = 'main' | 'appearance' | 'reminders' | 'budgets' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin' | 'keywords' | 'contact' | 'management';
 
 interface SettingsTabProps {
   initialView?: SettingsViewType;
@@ -139,10 +143,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
 
   const foyerTitle = props.currentFoyer?.name || 'Mon Foyer';
 
+  const { isBudgetEnabled, isBudgetAlertsEnabled, setIsBudgetAlertsEnabled } = useCategoryBudgets(props.currentFoyer?.id);
+
   const viewTitles: Record<string, string> = {
     main: 'Réglages',
     appearance: 'Apparence',
     reminders: 'Gestion des rappels',
+    budgets: 'Budget mensuel & Alertes',
     notifications: 'Notifications',
     users: foyerTitle,
     categories: 'Catégories',
@@ -168,6 +175,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
 
   const currentUserProfile = (props.profiles || []).find(
     p => p.username.toLowerCase() === (props.loggedInUsername || props.loggedInUser || '').toLowerCase()
+  );
+
+  const foyerKey = props.currentFoyer?.id || 'default';
+  const [isSavingsGoalsEnabled, setIsSavingsGoalsEnabled] = useSyncedSettings<boolean>(
+    `savings_goals_enabled_${foyerKey}`,
+    true
   );
 
   const {
@@ -292,6 +305,57 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
               Rappels & Alertes
             </h4>
             <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
+              <SettingsItemRow
+                iconBg="bg-[#fffbeb] dark:bg-amber-950/60"
+                iconColor="text-[#d97706] dark:text-amber-400"
+                icon={
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                }
+                title="Budget mensuel & Alertes"
+                description="Définir des plafonds par catégorie et alertes"
+                value={!isBudgetEnabled ? 'Désactivé' : isBudgetAlertsEnabled ? 'Activé' : 'Alertes masquées'}
+                onClick={() => setView('budgets')}
+              />
+
+              {/* Toggle switch row for Objectifs d'épargne partagés */}
+              <div className="w-full flex items-center justify-between p-3.5 sm:p-4.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60 text-left">
+                <div className="flex items-center gap-3 min-w-0 pr-2">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 bg-[#ecfdf5] dark:bg-emerald-950/60 text-[#10b981] dark:text-emerald-400">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-sm sm:text-base leading-snug text-slate-900 dark:text-slate-100">
+                      Objectifs d'épargne partagés
+                    </p>
+                    <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 font-medium leading-tight mt-0.5">
+                      Projets d'épargne communs dans la cagnotte
+                    </p>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={isSavingsGoalsEnabled}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setIsSavingsGoalsEnabled(checked);
+                      if (props.setToastInfo) {
+                        props.setToastInfo({
+                          message: checked ? "Objectifs d'épargne partagés activés !" : "Objectifs d'épargne partagés désactivés",
+                          type: 'info'
+                        });
+                      }
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-slate-600 peer-checked:bg-emerald-500"></div>
+                </label>
+              </div>
               <SettingsItemRow
                 iconBg="bg-[#ecfdf5] dark:bg-emerald-950/60"
                 iconColor="text-[#10b981] dark:text-emerald-400"
@@ -571,6 +635,18 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             onDeleteReminder={onDeleteReminder}
             categories={categories}
             foyerMembers={props.currentFoyer?.members}
+          />
+        </div>
+      )}
+
+      {/* Subview: Budget mensuel & Alertes */}
+      {activeView === 'budgets' && (
+        <div className="space-y-4 sm:space-y-5 animate-fade-in">
+          <CategoryBudgetsTab
+            categories={props.categories}
+            expenses={props.expenses}
+            currentFoyerId={props.currentFoyer?.id}
+            setToastInfo={props.setToastInfo}
           />
         </div>
       )}

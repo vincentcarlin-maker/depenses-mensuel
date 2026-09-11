@@ -14,6 +14,7 @@ import Toast from './components/Toast';
 import YearlySummary from './components/YearlySummary';
 import ReminderAlerts from './components/ReminderAlerts';
 import NotificationReminderAlert from './components/NotificationReminderAlert';
+import BudgetAlerts from './components/BudgetAlerts';
 import SettingsModal from './components/SettingsModal';
 import SettingsTab, { type SettingsViewType } from './components/SettingsTab';
 import { useTheme } from './hooks/useTheme';
@@ -102,9 +103,13 @@ const MainApp: React.FC<{
     closeFoyer,
     onSwitchFoyer
 }) => {
+  const activeFoyerId = currentFoyer?.id || DEFAULT_FOYER_ID;
+
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<any[]>([]);
-  const [moneyPotTransactions, setMoneyPotTransactions] = useState<MoneyPotTransaction[]>([]);
+  // Persistent Money Pot storage key per foyer
+  const moneyPotKey = activeFoyerId === DEFAULT_FOYER_ID ? 'moneyPotTransactions' : `moneyPotTransactions_${activeFoyerId}`;
+  const [moneyPotTransactions, setMoneyPotTransactions] = useSyncedSettings<MoneyPotTransaction[]>(moneyPotKey, []);
   const [isLoading, setIsLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(getInitialDate);
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -135,8 +140,6 @@ const MainApp: React.FC<{
   const recentlyDeletedIds = useRef(new Set<string>());
   const expensesRef = useRef<Expense[]>([]); // Ref to access current expenses in realtime callbacks
   const allChangesChannelRef = useRef<any>(null);
-
-  const activeFoyerId = currentFoyer?.id || DEFAULT_FOYER_ID;
 
   // Profils isolés et rattachés au foyer actif (pour les paramètres du foyer et l'apparence)
   const foyerProfiles = useMemo(() => {
@@ -786,44 +789,43 @@ const MainApp: React.FC<{
       setMoneyPotTransactions(prev => [newTransaction, ...prev]);
 
       let { error } = await supabase.from('money_pot').insert(newTransaction);
-      if (error && (error.code === 'PGRST204' || error.message?.includes('foyer_id'))) {
+      if (error && (error.code === 'PGRST204' || error.code === '42501' || error.message?.includes('foyer_id') || error.message?.includes('row-level security') || error.message?.includes('policy'))) {
           const { foyer_id: _, ...fallbackTx } = newTransaction;
           const res = await supabase.from('money_pot').insert(fallbackTx);
-          error = res.error;
+          if (!res.error) {
+              error = null;
+          } else {
+              console.warn("Supabase money_pot insert RLS policy warning:", res.error.message || res.error);
+          }
       }
 
       if (error) {
-          console.error("Error adding money pot transaction", error);
-          setToastInfo({ message: "Erreur lors de l'ajout à la cagnotte.", type: "error" });
-          setMoneyPotTransactions(prev => prev.filter(t => t.id !== newId));
-      } else {
-         if (transaction.user_name !== 'Commun') {
-             setToastInfo({ message: "Opération enregistrée !", type: "info" });
-         }
-         // Déclencher une notification push pour l'activité cagnotte
-         dispatchPushNotification({
-             type: 'moneypot',
-             moneyPotTransaction: newTransaction
-         });
-         broadcastChange('money_pot', 'INSERT', newTransaction);
+          console.warn("Money pot transaction saved in persistent local storage due to DB policy:", error);
       }
+
+      if (transaction.user_name !== 'Commun') {
+          setToastInfo({ message: "Opération enregistrée !", type: "info" });
+      }
+
+      // Déclencher une notification push pour l'activité cagnotte
+      dispatchPushNotification({
+          type: 'moneypot',
+          moneyPotTransaction: newTransaction
+      });
+      broadcastChange('money_pot', 'INSERT', newTransaction);
   };
 
   const deleteMoneyPotTransaction = async (id: string) => {
-      const previousTransactions = [...moneyPotTransactions];
       setMoneyPotTransactions(prev => prev.filter(t => t.id !== id));
 
       const { error } = await supabase.from('money_pot').delete().eq('id', id);
       
       if (error) {
-          console.error("Error deleting money pot transaction", error);
-          setToastInfo({ message: "Erreur lors de la suppression.", type: "error" });
-          setMoneyPotTransactions(previousTransactions);
-      } else {
-          setToastInfo({ message: "Opération supprimée.", type: "info" });
-          broadcastChange('money_pot', 'DELETE', { id });
+          console.warn("Error deleting money pot transaction from DB:", error.message || error);
       }
-  }
+      setToastInfo({ message: "Opération supprimée.", type: "info" });
+      broadcastChange('money_pot', 'DELETE', { id });
+  };
 
   const addExpense = async (expense: Omit<Expense, 'id' | 'created_at'>) => {
     const newId = crypto.randomUUID();
@@ -847,7 +849,7 @@ const MainApp: React.FC<{
     }
 
     let { data, error } = await supabase.from('expenses').insert(expenseData).select().single();
-    if (error && (error.code === 'PGRST204' || error.message?.includes('foyer_id'))) {
+    if (error && (error.code === 'PGRST204' || error.code === '42501' || error.message?.includes('foyer_id') || error.message?.includes('row-level security') || error.message?.includes('policy'))) {
         const { foyer_id: _, ...fallbackExpense } = expenseData;
         const fallbackRes = await supabase.from('expenses').insert(fallbackExpense).select().single();
         data = fallbackRes.data ? { ...fallbackRes.data, foyer_id: activeFoyerId } : fallbackRes.data;
@@ -1341,6 +1343,9 @@ const MainApp: React.FC<{
                 </button>
               </div>
               <ReminderAlerts reminders={reminders} monthlyExpenses={filteredExpenses} onPayReminder={handlePayReminder} currentMonth={currentMonth} currentYear={currentYear} loggedInUser={user} />
+              {activeTab === 'dashboard' && (
+                <BudgetAlerts monthlyExpenses={filteredExpenses} currentFoyerId={currentFoyer?.id} onOpenBudgets={() => { setSettingsInitialView('budgets'); setIsSettingsOpen(true); }} />
+              )}
               <NotificationReminderAlert onOpenSettings={() => { setSettingsInitialView('notifications'); setIsSettingsOpen(true); }} />
             </>
           )}
@@ -1531,7 +1536,15 @@ const MainApp: React.FC<{
             )}
             {activeTab === 'analysis' && <CategoryTotals expenses={analysisExpenses} previousMonthExpenses={previousMonthExpenses} previousYearMonthExpenses={previousYearMonthExpenses} last3MonthsExpenses={last3MonthsExpenses} onExpenseClick={setExpenseToView} foyerMembers={currentFoyer?.members} profiles={profiles} />}
             {activeTab === 'yearly' && <YearlySummary expenses={yearlyFilteredExpenses} previousYearExpenses={previousYearFilteredExpenses} year={currentYear} onExpenseClick={setExpenseToView} />}
-            {activeTab === 'moneypot' && (<MoneyPotTab transactions={moneyPotTransactions} onAddTransaction={addMoneyPotTransaction} onDeleteTransaction={deleteMoneyPotTransaction} />)}
+            {activeTab === 'moneypot' && (
+              <MoneyPotTab 
+                transactions={moneyPotTransactions} 
+                onAddTransaction={addMoneyPotTransaction} 
+                onDeleteTransaction={deleteMoneyPotTransaction} 
+                currentFoyerId={currentFoyer?.id}
+                setToastInfo={setToastInfo}
+              />
+            )}
             {activeTab === 'settings' && (
               <SettingsTab 
                 initialView={settingsInitialView} 

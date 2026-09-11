@@ -19,6 +19,7 @@ import {
 import ExpenseListItem from './ExpenseListItem';
 import CloseIcon from './icons/CloseIcon';
 import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
+import { useCategoryBudgets } from '../hooks/useCategoryBudgets';
 
 const WalletIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -91,7 +92,32 @@ interface CategoryTotalsProps {
 
 const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonthExpenses, last3MonthsExpenses, onExpenseClick, foyerMembers, profiles }) => {
   const { getVisual } = useCategoryVisuals();
+  const { isBudgetEnabled, categoryBudgets } = useCategoryBudgets();
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+
+  const budgetSummary = useMemo(() => {
+    if (!isBudgetEnabled) return [];
+    const categorySpentMap = new Map<string, number>();
+    expenses.forEach(e => {
+      categorySpentMap.set(e.category, (categorySpentMap.get(e.category) || 0) + e.amount);
+    });
+
+    const entries = Object.entries(categoryBudgets).filter(([, limit]) => limit > 0);
+    return entries.map(([category, budget]) => {
+      const spent = categorySpentMap.get(category) || 0;
+      const isOver = spent > budget;
+      const overAmount = Math.max(0, spent - budget);
+      const percentage = Math.min(100, Math.round((spent / budget) * 100));
+      return {
+        category,
+        budget,
+        spent,
+        isOver,
+        overAmount,
+        percentage,
+      };
+    }).sort((a, b) => (b.isOver ? 1 : 0) - (a.isOver ? 1 : 0) || b.percentage - a.percentage);
+  }, [isBudgetEnabled, categoryBudgets, expenses]);
 
   useEffect(() => {
     if (selectedCategory) {
@@ -243,6 +269,77 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
           </div>
         </div>
       </div>
+
+      {/* Section Budgets si l'option est activée */}
+      {isBudgetEnabled && budgetSummary.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-3xl shadow-xs border border-amber-100 dark:border-amber-900/30 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+                  Suivi des plafonds budgétaires
+                </h2>
+                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                  {budgetSummary.filter(b => b.isOver).length > 0 
+                    ? `⚠️ ${budgetSummary.filter(b => b.isOver).length} catégorie(s) dépassent leur plafond` 
+                    : 'Toutes les dépenses respectent vos plafonds'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-1">
+            {budgetSummary.map((b) => {
+              const visual = getVisual(b.category);
+              const IconComponent = visual.icon;
+              return (
+                <div key={`budget-${b.category}`} className="p-3 bg-slate-50/70 dark:bg-slate-700/30 rounded-2xl border border-slate-100 dark:border-slate-700 space-y-2">
+                  <div className="flex items-center justify-between text-xs sm:text-sm">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${visual.isFullBadge ? '' : visual.color} text-white`}>
+                        <IconComponent className={visual.isFullBadge ? "w-full h-full" : "w-3.5 h-3.5"} />
+                      </div>
+                      <span className="font-extrabold text-slate-900 dark:text-white truncate">
+                        {getCategoryDisplayName(b.category)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 font-extrabold">
+                      <span className={b.isOver ? "text-rose-600 dark:text-rose-400" : "text-slate-700 dark:text-slate-300"}>
+                        {b.spent.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                      </span>
+                      <span className="text-slate-400 font-normal">/</span>
+                      <span className="text-slate-500 dark:text-slate-400">
+                        {b.budget.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="w-full bg-slate-200 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        b.isOver ? 'bg-rose-500' : b.percentage >= 80 ? 'bg-amber-500' : 'bg-emerald-500'
+                      }`}
+                      style={{ width: `${Math.min(100, (b.spent / b.budget) * 100)}%` }}
+                    />
+                  </div>
+
+                  {b.isOver && (
+                    <div className="text-[11px] font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1 pt-0.5">
+                      <span>Dépassement de +{b.overAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Section 2: Répartition par catégorie */}
       <div className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-3xl shadow-xs border border-slate-100 dark:border-slate-800 space-y-5">

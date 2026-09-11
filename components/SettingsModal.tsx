@@ -13,6 +13,8 @@ import NotificationsTab from './NotificationsTab';
 import ConfirmationModal from './ConfirmationModal';
 import ContactTab from './ContactTab';
 import { useContactMessages } from '../hooks/useContactMessages';
+import CategoryBudgetsTab from './CategoryBudgetsTab';
+import { useCategoryBudgets } from '../hooks/useCategoryBudgets';
 import { TabId } from './BottomNavigation';
 import BottomNavigation from './BottomNavigation';
 import { useTheme } from '../hooks/useTheme';
@@ -56,7 +58,7 @@ interface SettingsModalProps {
   onLogout: () => void;
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
-  initialView?: 'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin' | 'keywords' | 'contact';
+  initialView?: 'main' | 'appearance' | 'reminders' | 'budgets' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin' | 'keywords' | 'contact';
   currentFoyer?: Foyer;
   onDeleteOwnAccount?: (confirmPassword?: string) => Promise<{ success: boolean; error?: string } | boolean>;
   onUpdateUserColor?: (username: string, newColor: string) => Promise<boolean>;
@@ -120,7 +122,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     activeTab,
     onTabChange,
   } = props;
-  const [activeView, setActiveView] = useState<'main' | 'appearance' | 'reminders' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin' | 'keywords' | 'contact'>('main');
+  const [activeView, setActiveView] = useState<'main' | 'appearance' | 'reminders' | 'budgets' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin' | 'keywords' | 'contact'>('main');
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const { themeSetting } = useTheme();
 
@@ -161,34 +163,9 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     };
   }, [isOpen, onClose, activeView]);
   
-  const handleTabChange = (tab: TabId) => {
-    onTabChange(tab);
-    onClose();
-  };
-
-  if (!isOpen) {
-    return null;
-  }
-  
   const foyerTitle = props.currentFoyer?.name || 'Mon Foyer';
 
-  const viewTitles: Record<string, string> = {
-      main: 'Réglages',
-      appearance: 'Apparence',
-      reminders: 'Gestion des rappels',
-      notifications: 'Notifications',
-      users: foyerTitle,
-      categories: 'Catégories',
-      lists: 'Contenu des listes',
-      data: 'Données & sauvegarde',
-      admin: 'Administration & Développement',
-      management: 'Gestion de l\'application',
-      contact: 'Nous contacter'
-  };
-
-  const activeRemindersCount = reminders.filter(r => r.is_active !== false).length;
-  const themeLabel = themeSetting === 'light' ? 'Clair' : themeSetting === 'dark' ? 'Sombre' : 'Système';
-  const hasPushEnabled = typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  const { isBudgetEnabled } = useCategoryBudgets(props.currentFoyer?.id);
 
   const isVincentAdmin = Boolean(
     props.isAdmin !== undefined
@@ -219,6 +196,34 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     isAdmin: isVincentAdmin,
     onToast: props.setToastInfo,
   });
+
+  const handleTabChange = (tab: TabId) => {
+    onTabChange(tab);
+    onClose();
+  };
+
+  if (!isOpen) {
+    return null;
+  }
+
+  const viewTitles: Record<string, string> = {
+      main: 'Réglages',
+      appearance: 'Apparence',
+      reminders: 'Gestion des rappels',
+      budgets: 'Budget mensuel & Alertes',
+      notifications: 'Notifications',
+      users: foyerTitle,
+      categories: 'Catégories',
+      lists: 'Contenu des listes',
+      data: 'Données & sauvegarde',
+      admin: 'Administration & Développement',
+      management: 'Gestion de l\'application',
+      contact: 'Nous contacter'
+  };
+
+  const activeRemindersCount = reminders.filter(r => r.is_active !== false).length;
+  const themeLabel = themeSetting === 'light' ? 'Clair' : themeSetting === 'dark' ? 'Sombre' : 'Système';
+  const hasPushEnabled = typeof Notification !== 'undefined' && Notification.permission === 'granted';
 
   return (
     <div 
@@ -327,12 +332,25 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                   </div>
                 </div>
 
-                {/* Section: Notifications */}
+                {/* Section: Rappels & Alertes */}
                 <div className="space-y-2">
                   <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
-                    Notifications
+                    Rappels & Alertes
                   </h4>
                   <div className="bg-white dark:bg-slate-800 rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
+                    <SettingsItemRow
+                      iconBg="bg-[#fffbeb] dark:bg-amber-950/60"
+                      iconColor="text-[#d97706] dark:text-amber-400"
+                      icon={
+                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      }
+                      title="Budget mensuel & Alertes"
+                      description="Définir des plafonds par catégorie et alertes"
+                      value={isBudgetEnabled ? 'Activé' : 'Désactivé'}
+                      onClick={() => setActiveView('budgets')}
+                    />
                     <SettingsItemRow
                       iconBg="bg-[#ecfdf5] dark:bg-emerald-950/60"
                       iconColor="text-[#10b981] dark:text-emerald-400"
@@ -600,6 +618,17 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         onDeleteReminder={onDeleteReminder}
                         categories={categories}
                         foyerMembers={props.currentFoyer?.members}
+                    />
+                </div>
+            )}
+
+            {activeView === 'budgets' && (
+                <div className="space-y-5 animate-fade-in">
+                    <CategoryBudgetsTab
+                        categories={categories}
+                        expenses={props.expenses}
+                        currentFoyerId={props.currentFoyer?.id}
+                        setToastInfo={props.setToastInfo}
                     />
                 </div>
             )}
