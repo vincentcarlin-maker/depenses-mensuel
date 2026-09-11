@@ -146,9 +146,6 @@ const Header: React.FC<HeaderProps> = ({
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 italic truncate">
                        sur {activity.expense.description}
                   </p>
-                  <p className="text-[11px] text-sky-600 dark:text-sky-400 font-semibold mt-1">
-                       👉 Cliquer pour voir la dépense
-                  </p>
               </div>
           );
       }
@@ -162,9 +159,6 @@ const Header: React.FC<HeaderProps> = ({
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     {new Date(activity.timestamp).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                </p>
-                <p className="text-[11px] text-sky-600 dark:text-sky-400 font-semibold mt-0.5">
-                    👉 Cliquer pour voir la dépense
                 </p>
             </div>
       );
@@ -209,7 +203,7 @@ const Header: React.FC<HeaderProps> = ({
                 </button>
 
                 {isNotificationsOpen && (
-                    <div className="absolute right-0 mt-2 w-84 sm:w-96 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl z-30 border border-slate-200 dark:border-slate-700 animate-fade-in overflow-hidden">
+                    <div className="absolute right-0 mt-2 w-[92vw] sm:w-[450px] md:w-[500px] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl z-30 border border-slate-200 dark:border-slate-700 animate-fade-in overflow-hidden">
                         <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
                             <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">Notifications</h3>
                             {pendingJoinRequests.length > 0 && (
