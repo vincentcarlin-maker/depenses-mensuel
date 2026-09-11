@@ -741,29 +741,87 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                      <div className="space-y-4 animate-fade-in"><div><label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Pour qui ?</label><SegmentedControl options={childrenOptions} value={giftPerson} onChange={setGiftPerson} className="mt-1"/></div><div><label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Occasion</label><SegmentedControl options={occasionOptions} value={giftOccasion} onChange={setGiftOccasion} className="mt-1"/></div></div>
                                 )}
                                 {category === 'Complément alimentaire' && isMainFoyer && (
-                                     <div className="space-y-4 animate-fade-in">
+                                     <div className="space-y-5 animate-fade-in">
                                          <div>
-                                             <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Boutique</label>
-                                             <SegmentedControl options={SUPPLEMENT_STORES} value={supplementStore} onChange={setSupplementStore} className="mt-1" />
+                                             <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2.5">Boutique</label>
+                                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                                 {SUPPLEMENT_STORES.map((storeOption) => {
+                                                     const isSelected = supplementStore === storeOption;
+                                                     return (
+                                                         <button
+                                                             key={storeOption}
+                                                             type="button"
+                                                             onClick={() => setSupplementStore(storeOption)}
+                                                             className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all font-semibold text-xs sm:text-sm cursor-pointer min-w-0 ${
+                                                                 isSelected
+                                                                     ? 'border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300 ring-1 ring-emerald-500/20'
+                                                                     : 'border-slate-200/80 dark:border-slate-700/85 bg-white dark:bg-slate-800/95 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                                                             }`}
+                                                         >
+                                                             <div className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all ${
+                                                                 isSelected
+                                                                     ? 'border-emerald-500 bg-emerald-500 text-white'
+                                                                     : 'border-slate-300 dark:border-slate-600'
+                                                             }`}>
+                                                                 {isSelected && (
+                                                                     <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                                         <polyline points="20 6 9 17 4 12" />
+                                                                     </svg>
+                                                                 )}
+                                                             </div>
+                                                             <span className="truncate">{storeOption}</span>
+                                                         </button>
+                                                     );
+                                                 })}
+                                             </div>
                                              {supplementStore === 'Autres' && (
                                                  <input
                                                      type="text"
                                                      value={customSupplementStore}
                                                      onChange={(e) => setCustomSupplementStore(e.target.value)}
-                                                     className="mt-2 block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl font-semibold sm:text-base placeholder-slate-400"
+                                                     className="mt-3 block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl font-semibold sm:text-base placeholder-slate-400 animate-fade-in"
                                                      placeholder="Nom de la boutique..."
                                                  />
                                              )}
                                          </div>
                                          <div>
-                                             <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Complément</label>
-                                             <SegmentedControl options={SUPPLEMENT_TYPES} value={supplementType} onChange={setSupplementType} className="mt-1" />
+                                             <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2.5">Complément</label>
+                                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                                 {SUPPLEMENT_TYPES.map((typeOption) => {
+                                                     const isSelected = supplementType === typeOption;
+                                                     return (
+                                                         <button
+                                                             key={typeOption}
+                                                             type="button"
+                                                             onClick={() => setSupplementType(typeOption)}
+                                                             className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all font-semibold text-xs sm:text-sm cursor-pointer min-w-0 ${
+                                                                 isSelected
+                                                                     ? 'border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300 ring-1 ring-emerald-500/20'
+                                                                     : 'border-slate-200/80 dark:border-slate-700/85 bg-white dark:bg-slate-800/95 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                                                             }`}
+                                                         >
+                                                             <div className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all ${
+                                                                 isSelected
+                                                                     ? 'border-emerald-500 bg-emerald-500 text-white'
+                                                                     : 'border-slate-300 dark:border-slate-600'
+                                                             }`}>
+                                                                 {isSelected && (
+                                                                     <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                                         <polyline points="20 6 9 17 4 12" />
+                                                                     </svg>
+                                                                 )}
+                                                             </div>
+                                                             <span className="truncate">{typeOption}</span>
+                                                         </button>
+                                                     );
+                                                 })}
+                                             </div>
                                              {supplementType === 'Autres' && (
                                                  <input
                                                      type="text"
                                                      value={customSupplementType}
                                                      onChange={(e) => setCustomSupplementType(e.target.value)}
-                                                     className="mt-2 block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl font-semibold sm:text-base placeholder-slate-400"
+                                                     className="mt-3 block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl font-semibold sm:text-base placeholder-slate-400 animate-fade-in"
                                                      placeholder="Nom du complément..."
                                                  />
                                              )}
