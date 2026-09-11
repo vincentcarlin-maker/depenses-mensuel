@@ -45,8 +45,8 @@ const TICKET_RESTAURANT_KEYWORDS = [
   't restaurant', 't restau', 't.rest', 'cb rest', 'ticket rest', 't. restaurant', 'restau'
 ];
 
-const SUPPLEMENT_STORES = ['Nutripure', 'GreenWhey', 'Nutri&co', 'Autres'];
-const SUPPLEMENT_TYPES = ['Oméga 3', 'Vitamine D', 'Vitamine C', 'Magnésium', 'Autres'];
+const SUPPLEMENT_STORES = ['Nutripure', 'Nutri&co', 'Greenwhey', 'Prozis', 'Autres'] as const;
+const SUPPLEMENT_TYPES = ['Oméga 3', 'Vitamine C', 'Vitamine D', 'Magnésium', 'Autres'] as const;
 
 interface EditExpenseModalProps {
     expense: Expense;
@@ -115,6 +115,9 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
     const [clothingPerson, setClothingPerson] = useState('Nathan');
     const [giftPerson, setGiftPerson] = useState('Nathan');
     const [giftOccasion, setGiftOccasion] = useState('Noël');
+    const [supplementStore, setSupplementStore] = useState<typeof SUPPLEMENT_STORES[number]>(SUPPLEMENT_STORES[0]);
+    const [customSupplementStore, setCustomSupplementStore] = useState('');
+    const [supplementType, setSupplementType] = useState<typeof SUPPLEMENT_TYPES[number]>(SUPPLEMENT_TYPES[0]);
     const [customSupplementType, setCustomSupplementType] = useState('');
 
     const [error, setError] = useState('');
@@ -213,10 +216,38 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
             } else {
                 setDescription(expense.description);
             }
+        } else if (expense.category === 'Complément alimentaire') {
+            const supplementRegex = /^(.+)\s\(([^)]+)\)$/;
+            const match = expense.description.match(supplementRegex);
+            if (match && isMainFoyer) {
+                const suppType = match[1];
+                const suppStore = match[2];
+                if (SUPPLEMENT_TYPES.includes(suppType as any)) {
+                    setSupplementType(suppType as any);
+                    setCustomSupplementType('');
+                } else {
+                    setSupplementType('Autres');
+                    setCustomSupplementType(suppType);
+                }
+                if (SUPPLEMENT_STORES.includes(suppStore as any)) {
+                    setSupplementStore(suppStore as any);
+                    setCustomSupplementStore('');
+                } else {
+                    setSupplementStore('Autres');
+                    setCustomSupplementStore(suppStore);
+                }
+                setDescription('');
+            } else {
+                setSupplementType('Autres');
+                setCustomSupplementType(expense.description);
+                setSupplementStore(SUPPLEMENT_STORES[0]);
+                setCustomSupplementStore('');
+                setDescription(expense.description);
+            }
         } else {
             setDescription(expense.description);
         }
-    }, [expense, groceryStores, heatingTypes, cars]);
+    }, [expense, groceryStores, heatingTypes, cars, isMainFoyer]);
 
     useEffect(() => {
         if (['Courses', 'Divers'].includes(category) && !showSubtractions) {
@@ -331,6 +362,27 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                 return;
             }
             finalDescription = isMainFoyer ? `${trimmedDescription} (${giftPerson} - ${giftOccasion})` : trimmedDescription;
+        } else if (category === 'Complément alimentaire') {
+            if (isMainFoyer) {
+                const finalStore = supplementStore === 'Autres' ? customSupplementStore.trim() : supplementStore;
+                const finalType = supplementType === 'Autres' ? customSupplementType.trim() : supplementType;
+                if (!finalStore) {
+                    setError('Veuillez spécifier la boutique.');
+                    return;
+                }
+                if (!finalType) {
+                    setError('Veuillez spécifier le complément.');
+                    return;
+                }
+                finalDescription = `${finalType} (${finalStore})`;
+            } else {
+                const trimmedDescription = description.trim();
+                if (!trimmedDescription) {
+                    setError('La description est requise.');
+                    return;
+                }
+                finalDescription = trimmedDescription;
+            }
         } else {
             finalDescription = description.trim();
         }
@@ -688,8 +740,38 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                 {category === 'Cadeau' && isMainFoyer && (
                                      <div className="space-y-4 animate-fade-in"><div><label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Pour qui ?</label><SegmentedControl options={childrenOptions} value={giftPerson} onChange={setGiftPerson} className="mt-1"/></div><div><label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Occasion</label><SegmentedControl options={occasionOptions} value={giftOccasion} onChange={setGiftOccasion} className="mt-1"/></div></div>
                                 )}
+                                {category === 'Complément alimentaire' && isMainFoyer && (
+                                     <div className="space-y-4 animate-fade-in">
+                                         <div>
+                                             <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Boutique</label>
+                                             <SegmentedControl options={SUPPLEMENT_STORES} value={supplementStore} onChange={setSupplementStore} className="mt-1" />
+                                             {supplementStore === 'Autres' && (
+                                                 <input
+                                                     type="text"
+                                                     value={customSupplementStore}
+                                                     onChange={(e) => setCustomSupplementStore(e.target.value)}
+                                                     className="mt-2 block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl font-semibold sm:text-base placeholder-slate-400"
+                                                     placeholder="Nom de la boutique..."
+                                                 />
+                                             )}
+                                         </div>
+                                         <div>
+                                             <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Complément</label>
+                                             <SegmentedControl options={SUPPLEMENT_TYPES} value={supplementType} onChange={setSupplementType} className="mt-1" />
+                                             {supplementType === 'Autres' && (
+                                                 <input
+                                                     type="text"
+                                                     value={customSupplementType}
+                                                     onChange={(e) => setCustomSupplementType(e.target.value)}
+                                                     className="mt-2 block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl font-semibold sm:text-base placeholder-slate-400"
+                                                     placeholder="Nom du complément..."
+                                                 />
+                                             )}
+                                         </div>
+                                     </div>
+                                )}
                                 
-                                { !['Chauffage', 'Courses'].includes(category) && (
+                                { !['Chauffage', 'Courses', ...(isMainFoyer ? ['Complément alimentaire'] : [])].includes(category) && (
                                     <div>
                                         {category === "Carburant" ? (
                                             <div className="animate-fade-in">

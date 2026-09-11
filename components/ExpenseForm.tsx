@@ -45,8 +45,8 @@ const TICKET_RESTAURANT_KEYWORDS = [
   't restaurant', 't restau', 't.rest', 'cb rest', 'ticket rest', 't. restaurant', 'restau'
 ];
 
-const SUPPLEMENT_STORES = ['Nutripure', 'GreenWhey', 'Nutri&co', 'Autres'];
-const SUPPLEMENT_TYPES = ['Oméga 3', 'Vitamine D', 'Vitamine C', 'Magnésium', 'Autres'];
+const SUPPLEMENT_STORES = ['Nutripure', 'Nutri&co', 'Greenwhey', 'Prozis', 'Autres'] as const;
+const SUPPLEMENT_TYPES = ['Oméga 3', 'Vitamine C', 'Vitamine D', 'Magnésium', 'Autres'] as const;
 
 interface ExpenseFormProps {
   onAddExpense: (expense: Omit<Expense, 'id' | 'created_at'>) => void;
@@ -112,6 +112,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [clothingPerson, setClothingPerson] = useState('Nathan');
   const [giftPerson, setGiftPerson] = useState('Nathan');
   const [giftOccasion, setGiftOccasion] = useState('Noël');
+  const [supplementStore, setSupplementStore] = useState<typeof SUPPLEMENT_STORES[number]>(SUPPLEMENT_STORES[0]);
+  const [customSupplementStore, setCustomSupplementStore] = useState('');
+  const [supplementType, setSupplementType] = useState<typeof SUPPLEMENT_TYPES[number]>(SUPPLEMENT_TYPES[0]);
+  const [customSupplementType, setCustomSupplementType] = useState('');
   
   const [error, setError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -329,6 +333,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         setClothingPerson('Nathan');
         setGiftPerson('Nathan');
         setGiftOccasion('Noël');
+        setSupplementStore(SUPPLEMENT_STORES[0]);
+        setCustomSupplementStore('');
+        setSupplementType(SUPPLEMENT_TYPES[0]);
+        setCustomSupplementType('');
         setDate(toDatetimeLocal(new Date()));
         setIsDateManuallySet(false);
         setShowSubtractions(false);
@@ -464,6 +472,27 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
             return;
         }
         finalDescription = isMainFoyer ? `${trimmedDescription} (${giftPerson} - ${giftOccasion})` : trimmedDescription;
+    } else if (category === 'Complément alimentaire') {
+        if (isMainFoyer) {
+            const finalStore = supplementStore === 'Autres' ? customSupplementStore.trim() : supplementStore;
+            const finalType = supplementType === 'Autres' ? customSupplementType.trim() : supplementType;
+            if (!finalStore) {
+                setError('Veuillez spécifier la boutique.');
+                return;
+            }
+            if (!finalType) {
+                setError('Veuillez spécifier le complément.');
+                return;
+            }
+            finalDescription = `${finalType} (${finalStore})`;
+        } else {
+            const trimmedDescription = description.trim();
+            if (!trimmedDescription) {
+                setError('La description est requise.');
+                return;
+            }
+            finalDescription = trimmedDescription;
+        }
     } else {
         finalDescription = description.trim();
     }
@@ -757,8 +786,49 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                           </div>
                       </div>
                   )}
+
+                  {category === 'Complément alimentaire' && isMainFoyer && (
+                      <div className="space-y-4 animate-fade-in">
+                          <div>
+                              <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Boutique</label>
+                              <SegmentedControl
+                                  options={SUPPLEMENT_STORES}
+                                  value={supplementStore}
+                                  onChange={setSupplementStore}
+                                  colorClass="text-brand-600 dark:text-brand-400"
+                              />
+                              {supplementStore === 'Autres' && (
+                                  <input
+                                      type="text"
+                                      value={customSupplementStore}
+                                      onChange={(e) => setCustomSupplementStore(e.target.value)}
+                                      className="mt-2 block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base font-semibold"
+                                      placeholder="Nom de la boutique..."
+                                  />
+                              )}
+                          </div>
+                          <div>
+                              <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Complément</label>
+                              <SegmentedControl
+                                  options={SUPPLEMENT_TYPES}
+                                  value={supplementType}
+                                  onChange={setSupplementType}
+                                  colorClass="text-brand-600 dark:text-brand-400"
+                              />
+                              {supplementType === 'Autres' && (
+                                  <input
+                                      type="text"
+                                      value={customSupplementType}
+                                      onChange={(e) => setCustomSupplementType(e.target.value)}
+                                      className="mt-2 block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base font-semibold"
+                                      placeholder="Nom du complément..."
+                                  />
+                              )}
+                          </div>
+                      </div>
+                  )}
                   
-                  { !['Chauffage', 'Courses'].includes(category) && (
+                  { !['Chauffage', 'Courses', ...(isMainFoyer ? ['Complément alimentaire'] : [])].includes(category) && (
                       <div>
                       {category === "Carburant" ? (
                           <div className="animate-fade-in">
