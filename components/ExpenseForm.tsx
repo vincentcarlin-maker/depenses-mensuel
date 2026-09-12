@@ -632,7 +632,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                         <span>Vous n'avez pas encore de catégorie dans ce foyer. Vous pouvez créer vos propres catégories dans les <strong>Réglages &gt; Catégories</strong>.</span>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
+                    <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-7 gap-1.5">
                         {categories.map((cat) => {
                             const visual = getVisual(cat);
                             const Icon = visual.icon;
@@ -642,16 +642,16 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                                     key={cat}
                                     type="button"
                                     onClick={() => setCategory(cat)}
-                                    className={`flex flex-col items-center justify-center p-1.5 rounded-lg border transition-all duration-200 ${
+                                    className={`aspect-square max-w-[58px] w-full mx-auto flex flex-col items-center justify-center p-1 rounded-lg border transition-all duration-200 cursor-pointer ${
                                         isSelected 
-                                        ? `${visual.borderColor || 'border-blue-200'} ${visual.badgeBg} ring-1 ring-brand-500/20 shadow-sm scale-105` 
+                                        ? `${visual.borderColor || 'border-blue-200'} ${visual.badgeBg} ring-1 ring-brand-500/20 shadow-xs scale-105` 
                                         : 'border-transparent bg-slate-50 dark:bg-slate-700/30 hover:bg-slate-100 dark:hover:bg-slate-700 opacity-70 hover:opacity-100'
                                     }`}
                                 >
-                                    <div className={`mb-0.5 ${isSelected ? visual.textColor : 'text-slate-400 dark:text-slate-500'}`}>
-                                        <Icon className="h-3.5 w-3.5" />
+                                    <div className={`mb-0.5 shrink-0 ${isSelected ? visual.textColor : 'text-slate-400 dark:text-slate-500'}`}>
+                                        <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                     </div>
-                                    <span className={`text-[9px] text-center font-bold leading-tight ${isSelected ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                                    <span className={`text-[8.5px] leading-[10px] text-center font-bold px-0.5 line-clamp-2 ${isSelected ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
                                         {cat}
                                     </span>
                                 </button>
@@ -926,37 +926,31 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                   <div className="space-y-4 pt-1">
                     {/* Type Section */}
                     <div>
-                        <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Type</label>
-                        <div className="grid grid-cols-2 gap-2 sm:gap-2.5 bg-slate-50 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80">
+                        <label className="block text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Type</label>
+                        <div className="flex items-center gap-2">
                             <button
                               type="button"
                               onClick={() => setTransactionType('expense')}
-                              className={`p-2.5 sm:p-3 rounded-xl flex items-center justify-center gap-2 sm:gap-2.5 transition-all cursor-pointer ${
+                              className={`flex-1 py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer border ${
                                 transactionType === 'expense'
-                                  ? 'bg-pink-50/90 dark:bg-rose-950/60 border border-pink-300 dark:border-rose-800/60 shadow-xs'
-                                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 border border-slate-200/80 dark:border-slate-700/80'
+                                  ? 'bg-pink-50/90 dark:bg-rose-950/60 border-pink-300 dark:border-rose-800/60 text-[#e11d48] dark:text-rose-300 shadow-2xs font-extrabold text-xs sm:text-sm'
+                                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 border-slate-200/80 dark:border-slate-700/80 font-bold text-xs sm:text-sm'
                               }`}
                             >
-                              <span className="w-6 h-6 rounded-full bg-[#f43f5e] text-white flex items-center justify-center font-black text-sm shrink-0 shadow-2xs">-</span>
-                              <div className="flex flex-col text-left min-w-0">
-                                <span className="font-extrabold text-xs sm:text-sm text-[#e11d48] dark:text-rose-300 leading-tight">Dépense</span>
-                                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-tight mt-0.5 whitespace-nowrap">- Argent sortant</span>
-                              </div>
+                              <span className="w-4 h-4 rounded-full bg-[#f43f5e] text-white flex items-center justify-center font-black text-xs shrink-0">-</span>
+                              <span>Dépense</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => setTransactionType('refund')}
-                              className={`p-2.5 sm:p-3 rounded-xl flex items-center justify-center gap-2 sm:gap-2.5 transition-all cursor-pointer ${
+                              className={`flex-1 py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer border ${
                                 transactionType === 'refund'
-                                  ? 'bg-emerald-50/90 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800/60 shadow-xs'
-                                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 border border-slate-200/80 dark:border-slate-700/80'
+                                  ? 'bg-emerald-50/90 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-800/60 text-[#059669] dark:text-emerald-400 shadow-2xs font-extrabold text-xs sm:text-sm'
+                                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 border-slate-200/80 dark:border-slate-700/80 font-bold text-xs sm:text-sm'
                               }`}
                             >
-                              <span className="w-6 h-6 rounded-full bg-[#10b981] text-white flex items-center justify-center font-black text-sm shrink-0 shadow-2xs">+</span>
-                              <div className="flex flex-col text-left min-w-0">
-                                <span className="font-extrabold text-xs sm:text-sm text-[#059669] dark:text-emerald-400 leading-tight">Remboursement</span>
-                                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-tight mt-0.5 whitespace-nowrap">+ Argent entrant</span>
-                              </div>
+                              <span className="w-4 h-4 rounded-full bg-[#10b981] text-white flex items-center justify-center font-black text-xs shrink-0">+</span>
+                              <span>Remboursement</span>
                             </button>
                         </div>
                     </div>
