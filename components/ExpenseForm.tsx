@@ -635,25 +635,28 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                     <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-7 gap-1.5">
                         {categories.map((cat) => {
                             const visual = getVisual(cat);
-                            const Icon = visual.icon;
+                            const Icon = visual?.icon;
                             const isSelected = category === cat;
                             return (
                                 <button
                                     key={cat}
                                     type="button"
                                     onClick={() => setCategory(cat)}
-                                    className={`aspect-square max-w-[58px] w-full mx-auto flex flex-col items-center justify-center p-1 rounded-lg border transition-all duration-200 cursor-pointer ${
+                                    className={`aspect-square max-w-[62px] w-full mx-auto rounded-xl border transition-all duration-200 cursor-pointer p-1 overflow-hidden ${
                                         isSelected 
-                                        ? `${visual.borderColor || 'border-blue-200'} ${visual.badgeBg} ring-1 ring-brand-500/20 shadow-xs scale-105` 
-                                        : 'border-transparent bg-slate-50 dark:bg-slate-700/30 hover:bg-slate-100 dark:hover:bg-slate-700 opacity-70 hover:opacity-100'
+                                        ? `${visual?.borderColor || 'border-blue-200'} ${visual?.badgeBg || 'bg-blue-50'} ring-2 ring-brand-500/30 shadow-xs scale-[1.03]` 
+                                        : 'border-slate-200/70 dark:border-slate-700/70 bg-slate-50/90 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700/70 hover:border-slate-300 dark:hover:border-slate-600'
                                     }`}
+                                    title={cat}
                                 >
-                                    <div className={`mb-0.5 shrink-0 ${isSelected ? visual.textColor : 'text-slate-400 dark:text-slate-500'}`}>
-                                        <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                    <div className="w-full h-full flex flex-col items-center justify-center">
+                                        <div className={`w-7 h-7 flex items-center justify-center shrink-0 mb-0.5 ${isSelected ? (visual?.textColor || 'text-blue-600') : (visual?.textColor || 'text-slate-700 dark:text-slate-200')}`}>
+                                            {Icon && <Icon className="w-6 h-6 shrink-0" />}
+                                        </div>
+                                        <span className={`text-[8.5px] leading-[10px] text-center px-0.5 line-clamp-2 ${isSelected ? 'font-black text-slate-900 dark:text-slate-100' : 'font-semibold text-slate-600 dark:text-slate-300'}`}>
+                                            {cat}
+                                        </span>
                                     </div>
-                                    <span className={`text-[8.5px] leading-[10px] text-center font-bold px-0.5 line-clamp-2 ${isSelected ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
-                                        {cat}
-                                    </span>
                                 </button>
                             );
                         })}
