@@ -627,4 +627,352 @@ export const DonationCharityIcon: React.FC<IconProps> = ({ className = "h-5 w-5"
   </svg>
 );
 
+// === NOUVELLES ICÔNES HAUTE QUALITÉ ===
+
+// Alimentation
+export const MeatFishIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M16 4a4 4 0 0 1 4 4c0 3-2 5-6 8l-4 4a2.83 2.83 0 0 1-4-4l4-4c3-4 5-6 8-6z" />
+    <circle cx="15.5" cy="8.5" r="1.5" />
+    <path d="M2 22l3-3" />
+  </svg>
+);
+
+export const IceCreamIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M7 11c0-2.8 2.2-5 5-5s5 2.2 5 5a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2z" />
+    <path d="M8 13l4 8 4-8" />
+    <path d="M10 17h4" />
+  </svg>
+);
+
+export const GroceryFruitIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 4c.5-1.5 2-2 3-2" />
+    <path d="M8.5 7.5c-2.5 0-4.5 2.5-4.5 5.5 0 5 4 8 8 8s8-3 8-8c0-3-2-5.5-4.5-5.5-1.5 0-2.5 1-3.5 1s-2-1-3.5-1z" />
+  </svg>
+);
+
+export const PizzaSliceIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2l9 16a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <circle cx="12" cy="11" r="1.5" />
+    <circle cx="9" cy="16" r="1" />
+    <circle cx="15" cy="16" r="1" />
+  </svg>
+);
+
+export const DrinkJuiceIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 7h12l-1.5 13a2 2 0 0 1-2 1.8H9.5a2 2 0 0 1-2-1.8L6 7z" />
+    <path d="M5 7h14" />
+    <path d="M15 3l-3 4" />
+  </svg>
+);
+
+export const WineBottleIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10 2h4v4l2 3v13H8V9l2-3V2z" />
+    <line x1="8" y1="14" x2="16" y2="14" />
+  </svg>
+);
+
+// Maison & Équipement
+export const FurnitureIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 11V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5" />
+    <path d="M2 11h20v6H2z" />
+    <path d="M4 17v4M20 17v4" />
+  </svg>
+);
+
+export const AirConditioningIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="8" rx="2" />
+    <path d="M7 8h10" />
+    <path d="M6 16c1 2 2 2 3 0s2-2 3 0 2 2 3 0" />
+    <path d="M8 20c1 1.5 2 1.5 3 0s2-1.5 3 0" />
+  </svg>
+);
+
+export const HouseKeyIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="8" cy="15" r="5" />
+    <path d="M11.5 11.5L20 3M16 7l2 2M18 5l2 2" />
+  </svg>
+);
+
+export const SecurityAlarmIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    <path d="M12 8v4M12 16h.01" />
+  </svg>
+);
+
+export const CleaningSprayIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 8h6a2 2 0 0 1 2 2v11a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10a2 2 0 0 1 2-2" />
+    <path d="M11 4h3v4h-3zM7 6l4-2M18 6h2M19 4v4" />
+  </svg>
+);
+
+// Transports
+export const MotorcycleIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="5" cy="16" r="3" />
+    <circle cx="19" cy="16" r="3" />
+    <path d="M5 16l4-7h5l3 7M9 9l3 4h4" />
+    <path d="M14 6l2-2h2" />
+  </svg>
+);
+
+export const ScooterElectricIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="6" cy="18" r="2.5" />
+    <circle cx="18" cy="18" r="2.5" />
+    <path d="M8.5 18h7M16 18l-3-12h-2M13 6h3" />
+  </svg>
+);
+
+export const TaxiCabIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 17a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v8z" />
+    <path d="M9 4h6v3H9z" />
+    <circle cx="7.5" cy="14.5" r="1.5" />
+    <circle cx="16.5" cy="14.5" r="1.5" />
+  </svg>
+);
+
+export const EvStationIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="12" height="18" rx="2" />
+    <path d="M7 10l2-4 1 3h2l-2 4" />
+    <path d="M15 11h2a2 2 0 0 1 2 2v4a1 1 0 0 1-2 0v-3" />
+  </svg>
+);
+
+export const BoatFerryIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 17l2-7h12l2 7c-2 2-6 2-8 0-2 2-6 2-8 0z" />
+    <path d="M8 10V6h8v4M12 2v4" />
+  </svg>
+);
+
+export const VehicleInspectionIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="7" />
+    <path d="M21 21l-4.35-4.35M8 11l2 2 4-4" />
+  </svg>
+);
+
+// Santé & Soins
+export const StethoscopeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 4v6a5 5 0 0 0 10 0V4M3 4h4M13 4h4" />
+    <path d="M10 15v3a3 3 0 0 0 6 0v-2" />
+    <circle cx="16" cy="14" r="2" />
+  </svg>
+);
+
+export const FirstAidIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="6" width="18" height="15" rx="3" />
+    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    <path d="M12 10v6M9 13h6" />
+  </svg>
+);
+
+export const SpaMassageIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3a9 9 0 0 0-9 9c0 4 3 7 7 8 2 0 4-1 5-3 1 2 3 3 5 3 4-1 7-4 7-8a9 9 0 0 0-9-9z" />
+    <path d="M12 7c-2 2-3 4-3 6a3 3 0 0 0 6 0c0-2-1-4-3-6z" />
+  </svg>
+);
+
+// Famille & Enfants
+export const ToyIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="4" y="8" width="16" height="12" rx="3" />
+    <circle cx="9" cy="13" r="1.5" />
+    <circle cx="15" cy="13" r="1.5" />
+    <path d="M9 17h6M12 4v4M9 5h6" />
+  </svg>
+);
+
+export const StrollerIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="8" cy="19" r="2" />
+    <circle cx="17" cy="19" r="2" />
+    <path d="M5 5h3l4 10h6M8 9h8a4 4 0 0 1 4 4v1H8" />
+  </svg>
+);
+
+export const DogIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10 5L8 9H4l2 4 1 5h4l1-3h3l1 3h4l-2-7 1-6h-3l-2 3z" />
+    <circle cx="9" cy="11" r="1" />
+  </svg>
+);
+
+export const CatIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 5c-4 0-7 3-7 7 0 4 3 7 7 7s7-3 7-7c0-4-3-7-7-7z" />
+    <path d="M5 8L3 3l5 2M19 8l2-5-5 2" />
+    <circle cx="9" cy="12" r="1" />
+    <circle cx="15" cy="12" r="1" />
+    <path d="M12 14v1M10 16c1 .5 3 .5 4 0" />
+  </svg>
+);
+
+// Loisirs, Sports & Activités
+export const GuitarMusicIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M15 3l6 6M17.5 5.5l-8 8a3.5 3.5 0 1 0 4 4l8-8" />
+    <circle cx="9" cy="18" r="1" />
+  </svg>
+);
+
+export const PaintPaletteIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3a9 9 0 0 0-9 9c0 3 2 5 5 5h1a2 2 0 0 1 2 2c0 1.5 1 2 2 2 4 0 8-4 8-9a9 9 0 0 0-9-9z" />
+    <circle cx="7.5" cy="10.5" r="1" />
+    <circle cx="12" cy="7.5" r="1" />
+    <circle cx="16.5" cy="10.5" r="1" />
+  </svg>
+);
+
+export const CameraPhotoIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+    <circle cx="12" cy="13" r="4" />
+  </svg>
+);
+
+export const SwimmingPoolIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="7" cy="6" r="2" />
+    <path d="M12 8l-4 3 2 4M3 17c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0" />
+    <path d="M3 20c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0" />
+  </svg>
+);
+
+export const TentCampingIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 21l9-18 9 18H3z" />
+    <path d="M12 3v18M9 21l3-7 3 7" />
+  </svg>
+);
+
+export const FishingIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 3v9a5 5 0 0 1-10 0V8" />
+    <path d="M6 13a4 4 0 0 0 8 0c0-2-2-3-4-3s-4 1-4 3zM2 13l4-2M2 13l4 2" />
+  </svg>
+);
+
+export const SkiMountainIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="15" cy="5" r="2" />
+    <path d="M7 21l6-10 3 3 4 2M3 17l10-8M17 14l2 7" />
+  </svg>
+);
+
+export const SoccerBallIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7l3 2v4l-3 2-3-2V9z" />
+    <path d="M12 7V3M15 9l4-2M15 13l4 2M12 15v4M9 13l-4 2M9 9L5 7" />
+  </svg>
+);
+
+export const RunningShoeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 16h18l-2 3H5l-2-3z" />
+    <path d="M3 16l3-6 4 2 5-4 4 3 2 5" />
+    <path d="M9 12l2 2M12 10l2 2" />
+  </svg>
+);
+
+// Tech & Digital
+export const ComputerLaptopIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="4" y="4" width="16" height="11" rx="2" />
+    <path d="M2 19h20M10 15h4" />
+  </svg>
+);
+
+export const HeadphonesAudioIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 14v3a4 4 0 0 0 4 4h1v-7H5a2 2 0 0 0-2 2zM21 14v3a4 4 0 0 1-4 4h-1v-7h3a2 2 0 0 1 2 2z" />
+    <path d="M3 14a9 9 0 0 1 18 0" />
+  </svg>
+);
+
+export const CloudServerIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+    <path d="M12 12v5M10 14l2-2 2 2" />
+  </svg>
+);
+
+export const SmartwatchIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="7" y="6" width="10" height="12" rx="3" />
+    <path d="M9 6V2h6v4M9 18v4h6v-4" />
+  </svg>
+);
+
+// Finances & Administratif
+export const SalaryPayrollIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="6" width="20" height="12" rx="2" />
+    <circle cx="12" cy="12" r="3" />
+    <path d="M6 12h.01M18 12h.01" />
+  </svg>
+);
+
+export const InvoiceBillIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16l3-2 3 2 3-2 3 2 3-2 3 2V8z" />
+    <path d="M14 2v6h6M8 12h8M8 16h5" />
+  </svg>
+);
+
+export const StockInvestmentIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 3v18h18" />
+    <path d="M19 9l-5 5-4-4-5 5" />
+    <path d="M14 9h5v5" />
+  </svg>
+);
+
+export const CryptoCurrencyIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M9 8h4.5a2 2 0 0 1 0 4H9m0 0h5a2 2 0 0 1 0 4H9M11 6v2M14 6v2M11 16v2M14 16v2" />
+  </svg>
+);
+
+export const LegalLawyerIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3v18M5 6l7-3 7 3M5 6v5a4 4 0 0 0 8 0V6M19 6v5a4 4 0 0 1-8 0V6M8 21h8" />
+  </svg>
+);
+
+export const FineTicketIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="5" y="3" width="14" height="18" rx="2" />
+    <path d="M9 8h6M9 12h6M9 16h4" />
+    <circle cx="16" cy="16" r="1.5" />
+  </svg>
+);
+
+export const RetirementIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="6" r="3" />
+    <path d="M9 12h6l2 9h-3l-1-5-1 5H9l1-9zM6 15l2-3M18 12l2 8" />
+  </svg>
+);
+
+
 

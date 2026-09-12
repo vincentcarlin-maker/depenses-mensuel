@@ -1,14 +1,19 @@
 import React from 'react';
 import {
   PRESET_CATEGORY_ICONS,
+  CATEGORY_THEMES,
   CATEGORY_COLORS,
   getColorDef,
-  CategoryIconDef
+  CategoryIconDef,
+  CategoryThemeDef
 } from './CategoryEditModal';
 import { CustomCategoryIcon } from '../hooks/useCustomCategoryIcons';
 import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
+import { CategoryIconCatalog } from './CategoryIconCatalog';
+import { ColorPalettePicker } from './ColorPalettePicker';
 
-export { PRESET_CATEGORY_ICONS, CATEGORY_COLORS, getColorDef };
+export { PRESET_CATEGORY_ICONS, CATEGORY_THEMES, CATEGORY_COLORS, getColorDef };
+export type { CategoryIconDef, CategoryThemeDef };
 
 interface CategoryIconPickerProps {
   selectedIconId: string;
@@ -25,150 +30,37 @@ export const CategoryIconPicker: React.FC<CategoryIconPickerProps> = ({
   onSelectColor,
   customIcons: passedCustomIcons = [],
 }) => {
-  const { customIcons: contextCustomIcons } = useCategoryVisuals();
+  const { customIcons: contextCustomIcons, deleteCustomIcon } = useCategoryVisuals();
   const customIconsSource = contextCustomIcons.length > 0 ? contextCustomIcons : passedCustomIcons;
-
-  const customIcons = customIconsSource.filter(ci => !ci.id?.startsWith('mapping_') && ci.category !== 'deleted_system_icon');
-  const deletedSystemIcons = customIconsSource
-    .filter(ci => ci.category === 'deleted_system_icon')
-    .map(ci => ci.name);
-  const filteredPresets = PRESET_CATEGORY_ICONS.filter(preset => !deletedSystemIcons.includes(preset.name));
-
-  const totalCount = filteredPresets.length + customIcons.length;
-
-  const selectedPreset = filteredPresets.find(
-    p => p.id === selectedIconId || p.name === selectedIconId || p.name.toLowerCase().replace(/icon$/, '') === selectedIconId.toLowerCase()
-  );
-  const selectedCustom = customIcons.find(
-    ci => ci.id === selectedIconId || ci.name === selectedIconId || ci.name.toLowerCase().replace(/icon$/, '') === selectedIconId.toLowerCase()
-  );
-  const selectedLabel = selectedPreset
-    ? selectedPreset.label
-    : selectedCustom
-    ? selectedCustom.name.replace(/Icon$/, '')
-    : 'Divers';
-
-  const renderIconContent = (iconDef?: CategoryIconDef, custom?: CustomCategoryIcon) => {
-    if (custom) {
-      if (custom.type === 'svg' && custom.svgContent) {
-        return (
-          <div
-            className="w-6 h-6 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full"
-            dangerouslySetInnerHTML={{ __html: custom.svgContent }}
-          />
-        );
-      }
-      if (custom.imageUrl) {
-        return <img src={custom.imageUrl} className="w-full h-full object-contain p-0.5 rounded-xl" alt={custom.name} />;
-      }
-      return <span className="text-sm">✨</span>;
-    }
-
-    if (iconDef) {
-      const IconComp = iconDef.icon;
-      return <IconComp className="w-5 h-5" />;
-    }
-
-    return <span className="text-sm">📌</span>;
-  };
 
   return (
     <div className="space-y-3">
-      {/* Header with counter */}
+      {/* Header with thematic catalog description */}
       <div className="flex items-center justify-between">
         <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-          Choisir une icône
+          Catalogue d'icônes
         </label>
         <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-          {totalCount} icônes disponibles
+          Classées par thème
         </span>
       </div>
 
-      {/* Grid of Icons */}
-      <div className="grid grid-cols-6 gap-2 max-h-48 overflow-y-auto p-1.5 rounded-2xl bg-slate-50/50 dark:bg-slate-700/30 border border-slate-200/70 dark:border-slate-700/70">
-        {/* Built-ins */}
-        {filteredPresets.map((item) => {
-          const isSelected = selectedIconId === item.id || selectedIconId === item.name;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onSelectIcon(item.id)}
-              className={`w-full aspect-square rounded-2xl flex items-center justify-center transition-all cursor-pointer ${
-                isSelected
-                  ? 'bg-[#e0f2fe] dark:bg-sky-950/60 border-2 border-[#0284c7] dark:border-sky-500 text-[#0284c7] dark:text-sky-400 shadow-xs scale-105'
-                  : 'bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white'
-              }`}
-              title={item.label}
-            >
-              {renderIconContent(item)}
-            </button>
-          );
-        })}
+      {/* Thematic Icon Catalog */}
+      <CategoryIconCatalog
+        selectedIconId={selectedIconId}
+        onSelectIcon={onSelectIcon}
+        customIcons={customIconsSource}
+        onDeleteCustomIcon={deleteCustomIcon}
+        maxHeight="max-h-52 sm:max-h-60"
+      />
 
-        {/* Custom Uploaded Icons */}
-        {customIcons.map((ci) => {
-          const isSelected = selectedIconId === ci.id || selectedIconId === ci.name;
-          return (
-            <button
-              key={ci.id}
-              type="button"
-              onClick={() => onSelectIcon(ci.id, ci)}
-              className={`w-full aspect-square rounded-2xl flex items-center justify-center transition-all cursor-pointer ${
-                isSelected
-                  ? 'bg-[#e0f2fe] dark:bg-sky-950/60 border-2 border-[#0284c7] dark:border-sky-500 text-[#0284c7] dark:text-sky-400 shadow-xs scale-105'
-                  : 'bg-white dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white'
-              }`}
-              title={ci.name}
-            >
-              {renderIconContent(undefined, ci)}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Selected icon name */}
-      <div className="text-center pt-0.5">
-        <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-          Icône sélectionnée
-        </p>
-        <p className="text-sm font-bold text-slate-900 dark:text-white capitalize mt-0.5">
-          {selectedLabel}
-        </p>
-      </div>
-
-      {/* Color Swatches */}
+      {/* Expanded Color Palette Picker */}
       {onSelectColor && (
-        <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-700/60">
-          <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-            Couleur du macaron
-          </label>
-          <div className="grid grid-cols-6 sm:grid-cols-8 gap-2.5 py-1">
-            {CATEGORY_COLORS.map((c) => {
-              const isSelected =
-                selectedColor === c.bgClass ||
-                selectedColor === c.id ||
-                selectedColor === c.hex;
-
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => onSelectColor(c.bgClass)}
-                  className={`w-9 h-9 rounded-full ${c.bgClass} flex items-center justify-center transition-all cursor-pointer ${
-                    isSelected
-                      ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-slate-800 scale-110 shadow-xs'
-                      : 'opacity-85 hover:opacity-100 hover:scale-105'
-                  }`}
-                  title={c.label}
-                >
-                  {isSelected && (
-                    <span className="w-2 h-2 rounded-full bg-white dark:bg-slate-900" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
+        <div className="pt-1 border-t border-slate-100 dark:border-slate-700/60">
+          <ColorPalettePicker
+            selectedColor={selectedColor}
+            onSelectColor={onSelectColor}
+          />
         </div>
       )}
     </div>

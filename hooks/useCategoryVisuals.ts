@@ -58,7 +58,51 @@ import {
   ParkingTollIcon,
   SavingsPiggyIcon,
   SchoolSuppliesIcon,
-  DonationCharityIcon
+  DonationCharityIcon,
+  MeatFishIcon,
+  IceCreamIcon,
+  GroceryFruitIcon,
+  PizzaSliceIcon,
+  DrinkJuiceIcon,
+  WineBottleIcon,
+  FurnitureIcon,
+  AirConditioningIcon,
+  HouseKeyIcon,
+  SecurityAlarmIcon,
+  CleaningSprayIcon,
+  MotorcycleIcon,
+  ScooterElectricIcon,
+  TaxiCabIcon,
+  EvStationIcon,
+  BoatFerryIcon,
+  VehicleInspectionIcon,
+  StethoscopeIcon,
+  FirstAidIcon,
+  SpaMassageIcon,
+  ToyIcon,
+  StrollerIcon,
+  DogIcon,
+  CatIcon,
+  GuitarMusicIcon,
+  PaintPaletteIcon,
+  CameraPhotoIcon,
+  SwimmingPoolIcon,
+  TentCampingIcon,
+  FishingIcon,
+  SkiMountainIcon,
+  SoccerBallIcon,
+  RunningShoeIcon,
+  ComputerLaptopIcon,
+  HeadphonesAudioIcon,
+  CloudServerIcon,
+  SmartwatchIcon,
+  SalaryPayrollIcon,
+  InvoiceBillIcon,
+  StockInvestmentIcon,
+  CryptoCurrencyIcon,
+  LegalLawyerIcon,
+  FineTicketIcon,
+  RetirementIcon
 } from '../components/icons/CategoryIcons';
 import { CustomCategoryIcon, useCustomCategoryIcons } from './useCustomCategoryIcons';
 import { getColorDef } from '../components/CategoryEditModal';
@@ -77,6 +121,7 @@ export interface CategoryVisual {
   svgContent?: string;
   pieColor?: string;
   isFullBadge?: boolean;
+  customStyle?: React.CSSProperties;
 }
 
 // Built-in presets map
@@ -321,6 +366,96 @@ export const PRESET_LOOKUP: Record<string, { icon: React.FC<{ className?: string
   schoolsuppliesicon: { icon: SchoolSuppliesIcon, defaultColor: 'bg-[#f59e0b]' },
   donationcharity: { icon: DonationCharityIcon, defaultColor: 'bg-[#ec4899]' },
   donationcharityicon: { icon: DonationCharityIcon, defaultColor: 'bg-[#ec4899]' },
+
+  // New High-Quality Icons
+  pizza: { icon: PizzaSliceIcon, defaultColor: 'bg-[#ef4444]' },
+  pizzasliceicon: { icon: PizzaSliceIcon, defaultColor: 'bg-[#ef4444]' },
+  meatfish: { icon: MeatFishIcon, defaultColor: 'bg-[#ef4444]' },
+  meatfishicon: { icon: MeatFishIcon, defaultColor: 'bg-[#ef4444]' },
+  groceryfruit: { icon: GroceryFruitIcon, defaultColor: 'bg-[#10b981]' },
+  groceryfruiticon: { icon: GroceryFruitIcon, defaultColor: 'bg-[#10b981]' },
+  icecream: { icon: IceCreamIcon, defaultColor: 'bg-[#ec4899]' },
+  icecreamicon: { icon: IceCreamIcon, defaultColor: 'bg-[#ec4899]' },
+  drinkjuice: { icon: DrinkJuiceIcon, defaultColor: 'bg-[#f97316]' },
+  drinkjuiceicon: { icon: DrinkJuiceIcon, defaultColor: 'bg-[#f97316]' },
+  winebottle: { icon: WineBottleIcon, defaultColor: 'bg-[#b91c1c]' },
+  winebottleicon: { icon: WineBottleIcon, defaultColor: 'bg-[#b91c1c]' },
+  furniture: { icon: FurnitureIcon, defaultColor: 'bg-[#f59e0b]' },
+  furnitureicon: { icon: FurnitureIcon, defaultColor: 'bg-[#f59e0b]' },
+  airconditioning: { icon: AirConditioningIcon, defaultColor: 'bg-[#0ea5e9]' },
+  airconditioningicon: { icon: AirConditioningIcon, defaultColor: 'bg-[#0ea5e9]' },
+  housekey: { icon: HouseKeyIcon, defaultColor: 'bg-[#f59e0b]' },
+  housekeyicon: { icon: HouseKeyIcon, defaultColor: 'bg-[#f59e0b]' },
+  securityalarm: { icon: SecurityAlarmIcon, defaultColor: 'bg-[#ef4444]' },
+  securityalarmicon: { icon: SecurityAlarmIcon, defaultColor: 'bg-[#ef4444]' },
+  cleaningspray: { icon: CleaningSprayIcon, defaultColor: 'bg-[#14b8a6]' },
+  cleaningsprayicon: { icon: CleaningSprayIcon, defaultColor: 'bg-[#14b8a6]' },
+  motorcycle: { icon: MotorcycleIcon, defaultColor: 'bg-[#f97316]' },
+  motorcycleicon: { icon: MotorcycleIcon, defaultColor: 'bg-[#f97316]' },
+  scooterelectric: { icon: ScooterElectricIcon, defaultColor: 'bg-[#10b981]' },
+  scooterelectricicon: { icon: ScooterElectricIcon, defaultColor: 'bg-[#10b981]' },
+  taxicab: { icon: TaxiCabIcon, defaultColor: 'bg-[#eab308]' },
+  taxicabicon: { icon: TaxiCabIcon, defaultColor: 'bg-[#eab308]' },
+  evstation: { icon: EvStationIcon, defaultColor: 'bg-[#10b981]' },
+  evstationicon: { icon: EvStationIcon, defaultColor: 'bg-[#10b981]' },
+  boatferry: { icon: BoatFerryIcon, defaultColor: 'bg-[#0ea5e9]' },
+  boatferryicon: { icon: BoatFerryIcon, defaultColor: 'bg-[#0ea5e9]' },
+  vehicleinspection: { icon: VehicleInspectionIcon, defaultColor: 'bg-[#64748b]' },
+  vehicleinspectionicon: { icon: VehicleInspectionIcon, defaultColor: 'bg-[#64748b]' },
+  stethoscope: { icon: StethoscopeIcon, defaultColor: 'bg-[#3b82f6]' },
+  stethoscopeicon: { icon: StethoscopeIcon, defaultColor: 'bg-[#3b82f6]' },
+  firstaid: { icon: FirstAidIcon, defaultColor: 'bg-[#ef4444]' },
+  firstaidicon: { icon: FirstAidIcon, defaultColor: 'bg-[#ef4444]' },
+  spamassage: { icon: SpaMassageIcon, defaultColor: 'bg-[#14b8a6]' },
+  spamassageicon: { icon: SpaMassageIcon, defaultColor: 'bg-[#14b8a6]' },
+  toy: { icon: ToyIcon, defaultColor: 'bg-[#ec4899]' },
+  toyicon: { icon: ToyIcon, defaultColor: 'bg-[#ec4899]' },
+  stroller: { icon: StrollerIcon, defaultColor: 'bg-[#3b82f6]' },
+  strollericon: { icon: StrollerIcon, defaultColor: 'bg-[#3b82f6]' },
+  dog: { icon: DogIcon, defaultColor: 'bg-[#f59e0b]' },
+  dogicon: { icon: DogIcon, defaultColor: 'bg-[#f59e0b]' },
+  cat: { icon: CatIcon, defaultColor: 'bg-[#a855f7]' },
+  caticon: { icon: CatIcon, defaultColor: 'bg-[#a855f7]' },
+  guitar: { icon: GuitarMusicIcon, defaultColor: 'bg-[#f97316]' },
+  guitarmusicicon: { icon: GuitarMusicIcon, defaultColor: 'bg-[#f97316]' },
+  paintpalette: { icon: PaintPaletteIcon, defaultColor: 'bg-[#a855f7]' },
+  paintpaletteicon: { icon: PaintPaletteIcon, defaultColor: 'bg-[#a855f7]' },
+  cameraphoto: { icon: CameraPhotoIcon, defaultColor: 'bg-[#6366f1]' },
+  cameraphotoicon: { icon: CameraPhotoIcon, defaultColor: 'bg-[#6366f1]' },
+  swimmingpool: { icon: SwimmingPoolIcon, defaultColor: 'bg-[#0ea5e9]' },
+  swimmingpoolicon: { icon: SwimmingPoolIcon, defaultColor: 'bg-[#0ea5e9]' },
+  tentcamping: { icon: TentCampingIcon, defaultColor: 'bg-[#10b981]' },
+  tentcampingicon: { icon: TentCampingIcon, defaultColor: 'bg-[#10b981]' },
+  fishing: { icon: FishingIcon, defaultColor: 'bg-[#0284c7]' },
+  fishingicon: { icon: FishingIcon, defaultColor: 'bg-[#0284c7]' },
+  skimountain: { icon: SkiMountainIcon, defaultColor: 'bg-[#0ea5e9]' },
+  skimountainicon: { icon: SkiMountainIcon, defaultColor: 'bg-[#0ea5e9]' },
+  soccerball: { icon: SoccerBallIcon, defaultColor: 'bg-[#10b981]' },
+  soccerballicon: { icon: SoccerBallIcon, defaultColor: 'bg-[#10b981]' },
+  runningshoe: { icon: RunningShoeIcon, defaultColor: 'bg-[#f97316]' },
+  runningshoeicon: { icon: RunningShoeIcon, defaultColor: 'bg-[#f97316]' },
+  computerlaptop: { icon: ComputerLaptopIcon, defaultColor: 'bg-[#6366f1]' },
+  computerlaptopicon: { icon: ComputerLaptopIcon, defaultColor: 'bg-[#6366f1]' },
+  headphonesaudio: { icon: HeadphonesAudioIcon, defaultColor: 'bg-[#a855f7]' },
+  headphonesaudioicon: { icon: HeadphonesAudioIcon, defaultColor: 'bg-[#a855f7]' },
+  cloudserver: { icon: CloudServerIcon, defaultColor: 'bg-[#0ea5e9]' },
+  cloudservericon: { icon: CloudServerIcon, defaultColor: 'bg-[#0ea5e9]' },
+  smartwatch: { icon: SmartwatchIcon, defaultColor: 'bg-[#64748b]' },
+  smartwatchicon: { icon: SmartwatchIcon, defaultColor: 'bg-[#64748b]' },
+  salarypayroll: { icon: SalaryPayrollIcon, defaultColor: 'bg-[#10b981]' },
+  salarypayrollicon: { icon: SalaryPayrollIcon, defaultColor: 'bg-[#10b981]' },
+  invoicebill: { icon: InvoiceBillIcon, defaultColor: 'bg-[#64748b]' },
+  invoicebillicon: { icon: InvoiceBillIcon, defaultColor: 'bg-[#64748b]' },
+  stockinvestment: { icon: StockInvestmentIcon, defaultColor: 'bg-[#10b981]' },
+  stockinvestmenticon: { icon: StockInvestmentIcon, defaultColor: 'bg-[#10b981]' },
+  cryptocurrency: { icon: CryptoCurrencyIcon, defaultColor: 'bg-[#f59e0b]' },
+  cryptocurrencyicon: { icon: CryptoCurrencyIcon, defaultColor: 'bg-[#f59e0b]' },
+  legallawyer: { icon: LegalLawyerIcon, defaultColor: 'bg-[#6366f1]' },
+  legallawyericon: { icon: LegalLawyerIcon, defaultColor: 'bg-[#6366f1]' },
+  fineticket: { icon: FineTicketIcon, defaultColor: 'bg-[#ef4444]' },
+  fineticketicon: { icon: FineTicketIcon, defaultColor: 'bg-[#ef4444]' },
+  retirement: { icon: RetirementIcon, defaultColor: 'bg-[#f59e0b]' },
+  retirementicon: { icon: RetirementIcon, defaultColor: 'bg-[#f59e0b]' },
 };
 
 export function resolveIconAndColor(iconId: string, colorClass: string, customIcons: CustomCategoryIcon[]): CategoryVisual {
@@ -358,7 +493,8 @@ export function resolveIconAndColor(iconId: string, colorClass: string, customIc
         badgeBg: colorDef.badgeBgClass,
         borderColor: 'border-slate-200 dark:border-slate-700',
         isCustomSvg: true,
-        svgContent: matchedCustom.svgContent
+        svgContent: matchedCustom.svgContent,
+        customStyle: colorDef.customStyle
       };
     } else if (matchedCustom.imageUrl) {
       const imgUrl = matchedCustom.imageUrl;
@@ -376,7 +512,8 @@ export function resolveIconAndColor(iconId: string, colorClass: string, customIc
         badgeBg: colorDef.badgeBgClass,
         borderColor: 'border-slate-200 dark:border-slate-700',
         isCustomImage: true,
-        imageUrl: matchedCustom.imageUrl
+        imageUrl: matchedCustom.imageUrl,
+        customStyle: colorDef.customStyle
       };
     }
   }
@@ -389,7 +526,8 @@ export function resolveIconAndColor(iconId: string, colorClass: string, customIc
       color: colorDef.bgClass,
       textColor: colorDef.textColorClass,
       badgeBg: colorDef.badgeBgClass,
-      borderColor: 'border-slate-200 dark:border-slate-700'
+      borderColor: 'border-slate-200 dark:border-slate-700',
+      customStyle: colorDef.customStyle
     };
   }
 
@@ -398,7 +536,8 @@ export function resolveIconAndColor(iconId: string, colorClass: string, customIc
     color: colorDef.bgClass,
     textColor: colorDef.textColorClass,
     badgeBg: colorDef.badgeBgClass,
-    borderColor: 'border-slate-200 dark:border-slate-700'
+    borderColor: 'border-slate-200 dark:border-slate-700',
+    customStyle: colorDef.customStyle
   };
 }
 
