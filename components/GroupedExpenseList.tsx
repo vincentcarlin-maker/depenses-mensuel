@@ -50,6 +50,8 @@ const GroupedExpenseList: React.FC<GroupedExpenseListProps> = ({ expenses, onExp
                   modificationTypes={modifiedInfo.get(expense.id)}
                   foyerMembers={foyerMembers}
                   profiles={profiles}
+                  showCategory={true}
+                  showUserBadge={true}
                 />
               ))}
           </div>

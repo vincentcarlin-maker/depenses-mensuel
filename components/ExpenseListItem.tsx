@@ -24,7 +24,9 @@ const ExpenseListItem: React.FC<{
     modificationTypes?: ModificationType[];
     foyerMembers?: FoyerMember[];
     profiles?: Profile[];
-}> = ({ expense, onExpenseClick, isHighlighted, modificationTypes, foyerMembers, profiles }) => {
+    showCategory?: boolean;
+    showUserBadge?: boolean;
+}> = ({ expense, onExpenseClick, isHighlighted, modificationTypes, foyerMembers, profiles, showCategory = false, showUserBadge = false }) => {
     const { getVisual } = useCategoryVisuals();
     const { description } = parseDescription(expense.description);
 
@@ -108,24 +110,30 @@ const ExpenseListItem: React.FC<{
                             </span>
                         )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0 mt-1">
-                        <span className="text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300">
-                            {(expense.category === 'Dépenses obligatoires' || expense.category === 'Dép. récurrentes') ? 'Dép. recurentes' : expense.category}
-                        </span>
-                        {isCommun ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-[11px] sm:text-xs font-bold shrink-0">
-                                <PiggyBankIcon className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                                <span>Cagnotte</span>
-                            </span>
-                        ) : (
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] sm:text-xs font-bold shrink-0 ${userTheme.badgeClass}`}>
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                                </svg>
-                                <span>{expense.user}</span>
-                            </span>
-                        )}
-                    </div>
+                    {(showCategory || showUserBadge) && (
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0 mt-1">
+                            {showCategory && (
+                                <span className="text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300">
+                                    {(expense.category === 'Dépenses obligatoires' || expense.category === 'Dép. récurrentes') ? 'Dép. recurentes' : expense.category}
+                                </span>
+                            )}
+                            {showUserBadge && (
+                                isCommun ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-[11px] sm:text-xs font-bold shrink-0">
+                                        <PiggyBankIcon className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                                        <span>Cagnotte</span>
+                                    </span>
+                                ) : (
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] sm:text-xs font-bold shrink-0 ${userTheme.badgeClass}`}>
+                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                        </svg>
+                                        <span>{expense.user}</span>
+                                    </span>
+                                )
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 

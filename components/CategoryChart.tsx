@@ -511,6 +511,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
                         isHighlighted={false}
                         foyerMembers={foyerMembers}
                         profiles={profiles}
+                        showUserBadge={true}
                       />
                     ))
                 ) : (
