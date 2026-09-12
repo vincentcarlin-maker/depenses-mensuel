@@ -648,8 +648,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                                         : 'border-transparent bg-slate-50 dark:bg-slate-700/30 hover:bg-slate-100 dark:hover:bg-slate-700 opacity-70 hover:opacity-100'
                                     }`}
                                 >
-                                    <div className={`mb-1 ${isSelected ? visual.textColor : 'text-slate-400 dark:text-slate-500'}`}>
-                                        <Icon className="h-5 w-5" />
+                                    <div className={`mb-0.5 ${isSelected ? visual.textColor : 'text-slate-400 dark:text-slate-500'}`}>
+                                        <Icon className="h-3.5 w-3.5" />
                                     </div>
                                     <span className={`text-[9px] text-center font-bold leading-tight ${isSelected ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
                                         {cat}

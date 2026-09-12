@@ -356,18 +356,14 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
         <div className="space-y-3.5 pt-1">
           {chartData.map((entry) => {
             const visual = getVisual(entry.name);
-            const IconComponent = visual.icon;
             const percentage = totalExpenses > 0 ? (entry.value / totalExpenses) * 100 : 0;
             const widthPercent = Math.min(100, Math.max(3, (entry.value / niceMax) * 100));
 
             return (
               <div key={entry.name} className="flex items-center gap-2 sm:gap-4 text-sm">
-                {/* Left Category Name + Icon */}
-                <div className="w-24 xs:w-28 sm:w-44 shrink-0 flex items-center gap-1.5 sm:gap-2 min-w-0">
-                  <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center shrink-0 ${visual.isFullBadge ? '' : visual.color} text-white overflow-hidden`}>
-                    <IconComponent className={visual.isFullBadge ? "w-full h-full" : "w-3.5 h-3.5 sm:w-4 sm:h-4"} />
-                  </div>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200 text-[11px] sm:text-sm truncate" title={getCategoryDisplayName(entry.name)}>
+                {/* Left Category Name */}
+                <div className="w-24 xs:w-28 sm:w-44 shrink-0 min-w-0">
+                  <span className="font-semibold text-slate-800 dark:text-slate-200 text-[11px] sm:text-sm truncate block" title={getCategoryDisplayName(entry.name)}>
                     {getCategoryDisplayName(entry.name)}
                   </span>
                 </div>

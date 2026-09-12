@@ -306,9 +306,6 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                     Résumé de l'Année {year}
                 </h1>
             </div>
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-pink-50 dark:bg-pink-950/40 text-pink-500 dark:text-pink-300 text-[11px] sm:text-xs font-medium italic border border-pink-100/80 dark:border-pink-900/40 shrink-0">
-                ✨ Une année plus sereine ♡
-            </div>
         </div>
         
         {/* Top 2 KPI Summary Cards */}
