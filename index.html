@@ -48,8 +48,22 @@
       } else {
         document.documentElement.classList.remove('dark')
       }
+      if (localStorage.getItem('monthly-expense-bold') === 'false') {
+        document.documentElement.classList.add('no-expense-bold');
+      }
     </script>
     <style>
+      /* Style when bold is disabled in monthly expenses */
+      .no-expense-bold .expense-item-title,
+      .no-expense-bold .expense-item-amount,
+      .no-expense-bold .expense-monthly-title,
+      .no-expense-bold .expense-monthly-amount {
+        font-weight: 500 !important;
+      }
+      .no-expense-bold .expense-monthly-badge {
+        font-weight: 500 !important;
+      }
+
       :root {
         /* Default Cyan Vibe (Bleu) */
         --brand-50: #ecfeff; --brand-100: #cffafe; --brand-200: #a5f3fc; --brand-300: #67e8f9; --brand-400: #22d3ee;

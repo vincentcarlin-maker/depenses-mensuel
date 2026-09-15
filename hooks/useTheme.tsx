@@ -74,11 +74,49 @@ export const useTheme = () => {
         }
     }, [vibe]);
 
+    const [isMonthlyExpenseBold, setIsMonthlyExpenseBold] = useState<boolean>(() => {
+        const stored = localStorage.getItem('monthly-expense-bold');
+        return stored !== null ? stored === 'true' : true;
+    });
+
+    useEffect(() => {
+        const handleBoldChange = (e: Event) => {
+            const customEvent = e as CustomEvent<boolean>;
+            if (customEvent.detail !== undefined) {
+                setIsMonthlyExpenseBold(customEvent.detail);
+            }
+        };
+
+        window.addEventListener('monthly-expense-bold-change', handleBoldChange);
+        return () => window.removeEventListener('monthly-expense-bold-change', handleBoldChange);
+    }, []);
+
+    const changeMonthlyExpenseBold = useCallback((bold: boolean) => {
+        setIsMonthlyExpenseBold(bold);
+        localStorage.setItem('monthly-expense-bold', String(bold));
+        if (bold) {
+            document.documentElement.classList.remove('no-expense-bold');
+        } else {
+            document.documentElement.classList.add('no-expense-bold');
+        }
+        window.dispatchEvent(new CustomEvent('monthly-expense-bold-change', { detail: bold }));
+    }, []);
+
+    useEffect(() => {
+        if (isMonthlyExpenseBold) {
+            document.documentElement.classList.remove('no-expense-bold');
+        } else {
+            document.documentElement.classList.add('no-expense-bold');
+        }
+    }, [isMonthlyExpenseBold]);
+
     return { 
         theme: effectiveTheme, 
         themeSetting, 
         vibe,
         changeThemeSetting, 
-        changeVibe 
+        changeVibe,
+        isMonthlyExpenseBold,
+        changeMonthlyExpenseBold
     };
 };

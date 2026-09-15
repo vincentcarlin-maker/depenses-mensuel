@@ -7,6 +7,7 @@ import {
 import { CustomCategoryIcon } from '../hooks/useCustomCategoryIcons';
 
 export interface CategoryIconCatalogProps {
+  icons?: CategoryIconDef[];
   selectedIconId: string;
   onSelectIcon: (iconId: string, customIcon?: CustomCategoryIcon) => void;
   customIcons?: CustomCategoryIcon[];
@@ -16,6 +17,7 @@ export interface CategoryIconCatalogProps {
 }
 
 export const CategoryIconCatalog: React.FC<CategoryIconCatalogProps> = ({
+  icons,
   selectedIconId,
   onSelectIcon,
   customIcons = [],
@@ -40,8 +42,9 @@ export const CategoryIconCatalog: React.FC<CategoryIconCatalogProps> = ({
   }, [customIcons]);
 
   const activePresets = useMemo(() => {
-    return PRESET_CATEGORY_ICONS.filter(preset => !deletedSystemIcons.includes(preset.name));
-  }, [deletedSystemIcons]);
+    const baseIcons = icons && icons.length > 0 ? icons : PRESET_CATEGORY_ICONS;
+    return baseIcons.filter(preset => !deletedSystemIcons.includes(preset.name));
+  }, [icons, deletedSystemIcons]);
 
   // Counts per theme
   const themeCounts = useMemo(() => {

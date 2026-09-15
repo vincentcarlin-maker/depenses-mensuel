@@ -7,6 +7,7 @@ import ChevronRightIcon from './icons/ChevronRightIcon';
 import TrendingUpIcon from './icons/TrendingUpIcon';
 import PiggyBankIcon from './icons/PiggyBankIcon';
 import { resolveUserTheme } from '../utils/userColors';
+import { useTheme } from '../hooks/useTheme';
 import bannerRetardImg from '../src/assets/banner-retard.png';
 import bannerAvanceImg from '../src/assets/banner-avance.png';
 
@@ -21,6 +22,7 @@ interface BalanceReportProps {
 }
 
 const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear, currentMonth, loggedInUser, foyerMembers }) => {
+  const { isMonthlyExpenseBold } = useTheme();
   const members = useMemo(() => {
     if (foyerMembers && foyerMembers.length > 0) {
       return foyerMembers;
@@ -248,7 +250,7 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
 
         {/* Dépenses du mois section */}
         <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight mb-3.5 sm:mb-4">Dépenses du mois</h2>
+            <h2 className={`text-xl sm:text-2xl text-slate-900 dark:text-slate-100 tracking-tight mb-3.5 sm:mb-4 expense-monthly-title ${isMonthlyExpenseBold ? 'font-extrabold' : 'font-normal'}`}>Dépenses du mois</h2>
             <div className="space-y-3 sm:space-y-3.5">
                  {/* Total Général */}
                  <div className="flex items-center justify-between p-3.5 sm:p-5 bg-blue-50/60 dark:bg-blue-950/30 border border-blue-100/80 dark:border-blue-900/40 rounded-2xl sm:rounded-3xl transition-all shadow-xs min-w-0">
@@ -259,12 +261,12 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                         </svg>
                       </div>
                       <div className="min-w-0">
-                        <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-lg leading-tight">Total Général</h3>
+                        <h3 className={`text-slate-900 dark:text-slate-100 text-sm sm:text-lg leading-tight ${isMonthlyExpenseBold ? 'font-bold' : 'font-normal'}`}>Total Général</h3>
                         <p className="text-[11px] sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">Toutes les dépenses du mois</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="font-extrabold text-base sm:text-2xl text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                      <span className={`text-base sm:text-2xl text-blue-600 dark:text-blue-400 whitespace-nowrap expense-monthly-amount ${isMonthlyExpenseBold ? 'font-extrabold' : 'font-normal'}`}>
                           {totalExpenses.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                       </span>
                     </div>
@@ -290,12 +292,12 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                             </svg>
                           </div>
                           <div className="min-w-0">
-                            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-lg leading-tight">Total {member.name}</h3>
+                            <h3 className={`text-slate-900 dark:text-slate-100 text-sm sm:text-lg leading-tight ${isMonthlyExpenseBold ? 'font-bold' : 'font-normal'}`}>Total {member.name}</h3>
                             <p className="text-[11px] sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">Dépenses de {member.name}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                          <span className={`font-extrabold text-base sm:text-2xl ${theme.textClass} whitespace-nowrap`}>
+                          <span className={`text-base sm:text-2xl ${theme.textClass} whitespace-nowrap expense-monthly-amount ${isMonthlyExpenseBold ? 'font-extrabold' : 'font-normal'}`}>
                               {monthTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                           </span>
                           <ChevronRightIcon />
@@ -312,12 +314,12 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                         <PiggyBankIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                       </div>
                       <div className="min-w-0">
-                        <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-lg leading-tight">Payé par la Cagnotte</h3>
+                        <h3 className={`text-slate-900 dark:text-slate-100 text-sm sm:text-lg leading-tight ${isMonthlyExpenseBold ? 'font-bold' : 'font-normal'}`}>Payé par la Cagnotte</h3>
                         <p className="text-[11px] sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">Dépenses communes</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="font-extrabold text-base sm:text-2xl text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                      <span className={`text-base sm:text-2xl text-emerald-600 dark:text-emerald-400 whitespace-nowrap expense-monthly-amount ${isMonthlyExpenseBold ? 'font-extrabold' : 'font-normal'}`}>
                           {communTotalMonth.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                       </span>
                     </div>

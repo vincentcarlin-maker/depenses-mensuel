@@ -105,6 +105,7 @@ const MainApp: React.FC<{
 }) => {
   const activeFoyerId = currentFoyer?.id || DEFAULT_FOYER_ID;
   const isMainFoyer = activeFoyerId === DEFAULT_FOYER_ID;
+  const { isMonthlyExpenseBold } = useTheme();
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [reminders, setReminders] = useState<any[]>([]);
@@ -1537,8 +1538,8 @@ const MainApp: React.FC<{
                     {/* Header with Title and Month badge */}
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <div>
-                        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Dépenses du mois</h2>
-                        <p className="text-sm font-medium text-slate-400 dark:text-slate-500 mt-0.5">Historique des transactions du mois</p>
+                        <h2 className={`text-xl sm:text-2xl text-slate-900 dark:text-slate-100 tracking-tight expense-monthly-title ${isMonthlyExpenseBold ? 'font-bold' : 'font-normal'}`}>Dépenses du mois</h2>
+                        <p className={`text-sm text-slate-400 dark:text-slate-500 mt-0.5 ${isMonthlyExpenseBold ? 'font-medium' : 'font-normal'}`}>Historique des transactions du mois</p>
                       </div>
                       <div className="flex items-center gap-1 bg-slate-50/80 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600 rounded-2xl p-1 shadow-2xs">
                         <button
@@ -1558,7 +1559,7 @@ const MainApp: React.FC<{
                           <select
                             value={`${currentYear}-${currentMonth}`}
                             onChange={handleMonthChange}
-                            className="bg-transparent text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 cursor-pointer focus:outline-none pr-5 appearance-none py-1"
+                            className={`bg-transparent text-xs sm:text-sm text-slate-800 dark:text-slate-100 cursor-pointer focus:outline-none pr-5 appearance-none py-1 ${isMonthlyExpenseBold ? 'font-bold' : 'font-normal'}`}
                           >
                             {availableMonths.map((opt) => (
                               <option key={opt.value} value={opt.value} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">

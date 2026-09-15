@@ -124,7 +124,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
   } = props;
   const [activeView, setActiveView] = useState<'main' | 'appearance' | 'reminders' | 'budgets' | 'management' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin' | 'keywords' | 'contact'>('main');
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
-  const { themeSetting } = useTheme();
+  const { themeSetting, isMonthlyExpenseBold, changeMonthlyExpenseBold } = useTheme();
 
   useEffect(() => {
     if (isOpen) {
@@ -518,6 +518,75 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                             </div>
                         </div>
                         <ThemeSelector />
+                    </div>
+
+                    {/* Card: Style du texte dans dépenses du mois */}
+                    <div className="bg-white dark:bg-slate-800 rounded-[26px] p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div className="w-11 h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-[#6366f1] dark:text-indigo-400 shrink-0">
+                                    <span className="font-serif font-black text-xl">B</span>
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg leading-tight">
+                                        Texte en gras dans dépenses du mois
+                                    </h3>
+                                    <p className="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5">
+                                        {isMonthlyExpenseBold
+                                            ? "Texte actuellement en gras (titres, montants et détails)."
+                                            : "Texte actuellement en style normal (sans gras)."}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Toggle Switch */}
+                            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                                <input
+                                    type="checkbox"
+                                    checked={isMonthlyExpenseBold}
+                                    onChange={(e) => {
+                                        const checked = e.target.checked;
+                                        changeMonthlyExpenseBold(checked);
+                                        if (props.setToastInfo) {
+                                            props.setToastInfo({
+                                                message: checked 
+                                                    ? "Texte en gras activé dans les dépenses du mois" 
+                                                    : "Texte en gras désactivé dans les dépenses du mois",
+                                                type: 'info'
+                                            });
+                                        }
+                                    }}
+                                    className="sr-only peer"
+                                    aria-label="Activer ou désactiver le texte en gras dans dépenses du mois"
+                                />
+                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-slate-600 peer-checked:bg-indigo-600"></div>
+                            </label>
+                        </div>
+
+                        {/* Live Interactive Preview */}
+                        <div className="pt-3 border-t border-slate-100 dark:border-slate-700/60 space-y-2">
+                            <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                Aperçu du rendu
+                            </div>
+                            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-700/40 border border-slate-200/70 dark:border-slate-600/60 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-full bg-indigo-500 text-white flex items-center justify-center text-sm font-bold shrink-0 shadow-xs">
+                                        🛒
+                                    </div>
+                                    <div>
+                                        <div className={`text-sm text-slate-900 dark:text-slate-100 ${isMonthlyExpenseBold ? 'font-extrabold' : 'font-normal'}`}>
+                                            Courses Carrefour
+                                        </div>
+                                        <div className="text-xs text-slate-400 dark:text-slate-500">
+                                            Aujourd'hui - Alimentation
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className={`text-sm text-slate-900 dark:text-slate-100 ${isMonthlyExpenseBold ? 'font-extrabold' : 'font-normal'}`}>
+                                    42,50 €
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Card 3: Couleur des profils & avatars */}
