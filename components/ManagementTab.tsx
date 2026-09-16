@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { User, type Category, type Expense, type CustomCategoryIcon, type Foyer, type FoyerJoinRequest } from '../types';
+import { User, type Category, type Expense, type Foyer, type FoyerJoinRequest } from '../types';
 import { type Profile, type LoginEvent } from '../hooks/useAuth';
 import { approveJoinRequest, rejectJoinRequest } from '../utils/foyerService';
 import ConfirmationModal from './ConfirmationModal';
@@ -8,7 +8,10 @@ import ArrowDownTrayIcon from './icons/ArrowDownTrayIcon';
 import SupabaseInstructionsModal from './SupabaseInstructionsModal';
 import WrenchScrewdriverIcon from './icons/WrenchScrewdriverIcon';
 import DataAndBackupTab from './DataAndBackupTab';
-import { CategoryEditModal } from './CategoryEditModal';
+import { CategoryEditModal, PRESET_CATEGORY_ICONS, getColorDef } from './CategoryEditModal';
+import { CategoryIconCatalog } from './CategoryIconCatalog';
+import { ColorPalettePicker } from './ColorPalettePicker';
+import { MiscIcon } from './icons/CategoryIcons';
 import { useCategoryVisuals, resolveCategoryVisual } from '../hooks/useCategoryVisuals';
 
 // --- Section Header Component ---
@@ -822,22 +825,38 @@ const CategoryManagement: React.FC<{
     onDeleteCategory: (name: string) => void;
 }> = ({ categories, onAddCategory, onUpdateCategory, onDeleteCategory }) => {
     const { customIcons, saveCategoryIconMapping } = useCategoryVisuals();
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isAddExpanded, setIsAddExpanded] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [selectedIconId, setSelectedIconId] = useState('misc');
+    const [selectedColor, setSelectedColor] = useState('bg-[#3b82f6]');
+    const [addError, setAddError] = useState('');
+
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
-
-    const handleOpenAddModal = () => {
-        setIsAddModalOpen(true);
-    };
 
     const handleOpenEditModal = (cat: Category) => {
         setEditingCategory(cat);
     };
 
-    const handleSaveAdd = (newName: string, iconId: string, color: string) => {
-        if (onAddCategory(newName)) {
-            saveCategoryIconMapping(newName, iconId, color);
-            setIsAddModalOpen(false);
+    const handleInlineAddCategory = () => {
+        const trimmed = newCategoryName.trim();
+        if (!trimmed) {
+            setAddError('Le nom de la catégorie est requis.');
+            return;
+        }
+        if (categories.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
+            setAddError('Une catégorie avec ce nom existe déjà.');
+            return;
+        }
+        if (onAddCategory(trimmed)) {
+            saveCategoryIconMapping(trimmed, selectedIconId, selectedColor);
+            setNewCategoryName('');
+            setSelectedIconId('misc');
+            setSelectedColor('bg-[#3b82f6]');
+            setAddError('');
+            setIsAddExpanded(false);
+        } else {
+            setAddError("Impossible d'ajouter cette catégorie.");
         }
     };
 
@@ -856,6 +875,35 @@ const CategoryManagement: React.FC<{
             onDeleteCategory(deletingCategory);
             setDeletingCategory(null);
         }
+    };
+
+    const activeColorDef = getColorDef(selectedColor);
+
+    const renderSelectedIconContent = (iconId: string) => {
+        const custom = customIcons.find(ci => ci.id === iconId || ci.name === iconId);
+        if (custom) {
+            if (custom.type === 'svg' && custom.svgContent) {
+                return (
+                    <div 
+                        className="w-6 h-6 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full"
+                        dangerouslySetInnerHTML={{ __html: custom.svgContent }}
+                    />
+                );
+            }
+            if (custom.imageUrl) {
+                return <img src={custom.imageUrl} className="w-full h-full object-contain p-0.5 rounded-xl" alt={custom.name} />;
+            }
+            return <span className="text-sm">✨</span>;
+        }
+
+        const preset = PRESET_CATEGORY_ICONS.find(
+            p => p.id === iconId || p.name === iconId || p.id.toLowerCase() === iconId.toLowerCase() || p.name.toLowerCase().replace(/icon$/, '') === iconId.toLowerCase()
+        );
+        if (preset) {
+            const IconComp = preset.icon;
+            return <IconComp className="w-6 h-6" />;
+        }
+        return <MiscIcon className="w-6 h-6" />;
     };
 
     // Resolve initial icon & color for edit modal so real icon is displayed
@@ -937,17 +985,156 @@ const CategoryManagement: React.FC<{
                 </div>
             </div>
 
-            {/* Primary Action Button: + Ajouter une catégorie */}
-            <button
-                type="button"
-                onClick={handleOpenAddModal}
-                className="w-full py-3.5 px-4 rounded-2xl bg-[#3b82f6] hover:bg-[#2563eb] active:bg-[#1d4ed8] text-white font-bold text-base flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.99] cursor-pointer"
-            >
-                <svg className="w-5 h-5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-                <span>Ajouter une catégorie</span>
-            </button>
+            {/* Unfolding Add Category Card - "se déroule comme le rappel" */}
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xs border border-slate-100 dark:border-slate-700/60 overflow-hidden transition-all duration-200">
+                {/* Accordion header trigger */}
+                <button
+                    type="button"
+                    onClick={() => {
+                        setIsAddExpanded(!isAddExpanded);
+                        if (!isAddExpanded) {
+                            setAddError('');
+                        }
+                    }}
+                    className="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-slate-50/70 dark:hover:bg-slate-700/30 transition-colors cursor-pointer select-none"
+                    aria-expanded={isAddExpanded}
+                >
+                    <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-2xs">
+                            <svg className="w-5 h-5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white leading-tight">
+                                Ajouter une catégorie
+                            </h3>
+                            <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 font-medium">
+                                {isAddExpanded ? 'Réduire le formulaire' : 'Cliquez pour dérouler le formulaire'}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <span className="hidden sm:inline-block text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-3 py-1 rounded-full border border-blue-100 dark:border-blue-900/60">
+                            {isAddExpanded ? 'Réduire' : 'Dérouler'}
+                        </span>
+                        <div className={`w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700/80 flex items-center justify-center text-slate-500 dark:text-slate-300 transition-transform duration-300 ${isAddExpanded ? 'rotate-180' : ''}`}>
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+                </button>
+
+                {/* Form content when unfolded */}
+                {isAddExpanded && (
+                    <div className="p-4 sm:p-6 pt-2 sm:pt-3 border-t border-slate-100 dark:border-slate-700/60 space-y-4">
+                        {/* 1. Category Name */}
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                                Nom de la catégorie
+                            </label>
+                            <input
+                                type="text"
+                                value={newCategoryName}
+                                onChange={(e) => {
+                                    setNewCategoryName(e.target.value);
+                                    if (addError) setAddError('');
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleInlineAddCategory();
+                                    }
+                                }}
+                                placeholder="Ex: Chauffage, Resto, Loisirs, Animaux..."
+                                autoFocus
+                                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/60 text-slate-900 dark:text-slate-100 border border-slate-200/90 dark:border-slate-600 rounded-2xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold text-sm sm:text-base transition-all"
+                            />
+                            {addError && <p className="text-xs text-rose-500 font-bold mt-1">{addError}</p>}
+                        </div>
+
+                        {/* 2. Live Preview */}
+                        <div className="space-y-1.5">
+                            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                Aperçu
+                            </label>
+                            <div className="bg-slate-50/80 dark:bg-slate-700/40 rounded-2xl p-3.5 border border-slate-100/90 dark:border-slate-700/60 flex items-center gap-3.5">
+                                <div
+                                    className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${activeColorDef.badgeBgClass} ${activeColorDef.textColorClass} transition-colors shadow-2xs`}
+                                    style={activeColorDef.customStyle}
+                                >
+                                    {renderSelectedIconContent(selectedIconId)}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <h4 className="font-bold text-slate-900 dark:text-white text-base leading-snug truncate">
+                                        {newCategoryName.trim() || 'Nom de la catégorie'}
+                                    </h4>
+                                    <p className="text-xs text-slate-400 dark:text-slate-500 leading-tight mt-0.5">
+                                        Aperçu tel qu'il apparaîtra dans vos listes et tuiles de dépenses.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3. Icon Catalog */}
+                        <div className="space-y-2 pt-1">
+                            <div className="flex items-center justify-between">
+                                <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                    Catalogue d'icônes
+                                </label>
+                                <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                                    Classées par thème
+                                </span>
+                            </div>
+                            <CategoryIconCatalog
+                                icons={PRESET_CATEGORY_ICONS}
+                                selectedIconId={selectedIconId}
+                                onSelectIcon={(id) => setSelectedIconId(id)}
+                                customIcons={customIcons}
+                                onDeleteCustomIcon={() => {}}
+                                maxHeight="max-h-52 sm:max-h-60"
+                            />
+                        </div>
+
+                        {/* 4. Color Palette */}
+                        <div className="pt-2 border-t border-slate-100 dark:border-slate-700/60">
+                            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                                Couleur du macaron
+                            </label>
+                            <ColorPalettePicker
+                                selectedColor={selectedColor}
+                                onSelectColor={(colorClass) => setSelectedColor(colorClass)}
+                            />
+                        </div>
+
+                        {/* 5. Submit / Cancel Buttons */}
+                        <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-700/60">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsAddExpanded(false);
+                                    setAddError('');
+                                }}
+                                className="px-4 py-2.5 rounded-xl font-bold text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleInlineAddCategory}
+                                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-sm shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                            >
+                                <svg className="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                </svg>
+                                <span>Ajouter la catégorie</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
 
             {/* List of Category Cards */}
             <div className="space-y-2.5 sm:space-y-3 pt-1">
@@ -1009,14 +1196,6 @@ const CategoryManagement: React.FC<{
                     );
                 })}
             </div>
-
-            {/* Add Category Modal (Modal matching user specification & IMG_3186) */}
-            <CategoryEditModal
-                isOpen={isAddModalOpen}
-                onClose={() => setIsAddModalOpen(false)}
-                onSave={handleSaveAdd}
-                isCreateMode={true}
-            />
 
             {/* Edit Category Modal (Modal matching user specification & IMG_3186) */}
             {editingCategory && (

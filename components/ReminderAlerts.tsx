@@ -248,14 +248,9 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
                       </div>
                     )}
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">
-                          {reminder.description}
-                        </span>
-                        <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 bg-white/70 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200/60 dark:border-slate-700">
-                          {reminder.category}
-                        </span>
-                      </div>
+                      <span className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate block">
+                        {reminder.description}
+                      </span>
                     </div>
                   </div>
 

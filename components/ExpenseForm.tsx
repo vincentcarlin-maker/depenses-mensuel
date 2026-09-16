@@ -632,7 +632,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                         <span>Vous n'avez pas encore de catégorie dans ce foyer. Vous pouvez créer vos propres catégories dans les <strong>Réglages &gt; Catégories</strong>.</span>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-7 gap-1.5">
+                    <div className="grid grid-cols-3 min-[390px]:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-2 sm:gap-2.5">
                         {categories.map((cat) => {
                             const visual = getVisual(cat);
                             const Icon = visual?.icon;
@@ -642,21 +642,19 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                                     key={cat}
                                     type="button"
                                     onClick={() => setCategory(cat)}
-                                    className={`aspect-square max-w-[62px] w-full mx-auto rounded-xl border transition-all duration-200 cursor-pointer p-1 overflow-hidden ${
+                                    className={`min-h-[76px] sm:min-h-[84px] w-full mx-auto rounded-2xl border transition-all duration-200 cursor-pointer p-2 sm:p-2.5 overflow-hidden flex flex-col items-center justify-center ${
                                         isSelected 
-                                        ? `${visual?.borderColor || 'border-blue-200'} ${visual?.badgeBg || 'bg-blue-50'} ring-2 ring-brand-500/30 shadow-xs scale-[1.03]` 
+                                        ? `${visual?.borderColor || 'border-blue-200'} ${visual?.badgeBg || 'bg-blue-50'} ring-2 ring-brand-500/40 shadow-xs scale-[1.02]` 
                                         : 'border-slate-200/70 dark:border-slate-700/70 bg-slate-50/90 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700/70 hover:border-slate-300 dark:hover:border-slate-600'
                                     }`}
                                     title={cat}
                                 >
-                                    <div className="w-full h-full flex flex-col items-center justify-center">
-                                        <div className={`w-7 h-7 flex items-center justify-center shrink-0 mb-0.5 ${isSelected ? (visual?.textColor || 'text-blue-600') : (visual?.textColor || 'text-slate-700 dark:text-slate-200')}`}>
-                                            {Icon && <Icon className="w-6 h-6 shrink-0" />}
-                                        </div>
-                                        <span className={`text-[8.5px] leading-[10px] text-center px-0.5 line-clamp-2 ${isSelected ? 'font-black text-slate-900 dark:text-slate-100' : 'font-semibold text-slate-600 dark:text-slate-300'}`}>
-                                            {cat}
-                                        </span>
+                                    <div className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center shrink-0 mb-1 rounded-xl ${isSelected ? (visual?.textColor || 'text-blue-600') : (visual?.textColor || 'text-slate-700 dark:text-slate-200')}`}>
+                                        {Icon && <Icon className="w-6 h-6 sm:w-7 sm:h-7 shrink-0" />}
                                     </div>
+                                    <span className={`text-xs sm:text-[13px] leading-tight text-center px-0.5 line-clamp-2 ${isSelected ? 'font-black text-slate-900 dark:text-slate-100' : 'font-bold text-slate-700 dark:text-slate-200'}`}>
+                                        {cat}
+                                    </span>
                                 </button>
                             );
                         })}
