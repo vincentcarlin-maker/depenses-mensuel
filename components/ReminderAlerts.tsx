@@ -8,28 +8,27 @@ interface ReminderAlertsProps {
   reminders: Reminder[];
   monthlyExpenses: Expense[];
   onPayReminder: (reminder: Reminder) => Promise<void> | void;
+  onUpdateReminder?: (reminder: Reminder) => Promise<void> | void;
   currentYear: number;
   currentMonth: number;
   loggedInUser: User;
   onOpenReminders?: () => void;
 }
 
-const MONTH_NAMES_FR = [
-  'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
-];
-
 export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({ 
   reminders, 
   monthlyExpenses, 
   onPayReminder, 
+  onUpdateReminder,
   currentYear, 
   currentMonth, 
-  loggedInUser,
-  onOpenReminders 
+  loggedInUser
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [payingId, setPayingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingAmount, setEditingAmount] = useState<string>('');
+  const [isSavingAmount, setIsSavingAmount] = useState(false);
   const { getVisual } = useCategoryVisuals();
 
   const viewedMonthDate = new Date(Date.UTC(currentYear, currentMonth));
@@ -104,17 +103,71 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
 
   const totalAmount = pendingReminders.reduce((sum, item) => sum + item.amount, 0);
 
+  const handleStartEdit = (e: React.MouseEvent, reminder: Reminder) => {
+    e.stopPropagation();
+    setEditingId(reminder.id);
+    setEditingAmount(String(reminder.amount));
+  };
+
+  const handleCancelEdit = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setEditingId(null);
+    setEditingAmount('');
+  };
+
+  const handleSaveAmount = async (e: React.MouseEvent | React.FormEvent | React.KeyboardEvent, reminder: Reminder) => {
+    if (e) e.stopPropagation();
+    const cleanStr = editingAmount.replace(',', '.').trim();
+    const parsed = parseFloat(cleanStr);
+    if (isNaN(parsed) || parsed <= 0) {
+      return;
+    }
+    const rounded = Math.round(parsed * 100) / 100;
+    if (rounded === reminder.amount) {
+      setEditingId(null);
+      return;
+    }
+
+    setIsSavingAmount(true);
+    try {
+      if (onUpdateReminder) {
+        await onUpdateReminder({ ...reminder, amount: rounded });
+      }
+      setEditingId(null);
+    } catch (err) {
+      console.error('Error saving reminder amount:', err);
+    } finally {
+      setIsSavingAmount(false);
+    }
+  };
+
   const handlePayClick = async (e: React.MouseEvent, reminder: Reminder) => {
     e.stopPropagation();
+    let reminderToPay = reminder;
+
+    // If currently editing this reminder, commit the amount first
+    if (editingId === reminder.id) {
+      const cleanStr = editingAmount.replace(',', '.').trim();
+      const parsed = parseFloat(cleanStr);
+      if (!isNaN(parsed) && parsed > 0) {
+        const rounded = Math.round(parsed * 100) / 100;
+        if (rounded !== reminder.amount) {
+          reminderToPay = { ...reminder, amount: rounded };
+          if (onUpdateReminder) {
+            await onUpdateReminder(reminderToPay);
+          }
+        }
+      }
+      setEditingId(null);
+    }
+
     setPayingId(reminder.id);
     try {
-      await onPayReminder(reminder);
+      await onPayReminder(reminderToPay);
     } finally {
       setPayingId(null);
     }
   };
-
-  const currentMonthLabel = MONTH_NAMES_FR[currentMonth] || '';
 
   return (
     <div className="bg-gradient-to-r from-orange-50 via-orange-50/90 to-amber-50 dark:from-orange-950/40 dark:via-orange-950/30 dark:to-amber-950/30 border border-orange-200 dark:border-orange-900/60 rounded-2xl shadow-xs mb-6 overflow-hidden transition-all duration-300 animate-fade-in">
@@ -156,19 +209,6 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
 
         {/* Right Controls */}
         <div className="flex items-center gap-2 shrink-0">
-          {onOpenReminders && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenReminders();
-              }}
-              type="button"
-              className="hidden sm:inline-flex px-3 py-1.5 text-xs font-bold text-orange-700 dark:text-orange-300 bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-800 rounded-xl hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors shadow-2xs cursor-pointer"
-            >
-              Gérer les rappels
-            </button>
-          )}
-
           <button
             type="button"
             className="p-1.5 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-orange-200/80 dark:border-orange-800 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-slate-700 transition-transform duration-200 cursor-pointer"
@@ -194,17 +234,7 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
             {pendingReminders.map(reminder => {
               const visual = getReminderVisual(reminder, getVisual);
               const VisualIcon = visual?.icon;
-
-              let dueStatusText = `Le ${reminder.day_of_month} du mois`;
-              if (isPastMonth) {
-                dueStatusText = `En retard (mois de ${currentMonthLabel})`;
-              } else if (isCurrentMonth) {
-                if (reminder.day_of_month === realCurrentDay) {
-                  dueStatusText = `Échéance aujourd'hui (${reminder.day_of_month} ${currentMonthLabel})`;
-                } else {
-                  dueStatusText = `Échu depuis le ${reminder.day_of_month} ${currentMonthLabel}`;
-                }
-              }
+              const isEditing = editingId === reminder.id;
 
               return (
                 <div 
@@ -226,17 +256,88 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
                           {reminder.category}
                         </span>
                       </div>
-                      <p className="text-xs text-orange-700 dark:text-orange-400 font-medium mt-0.5">
-                        {dueStatusText}
-                      </p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2.5 shrink-0">
-                    <span className="font-extrabold text-sm sm:text-base text-orange-800 dark:text-orange-200 bg-orange-100/80 dark:bg-orange-900/60 px-2.5 py-1 rounded-lg border border-orange-200/80 dark:border-orange-800">
-                      {reminder.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                    </span>
+                    {/* Amount with Click-to-Edit */}
+                    {isEditing ? (
+                      <div 
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1 bg-white dark:bg-slate-800 p-1 rounded-xl border border-orange-300 dark:border-orange-700 shadow-xs"
+                      >
+                        <div className="relative flex items-center">
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0.01"
+                            value={editingAmount}
+                            onChange={(e) => setEditingAmount(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleSaveAmount(e, reminder);
+                              } else if (e.key === 'Escape') {
+                                handleCancelEdit(e as any);
+                              }
+                            }}
+                            autoFocus
+                            onFocus={(e) => e.target.select()}
+                            className="w-20 sm:w-24 px-2 py-1 text-sm font-extrabold text-orange-950 dark:text-orange-100 bg-orange-50/70 dark:bg-orange-950/40 rounded-lg border border-orange-200 dark:border-orange-800 focus:outline-none focus:ring-2 focus:ring-orange-500 text-right pr-6"
+                            placeholder="0.00"
+                          />
+                          <span className="absolute right-2 text-xs font-bold text-orange-600 dark:text-orange-400 pointer-events-none">
+                            €
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => handleSaveAmount(e, reminder)}
+                          disabled={isSavingAmount}
+                          title="Valider la modification"
+                          aria-label="Valider la modification"
+                          className="p-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
+                        >
+                          {isSavingAmount ? (
+                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCancelEdit}
+                          title="Annuler"
+                          aria-label="Annuler"
+                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 active:scale-95 text-slate-500 dark:text-slate-300 transition-all cursor-pointer"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => handleStartEdit(e, reminder)}
+                        title="Cliquer pour modifier le montant"
+                        className="group font-extrabold text-sm sm:text-base text-orange-800 dark:text-orange-200 bg-orange-100/80 dark:bg-orange-900/60 hover:bg-orange-200/90 dark:hover:bg-orange-800/80 px-2.5 py-1 rounded-lg border border-orange-200/80 dark:border-orange-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs hover:scale-105 active:scale-95"
+                      >
+                        <span>{reminder.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
+                        <svg 
+                          className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400 opacity-60 group-hover:opacity-100 transition-opacity" 
+                          fill="none" 
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor" 
+                          strokeWidth={2.2}
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        </svg>
+                      </button>
+                    )}
 
+                    {/* Action Button: Ajouter instead of Payer */}
                     <button 
                       onClick={(e) => handlePayClick(e, reminder)}
                       disabled={payingId === reminder.id}
@@ -246,14 +347,14 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
                       {payingId === reminder.id ? (
                         <>
                           <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          <span>En cours...</span>
+                          <span>Ajout en cours...</span>
                         </>
                       ) : (
                         <>
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
                           </svg>
-                          <span>Payer</span>
+                          <span>Ajouter</span>
                         </>
                       )}
                     </button>
@@ -267,16 +368,6 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
             <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
               Total des rappels en attente : <strong className="font-extrabold text-orange-700 dark:text-orange-300">{totalAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</strong>
             </span>
-
-            {onOpenReminders && (
-              <button
-                onClick={onOpenReminders}
-                type="button"
-                className="sm:hidden py-1.5 px-3 text-xs font-bold text-orange-700 dark:text-orange-300 bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-800 rounded-xl hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors shadow-2xs text-center cursor-pointer"
-              >
-                Gérer les rappels
-              </button>
-            )}
           </div>
         </div>
       )}

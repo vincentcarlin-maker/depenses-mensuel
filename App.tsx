@@ -1493,10 +1493,10 @@ const MainApp: React.FC<{
                 reminders={reminders} 
                 monthlyExpenses={filteredExpenses} 
                 onPayReminder={handlePayReminder} 
+                onUpdateReminder={updateReminder}
                 currentMonth={currentMonth} 
                 currentYear={currentYear} 
                 loggedInUser={user} 
-                onOpenReminders={() => { setSettingsInitialView('reminders'); setIsSettingsOpen(true); }}
               />
               {activeTab === 'dashboard' && (
                 <BudgetAlerts monthlyExpenses={filteredExpenses} currentFoyerId={currentFoyer?.id} onOpenBudgets={() => { setSettingsInitialView('budgets'); setIsSettingsOpen(true); }} />
