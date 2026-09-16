@@ -248,7 +248,7 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
                       </div>
                     )}
                     <div className="min-w-0">
-                      <span className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate block">
+                      <span className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate block">
                         {reminder.description}
                       </span>
                     </div>

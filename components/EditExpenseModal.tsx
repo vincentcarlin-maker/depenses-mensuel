@@ -614,7 +614,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                             <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-3">
                                 Catégorie
                             </label>
-                            <div className="grid grid-cols-3 min-[390px]:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-2 sm:gap-2.5">
+                            <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-7 gap-1.5">
                                 {categories.map((cat) => {
                                     const visual = getVisual(cat);
                                     const Icon = visual?.icon;
@@ -624,19 +624,21 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                             key={cat}
                                             type="button"
                                             onClick={() => setCategory(cat)}
-                                            className={`min-h-[76px] sm:min-h-[84px] w-full mx-auto rounded-2xl border transition-all duration-200 cursor-pointer p-2 sm:p-2.5 overflow-hidden flex flex-col items-center justify-center ${
+                                            className={`aspect-square max-w-[62px] w-full mx-auto rounded-xl border transition-all duration-200 cursor-pointer p-1 overflow-hidden ${
                                                 isSelected 
-                                                ? `${visual?.borderColor || 'border-blue-200'} ${visual?.badgeBg || 'bg-blue-50'} ring-2 ring-blue-500/40 shadow-xs scale-[1.02]` 
+                                                ? `${visual?.borderColor || 'border-blue-200'} ${visual?.badgeBg || 'bg-blue-50'} ring-2 ring-blue-500/30 shadow-xs scale-[1.03]` 
                                                 : 'border-slate-200/70 dark:border-slate-700/70 bg-slate-50/90 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700/70 hover:border-slate-300 dark:hover:border-slate-600'
                                             }`}
                                             title={cat}
                                         >
-                                            <div className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center shrink-0 mb-1 rounded-xl ${isSelected ? (visual?.textColor || 'text-blue-600') : (visual?.textColor || 'text-slate-700 dark:text-slate-200')}`}>
-                                                {Icon && <Icon className="w-6 h-6 sm:w-7 sm:h-7 shrink-0" />}
+                                            <div className="w-full h-full flex flex-col items-center justify-center">
+                                                <div className={`w-7 h-7 flex items-center justify-center shrink-0 mb-0.5 ${isSelected ? (visual?.textColor || 'text-blue-600') : (visual?.textColor || 'text-slate-700 dark:text-slate-200')}`}>
+                                                    {Icon && <Icon className="w-6 h-6 shrink-0" />}
+                                                </div>
+                                                <span className={`text-[8.5px] leading-[10px] text-center px-0.5 line-clamp-2 ${isSelected ? 'font-black text-slate-900 dark:text-slate-100' : 'font-semibold text-slate-600 dark:text-slate-300'}`}>
+                                                    {cat}
+                                                </span>
                                             </div>
-                                            <span className={`text-xs sm:text-[13px] leading-tight text-center px-0.5 line-clamp-2 ${isSelected ? 'font-black text-slate-900 dark:text-slate-100' : 'font-bold text-slate-700 dark:text-slate-200'}`}>
-                                                {cat}
-                                            </span>
                                         </button>
                                     );
                                 })}

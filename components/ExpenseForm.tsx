@@ -123,6 +123,13 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [duplicateConfirmationOpen, setDuplicateConfirmationOpen] = useState(false);
   const [pendingExpenseData, setPendingExpenseData] = useState<Omit<Expense, 'id' | 'created_at'> | null>(null);
   const [detectedDuplicates, setDetectedDuplicates] = useState<Expense[]>([]);
+  const [isExpanded, setIsExpanded] = useState(Boolean(initialData));
+
+  useEffect(() => {
+    if (initialData) {
+      setIsExpanded(true);
+    }
+  }, [initialData]);
 
   const knownProducts = useMemo(() => {
     const products = new Set<string>();
@@ -534,10 +541,13 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
 
   return (
     <>
-        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-md border border-slate-100 dark:border-slate-800 overflow-hidden">
-        <div className="p-4 sm:p-7 border-b border-slate-100 dark:border-slate-700/60 bg-white dark:bg-slate-800">
-            <div className="flex items-center gap-3 sm:gap-3.5">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-blue-100/80 dark:bg-blue-950/60 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden transition-all duration-300">
+        <div 
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="p-4 sm:p-5 flex items-center justify-between gap-3 cursor-pointer select-none hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-colors"
+        >
+            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/80 dark:bg-blue-950/60 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                         <polyline points="14 2 14 8 20 8" />
@@ -546,12 +556,35 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                     </svg>
                 </div>
                 <div className="min-w-0">
-                    <h2 className="text-lg sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Ajouter une transaction</h2>
-                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">Enregistrez une dépense ou un remboursement.</p>
+                    <h2 className="text-base sm:text-xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Ajouter une transaction</h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                        {isExpanded ? 'Cliquez pour masquer le formulaire' : 'Cliquez pour afficher le formulaire d\'ajout'}
+                    </p>
                 </div>
             </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+                <button
+                    type="button"
+                    className="p-1.5 rounded-xl bg-slate-100/80 dark:bg-slate-700/80 border border-slate-200/80 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-transform duration-200 cursor-pointer"
+                    aria-label={isExpanded ? 'Réduire' : 'Déplier'}
+                >
+                    <svg 
+                        className={`w-4 h-4 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor" 
+                        strokeWidth={2.5}
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+            </div>
         </div>
-        <form onSubmit={handleSubmit} className="p-4 sm:p-7 space-y-5 sm:space-y-6">
+
+        {isExpanded && (
+          <div className="border-t border-slate-100 dark:border-slate-700/60 animate-fade-in">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-7 space-y-5 sm:space-y-6">
             <div>
               <div className="mb-2 sm:mb-2.5">
                 <label className="block text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">Qui a payé ?</label>
@@ -632,7 +665,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                         <span>Vous n'avez pas encore de catégorie dans ce foyer. Vous pouvez créer vos propres catégories dans les <strong>Réglages &gt; Catégories</strong>.</span>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-3 min-[390px]:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-2 sm:gap-2.5">
+                    <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-7 gap-1.5">
                         {categories.map((cat) => {
                             const visual = getVisual(cat);
                             const Icon = visual?.icon;
@@ -642,19 +675,21 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                                     key={cat}
                                     type="button"
                                     onClick={() => setCategory(cat)}
-                                    className={`min-h-[76px] sm:min-h-[84px] w-full mx-auto rounded-2xl border transition-all duration-200 cursor-pointer p-2 sm:p-2.5 overflow-hidden flex flex-col items-center justify-center ${
+                                    className={`aspect-square max-w-[62px] w-full mx-auto rounded-xl border transition-all duration-200 cursor-pointer p-1 overflow-hidden ${
                                         isSelected 
-                                        ? `${visual?.borderColor || 'border-blue-200'} ${visual?.badgeBg || 'bg-blue-50'} ring-2 ring-brand-500/40 shadow-xs scale-[1.02]` 
+                                        ? `${visual?.borderColor || 'border-blue-200'} ${visual?.badgeBg || 'bg-blue-50'} ring-2 ring-brand-500/30 shadow-xs scale-[1.03]` 
                                         : 'border-slate-200/70 dark:border-slate-700/70 bg-slate-50/90 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700/70 hover:border-slate-300 dark:hover:border-slate-600'
                                     }`}
                                     title={cat}
                                 >
-                                    <div className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center shrink-0 mb-1 rounded-xl ${isSelected ? (visual?.textColor || 'text-blue-600') : (visual?.textColor || 'text-slate-700 dark:text-slate-200')}`}>
-                                        {Icon && <Icon className="w-6 h-6 sm:w-7 sm:h-7 shrink-0" />}
+                                    <div className="w-full h-full flex flex-col items-center justify-center">
+                                        <div className={`w-7 h-7 flex items-center justify-center shrink-0 mb-0.5 ${isSelected ? (visual?.textColor || 'text-blue-600') : (visual?.textColor || 'text-slate-700 dark:text-slate-200')}`}>
+                                            {Icon && <Icon className="w-6 h-6 shrink-0" />}
+                                        </div>
+                                        <span className={`text-[8.5px] leading-[10px] text-center px-0.5 line-clamp-2 ${isSelected ? 'font-black text-slate-900 dark:text-slate-100' : 'font-semibold text-slate-600 dark:text-slate-300'}`}>
+                                            {cat}
+                                        </span>
                                     </div>
-                                    <span className={`text-xs sm:text-[13px] leading-tight text-center px-0.5 line-clamp-2 ${isSelected ? 'font-black text-slate-900 dark:text-slate-100' : 'font-bold text-slate-700 dark:text-slate-200'}`}>
-                                        {cat}
-                                    </span>
                                 </button>
                             );
                         })}
@@ -1053,6 +1088,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                 </button>
             </div>
         </form>
+        </div>
+        )}
         </div>
         <ConfirmationModal 
             isOpen={duplicateConfirmationOpen}
