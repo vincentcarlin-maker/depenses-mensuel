@@ -1489,17 +1489,19 @@ const MainApp: React.FC<{
                   </svg>
                 </button>
               </div>
-              <ReminderAlerts 
-                reminders={reminders} 
-                monthlyExpenses={filteredExpenses} 
-                onPayReminder={handlePayReminder} 
-                onUpdateReminder={updateReminder}
-                currentMonth={currentMonth} 
-                currentYear={currentYear} 
-                loggedInUser={user} 
-              />
               {activeTab === 'dashboard' && (
-                <BudgetAlerts monthlyExpenses={filteredExpenses} currentFoyerId={currentFoyer?.id} onOpenBudgets={() => { setSettingsInitialView('budgets'); setIsSettingsOpen(true); }} />
+                <>
+                  <ReminderAlerts 
+                    reminders={reminders} 
+                    monthlyExpenses={filteredExpenses} 
+                    onPayReminder={handlePayReminder} 
+                    onUpdateReminder={updateReminder}
+                    currentMonth={currentMonth} 
+                    currentYear={currentYear} 
+                    loggedInUser={user} 
+                  />
+                  <BudgetAlerts monthlyExpenses={filteredExpenses} currentFoyerId={currentFoyer?.id} onOpenBudgets={() => { setSettingsInitialView('budgets'); setIsSettingsOpen(true); }} />
+                </>
               )}
               <NotificationReminderAlert onOpenSettings={() => { setSettingsInitialView('notifications'); setIsSettingsOpen(true); }} />
             </>

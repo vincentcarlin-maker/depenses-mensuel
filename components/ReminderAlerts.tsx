@@ -229,8 +229,8 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
 
       {/* Expanded Details Section */}
       {isExpanded && (
-        <div className="border-t border-orange-200/60 dark:border-orange-900/60 p-4 bg-white/70 dark:bg-slate-900/60 space-y-3 animate-fade-in">
-          <div className="space-y-2.5">
+        <div className="border-t border-orange-200/60 dark:border-orange-900/60 px-3.5 py-2.5 sm:px-4 sm:py-3 bg-white/50 dark:bg-slate-900/40 space-y-2 animate-fade-in">
+          <div className="divide-y divide-orange-200/50 dark:divide-orange-900/30">
             {pendingReminders.map(reminder => {
               const visual = getReminderVisual(reminder, getVisual);
               const VisualIcon = visual?.icon;
@@ -239,27 +239,27 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
               return (
                 <div 
                   key={reminder.id} 
-                  className="bg-orange-50/60 dark:bg-orange-950/30 p-3 sm:p-3.5 rounded-xl border border-orange-100 dark:border-orange-900/40 flex items-center justify-between gap-3 hover:bg-orange-100/40 dark:hover:bg-orange-950/50 transition-colors"
+                  className="py-1.5 sm:py-2 flex items-center justify-between gap-2.5 first:pt-0 last:pb-0.5"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
                     {VisualIcon && (
-                      <div className="shrink-0 scale-90 sm:scale-100">
+                      <div className="shrink-0 scale-85 sm:scale-90">
                         <VisualIcon />
                       </div>
                     )}
                     <div className="min-w-0">
-                      <span className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate block">
+                      <span className="font-semibold text-sm sm:text-base text-slate-850 dark:text-slate-100 truncate block">
                         {reminder.description}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2.5 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     {/* Amount with Click-to-Edit */}
                     {isEditing ? (
                       <div 
                         onClick={(e) => e.stopPropagation()}
-                        className="flex items-center gap-1 bg-white dark:bg-slate-800 p-1 rounded-xl border border-orange-300 dark:border-orange-700 shadow-xs"
+                        className="flex items-center gap-1 bg-white dark:bg-slate-800 p-0.5 rounded-lg border border-orange-300 dark:border-orange-700 shadow-xs"
                       >
                         <div className="relative flex items-center">
                           <input
@@ -277,10 +277,10 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
                             }}
                             autoFocus
                             onFocus={(e) => e.target.select()}
-                            className="w-20 sm:w-24 px-2 py-1 text-sm font-extrabold text-orange-950 dark:text-orange-100 bg-orange-50/70 dark:bg-orange-950/40 rounded-lg border border-orange-200 dark:border-orange-800 focus:outline-none focus:ring-2 focus:ring-orange-500 text-right pr-6"
+                            className="w-18 sm:w-22 px-1.5 py-0.5 text-xs sm:text-sm font-bold text-orange-950 dark:text-orange-100 bg-orange-50/70 dark:bg-orange-950/40 rounded border border-orange-200 dark:border-orange-800 focus:outline-none focus:ring-1 focus:ring-orange-500 text-right pr-5"
                             placeholder="0.00"
                           />
-                          <span className="absolute right-2 text-xs font-bold text-orange-600 dark:text-orange-400 pointer-events-none">
+                          <span className="absolute right-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 pointer-events-none">
                             €
                           </span>
                         </div>
@@ -290,12 +290,12 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
                           disabled={isSavingAmount}
                           title="Valider la modification"
                           aria-label="Valider la modification"
-                          className="p-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
+                          className="p-1 rounded bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
                         >
                           {isSavingAmount ? (
-                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                           ) : (
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                             </svg>
                           )}
@@ -305,9 +305,9 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
                           onClick={handleCancelEdit}
                           title="Annuler"
                           aria-label="Annuler"
-                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 active:scale-95 text-slate-500 dark:text-slate-300 transition-all cursor-pointer"
+                          className="p-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 active:scale-95 text-slate-500 dark:text-slate-300 transition-all cursor-pointer"
                         >
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         </button>
@@ -317,11 +317,11 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
                         type="button"
                         onClick={(e) => handleStartEdit(e, reminder)}
                         title="Cliquer pour modifier le montant"
-                        className="group font-extrabold text-sm sm:text-base text-orange-800 dark:text-orange-200 bg-orange-100/80 dark:bg-orange-900/60 hover:bg-orange-200/90 dark:hover:bg-orange-800/80 px-2.5 py-1 rounded-lg border border-orange-200/80 dark:border-orange-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs hover:scale-105 active:scale-95"
+                        className="group font-bold text-xs sm:text-sm text-orange-800 dark:text-orange-200 bg-orange-100/70 dark:bg-orange-900/50 hover:bg-orange-200/80 dark:hover:bg-orange-800/70 px-2 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 shadow-2xs hover:scale-105 active:scale-95"
                       >
                         <span>{reminder.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
                         <svg 
-                          className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400 opacity-60 group-hover:opacity-100 transition-opacity" 
+                          className="w-3 h-3 text-orange-600 dark:text-orange-400 opacity-60 group-hover:opacity-100 transition-opacity" 
                           fill="none" 
                           viewBox="0 0 24 24" 
                           stroke="currentColor" 
@@ -332,21 +332,21 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
                       </button>
                     )}
 
-                    {/* Action Button: Ajouter instead of Payer */}
+                    {/* Action Button: Ajouter */}
                     <button 
                       onClick={(e) => handlePayClick(e, reminder)}
                       disabled={payingId === reminder.id}
                       type="button"
-                      className="px-3 py-1.5 text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 active:scale-95 disabled:opacity-50 transition-all rounded-xl shadow-2xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                      className="px-2.5 py-1 text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 active:scale-95 disabled:opacity-50 transition-all rounded-lg shadow-2xs flex items-center gap-1 cursor-pointer whitespace-nowrap"
                     >
                       {payingId === reminder.id ? (
                         <>
-                          <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          <span>Ajout en cours...</span>
+                          <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span className="text-[11px]">Ajout...</span>
                         </>
                       ) : (
                         <>
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
                           </svg>
                           <span>Ajouter</span>
@@ -359,7 +359,7 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
             })}
           </div>
 
-          <div className="pt-2 flex items-center justify-between gap-3">
+          <div className="pt-1.5 border-t border-orange-200/50 dark:border-orange-900/30 flex items-center justify-between gap-3">
             <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
               Total des rappels en attente : <strong className="font-extrabold text-orange-700 dark:text-orange-300">{totalAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</strong>
             </span>
