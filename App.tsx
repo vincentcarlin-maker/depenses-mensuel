@@ -24,7 +24,6 @@ import { useAuth, type Profile, type LoginEvent } from './hooks/useAuth';
 import { useMaintenanceMode } from './hooks/useMaintenanceMode';
 import { MaintenanceOverlay } from './components/MaintenanceOverlay';
 import Login from './components/Login';
-import PullToRefresh from './components/PullToRefresh';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useSyncedSettings } from './hooks/useSyncedSettings';
 import UndoToast from './components/UndoToast';
@@ -1438,9 +1437,8 @@ const MainApp: React.FC<{
           </button>
         </div>
       )}
-      <PullToRefresh isRefreshing={isRefreshing} onRefresh={handleRefresh}>
-        <Header 
-          onOpenSearch={() => setIsSearchOpen(true)} 
+      <Header 
+        onOpenSearch={() => setIsSearchOpen(true)} 
           loggedInUser={user} 
           activityItems={activityItemsForHeader} 
           unreadCount={unreadCount} 
@@ -1799,7 +1797,6 @@ const MainApp: React.FC<{
             )}
           </div>
         </main>
-      </PullToRefresh>
       <BottomNavigation 
         activeTab={activeTab} 
         onTabChange={(tabId) => {

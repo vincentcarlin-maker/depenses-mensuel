@@ -431,6 +431,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
   const touchStartY = useRef<number | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
     touchStartY.current = e.touches[0].clientY;
   };
 
@@ -438,13 +439,15 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
     if (touchStartY.current !== null) {
       const deltaY = e.touches[0].clientY - touchStartY.current;
       if (deltaY > 0) {
+        e.stopPropagation();
         setDragOffset(deltaY);
       }
     }
   };
 
-  const handleTouchEnd = () => {
-    if (dragOffset > 60) {
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    if (dragOffset > 45) {
       onClose();
     }
     touchStartY.current = null;
@@ -615,7 +618,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onMouseDown={handleMouseDown}
-          className="shrink-0 space-y-1 cursor-grab active:cursor-grabbing select-none"
+          className="shrink-0 space-y-1 cursor-grab active:cursor-grabbing select-none touch-none"
         >
           <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full mx-auto mb-2.5 hover:bg-slate-400 transition-colors" />
           <div className="flex items-start justify-between gap-3">

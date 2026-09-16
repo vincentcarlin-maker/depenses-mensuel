@@ -123,6 +123,17 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const amountInputRef = useRef<HTMLInputElement>(null);
 
+  // Verrouiller le défilement de l'arrière-plan de l'application quand le formulaire est ouvert
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
   const nonSpecialCategoryDescriptionRef = useRef(
       (initialData && !['Carburant', 'Courses'].includes(initialData.category))
       ? (initialData.description || '')
@@ -509,11 +520,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
   // Gestion du glissement vers le bas (swipe down / drag) pour fermer instantanément
   const handleHeaderTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
     setTouchStartY(e.touches[0].clientY);
   };
 
   const handleScrollTouchStart = (e: React.TouchEvent) => {
-    if (scrollContainerRef.current && scrollContainerRef.current.scrollTop <= 5) {
+    if (scrollContainerRef.current && scrollContainerRef.current.scrollTop <= 2) {
       setTouchStartY(e.touches[0].clientY);
     } else {
       setTouchStartY(null);
@@ -525,14 +537,16 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       const currentY = e.touches[0].clientY;
       const deltaY = currentY - touchStartY;
       if (deltaY > 0) {
+        e.stopPropagation();
         setDragOffset(deltaY);
       }
     }
   };
 
-  const handleTouchEnd = () => {
-    if (dragOffset > 55) {
-      // Fermeture immédiate par descente vers le bas demandée par l'utilisateur
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    if (dragOffset > 40) {
+      // Fermeture immédiate par descente vers le bas
       onClose();
     }
     setTouchStartY(null);
@@ -548,7 +562,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       }
     };
     const handleMouseUp = (upEvent: MouseEvent) => {
-      if (upEvent.clientY - startY > 55) {
+      if (upEvent.clientY - startY > 40) {
         onClose();
       }
       setDragOffset(0);
@@ -576,8 +590,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
       {/* 2. Panneau coulissant depuis le bas (Bottom Sheet) */}
       <div 
-        style={dragOffset > 0 ? { transform: `translateY(${dragOffset}px)`, transition: 'none' } : undefined}
-        className="relative z-10 w-full max-w-2xl mx-auto bg-white dark:bg-slate-850 rounded-t-[32px] sm:rounded-t-[36px] shadow-2xl border-t border-x border-slate-100 dark:border-slate-700/70 flex flex-col max-h-[92vh] sm:max-h-[88vh] animate-bottomsheet-up overflow-hidden transition-transform duration-150"
+        style={{
+          transform: dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined,
+          transition: dragOffset > 0 ? 'none' : 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+        className="relative z-10 w-full max-w-2xl mx-auto bg-white dark:bg-slate-850 rounded-t-[32px] sm:rounded-t-[36px] shadow-2xl border-t border-x border-slate-100 dark:border-slate-700/70 flex flex-col max-h-[92vh] sm:max-h-[88vh] animate-bottomsheet-up overflow-hidden"
       >
         {/* Poignée et En-tête Sticky */}
         <div 
@@ -585,7 +602,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onMouseDown={handleMouseDown}
-          className="sticky top-0 bg-white/95 dark:bg-slate-850/95 backdrop-blur-md z-30 px-5 sm:px-6 pt-2.5 pb-3 border-b border-slate-100 dark:border-slate-700/60 select-none cursor-grab active:cursor-grabbing"
+          className="sticky top-0 bg-white/95 dark:bg-slate-850/95 backdrop-blur-md z-30 px-5 sm:px-6 pt-2.5 pb-3 border-b border-slate-100 dark:border-slate-700/60 select-none cursor-grab active:cursor-grabbing touch-none"
         >
           {/* Poignée horizontale bien visible */}
           <div className="w-14 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 mx-auto mb-3 hover:bg-slate-400 transition-colors" />
