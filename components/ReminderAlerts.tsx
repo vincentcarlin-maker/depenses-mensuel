@@ -64,18 +64,18 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
     }
 
     const isPaid = monthlyExpenses.some(expense => {
-      const normalize = (s: string) => s.toLowerCase().trim();
+      const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, ' ').trim().replace(/\s+/g, ' ');
       const expDesc = normalize(expense.description || '');
       const remDesc = normalize(reminder.description || '');
       const remCat = normalize(reminder.category || '');
       
       // 1. Match description
-      const descMatch = expDesc.includes(remDesc) || remDesc.includes(expDesc);
+      const descMatch = (expDesc.length > 0 && remDesc.length > 0 && (expDesc.includes(remDesc) || remDesc.includes(expDesc)));
 
-      // 2. Match exact category if generic reminder
+      // 2. Match exact category if generic reminder or same amount
       const categoryMatch = expense.category === reminder.category;
       if (descMatch) return true;
-      if (categoryMatch && remDesc === remCat) return true;
+      if (categoryMatch && (remDesc === remCat || Math.abs(expense.amount - reminder.amount) < 0.01)) return true;
 
       return false;
     });

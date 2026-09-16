@@ -426,6 +426,51 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
   const [selectedColor, setSelectedColor] = useState(initialColor);
   const [error, setError] = useState('');
 
+  // Swipe / Drag vers le bas pour fermer
+  const [dragOffset, setDragOffset] = useState(0);
+  const touchStartY = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current !== null) {
+      const deltaY = e.touches[0].clientY - touchStartY.current;
+      if (deltaY > 0) {
+        setDragOffset(deltaY);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (dragOffset > 60) {
+      onClose();
+    }
+    touchStartY.current = null;
+    setDragOffset(0);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const startY = e.clientY;
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaY = moveEvent.clientY - startY;
+      if (deltaY > 0) {
+        setDragOffset(deltaY);
+      }
+    };
+    const handleMouseUp = (upEvent: MouseEvent) => {
+      if (upEvent.clientY - startY > 60) {
+        onClose();
+      }
+      setDragOffset(0);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
+
   const activeMapping = rawCustomIcons.find(
     ci => ci.id?.startsWith('mapping_') && ci.category?.toLowerCase() === categoryName.toLowerCase()
   );
@@ -558,13 +603,22 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
   return createPortal(
     <div 
       ref={overlayRef}
-      className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[250] flex items-center justify-center p-3 sm:p-4 animate-fade-in overflow-y-auto"
+      className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[250] flex items-end sm:items-center justify-center sm:p-4 animate-fade-in overflow-y-auto"
     >
-      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md p-5 sm:p-6 space-y-4 border border-slate-100 dark:border-slate-700 max-h-[90vh] my-auto flex flex-col">
+      <div 
+        style={dragOffset > 0 ? { transform: `translateY(${dragOffset}px)`, transition: 'none' } : undefined}
+        className="bg-white dark:bg-slate-800 rounded-t-[32px] sm:rounded-3xl shadow-2xl w-full max-w-md p-5 sm:p-6 space-y-4 border border-slate-100 dark:border-slate-700 max-h-[92vh] sm:max-h-[90vh] my-auto flex flex-col transition-transform duration-150"
+      >
         {/* Top grab bar & Header */}
-        <div className="shrink-0 space-y-1">
-          <div className="w-10 h-1 bg-slate-200 dark:bg-slate-600 rounded-full mx-auto mb-2" />
-          <div className="flex items-start justify-between">
+        <div 
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onMouseDown={handleMouseDown}
+          className="shrink-0 space-y-1 cursor-grab active:cursor-grabbing select-none"
+        >
+          <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full mx-auto mb-2.5 hover:bg-slate-400 transition-colors" />
+          <div className="flex items-start justify-between gap-3">
             <div>
               <h3 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                 {isCreateMode ? 'Ajouter une catégorie' : 'Modifier la catégorie'}
@@ -576,10 +630,11 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-300 flex items-center justify-center transition-colors cursor-pointer"
+              className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-200 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-90 shadow-2xs"
               aria-label="Fermer"
+              title="Fermer"
             >
-              <svg className="w-4 h-4 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-6 h-6 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>

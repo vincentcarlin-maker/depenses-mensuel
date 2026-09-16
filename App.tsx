@@ -132,6 +132,13 @@ const MainApp: React.FC<{
   const [settingsInitialView, setSettingsInitialView] = useState<SettingsViewType>('main');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [formInitialData, setFormInitialData] = useState<(Omit<Expense, 'id' | 'date' | 'created_at'> & { formKey?: string }) | null>(null);
+  const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+
+  useEffect(() => {
+    if (formInitialData) {
+      setIsAddExpenseOpen(true);
+    }
+  }, [formInitialData]);
   const [successExpense, setSuccessExpense] = useState<Expense | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [highlightedExpenseIds, setHighlightedExpenseIds] = useState<Set<string>>(new Set());
@@ -1509,22 +1516,35 @@ const MainApp: React.FC<{
           <div className="animate-fade-in">
             {activeTab === 'dashboard' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div id="expense-form-container" className="space-y-8">
-                  <ExpenseForm 
-                    key={formInitialData?.formKey || 'default-form'} 
-                    onAddExpense={addExpense} 
-                    expenses={expenses} 
-                    initialData={formInitialData} 
-                    loggedInUser={user} 
-                    onlineUsers={onlineUsers} 
-                    disabled={!isConnected} 
-                    categories={categories} 
-                    groceryStores={groceryStores} 
-                    cars={cars} 
-                    heatingTypes={heatingTypes}
-                    foyerMembers={currentFoyer?.members}
-                    isMainFoyer={isMainFoyer}
-                  />
+                <div id="expense-form-container" className="space-y-6 sm:space-y-8">
+                  {/* Bouton pour ouvrir le Bottom Sheet d'ajout de dépense */}
+                  <button
+                    type="button"
+                    id="btn-open-add-expense"
+                    onClick={() => setIsAddExpenseOpen(true)}
+                    className="w-full bg-white dark:bg-slate-800 hover:bg-blue-50/40 dark:hover:bg-slate-750 p-4 sm:p-5 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 cursor-pointer transition-all duration-200 group active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-11 h-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/25 group-hover:scale-105 transition-transform shrink-0">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h2m3 0h4M5 6h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z" />
+                        </svg>
+                      </div>
+                      <div className="text-left min-w-0">
+                        <span className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight block truncate">
+                          Ajouter une dépense
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block truncate">
+                          Enregistrez une transaction ou un remboursement
+                        </span>
+                      </div>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-300 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 group-hover:text-blue-600 transition-colors shrink-0">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </button>
                   <ExpenseSummary 
                     allExpenses={expenses} 
                     currentYear={currentYear} 
@@ -1794,6 +1814,27 @@ const MainApp: React.FC<{
           setSettingsResetTrigger(prev => prev + 1);
           setIsSettingsOpen(true); 
         }} 
+      />
+      {/* Panneau coulissant Bottom Sheet pour l'ajout de transaction */}
+      <ExpenseForm 
+        key={formInitialData?.formKey || 'bottomsheet-add-expense'} 
+        isOpen={isAddExpenseOpen}
+        onClose={() => {
+          setIsAddExpenseOpen(false);
+          setFormInitialData(null);
+        }}
+        onAddExpense={addExpense} 
+        expenses={expenses} 
+        initialData={formInitialData} 
+        loggedInUser={user} 
+        onlineUsers={onlineUsers} 
+        disabled={!isConnected} 
+        categories={categories} 
+        groceryStores={groceryStores} 
+        cars={cars} 
+        heatingTypes={heatingTypes}
+        foyerMembers={currentFoyer?.members}
+        isMainFoyer={isMainFoyer}
       />
       <ExpenseSuccessModal
         isOpen={!!successExpense}

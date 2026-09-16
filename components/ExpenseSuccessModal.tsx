@@ -109,12 +109,22 @@ export const ExpenseSuccessModal: React.FC<ExpenseSuccessModalProps> = ({
   const visual = getVisual(expense.category, expense.description);
   const CategoryIcon = visual.icon;
 
-  const isIncome = expense.amount < 0;
-  const absAmount = Math.abs(expense.amount);
+  const isIncome = expense?.amount ? expense.amount < 0 : false;
+  const absAmount = Math.abs(expense?.amount || 0);
   const formattedAmount = `${absAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 
-  const modalTitle = title || (isIncome ? 'Remboursement ajouté' : 'Dépense ajoutée');
+  const modalTitle = title || (isIncome ? 'Remboursement ajouté ✓' : 'Dépense ajoutée ✓');
   const modalSubtitle = subtitle || (isIncome ? 'Votre remboursement a bien été enregistré.' : 'Votre dépense a bien été enregistrée.');
+
+  // Auto-close élégant après 1800ms
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        handleClose();
+      }, 1800);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, handleClose]);
 
   return createPortal(
     <div 

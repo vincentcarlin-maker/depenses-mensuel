@@ -1,49 +1,12 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { type Expense, type Category, User, type SubtractedItem, PRODUCT_CATEGORIES, type FoyerMember } from '../types';
 import { DEFAULT_FOYER } from '../utils/foyerService';
 import SegmentedControl from './SegmentedControl';
 import ConfirmationModal from './ConfirmationModal';
-import PiggyBankIcon from './icons/PiggyBankIcon';
-import ScissorsIcon from './icons/ScissorsIcon';
-import TrashIcon from './icons/TrashIcon';
 import CalendarDaysIcon from './icons/CalendarDaysIcon';
 import ItemDeductionSection from './ItemDeductionSection';
-import { 
-    MandatoryIcon, 
-    FuelIcon, 
-    HeatingIcon, 
-    GroceriesIcon, 
-    RestaurantIcon, 
-    CarRepairsIcon, 
-    MiscIcon,
-    ClothingIcon,
-    GiftIcon,
-    PalmTreeIcon,
-    PillIcon
-} from './icons/CategoryIcons';
 import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
-
-const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; bgColor: string; borderColor: string } } = {
-  "Dépenses récurrentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
-  "Dép. récurrentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
-  "Dép. recurentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
-  "Dépenses obligatoires": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
-  "Carburant": { icon: FuelIcon, color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-50 dark:bg-orange-500/10', borderColor: 'border-orange-100 dark:border-orange-500/20' },
-  "Chauffage": { icon: HeatingIcon, color: 'text-red-600 dark:text-red-400', bgColor: 'bg-red-50 dark:bg-red-500/10', borderColor: 'border-red-100 dark:border-red-500/20' },
-  "Courses": { icon: GroceriesIcon, color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-50 dark:bg-green-500/10', borderColor: 'border-green-100 dark:border-green-500/20' },
-  "Restaurant": { icon: RestaurantIcon, color: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-500/10', borderColor: 'border-purple-100 dark:border-purple-500/20' },
-  "Vacances": { icon: PalmTreeIcon, color: 'text-teal-600 dark:text-teal-400', bgColor: 'bg-teal-50 dark:bg-teal-500/10', borderColor: 'border-teal-100 dark:border-teal-500/20' },
-  "Réparation voitures": { icon: CarRepairsIcon, color: 'text-yellow-600 dark:text-yellow-400', bgColor: 'bg-yellow-50 dark:bg-yellow-500/10', borderColor: 'border-yellow-100 dark:border-yellow-500/20' },
-  "Vêtements": { icon: ClothingIcon, color: 'text-indigo-600 dark:text-indigo-400', bgColor: 'bg-indigo-50 dark:bg-indigo-500/10', borderColor: 'border-indigo-100 dark:border-indigo-500/20' },
-  "Cadeau": { icon: GiftIcon, color: 'text-fuchsia-600 dark:text-fuchsia-400', bgColor: 'bg-fuchsia-50 dark:bg-fuchsia-500/10', borderColor: 'border-fuchsia-100 dark:border-fuchsia-500/20' },
-  "Complément alimentaire": { icon: PillIcon, color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-500/10', borderColor: 'border-emerald-100 dark:border-emerald-500/20' },
-  "Divers": { icon: MiscIcon, color: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-50 dark:bg-cyan-500/10', borderColor: 'border-cyan-100 dark:border-cyan-500/20' },
-};
-
-const TICKET_RESTAURANT_KEYWORDS = [
-  't restaurant', 't restau', 't.rest', 'cb rest', 'ticket rest', 't. restaurant', 'restau'
-];
 
 const SUPPLEMENT_STORES = ['Nutripure', 'Nutri&co', 'Greenwhey', 'Prozis', 'Autres'] as const;
 const SUPPLEMENT_TYPES = ['Oméga 3', 'Vitamine C', 'Vitamine D', 'Magnésium', 'Autres'] as const;
@@ -61,6 +24,8 @@ interface ExpenseFormProps {
   heatingTypes: string[];
   foyerMembers?: FoyerMember[];
   isMainFoyer?: boolean;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 const toDatetimeLocal = (date: Date): string => {
@@ -72,7 +37,40 @@ const toDatetimeLocal = (date: Date): string => {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
-const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initialData, loggedInUser, onlineUsers, disabled = false, categories, groceryStores, cars, heatingTypes, foyerMembers, isMainFoyer = true }) => {
+const formatOperationDate = (dateString: string) => {
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return '';
+  const day = d.getDate().toString().padStart(2, '0');
+  const monthNames = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  const month = monthNames[d.getMonth()];
+  const year = d.getFullYear();
+  return `${day} ${month} ${year}`;
+};
+
+const formatOperationTime = (dateString: string) => {
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return '';
+  const hours = d.getHours().toString().padStart(2, '0');
+  const minutes = d.getMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
+const ExpenseForm: React.FC<ExpenseFormProps> = ({ 
+  onAddExpense, 
+  expenses, 
+  initialData, 
+  loggedInUser, 
+  onlineUsers, 
+  disabled = false, 
+  categories, 
+  groceryStores, 
+  cars, 
+  heatingTypes, 
+  foyerMembers, 
+  isMainFoyer = true,
+  isOpen,
+  onClose
+}) => {
   const { getVisual } = useCategoryVisuals();
   const members = useMemo(() => foyerMembers && foyerMembers.length > 0 ? foyerMembers : DEFAULT_FOYER.members, [foyerMembers]);
   
@@ -93,57 +91,38 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const [carMileage, setCarMileage] = useState('');
   const [carGarage, setCarGarage] = useState('');
 
-  useEffect(() => {
-    if (categories.length > 0 && (!category || !categories.includes(category))) {
-      setCategory(categories[0]);
-    }
-  }, [categories, category]);
-  
+  const [clothingPerson, setClothingPerson] = useState('Nathan');
+  const [giftPerson, setGiftPerson] = useState('Nathan');
+  const [giftOccasion, setGiftOccasion] = useState('Noël');
+
+  const [supplementStore, setSupplementStore] = useState<(typeof SUPPLEMENT_STORES)[number]>(SUPPLEMENT_STORES[0]);
+  const [customSupplementStore, setCustomSupplementStore] = useState('');
+  const [supplementType, setSupplementType] = useState<(typeof SUPPLEMENT_TYPES)[number]>(SUPPLEMENT_TYPES[0]);
+  const [customSupplementType, setCustomSupplementType] = useState('');
+
   const [showSubtractions, setShowSubtractions] = useState(false);
   const [receiptTotal, setReceiptTotal] = useState('');
   const [subtractedItems, setSubtractedItems] = useState<SubtractedItem[]>([]);
   const [itemDescription, setItemDescription] = useState('');
   const [itemAmount, setItemAmount] = useState('');
-  const [itemCategory, setItemCategory] = useState(PRODUCT_CATEGORIES[0]);
-  const [itemTargetCategory, setItemTargetCategory] = useState<string>('');
-  const [createExpenseForItem, setCreateExpenseForItem] = useState<boolean>(true);
-  const itemDescriptionInputRef = useRef<HTMLInputElement>(null);
+  const [itemCategory] = useState(PRODUCT_CATEGORIES[0]);
+  const [itemTargetCategory, setItemTargetCategory] = useState<Category | ''>('');
+  const [createExpenseForItem, setCreateExpenseForItem] = useState(true);
 
-  const [clothingPerson, setClothingPerson] = useState('Nathan');
-  const [giftPerson, setGiftPerson] = useState('Nathan');
-  const [giftOccasion, setGiftOccasion] = useState('Noël');
-  const [supplementStore, setSupplementStore] = useState<typeof SUPPLEMENT_STORES[number]>(SUPPLEMENT_STORES[0]);
-  const [customSupplementStore, setCustomSupplementStore] = useState('');
-  const [supplementType, setSupplementType] = useState<typeof SUPPLEMENT_TYPES[number]>(SUPPLEMENT_TYPES[0]);
-  const [customSupplementType, setCustomSupplementType] = useState('');
-  
   const [error, setError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   
   const [duplicateConfirmationOpen, setDuplicateConfirmationOpen] = useState(false);
   const [pendingExpenseData, setPendingExpenseData] = useState<Omit<Expense, 'id' | 'created_at'> | null>(null);
   const [detectedDuplicates, setDetectedDuplicates] = useState<Expense[]>([]);
-  const [isExpanded, setIsExpanded] = useState(Boolean(initialData));
 
-  useEffect(() => {
-    if (initialData) {
-      setIsExpanded(true);
-    }
-  }, [initialData]);
-
-  const knownProducts = useMemo(() => {
-    const products = new Set<string>();
-    expenses.forEach(e => {
-      if (e.subtracted_items) {
-        e.subtracted_items.forEach(item => {
-          products.add(item.description.trim());
-        });
-      }
-    });
-    return Array.from(products);
-  }, [expenses]);
-
+  // Gestes tactiles pour glisser vers le bas (swipe down)
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [dragOffset, setDragOffset] = useState<number>(0);
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const amountInputRef = useRef<HTMLInputElement>(null);
+
   const nonSpecialCategoryDescriptionRef = useRef(
       (initialData && !['Carburant', 'Courses'].includes(initialData.category))
       ? (initialData.description || '')
@@ -153,6 +132,25 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   const childrenOptions = ['Nathan', 'Chloé'];
   const occasionOptions = ['Noël', 'Anniversaire'];
 
+  // Mise à jour de la catégorie si elle devient invalide
+  useEffect(() => {
+    if (categories.length > 0 && (!category || !categories.includes(category))) {
+      setCategory(categories[0]);
+    }
+  }, [categories, category]);
+
+  // Initialisation lors de l'ouverture ou chargement de données initiales
+  useEffect(() => {
+    if (initialData) {
+      setDescription(initialData.description || '');
+      setAmount(String(Math.abs(initialData.amount)));
+      setCategory(initialData.category);
+      setUser(initialData.user);
+      setTransactionType(initialData.amount < 0 ? 'refund' : 'expense');
+    }
+  }, [initialData]);
+
+  // Horloge pour garder la date à jour si non modifiée manuellement
   useEffect(() => {
     if (isDateManuallySet || initialData) {
         return;
@@ -162,6 +160,26 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
     }, 10000);
     return () => clearInterval(timer);
   }, [isDateManuallySet, initialData]);
+
+  // Verrouillage du scroll d'arrière-plan quand le Bottom Sheet est ouvert
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleAttemptClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
 
   const uniqueDescriptions = useMemo(() => {
     const tagRegex = /(#\w+)/g;
@@ -179,22 +197,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
       .map(e => e.description.replace(tagRegex, '').replace(storeRegex, '').trim());
     return [...new Set<string>(allDescriptions)].filter(d => d.length > 0);
   }, [expenses]);
-  
-  const finalCalculatedAmount = useMemo(() => {
-    const total = parseFloat(receiptTotal.replace(',', '.')) || 0;
-    const subtractions = subtractedItems.filter(i => i.is_subtracted !== false).reduce((sum, item) => sum + item.amount, 0);
-    const currentItemAmount = parseFloat(itemAmount.replace(',', '.')) || 0;
-    const intentionalSubtraction = itemDescription.trim() ? currentItemAmount : 0;
-    return total - subtractions - intentionalSubtraction;
-  }, [receiptTotal, subtractedItems, itemAmount, itemDescription]);
-
-
-  useEffect(() => {
-    if (initialData) {
-      amountInputRef.current?.focus();
-      amountInputRef.current?.select();
-    }
-  }, [initialData]); 
 
   useEffect(() => {
     if (category === "Carburant") {
@@ -223,7 +225,6 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         setReceiptTotal(amount);
     }
   }, [showSubtractions]);
-
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -257,47 +258,43 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
   };
 
   const findPossibleDuplicates = (newExpense: Omit<Expense, 'id' | 'created_at'>): Expense[] => {
-      const expenseDate = new Date(newExpense.date);
-      const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-      const newDescNormalized = normalize(newExpense.description);
-      
-      return expenses.filter(e => {
-          const eDate = new Date(e.date);
-          const timeDiff = Math.abs(eDate.getTime() - expenseDate.getTime());
-          const daysDiff = timeDiff / (1000 * 3600 * 24);
-          
-          const isSameMonth = eDate.getMonth() === expenseDate.getMonth() && eDate.getFullYear() === expenseDate.getFullYear();
-          if (!isSameMonth && daysDiff > 7) return false;
+    const newDate = new Date(newExpense.date);
+    const newMonth = newDate.getMonth();
+    const newYear = newDate.getFullYear();
 
-          const isSameAmount = Math.abs(e.amount - newExpense.amount) < 0.01; 
-          const isSameCategory = e.category === newExpense.category;
-          
-          const eDescNormalized = normalize(e.description);
-          const isDescriptionSimilar = eDescNormalized === newDescNormalized || 
-                                       (eDescNormalized.length > 3 && newDescNormalized.includes(eDescNormalized)) || 
-                                       (newDescNormalized.length > 3 && eDescNormalized.includes(newDescNormalized));
+    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanNewDesc = normalize(newExpense.description);
 
-          if (isSameAmount && (isSameCategory || isDescriptionSimilar)) {
-              return true;
-          }
-          
-          return false;
-      });
+    return expenses.filter(exp => {
+      const expDate = new Date(exp.date);
+      if (expDate.getMonth() !== newMonth || expDate.getFullYear() !== newYear) {
+        return false;
+      }
+      if (Math.abs(exp.amount - newExpense.amount) > 0.01) {
+        return false;
+      }
+      const cleanExpDesc = normalize(exp.description);
+      const isDescMatch = cleanExpDesc === cleanNewDesc || 
+                          cleanExpDesc.includes(cleanNewDesc) || 
+                          cleanNewDesc.includes(cleanExpDesc);
+
+      const isCategoryMatch = exp.category === newExpense.category;
+      return isDescMatch && isCategoryMatch;
+    });
   };
 
   const handleConfirmDuplicate = () => {
-      if (pendingExpenseData) {
-          submitExpense(pendingExpenseData);
-          setDuplicateConfirmationOpen(false);
-          setPendingExpenseData(null);
-          setDetectedDuplicates([]);
-      }
+    if (pendingExpenseData) {
+        submitExpense(pendingExpenseData);
+        setPendingExpenseData(null);
+        setDuplicateConfirmationOpen(false);
+        setDetectedDuplicates([]);
+    }
   };
 
   const submitExpense = (expenseData: Omit<Expense, 'id' | 'created_at'>) => {
-    let finalSubtractedItems = expenseData.subtracted_items;
+    let finalSubtractedItems: SubtractedItem[] = [];
 
-    // Automatically create separate expenses for subtracted items that have a target category assigned
     if (expenseData.subtracted_items && expenseData.subtracted_items.length > 0) {
         finalSubtractedItems = expenseData.subtracted_items.map(item => {
             if (item.is_subtracted !== false && item.target_category && item.create_expense === true) {
@@ -324,6 +321,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         subtracted_items: finalSubtractedItems
     });
 
+    // Réinitialisation propre
     if (!initialData) {
         setDescription(category === "Carburant" ? (effectiveCars[0] || 'Voiture') : '');
         setAmount('');
@@ -352,44 +350,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
         setItemTargetCategory('');
         setCreateExpenseForItem(true);
     }
-  };
-  
-   const handleAddSubtractedItem = () => {
-    const parsedAmount = parseFloat(itemAmount.replace(',', '.'));
-    if (itemDescription.trim() && !isNaN(parsedAmount) && parsedAmount > 0) {
-        setSubtractedItems([...subtractedItems, { 
-            description: itemDescription.trim(), 
-            amount: parsedAmount, 
-            is_subtracted: true,
-            category: itemCategory,
-            target_category: itemTargetCategory || undefined,
-            create_expense: itemTargetCategory ? createExpenseForItem : false
-        }]);
-        setItemDescription('');
-        setItemAmount('');
-        setItemTargetCategory('');
-        setCreateExpenseForItem(true);
-        itemDescriptionInputRef.current?.focus();
-    }
-  };
 
-  const handleRemoveSubtractedItem = (index: number) => {
-    setSubtractedItems(subtractedItems.filter((_, i) => i !== index));
+    // Fermeture du bottom sheet après enregistrement
+    onClose();
   };
-
-  const handleToggleSubtractedItem = (index: number) => {
-    const newItems = [...subtractedItems];
-    newItems[index].is_subtracted = newItems[index].is_subtracted === false ? true : false;
-    setSubtractedItems(newItems);
-  };
-
-  const handleItemInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddSubtractedItem();
-    }
-  };
-
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -425,7 +389,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
       }
       const parsedAmount = parseFloat(amount.replace(',', '.'));
       if (isNaN(parsedAmount) || parsedAmount <= 0) {
-        setError('Veuillez entrer un montant positif.');
+        setError('Veuillez entrer un montant supérieur à 0.');
         return;
       }
       finalAmount = transactionType === 'expense' ? parsedAmount : -parsedAmount;
@@ -530,70 +494,162 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
     }
   };
 
-  const getUserSliderPosition = () => {
-      switch (user) {
-          case User.Sophie: return 'translate-x-0';
-          case User.Vincent: return 'translate-x-[100%]';
-          case User.Commun: return 'translate-x-[200%]';
-          default: return 'translate-x-0';
+  // Fermeture sécurisée pour éviter les pertes accidentelles
+  const handleAttemptClose = () => {
+    const parsedAmount = parseFloat(amount.replace(',', '.'));
+    const hasData = (!isNaN(parsedAmount) && parsedAmount > 0) || (description && description.trim().length > 3);
+    if (hasData) {
+      if (window.confirm("Voulez-vous fermer sans enregistrer la dépense en cours ?")) {
+        onClose();
       }
+    } else {
+      onClose();
+    }
   };
 
-  return (
-    <>
-        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden transition-all duration-300">
+  // Gestion du glissement vers le bas (swipe down / drag) pour fermer instantanément
+  const handleHeaderTouchStart = (e: React.TouchEvent) => {
+    setTouchStartY(e.touches[0].clientY);
+  };
+
+  const handleScrollTouchStart = (e: React.TouchEvent) => {
+    if (scrollContainerRef.current && scrollContainerRef.current.scrollTop <= 5) {
+      setTouchStartY(e.touches[0].clientY);
+    } else {
+      setTouchStartY(null);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY !== null) {
+      const currentY = e.touches[0].clientY;
+      const deltaY = currentY - touchStartY;
+      if (deltaY > 0) {
+        setDragOffset(deltaY);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (dragOffset > 55) {
+      // Fermeture immédiate par descente vers le bas demandée par l'utilisateur
+      onClose();
+    }
+    setTouchStartY(null);
+    setDragOffset(0);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const startY = e.clientY;
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaY = moveEvent.clientY - startY;
+      if (deltaY > 0) {
+        setDragOffset(deltaY);
+      }
+    };
+    const handleMouseUp = (upEvent: MouseEvent) => {
+      if (upEvent.clientY - startY > 55) {
+        onClose();
+      }
+      setDragOffset(0);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
+
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-[120] flex flex-col justify-end"
+      aria-modal="true"
+      role="dialog"
+    >
+      {/* 1. Arrière-plan légèrement assombri avec flou doux */}
+      <div 
+        className="fixed inset-0 bg-slate-900/50 dark:bg-black/65 backdrop-blur-xs transition-opacity duration-300 animate-backdrop-in"
+        onClick={handleAttemptClose}
+        aria-hidden="true"
+      />
+
+      {/* 2. Panneau coulissant depuis le bas (Bottom Sheet) */}
+      <div 
+        style={dragOffset > 0 ? { transform: `translateY(${dragOffset}px)`, transition: 'none' } : undefined}
+        className="relative z-10 w-full max-w-2xl mx-auto bg-white dark:bg-slate-850 rounded-t-[32px] sm:rounded-t-[36px] shadow-2xl border-t border-x border-slate-100 dark:border-slate-700/70 flex flex-col max-h-[92vh] sm:max-h-[88vh] animate-bottomsheet-up overflow-hidden transition-transform duration-150"
+      >
+        {/* Poignée et En-tête Sticky */}
         <div 
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="p-4 sm:p-5 flex items-center justify-between gap-3 cursor-pointer select-none hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-colors"
+          onTouchStart={handleHeaderTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onMouseDown={handleMouseDown}
+          className="sticky top-0 bg-white/95 dark:bg-slate-850/95 backdrop-blur-md z-30 px-5 sm:px-6 pt-2.5 pb-3 border-b border-slate-100 dark:border-slate-700/60 select-none cursor-grab active:cursor-grabbing"
         >
-            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100/80 dark:bg-blue-950/60 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                        <line x1="12" y1="18" x2="12" y2="12" />
-                        <line x1="9" y1="15" x2="15" y2="15" />
-                    </svg>
-                </div>
-                <div className="min-w-0">
-                    <h2 className="text-base sm:text-xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Ajouter une transaction</h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                        {isExpanded ? 'Cliquez pour masquer le formulaire' : 'Cliquez pour afficher le formulaire d\'ajout'}
-                    </p>
-                </div>
+          {/* Poignée horizontale bien visible */}
+          <div className="w-14 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 mx-auto mb-3 hover:bg-slate-400 transition-colors" />
+
+          {/* Ligne d'en-tête */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              {/* Icône de transaction dans un petit carré bleu très clair */}
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/70 border border-blue-100/80 dark:border-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 shadow-2xs">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="5" width="20" height="14" rx="2" />
+                  <line x1="2" y1="10" x2="22" y2="10" />
+                </svg>
+              </div>
+              <div className="min-w-0 text-left">
+                <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight leading-snug truncate">
+                  Ajouter une transaction
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
+                  Enregistrez une dépense ou un remboursement.
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-                <button
-                    type="button"
-                    className="p-1.5 rounded-xl bg-slate-100/80 dark:bg-slate-700/80 border border-slate-200/80 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-transform duration-200 cursor-pointer"
-                    aria-label={isExpanded ? 'Réduire' : 'Déplier'}
-                >
-                    <svg 
-                        className={`w-4 h-4 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor" 
-                        strokeWidth={2.5}
-                    >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-            </div>
+            {/* Bouton « × » agrandi pour fermer */}
+            <button
+              type="button"
+              onClick={handleAttemptClose}
+              className="w-11 h-11 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-750 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-200 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-90 shadow-2xs"
+              aria-label="Fermer"
+              title="Fermer"
+            >
+              <svg className="w-6 h-6 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
-        {isExpanded && (
-          <div className="border-t border-slate-100 dark:border-slate-700/60 animate-fade-in">
-            <form onSubmit={handleSubmit} className="p-4 sm:p-7 space-y-5 sm:space-y-6">
+        {/* Corps scrollable du formulaire */}
+        <div 
+          ref={scrollContainerRef}
+          onTouchStart={handleScrollTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className="overflow-y-auto px-5 sm:px-6 py-5 space-y-6 flex-1 overscroll-contain"
+        >
+          <form id="bottom-sheet-expense-form" onSubmit={handleSubmit} className="space-y-6">
+            
+            {/* 3. QUI A PAYÉ ? */}
             <div>
-              <div className="mb-2 sm:mb-2.5">
-                <label className="block text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">Qui a payé ?</label>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Sélectionnez la personne qui a effectué le paiement.</p>
+              <div className="mb-2.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
+                  Qui a payé ?
+                </label>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Sélectionnez la personne qui a effectué le paiement.
+                </p>
               </div>
-              <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 {members.map((m) => {
                   const isSelected = user === m.name;
-                  const userColor = m.color || (m.name === User.Sophie ? '#ec4899' : '#0ea5e9');
+                  const isSophie = m.name === User.Sophie;
+                  const userColor = m.color || (isSophie ? '#ec4899' : '#0ea5e9');
 
                   const isOnline = (onlineUsers || []).some(
                     u => String(u).trim().toLowerCase() === String(m.name).trim().toLowerCase()
@@ -604,51 +660,52 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
                       key={m.id || m.name}
                       type="button"
                       onClick={() => setUser(m.name)}
-                      style={isSelected ? { borderColor: userColor, backgroundColor: `${userColor}15` } : {}}
-                      className={`p-1.5 sm:p-3 rounded-2xl font-bold text-[11px] sm:text-xs md:text-sm flex items-center justify-center gap-1 sm:gap-2 transition-all cursor-pointer min-w-0 ${
+                      className={`p-2 sm:p-3 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer min-w-0 ${
                         isSelected
-                          ? 'border-2 shadow-xs'
-                          : 'bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'
+                          ? isSophie 
+                            ? 'bg-pink-50/90 dark:bg-pink-950/40 border-2 border-pink-500 text-pink-600 dark:text-pink-300 shadow-xs scale-[1.02]' 
+                            : 'bg-blue-50/90 dark:bg-blue-950/40 border-2 border-blue-500 text-blue-600 dark:text-blue-300 shadow-xs scale-[1.02]'
+                          : 'bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-slate-300'
                       }`}
                     >
                       <div className="relative shrink-0">
                         <span 
-                          className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white shadow-2xs"
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-white shadow-2xs text-xs font-bold"
                           style={{ backgroundColor: userColor }}
                         >
-                          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
+                          {m.name.charAt(0)}
                         </span>
                         {isOnline ? (
                           <span 
                             title={`${m.name} est en ligne`}
-                            className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 sm:h-4 sm:w-4 items-center justify-center"
+                            className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center"
                           >
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-80" />
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-emerald-500 border-2 border-white dark:border-slate-800 shadow-xs shadow-emerald-500" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 border border-white dark:border-slate-850" />
                           </span>
                         ) : (
                           <span 
                             title={`${m.name} est hors ligne`}
-                            className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border-2 border-white dark:border-slate-800 absolute -bottom-0.5 -right-0.5 bg-slate-300 dark:bg-slate-600 transition-colors" 
+                            className="w-2 h-2 rounded-full border border-white dark:border-slate-850 absolute -bottom-0.5 -right-0.5 bg-slate-300 dark:bg-slate-600" 
                           />
                         )}
                       </div>
-                      <span className="truncate" style={isSelected ? { color: userColor } : {}}>{m.name}</span>
+                      <span className="truncate">{m.name}</span>
                     </button>
                   );
                 })}
+                
+                {/* Cagnotte */}
                 <button
                   type="button"
                   onClick={() => setUser(User.Commun)}
-                  className={`p-1.5 sm:p-3 rounded-2xl font-bold text-[11px] sm:text-xs md:text-sm flex items-center justify-center gap-1 sm:gap-2 transition-all cursor-pointer min-w-0 ${
+                  className={`p-2 sm:p-3 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer min-w-0 ${
                     user === User.Commun
-                      ? 'bg-emerald-50/90 dark:bg-emerald-950/40 border-2 border-emerald-500 dark:border-emerald-500 text-emerald-800 dark:text-emerald-300 shadow-xs'
-                      : 'bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'
+                      ? 'bg-emerald-50/90 dark:bg-emerald-950/40 border-2 border-emerald-500 text-emerald-700 dark:text-emerald-300 shadow-xs scale-[1.02]'
+                      : 'bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-slate-300'
                   }`}
                 >
-                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-emerald-500 text-white font-black text-xs sm:text-sm flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 rounded-full bg-emerald-500 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
                     €
                   </div>
                   <span className="truncate">Cagnotte</span>
@@ -656,469 +713,465 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAddExpense, expenses, initi
               </div>
             </div>
 
+            {/* 4. CATÉGORIE */}
             <div>
-                <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-3">
-                    Catégorie
+              <div className="mb-2.5">
+                <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
+                  Catégorie
                 </label>
-                {categories.length === 0 ? (
-                    <div className="p-4 bg-sky-50 dark:bg-sky-950/40 border border-sky-100 dark:border-sky-900/50 rounded-2xl text-xs sm:text-sm text-sky-800 dark:text-sky-300 flex items-center justify-between gap-3">
-                        <span>Vous n'avez pas encore de catégorie dans ce foyer. Vous pouvez créer vos propres catégories dans les <strong>Réglages &gt; Catégories</strong>.</span>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-7 gap-1.5">
-                        {categories.map((cat) => {
-                            const visual = getVisual(cat);
-                            const Icon = visual?.icon;
-                            const isSelected = category === cat;
-                            return (
-                                <button
-                                    key={cat}
-                                    type="button"
-                                    onClick={() => setCategory(cat)}
-                                    className={`aspect-square max-w-[62px] w-full mx-auto rounded-xl border transition-all duration-200 cursor-pointer p-1 overflow-hidden ${
-                                        isSelected 
-                                        ? `${visual?.borderColor || 'border-blue-200'} ${visual?.badgeBg || 'bg-blue-50'} ring-2 ring-brand-500/30 shadow-xs scale-[1.03]` 
-                                        : 'border-slate-200/70 dark:border-slate-700/70 bg-slate-50/90 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700/70 hover:border-slate-300 dark:hover:border-slate-600'
-                                    }`}
-                                    title={cat}
-                                >
-                                    <div className="w-full h-full flex flex-col items-center justify-center">
-                                        <div className={`w-7 h-7 flex items-center justify-center shrink-0 mb-0.5 ${isSelected ? (visual?.textColor || 'text-blue-600') : (visual?.textColor || 'text-slate-700 dark:text-slate-200')}`}>
-                                            {Icon && <Icon className="w-6 h-6 shrink-0" />}
-                                        </div>
-                                        <span className={`text-[8.5px] leading-[10px] text-center px-0.5 line-clamp-2 ${isSelected ? 'font-black text-slate-900 dark:text-slate-100' : 'font-semibold text-slate-600 dark:text-slate-300'}`}>
-                                            {cat}
-                                        </span>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
-            
-            {category === 'Courses' && (
-                <div className="space-y-4 animate-fade-in">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <div className="flex justify-between items-center mb-2">
-                                <label htmlFor="store-select" className="block text-sm font-bold text-slate-900 dark:text-slate-100">Magasin</label>
-                            </div>
-                            <select id="store-select" value={store} onChange={e => setStore(e.target.value)} className="block w-full px-4 py-2.5 text-base bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm font-semibold rounded-2xl">
-                                {groceryStores.map(s => <option key={s} value={s}>{s}</option>)}
-                                <option value="Autres">Autres</option>
-                            </select>
-                        </div>
-                        {store === 'Autres' && (
-                            <div>
-                                <label htmlFor="custom-store" className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Magasin personnalisé</label>
-                                <input type="text" id="custom-store" value={customStore} onChange={e => setCustomStore(e.target.value)} className="block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm font-semibold" placeholder="Nom du magasin" />
-                            </div>
-                        )}
-                    </div>
+              </div>
+              
+              {categories.length === 0 ? (
+                <div className="p-4 bg-sky-50 dark:bg-sky-950/40 border border-sky-100 dark:border-sky-900/50 rounded-2xl text-xs text-sky-800 dark:text-sky-300">
+                  Aucune catégorie configurée.
                 </div>
+              ) : (
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-7 gap-2">
+                  {categories.map((cat) => {
+                    const visual = getVisual(cat);
+                    const Icon = visual?.icon;
+                    const isSelected = category === cat;
+                    const isHovered = hoveredCategory === cat;
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setCategory(cat)}
+                        onMouseEnter={() => setHoveredCategory(cat)}
+                        onMouseLeave={() => setHoveredCategory(null)}
+                        className={`aspect-square w-full rounded-2xl border transition-all duration-150 cursor-pointer p-1 flex flex-col items-center justify-center gap-1 ${
+                          isSelected
+                            ? `${visual?.borderColor || 'border-blue-400'} ${visual?.badgeBg || 'bg-blue-50'} ring-2 ring-current/25 ${visual?.textColor || 'text-blue-600'} shadow-xs scale-[1.03]`
+                            : isHovered
+                              ? `${visual?.borderColor || 'border-blue-200'} ${visual?.badgeBg || 'bg-blue-50/80'} ${visual?.textColor || 'text-blue-600'} shadow-xs scale-[1.02]`
+                              : 'border-slate-200/80 dark:border-slate-700/80 bg-slate-50/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300'
+                        }`}
+                        title={cat}
+                      >
+                        <div className={`w-6 h-6 flex items-center justify-center shrink-0 transition-transform ${isHovered || isSelected ? 'scale-110' : ''} ${visual?.textColor || 'text-slate-600 dark:text-slate-400'}`}>
+                          {Icon && <Icon className="w-5 h-5 shrink-0" />}
+                        </div>
+                        <span className={`text-[10px] leading-tight text-center px-0.5 line-clamp-2 transition-colors ${
+                          isSelected 
+                            ? 'font-black text-slate-950 dark:text-white' 
+                            : isHovered 
+                              ? `font-bold ${visual?.textColor || 'text-slate-900 dark:text-white'}` 
+                              : 'font-semibold text-slate-600 dark:text-slate-300'
+                        }`}>
+                          {cat}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Options spécifiques aux catégories */}
+            {category === 'Courses' && (
+              <div className="space-y-4 animate-fade-in bg-slate-50/70 dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/60">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="store-select" className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1">Magasin</label>
+                    <select id="store-select" value={store} onChange={e => setStore(e.target.value)} className="block w-full px-3 py-2.5 text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold rounded-xl">
+                      {groceryStores.map(s => <option key={s} value={s}>{s}</option>)}
+                      <option value="Autres">Autres</option>
+                    </select>
+                  </div>
+                  {store === 'Autres' && (
+                    <div>
+                      <label htmlFor="custom-store" className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1">Magasin personnalisé</label>
+                      <input type="text" id="custom-store" value={customStore} onChange={e => setCustomStore(e.target.value)} className="block w-full px-3 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold" placeholder="Nom du magasin" />
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
 
             {['Courses', 'Divers'].includes(category) && (
-                <ItemDeductionSection
-                    showSubtractions={showSubtractions}
-                    setShowSubtractions={setShowSubtractions}
-                    subtractedItems={subtractedItems}
-                    setSubtractedItems={setSubtractedItems}
-                    receiptTotal={receiptTotal}
-                    setReceiptTotal={setReceiptTotal}
-                    categories={categories}
-                    currentCategory={category}
-                />
+              <ItemDeductionSection
+                showSubtractions={showSubtractions}
+                setShowSubtractions={setShowSubtractions}
+                subtractedItems={subtractedItems}
+                setSubtractedItems={setSubtractedItems}
+                receiptTotal={receiptTotal}
+                setReceiptTotal={setReceiptTotal}
+                categories={categories}
+                currentCategory={category}
+              />
             )}
 
             {!showSubtractions && (
-                <div className="animate-fade-in space-y-4">
-                  {category === 'Chauffage' && (
-                      <div className="animate-fade-in">
-                          <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Type de Chauffage</label>
-                          <SegmentedControl
-                              options={effectiveHeatingTypes}
-                              value={heatingType}
-                              onChange={setHeatingType}
-                              colorClass="text-brand-600 dark:text-brand-400"
-                          />
-                      </div>
-                  )}
+              <div className="space-y-4">
+                {category === 'Chauffage' && (
+                  <div className="animate-fade-in">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Type de Chauffage</label>
+                    <SegmentedControl
+                      options={effectiveHeatingTypes}
+                      value={heatingType}
+                      onChange={setHeatingType}
+                      colorClass="text-brand-600 dark:text-brand-400"
+                    />
+                  </div>
+                )}
 
-                  {category === 'Réparation voitures' && (
-                      <div className="animate-fade-in space-y-4">
-                          <div>
-                              <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Véhicule</label>
-                              <SegmentedControl
-                                  options={effectiveCars}
-                                  value={repairedCar}
-                                  onChange={setRepairedCar}
-                                  colorClass="text-brand-600 dark:text-brand-400"
-                              />
-                          </div>
-                          <div>
-                              <label htmlFor="car-garage" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Garage</label>
-                              <input
-                                  type="text"
-                                  id="car-garage"
-                                  value={carGarage}
-                                  onChange={(e) => setCarGarage(e.target.value)}
-                                  className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 sm:text-sm"
-                                  placeholder="Ex: Renault, Norauto..."
-                              />
-                          </div>
-                          <div>
-                              <label htmlFor="car-mileage" className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Kilométrage</label>
-                              <div className="relative">
-                                  <input
-                                      type="text"
-                                      inputMode="numeric"
-                                      id="car-mileage"
-                                      value={carMileage}
-                                      onChange={(e) => setCarMileage(e.target.value)}
-                                      className="block w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-transparent rounded-lg placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 sm:text-sm pr-10"
-                                      placeholder="Ex: 120000"
-                                  />
-                                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                      <span className="text-slate-500 sm:text-sm">km</span>
-                                  </div>
-                              </div>
-                          </div>
-                      </div>
-                  )}
-
-                  {category === 'Vêtements' && isMainFoyer && (
-                      <div className="animate-fade-in">
-                          <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label>
-                          <SegmentedControl
-                              options={childrenOptions}
-                              value={clothingPerson}
-                              onChange={setClothingPerson}
-                              colorClass="text-brand-600 dark:text-brand-400"
-                          />
-                      </div>
-                  )}
-
-                  {category === 'Cadeau' && isMainFoyer && (
-                      <div className="space-y-4 animate-fade-in">
-                          <div>
-                              <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Pour qui ?</label>
-                              <SegmentedControl
-                                  options={childrenOptions}
-                                  value={giftPerson}
-                                  onChange={setGiftPerson}
-                                  colorClass="text-brand-600 dark:text-brand-400"
-                              />
-                          </div>
-                          <div>
-                              <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">Occasion</label>
-                              <SegmentedControl
-                                  options={occasionOptions}
-                                  value={giftOccasion}
-                                  onChange={setGiftOccasion}
-                                  colorClass="text-brand-600 dark:text-brand-400"
-                              />
-                          </div>
-                      </div>
-                  )}
-
-                  {category === 'Complément alimentaire' && isMainFoyer && (
-                      <div className="space-y-5 animate-fade-in">
-                          <div>
-                              <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2.5">Boutique</label>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                  {SUPPLEMENT_STORES.map((storeOption) => {
-                                      const isSelected = supplementStore === storeOption;
-                                      return (
-                                          <button
-                                              key={storeOption}
-                                              type="button"
-                                              onClick={() => setSupplementStore(storeOption)}
-                                              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all font-semibold text-xs sm:text-sm cursor-pointer min-w-0 ${
-                                                  isSelected
-                                                      ? 'border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300 ring-1 ring-emerald-500/20'
-                                                      : 'border-slate-200/80 dark:border-slate-700/85 bg-white dark:bg-slate-800/95 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                                              }`}
-                                          >
-                                              <div className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all ${
-                                                  isSelected
-                                                      ? 'border-emerald-500 bg-emerald-500 text-white'
-                                                      : 'border-slate-300 dark:border-slate-600'
-                                              }`}>
-                                                  {isSelected && (
-                                                      <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                                          <polyline points="20 6 9 17 4 12" />
-                                                      </svg>
-                                                  )}
-                                              </div>
-                                              <span className="truncate">{storeOption}</span>
-                                          </button>
-                                      );
-                                  })}
-                              </div>
-                              {supplementStore === 'Autres' && (
-                                  <input
-                                      type="text"
-                                      value={customSupplementStore}
-                                      onChange={(e) => setCustomSupplementStore(e.target.value)}
-                                      className="mt-3 block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base font-semibold animate-fade-in"
-                                      placeholder="Nom de la boutique..."
-                                  />
-                              )}
-                          </div>
-                          <div>
-                              <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2.5">Complément</label>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                  {SUPPLEMENT_TYPES.map((typeOption) => {
-                                      const isSelected = supplementType === typeOption;
-                                      return (
-                                          <button
-                                              key={typeOption}
-                                              type="button"
-                                              onClick={() => setSupplementType(typeOption)}
-                                              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all font-semibold text-xs sm:text-sm cursor-pointer min-w-0 ${
-                                                  isSelected
-                                                      ? 'border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300 ring-1 ring-emerald-500/20'
-                                                      : 'border-slate-200/80 dark:border-slate-700/85 bg-white dark:bg-slate-800/95 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                                              }`}
-                                          >
-                                              <div className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all ${
-                                                  isSelected
-                                                      ? 'border-emerald-500 bg-emerald-500 text-white'
-                                                      : 'border-slate-300 dark:border-slate-600'
-                                              }`}>
-                                                  {isSelected && (
-                                                      <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                                          <polyline points="20 6 9 17 4 12" />
-                                                      </svg>
-                                                  )}
-                                              </div>
-                                              <span className="truncate">{typeOption}</span>
-                                          </button>
-                                      );
-                                  })}
-                              </div>
-                              {supplementType === 'Autres' && (
-                                  <input
-                                      type="text"
-                                      value={customSupplementType}
-                                      onChange={(e) => setCustomSupplementType(e.target.value)}
-                                      className="mt-3 block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base font-semibold animate-fade-in"
-                                      placeholder="Nom du complément..."
-                                  />
-                              )}
-                          </div>
-                      </div>
-                  )}
-                  
-                  { !['Chauffage', 'Courses', ...(isMainFoyer ? ['Complément alimentaire'] : [])].includes(category) && (
-                      <div>
-                      {category === "Carburant" ? (
-                          <div className="animate-fade-in">
-                          <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">Véhicule</label>
-                          <SegmentedControl
-                              options={effectiveCars}
-                              value={description}
-                              onChange={(val) => setDescription(val)}
-                              colorClass="text-brand-600 dark:text-brand-400"
-                          />
-                          </div>
-                      ) : (
-                          <>
-                          <label htmlFor="description" className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">
-                            {category === 'Restaurant' ? 'Restaurant' : category === 'Réparation voitures' ? 'Réparation effectuée' : 'Description'}
-                          </label>
-                          <div className="relative z-50">
-                              <input
-                              type="text"
-                              id="description"
-                              value={description}
-                              onChange={handleDescriptionChange}
-                              onFocus={(e) => handleDescriptionChange(e)}
-                              onBlur={() => setTimeout(() => setSuggestions([]), 150)}
-                              className="block w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-2xl placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base font-semibold"
-                              placeholder={category === 'Restaurant' ? "Ex: La Pizzaiola, McDo..." : category === 'Vêtements' ? "Ex: Pantalon, Manteau..." : category === 'Cadeau' ? "Ex: Lego, Poupée..." : category === 'Complément alimentaire' ? "Ex: Oméga 3, Vitamines, Magnésium..." : category === 'Réparation voitures' ? "Ex: Vidange, Pneus..." : "Ex: McDo, Cinéma..."}
-                              autoComplete="off"
-                              />
-                              {suggestions.length > 0 && (
-                              <ul className="absolute z-[100] w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md mt-1 shadow-xl max-h-48 overflow-y-auto">
-                                  {suggestions.map((suggestion, index) => (
-                                  <li
-                                      key={index}
-                                      className="px-4 py-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm"
-                                      onMouseDown={() => handleSuggestionClick(suggestion)}
-                                  >
-                                      {suggestion}
-                                  </li>
-                                  ))}
-                              </ul>
-                              )}
-                          </div>
-                          </>
-                      )}
-                      </div>
-                  )}
-                  <div className="space-y-4 pt-1">
-                    {/* Type Section */}
+                {category === 'Réparation voitures' && (
+                  <div className="animate-fade-in space-y-3 bg-slate-50/70 dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/60">
                     <div>
-                        <label className="block text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Type</label>
-                        <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setTransactionType('expense')}
-                              className={`flex-1 py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer border ${
-                                transactionType === 'expense'
-                                  ? 'bg-pink-50/90 dark:bg-rose-950/60 border-pink-300 dark:border-rose-800/60 text-[#e11d48] dark:text-rose-300 shadow-2xs font-extrabold text-xs sm:text-sm'
-                                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 border-slate-200/80 dark:border-slate-700/80 font-bold text-xs sm:text-sm'
-                              }`}
-                            >
-                              <span className="w-4 h-4 rounded-full bg-[#f43f5e] text-white flex items-center justify-center font-black text-xs shrink-0">-</span>
-                              <span>Dépense</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setTransactionType('refund')}
-                              className={`flex-1 py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer border ${
-                                transactionType === 'refund'
-                                  ? 'bg-emerald-50/90 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-800/60 text-[#059669] dark:text-emerald-400 shadow-2xs font-extrabold text-xs sm:text-sm'
-                                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 border-slate-200/80 dark:border-slate-700/80 font-bold text-xs sm:text-sm'
-                              }`}
-                            >
-                              <span className="w-4 h-4 rounded-full bg-[#10b981] text-white flex items-center justify-center font-black text-xs shrink-0">+</span>
-                              <span>Remboursement</span>
-                            </button>
-                        </div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Véhicule</label>
+                      <SegmentedControl
+                        options={effectiveCars}
+                        value={repairedCar}
+                        onChange={setRepairedCar}
+                        colorClass="text-brand-600 dark:text-brand-400"
+                      />
                     </div>
-
-                    {/* Montant Section */}
-                    <div>
-                        <label htmlFor="amount" className="block text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                          Montant (€)
-                        </label>
-                        <div className="relative flex items-center bg-[#f4f8ff] dark:bg-slate-800/90 border border-[#dbeafe] dark:border-blue-900/50 rounded-2xl px-4 py-2.5 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
-                            <input
-                              ref={amountInputRef}
-                              type="text"
-                              inputMode="decimal"
-                              id="amount"
-                              value={amount}
-                              onChange={(e) => setAmount(e.target.value)}
-                              className="w-full bg-transparent text-xl sm:text-2xl font-black text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 focus:outline-none tracking-tight"
-                              placeholder="0,00"
-                            />
-                            <span className="text-lg sm:text-xl font-black text-slate-700 dark:text-slate-300 ml-1.5 shrink-0 select-none">€</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label htmlFor="car-garage" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Garage</label>
+                        <input
+                          type="text"
+                          id="car-garage"
+                          value={carGarage}
+                          onChange={(e) => setCarGarage(e.target.value)}
+                          className="block w-full px-3 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold"
+                          placeholder="Ex: Renault, Norauto..."
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="car-mileage" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Kilométrage</label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            id="car-mileage"
+                            value={carMileage}
+                            onChange={(e) => setCarMileage(e.target.value)}
+                            className="block w-full px-3 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold pr-10"
+                            placeholder="Ex: 120000"
+                          />
+                          <span className="absolute inset-y-0 right-3 flex items-center text-xs text-slate-400 font-semibold pointer-events-none">km</span>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {category === 'Vêtements' && isMainFoyer && (
+                  <div className="animate-fade-in">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Pour qui ?</label>
+                    <SegmentedControl
+                      options={childrenOptions}
+                      value={clothingPerson}
+                      onChange={setClothingPerson}
+                      colorClass="text-brand-600 dark:text-brand-400"
+                    />
+                  </div>
+                )}
+
+                {category === 'Cadeau' && isMainFoyer && (
+                  <div className="space-y-3 animate-fade-in bg-slate-50/70 dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/60">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Pour qui ?</label>
+                      <SegmentedControl
+                        options={childrenOptions}
+                        value={giftPerson}
+                        onChange={setGiftPerson}
+                        colorClass="text-brand-600 dark:text-brand-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Occasion</label>
+                      <SegmentedControl
+                        options={occasionOptions}
+                        value={giftOccasion}
+                        onChange={setGiftOccasion}
+                        colorClass="text-brand-600 dark:text-brand-400"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {category === 'Complément alimentaire' && isMainFoyer && (
+                  <div className="space-y-3 animate-fade-in bg-slate-50/70 dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/60">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">Boutique</label>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {SUPPLEMENT_STORES.map((storeOption) => {
+                          const isSelected = supplementStore === storeOption;
+                          return (
+                            <button
+                              key={storeOption}
+                              type="button"
+                              onClick={() => setSupplementStore(storeOption)}
+                              className={`px-3 py-2 rounded-xl border text-left transition-all font-semibold text-xs cursor-pointer truncate ${
+                                isSelected
+                                  ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300'
+                                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                              }`}
+                            >
+                              {storeOption}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {supplementStore === 'Autres' && (
+                        <input
+                          type="text"
+                          value={customSupplementStore}
+                          onChange={(e) => setCustomSupplementStore(e.target.value)}
+                          className="mt-2 block w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold placeholder-slate-400"
+                          placeholder="Nom de la boutique..."
+                        />
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">Complément</label>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {SUPPLEMENT_TYPES.map((typeOption) => {
+                          const isSelected = supplementType === typeOption;
+                          return (
+                            <button
+                              key={typeOption}
+                              type="button"
+                              onClick={() => setSupplementType(typeOption)}
+                              className={`px-3 py-2 rounded-xl border text-left transition-all font-semibold text-xs cursor-pointer truncate ${
+                                isSelected
+                                  ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300'
+                                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                              }`}
+                            >
+                              {typeOption}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {supplementType === 'Autres' && (
+                        <input
+                          type="text"
+                          value={customSupplementType}
+                          onChange={(e) => setCustomSupplementType(e.target.value)}
+                          className="mt-2 block w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold placeholder-slate-400"
+                          placeholder="Nom du complément..."
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. DESCRIPTION */}
+                {!['Chauffage', 'Courses', ...(isMainFoyer ? ['Complément alimentaire'] : [])].includes(category) && (
+                  <div>
+                    {category === "Carburant" ? (
+                      <div className="animate-fade-in">
+                        <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 mb-1.5">
+                          Véhicule
+                        </label>
+                        <SegmentedControl
+                          options={effectiveCars}
+                          value={description}
+                          onChange={(val) => setDescription(val)}
+                          colorClass="text-brand-600 dark:text-brand-400"
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <label htmlFor="description" className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 mb-1.5">
+                          {category === 'Restaurant' ? 'Restaurant' : category === 'Réparation voitures' ? 'Réparation effectuée' : 'Description'}
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            id="description"
+                            value={description}
+                            onChange={handleDescriptionChange}
+                            onFocus={(e) => handleDescriptionChange(e)}
+                            onBlur={() => setTimeout(() => setSuggestions([]), 150)}
+                            className="block w-full px-4 py-3 bg-slate-50/90 dark:bg-slate-800/90 text-slate-900 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700 rounded-2xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base font-semibold transition-all"
+                            placeholder={category === 'Restaurant' ? "Ex: La Pizzaiola, McDo..." : category === 'Vêtements' ? "Ex: Pantalon, Manteau..." : category === 'Cadeau' ? "Ex: Lego, Poupée..." : "Ex : McDo, Cinéma…"}
+                            autoComplete="off"
+                          />
+                          {suggestions.length > 0 && (
+                            <ul className="absolute z-[60] w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-2xl mt-1 shadow-xl max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-600">
+                              {suggestions.map((suggestion, index) => (
+                                <li
+                                  key={index}
+                                  className="px-4 py-2.5 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-sm font-medium"
+                                  onMouseDown={() => handleSuggestionClick(suggestion)}
+                                >
+                                  {suggestion}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* 6. TYPE (Dépense / Remb.) */}
+                <div>
+                  <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 mb-1.5">
+                    Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setTransactionType('expense')}
+                      className={`py-2.5 sm:py-3 px-4 rounded-2xl flex items-center justify-center gap-2 transition-all cursor-pointer font-bold text-sm ${
+                        transactionType === 'expense'
+                          ? 'bg-rose-50 dark:bg-rose-950/40 border-2 border-rose-500 text-rose-600 dark:text-rose-400 shadow-xs ring-2 ring-rose-500/10'
+                          : 'bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      <span className="w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center font-black text-xs shrink-0">−</span>
+                      <span>Dépense</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTransactionType('refund')}
+                      className={`py-2.5 sm:py-3 px-4 rounded-2xl flex items-center justify-center gap-2 transition-all cursor-pointer font-bold text-sm ${
+                        transactionType === 'refund'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 shadow-xs ring-2 ring-emerald-500/10'
+                          : 'bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center font-black text-xs shrink-0">+</span>
+                      <span>Remb.</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 7. MONTANT (€) */}
+                <div>
+                  <label htmlFor="amount" className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 mb-1.5">
+                    Montant (€)
+                  </label>
+                  <div className="relative flex items-center bg-[#f4f8ff] dark:bg-slate-800/90 border border-[#dbeafe] dark:border-blue-900/50 rounded-2xl px-4 py-3 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
+                    <input
+                      ref={amountInputRef}
+                      type="text"
+                      inputMode="decimal"
+                      id="amount"
+                      value={amount}
+                      onChange={(e) => {
+                        setAmount(e.target.value);
+                        setError('');
+                      }}
+                      className="w-full bg-transparent text-2xl sm:text-3xl font-black text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 focus:outline-none tracking-tight"
+                      placeholder="0,00"
+                    />
+                    <span className="text-xl sm:text-2xl font-black text-slate-700 dark:text-slate-300 ml-2 shrink-0 select-none">€</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/40 rounded-xl text-red-600 dark:text-red-400 text-xs sm:text-sm font-bold animate-shake">
+                {error}
+              </div>
+            )}
+
+            {/* 8. DATE DE L'OPÉRATION */}
+            <div>
+              <div className="bg-[#f8fafc] dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/60 rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-3 shadow-2xs">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-900/40">
+                    <CalendarDaysIcon className="w-5 h-5" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-tight">Date de l’opération</span>
+                    <div className="flex items-center gap-1.5 mt-0.5 whitespace-nowrap">
+                      <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100">
+                        {formatOperationDate(date)}
+                      </span>
+                      <span className="text-slate-300 dark:text-slate-600 font-normal">·</span>
+                      <span className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">
+                        {formatOperationTime(date)}
+                      </span>
                     </div>
                   </div>
                 </div>
-            )}
-
-            {error && <p className="text-red-500 dark:text-red-400 text-sm font-medium">{error}</p>}
-            
-            {/* Date de l'opération Section */}
-            <div className="space-y-3.5 pt-1">
-                <div className="bg-[#f8fafc] dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/60 rounded-2xl p-2.5 sm:p-3 flex items-center justify-between gap-2.5 shadow-2xs">
-                    <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-[#e0edff] dark:bg-blue-950/60 text-[#2563eb] dark:text-blue-400 flex items-center justify-center shrink-0 shadow-2xs">
-                            <CalendarDaysIcon className="w-5 h-5" />
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-tight">Date de l'opération</span>
-                            <div className="flex items-center gap-1.5 mt-0.5 whitespace-nowrap">
-                                <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100">
-                                    {(() => {
-                                        const d = new Date(date);
-                                        if (isNaN(d.getTime())) return '';
-                                        const day = d.getDate().toString().padStart(2, '0');
-                                        const monthNames = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-                                        const month = monthNames[d.getMonth()];
-                                        const year = d.getFullYear();
-                                        return `${day} ${month} ${year}`;
-                                    })()}
-                                </span>
-                                <span className="text-slate-300 dark:text-slate-600 font-normal">·</span>
-                                <span className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">
-                                    {(() => {
-                                        const d = new Date(date);
-                                        if (isNaN(d.getTime())) return '';
-                                        const hours = d.getHours().toString().padStart(2, '0');
-                                        const minutes = d.getMinutes().toString().padStart(2, '0');
-                                        return `${hours}:${minutes}`;
-                                    })()}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <label htmlFor="expense-date" className="bg-[#e0edff] hover:bg-[#d0e2ff] dark:bg-blue-950/80 dark:hover:bg-blue-900/80 text-[#2563eb] dark:text-blue-300 font-bold text-xs px-3.5 py-1.5 rounded-full transition-all cursor-pointer shrink-0 active:scale-95 shadow-2xs">
-                        Modifier
-                        <input
-                            type="datetime-local"
-                            id="expense-date"
-                            value={date}
-                            onChange={(e) => {
-                                setDate(e.target.value);
-                                setIsDateManuallySet(true);
-                            }}
-                            className="sr-only"
-                        />
-                    </label>
-                </div>
-                <button
-                type="submit"
-                disabled={disabled}
-                className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 active:scale-[0.99] text-white font-bold py-3 px-5 rounded-2xl shadow-md shadow-blue-500/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-                >
-                {disabled ? (
-                    <>
-                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span>Synchronisation...</span>
-                    </>
-                ) : (
-                    <>
-                        <div className="w-5 h-5 rounded-full bg-white text-blue-600 flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
-                            +
-                        </div>
-                        <span>{transactionType === 'refund' ? 'Ajouter le remboursement' : 'Ajouter la dépense'}</span>
-                    </>
-                )}
-                </button>
+                <label htmlFor="expense-date" className="bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/80 dark:hover:bg-blue-900/80 text-blue-600 dark:text-blue-300 font-bold text-xs px-3.5 py-2 rounded-xl transition-all cursor-pointer shrink-0 active:scale-95 border border-blue-200/60 dark:border-blue-800/60">
+                  Modifier
+                  <input
+                    type="datetime-local"
+                    id="expense-date"
+                    value={date}
+                    onChange={(e) => {
+                      setDate(e.target.value);
+                      setIsDateManuallySet(true);
+                    }}
+                    className="sr-only"
+                  />
+                </label>
+              </div>
             </div>
-        </form>
+
+          </form>
         </div>
-        )}
+
+        {/* 9. BOUTON PRINCIPAL (Zone Sticky en bas du Bottom Sheet) */}
+        <div className="sticky bottom-0 bg-white/95 dark:bg-slate-850/95 backdrop-blur-md px-5 sm:px-6 py-4 border-t border-slate-100 dark:border-slate-700/60 pb-[calc(env(safe-area-inset-bottom)+12px)] z-30">
+          <button
+            type="submit"
+            form="bottom-sheet-expense-form"
+            disabled={disabled || (!showSubtractions && (!amount || parseFloat(amount.replace(',', '.')) <= 0))}
+            className="w-full flex items-center justify-center gap-2.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-extrabold py-3.5 sm:py-4 px-6 rounded-2xl shadow-lg shadow-blue-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base sm:text-lg cursor-pointer select-none"
+          >
+            {disabled ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Synchronisation...</span>
+              </>
+            ) : (
+              <>
+                <span className="w-5 h-5 rounded-full bg-white text-blue-600 flex items-center justify-center font-black text-sm shadow-2xs shrink-0">
+                  +
+                </span>
+                <span>{transactionType === 'refund' ? 'Ajouter le remboursement' : 'Ajouter la dépense'}</span>
+              </>
+            )}
+          </button>
         </div>
-        <ConfirmationModal 
-            isOpen={duplicateConfirmationOpen}
-            onClose={() => {
-                setDuplicateConfirmationOpen(false);
-                setPendingExpenseData(null);
-                setDetectedDuplicates([]);
-            }}
-            onConfirm={handleConfirmDuplicate}
-            title="Doublon potentiel détecté"
-            message={detectedDuplicates.length > 0 ? (
-                <div className="text-left">
-                    <p className="font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                        Attention, {detectedDuplicates.length} dépense{detectedDuplicates.length > 1 ? 's' : ''} identique{detectedDuplicates.length > 1 ? 's' : ''} trouvée{detectedDuplicates.length > 1 ? 's' : ''} pour ce mois :
-                    </p>
-                    <ul className="list-disc pl-4 mb-4 space-y-2 bg-slate-50 dark:bg-slate-700/50 p-2 rounded-lg text-xs sm:text-sm max-h-40 overflow-y-auto custom-scrollbar">
-                        {detectedDuplicates.map(d => (
-                            <li key={d.id} className="text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-600 last:border-0 pb-1 last:pb-0">
-                                <span className="font-bold text-slate-800 dark:text-slate-200 block">{new Date(d.date).toLocaleDateString()}</span>
-                                <span className="block break-words">{d.description}</span>
-                                <span className="block font-medium text-slate-800 dark:text-slate-100">{Math.abs(d.amount)} €</span>
-                            </li>
-                        ))}
-                    </ul>
-                    <p>Voulez-vous vraiment ajouter cette dépense à nouveau ?</p>
-                </div>
-            ) : "Une dépense très similaire existe déjà ce mois-ci. Voulez-vous confirmer l'ajout ?"}
-        />
-    </>
+
+      </div>
+
+      {/* Modal de doublons */}
+      <ConfirmationModal 
+        isOpen={duplicateConfirmationOpen}
+        onClose={() => {
+          setDuplicateConfirmationOpen(false);
+          setPendingExpenseData(null);
+          setDetectedDuplicates([]);
+        }}
+        onConfirm={handleConfirmDuplicate}
+        title="Doublon potentiel détecté"
+        message={detectedDuplicates.length > 0 ? (
+          <div className="text-left">
+            <p className="font-semibold text-slate-700 dark:text-slate-300 mb-2">
+              Attention, {detectedDuplicates.length} dépense{detectedDuplicates.length > 1 ? 's' : ''} identique{detectedDuplicates.length > 1 ? 's' : ''} trouvée{detectedDuplicates.length > 1 ? 's' : ''} pour ce mois :
+            </p>
+            <ul className="list-disc pl-4 mb-4 space-y-2 bg-slate-50 dark:bg-slate-700/50 p-2 rounded-lg text-xs sm:text-sm max-h-40 overflow-y-auto custom-scrollbar">
+              {detectedDuplicates.map(d => (
+                <li key={d.id} className="text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-600 last:border-0 pb-1 last:pb-0">
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">{new Date(d.date).toLocaleDateString()}</span>
+                  <span className="block break-words">{d.description}</span>
+                  <span className="block font-medium text-slate-800 dark:text-slate-100">{Math.abs(d.amount)} €</span>
+                </li>
+              ))}
+            </ul>
+            <p>Voulez-vous vraiment ajouter cette dépense à nouveau ?</p>
+          </div>
+        ) : "Une dépense très similaire existe déjà ce mois-ci. Voulez-vous confirmer l'ajout ?"}
+      />
+    </div>,
+    document.body
   );
 };
 
