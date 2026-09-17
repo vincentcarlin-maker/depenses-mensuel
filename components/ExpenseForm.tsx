@@ -26,6 +26,7 @@ interface ExpenseFormProps {
   isMainFoyer?: boolean;
   isOpen: boolean;
   onClose: () => void;
+  isInline?: boolean;
 }
 
 const toDatetimeLocal = (date: Date): string => {
@@ -69,7 +70,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   foyerMembers, 
   isMainFoyer = true,
   isOpen,
-  onClose
+  onClose,
+  isInline = false
 }) => {
   const { getVisual } = useCategoryVisuals();
   const members = useMemo(() => foyerMembers && foyerMembers.length > 0 ? foyerMembers : DEFAULT_FOYER.members, [foyerMembers]);
@@ -575,6 +577,583 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
   if (!isOpen) return null;
 
+  const submitButtonJSX = (
+    <button
+      type="submit"
+      form={isInline ? "inline-expense-form" : "bottom-sheet-expense-form"}
+      disabled={disabled || (!showSubtractions && (!amount || parseFloat(amount.replace(',', '.')) <= 0))}
+      className="w-full flex items-center justify-center gap-2.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-extrabold py-3.5 sm:py-4 px-6 rounded-2xl shadow-lg shadow-blue-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base sm:text-lg cursor-pointer select-none"
+    >
+      {disabled ? (
+        <>
+          <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>Synchronisation...</span>
+        </>
+      ) : (
+        <>
+          <span className="w-5 h-5 rounded-full bg-white text-blue-600 flex items-center justify-center font-black text-sm shadow-2xs shrink-0">
+            +
+          </span>
+          <span>{transactionType === 'refund' ? 'Ajouter le remboursement' : 'Ajouter la dépense'}</span>
+        </>
+      )}
+    </button>
+  );
+
+  const duplicateConfirmationModalJSX = (
+    <ConfirmationModal 
+      isOpen={duplicateConfirmationOpen}
+      onClose={() => {
+        setDuplicateConfirmationOpen(false);
+        setPendingExpenseData(null);
+        setDetectedDuplicates([]);
+      }}
+      onConfirm={handleConfirmDuplicate}
+      title="Doublon potentiel détecté"
+      message={detectedDuplicates.length > 0 ? (
+        <div className="text-left">
+          <p className="font-semibold text-slate-700 dark:text-slate-300 mb-2">
+            Attention, {detectedDuplicates.length} dépense{detectedDuplicates.length > 1 ? 's' : ''} identique{detectedDuplicates.length > 1 ? 's' : ''} trouvée{detectedDuplicates.length > 1 ? 's' : ''} pour ce mois :
+          </p>
+          <ul className="list-disc pl-4 mb-4 space-y-2 bg-slate-50 dark:bg-slate-700/50 p-2 rounded-lg text-xs sm:text-sm max-h-40 overflow-y-auto custom-scrollbar">
+            {detectedDuplicates.map(d => (
+              <li key={d.id} className="text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-600 last:border-0 pb-1 last:pb-0">
+                <span className="font-bold text-slate-800 dark:text-slate-200 block">{new Date(d.date).toLocaleDateString()}</span>
+                <span className="block break-words">{d.description}</span>
+                <span className="block font-medium text-slate-800 dark:text-slate-100">{Math.abs(d.amount)} €</span>
+              </li>
+            ))}
+          </ul>
+          <p>Voulez-vous vraiment ajouter cette dépense à nouveau ?</p>
+        </div>
+      ) : "Une dépense très similaire existe déjà ce mois-ci. Voulez-vous confirmer l'ajout ?"}
+    />
+  );
+
+  const formBodyJSX = (
+    <form id={isInline ? "inline-expense-form" : "bottom-sheet-expense-form"} onSubmit={handleSubmit} className="space-y-6">
+      {/* 3. QUI A PAYÉ ? */}
+      <div>
+        <div className="mb-2.5">
+          <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
+            Qui a payé ?
+          </label>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Sélectionnez la personne qui a effectué le paiement.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          {members.map((m) => {
+            const isSelected = user === m.name;
+            const isSophie = m.name === User.Sophie;
+            const userColor = m.color || (isSophie ? '#ec4899' : '#0ea5e9');
+
+            const isOnline = (onlineUsers || []).some(
+              u => String(u).trim().toLowerCase() === String(m.name).trim().toLowerCase()
+            ) || (loggedInUser && String(loggedInUser).trim().toLowerCase() === String(m.name).trim().toLowerCase());
+
+            return (
+              <button
+                key={m.id || m.name}
+                type="button"
+                onClick={() => setUser(m.name)}
+                className={`p-2 sm:p-3 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer min-w-0 ${
+                  isSelected
+                    ? isSophie 
+                      ? 'bg-pink-50/90 dark:bg-pink-950/40 border-2 border-pink-500 text-pink-600 dark:text-pink-300 shadow-xs scale-[1.02]' 
+                      : 'bg-blue-50/90 dark:bg-blue-950/40 border-2 border-blue-500 text-blue-600 dark:text-blue-300 shadow-xs scale-[1.02]'
+                    : 'bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                }`}
+              >
+                <div className="relative shrink-0">
+                  <span 
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-white shadow-2xs text-xs font-bold"
+                    style={{ backgroundColor: userColor }}
+                  >
+                    {m.name.charAt(0)}
+                  </span>
+                  {isOnline ? (
+                    <span 
+                      title={`${m.name} est en ligne`}
+                      className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center"
+                    >
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-80" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 border border-white dark:border-slate-900" />
+                    </span>
+                  ) : (
+                    <span 
+                      title={`${m.name} est hors ligne`}
+                      className="w-2 h-2 rounded-full border border-white dark:border-slate-900 absolute -bottom-0.5 -right-0.5 bg-slate-300 dark:bg-slate-600" 
+                    />
+                  )}
+                </div>
+                <span className="truncate">{m.name}</span>
+              </button>
+            );
+          })}
+          
+          {/* Cagnotte */}
+          <button
+            type="button"
+            onClick={() => setUser(User.Commun)}
+            className={`p-2 sm:p-3 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer min-w-0 ${
+              user === User.Commun
+                ? 'bg-emerald-50/90 dark:bg-emerald-950/40 border-2 border-emerald-500 text-emerald-700 dark:text-emerald-300 shadow-xs scale-[1.02]'
+                : 'bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+            }`}
+          >
+            <div className="w-7 h-7 rounded-full bg-emerald-500 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
+              €
+            </div>
+            <span className="truncate">Cagnotte</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 4. CATÉGORIE */}
+      <div>
+        <div className="mb-2.5">
+          <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
+            Catégorie
+          </label>
+        </div>
+        
+        {categories.length === 0 ? (
+          <div className="p-4 bg-sky-50 dark:bg-sky-950/40 border border-sky-100 dark:border-sky-900/50 rounded-2xl text-xs text-sky-800 dark:text-sky-300">
+            Aucune catégorie configurée.
+          </div>
+        ) : (
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-7 gap-2">
+            {categories.map((cat) => {
+              const visual = getVisual(cat);
+              const Icon = visual?.icon;
+              const isSelected = category === cat;
+              const isHovered = hoveredCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategory(cat)}
+                  onMouseEnter={() => setHoveredCategory(cat)}
+                  onMouseLeave={() => setHoveredCategory(null)}
+                  className={`aspect-square w-full rounded-2xl border transition-all duration-150 cursor-pointer p-1 flex flex-col items-center justify-center gap-1 ${
+                    isSelected
+                      ? `${visual?.borderColor || 'border-blue-400'} ${visual?.badgeBg || 'bg-blue-50'} ring-2 ring-current/25 ${visual?.textColor || 'text-blue-600'} shadow-xs scale-[1.03]`
+                      : isHovered
+                        ? `${visual?.borderColor || 'border-blue-200'} ${visual?.badgeBg || 'bg-blue-50/80'} ${visual?.textColor || 'text-blue-600'} shadow-xs scale-[1.02]`
+                        : 'border-slate-200/80 dark:border-slate-700/80 bg-slate-50/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300'
+                  }`}
+                  title={cat}
+                >
+                  <div className={`w-6 h-6 flex items-center justify-center shrink-0 transition-transform ${isHovered || isSelected ? 'scale-110' : ''} ${visual?.textColor || 'text-slate-600 dark:text-slate-400'}`}>
+                    {Icon && <Icon className="w-5 h-5 shrink-0" />}
+                  </div>
+                  <span className={`text-[10px] leading-tight text-center px-0.5 line-clamp-2 transition-colors ${
+                    isSelected 
+                      ? 'font-black text-slate-950 dark:text-white' 
+                      : isHovered 
+                        ? `font-bold ${visual?.textColor || 'text-slate-900 dark:text-white'}` 
+                        : 'font-semibold text-slate-600 dark:text-slate-300'
+                  }`}>
+                    {cat}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Options spécifiques aux catégories */}
+      {category === 'Courses' && (
+        <div className="space-y-4 animate-fade-in bg-slate-50/70 dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/60">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="store-select" className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1">Magasin</label>
+              <select id="store-select" value={store} onChange={e => setStore(e.target.value)} className="block w-full px-3 py-2.5 text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold rounded-xl">
+                {groceryStores.map(s => <option key={s} value={s}>{s}</option>)}
+                <option value="Autres">Autres</option>
+              </select>
+            </div>
+            {store === 'Autres' && (
+              <div>
+                <label htmlFor="custom-store" className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1">Magasin personnalisé</label>
+                <input type="text" id="custom-store" value={customStore} onChange={e => setCustomStore(e.target.value)} className="block w-full px-3 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold" placeholder="Nom du magasin" />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {['Courses', 'Divers'].includes(category) && (
+        <ItemDeductionSection
+          showSubtractions={showSubtractions}
+          setShowSubtractions={setShowSubtractions}
+          subtractedItems={subtractedItems}
+          setSubtractedItems={setSubtractedItems}
+          receiptTotal={receiptTotal}
+          setReceiptTotal={setReceiptTotal}
+          categories={categories}
+          currentCategory={category}
+        />
+      )}
+
+      {!showSubtractions && (
+        <div className="space-y-4">
+          {category === 'Chauffage' && (
+            <div className="animate-fade-in">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Type de Chauffage</label>
+              <SegmentedControl
+                options={effectiveHeatingTypes}
+                value={heatingType}
+                onChange={setHeatingType}
+                colorClass="text-brand-600 dark:text-brand-400"
+              />
+            </div>
+          )}
+
+          {category === 'Réparation voitures' && (
+            <div className="animate-fade-in space-y-3 bg-slate-50/70 dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/60">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Véhicule</label>
+                <SegmentedControl
+                  options={effectiveCars}
+                  value={repairedCar}
+                  onChange={setRepairedCar}
+                  colorClass="text-brand-600 dark:text-brand-400"
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="car-garage" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Garage</label>
+                  <input
+                    type="text"
+                    id="car-garage"
+                    value={carGarage}
+                    onChange={(e) => setCarGarage(e.target.value)}
+                    className="block w-full px-3 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold"
+                    placeholder="Ex: Renault, Norauto..."
+                  />
+                </div>
+                <div>
+                  <label htmlFor="car-mileage" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Kilométrage</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      id="car-mileage"
+                      value={carMileage}
+                      onChange={(e) => setCarMileage(e.target.value)}
+                      className="block w-full px-3 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold pr-10"
+                      placeholder="Ex: 120000"
+                    />
+                    <span className="absolute inset-y-0 right-3 flex items-center text-xs text-slate-400 font-semibold pointer-events-none">km</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {category === 'Vêtements' && isMainFoyer && (
+            <div className="animate-fade-in">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Pour qui ?</label>
+              <SegmentedControl
+                options={childrenOptions}
+                value={clothingPerson}
+                onChange={setClothingPerson}
+                colorClass="text-brand-600 dark:text-brand-400"
+              />
+            </div>
+          )}
+
+          {category === 'Cadeau' && isMainFoyer && (
+            <div className="space-y-3 animate-fade-in bg-slate-50/70 dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/60">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Pour qui ?</label>
+                <SegmentedControl
+                  options={childrenOptions}
+                  value={giftPerson}
+                  onChange={setGiftPerson}
+                  colorClass="text-brand-600 dark:text-brand-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Occasion</label>
+                <SegmentedControl
+                  options={occasionOptions}
+                  value={giftOccasion}
+                  onChange={setGiftOccasion}
+                  colorClass="text-brand-600 dark:text-brand-400"
+                />
+              </div>
+            </div>
+          )}
+
+          {category === 'Complément alimentaire' && isMainFoyer && (
+            <div className="space-y-3 animate-fade-in bg-slate-50/70 dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/60">
+              <div>
+                <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">Boutique</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {SUPPLEMENT_STORES.map((storeOption) => {
+                    const isSelected = supplementStore === storeOption;
+                    return (
+                      <button
+                        key={storeOption}
+                        type="button"
+                        onClick={() => setSupplementStore(storeOption)}
+                        className={`px-3 py-2 rounded-xl border text-left transition-all font-semibold text-xs cursor-pointer truncate ${
+                          isSelected
+                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300'
+                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        {storeOption}
+                      </button>
+                    );
+                  })}
+                </div>
+                {supplementStore === 'Autres' && (
+                  <input
+                    type="text"
+                    value={customSupplementStore}
+                    onChange={(e) => setCustomSupplementStore(e.target.value)}
+                    className="mt-2 block w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold placeholder-slate-400"
+                    placeholder="Nom de la boutique..."
+                  />
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">Complément</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {SUPPLEMENT_TYPES.map((typeOption) => {
+                    const isSelected = supplementType === typeOption;
+                    return (
+                      <button
+                        key={typeOption}
+                        type="button"
+                        onClick={() => setSupplementType(typeOption)}
+                        className={`px-3 py-2 rounded-xl border text-left transition-all font-semibold text-xs cursor-pointer truncate ${
+                          isSelected
+                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300'
+                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        {typeOption}
+                      </button>
+                    );
+                  })}
+                </div>
+                {supplementType === 'Autres' && (
+                  <input
+                    type="text"
+                    value={customSupplementType}
+                    onChange={(e) => setCustomSupplementType(e.target.value)}
+                    className="mt-2 block w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold placeholder-slate-400"
+                    placeholder="Nom du complément..."
+                  />
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 5. DESCRIPTION */}
+          {!['Chauffage', 'Courses', ...(isMainFoyer ? ['Complément alimentaire'] : [])].includes(category) && (
+            <div>
+              {category === "Carburant" ? (
+                <div className="animate-fade-in">
+                  <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 mb-1.5">
+                    Véhicule
+                  </label>
+                  <SegmentedControl
+                    options={effectiveCars}
+                    value={description}
+                    onChange={(val) => setDescription(val)}
+                    colorClass="text-brand-600 dark:text-brand-400"
+                  />
+                </div>
+              ) : (
+                <>
+                  <label htmlFor="description" className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 mb-1.5">
+                    {category === 'Restaurant' ? 'Restaurant' : category === 'Réparation voitures' ? 'Réparation effectuée' : 'Description'}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      id="description"
+                      value={description}
+                      onChange={handleDescriptionChange}
+                      onFocus={(e) => handleDescriptionChange(e)}
+                      onBlur={() => setTimeout(() => setSuggestions([]), 150)}
+                      className="block w-full px-4 py-3 bg-slate-50/90 dark:bg-slate-800/90 text-slate-900 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700 rounded-2xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base font-semibold transition-all"
+                      placeholder={category === 'Restaurant' ? "Ex: La Pizzaiola, McDo..." : category === 'Vêtements' ? "Ex: Pantalon, Manteau..." : category === 'Cadeau' ? "Ex: Lego, Poupée..." : "Ex : McDo, Cinéma…"}
+                      autoComplete="off"
+                    />
+                    {suggestions.length > 0 && (
+                      <ul className="absolute z-[60] w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-2xl mt-1 shadow-xl max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-600">
+                        {suggestions.map((suggestion, index) => (
+                          <li
+                            key={index}
+                            className="px-4 py-2.5 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-sm font-medium"
+                            onMouseDown={() => handleSuggestionClick(suggestion)}
+                          >
+                            {suggestion}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* 6. TYPE (Dépense / Remb.) */}
+          <div>
+            <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 mb-1.5">
+              Type
+            </label>
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => setTransactionType('expense')}
+                className={`py-2.5 sm:py-3 px-4 rounded-2xl flex items-center justify-center gap-2 transition-all cursor-pointer font-bold text-sm ${
+                  transactionType === 'expense'
+                    ? 'bg-rose-50 dark:bg-rose-950/40 border-2 border-rose-500 text-rose-600 dark:text-rose-400 shadow-xs ring-2 ring-rose-500/10'
+                    : 'bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
+              >
+                <span className="w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center font-black text-xs shrink-0">−</span>
+                <span>Dépense</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTransactionType('refund')}
+                className={`py-2.5 sm:py-3 px-4 rounded-2xl flex items-center justify-center gap-2 transition-all cursor-pointer font-bold text-sm ${
+                  transactionType === 'refund'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 shadow-xs ring-2 ring-emerald-500/10'
+                    : 'bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
+              >
+                <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center font-black text-xs shrink-0">+</span>
+                <span>Remb.</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 7. MONTANT (€) */}
+          <div>
+            <label htmlFor="amount" className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 mb-1.5">
+              Montant (€)
+            </label>
+            <div className="relative flex items-center bg-[#f4f8ff] dark:bg-slate-800/90 border border-[#dbeafe] dark:border-blue-900/50 rounded-2xl px-4 py-3 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
+              <input
+                ref={amountInputRef}
+                type="text"
+                inputMode="decimal"
+                id="amount"
+                value={amount}
+                onChange={(e) => {
+                  setAmount(e.target.value);
+                  setError('');
+                }}
+                className="w-full bg-transparent text-2xl sm:text-3xl font-black text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 focus:outline-none tracking-tight"
+                placeholder="0,00"
+              />
+              <span className="text-xl sm:text-2xl font-black text-slate-700 dark:text-slate-300 ml-2 shrink-0 select-none">€</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/40 rounded-xl text-red-600 dark:text-red-400 text-xs sm:text-sm font-bold animate-shake">
+          {error}
+        </div>
+      )}
+
+      {/* 8. DATE DE L'OPÉRATION */}
+      <div>
+        <div className="bg-[#f8fafc] dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/60 rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-900/40">
+              <CalendarDaysIcon className="w-5 h-5" />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-tight">Date de l’opération</span>
+              <div className="flex items-center gap-1.5 mt-0.5 whitespace-nowrap">
+                <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100">
+                  {formatOperationDate(date)}
+                </span>
+                <span className="text-slate-300 dark:text-slate-600 font-normal">·</span>
+                <span className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">
+                  {formatOperationTime(date)}
+                </span>
+              </div>
+            </div>
+          </div>
+          <label htmlFor="expense-date" className="bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/80 dark:hover:bg-blue-900/80 text-blue-600 dark:text-blue-300 font-bold text-xs px-3.5 py-2 rounded-xl transition-all cursor-pointer shrink-0 active:scale-95 border border-blue-200/60 dark:border-blue-800/60">
+            Modifier
+            <input
+              type="datetime-local"
+              id="expense-date"
+              value={date}
+              onChange={(e) => {
+                setDate(e.target.value);
+                setIsDateManuallySet(true);
+              }}
+              className="sr-only"
+            />
+          </label>
+        </div>
+      </div>
+    </form>
+  );
+
+  if (isInline) {
+    return (
+      <div id="expense-form-card" className="bg-white dark:bg-slate-800 p-5 sm:p-7 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700/80 space-y-6">
+        <div className="flex items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-700/60">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/70 border border-blue-100/80 dark:border-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 shadow-2xs">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2" />
+                <line x1="2" y1="10" x2="22" y2="10" />
+              </svg>
+            </div>
+            <div className="text-left min-w-0">
+              <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight leading-snug truncate">
+                Ajouter une transaction
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
+                Enregistrez une dépense ou un remboursement.
+              </p>
+            </div>
+          </div>
+          {initialData && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-xs font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 transition-colors cursor-pointer shrink-0"
+            >
+              Réinitialiser
+            </button>
+          )}
+        </div>
+
+        {formBodyJSX}
+
+        <div className="pt-2">
+          {submitButtonJSX}
+        </div>
+
+        {duplicateConfirmationModalJSX}
+      </div>
+    );
+  }
+
   return createPortal(
     <div 
       className="fixed inset-0 z-[120] flex flex-col justify-end"
@@ -650,543 +1229,17 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           onTouchEnd={handleTouchEnd}
           className="overflow-y-auto px-5 sm:px-6 py-5 space-y-6 flex-1 overscroll-contain"
         >
-          <form id="bottom-sheet-expense-form" onSubmit={handleSubmit} className="space-y-6">
-            
-            {/* 3. QUI A PAYÉ ? */}
-            <div>
-              <div className="mb-2.5">
-                <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
-                  Qui a payé ?
-                </label>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Sélectionnez la personne qui a effectué le paiement.
-                </p>
-              </div>
-              <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                {members.map((m) => {
-                  const isSelected = user === m.name;
-                  const isSophie = m.name === User.Sophie;
-                  const userColor = m.color || (isSophie ? '#ec4899' : '#0ea5e9');
-
-                  const isOnline = (onlineUsers || []).some(
-                    u => String(u).trim().toLowerCase() === String(m.name).trim().toLowerCase()
-                  ) || (loggedInUser && String(loggedInUser).trim().toLowerCase() === String(m.name).trim().toLowerCase());
-
-                  return (
-                    <button
-                      key={m.id || m.name}
-                      type="button"
-                      onClick={() => setUser(m.name)}
-                      className={`p-2 sm:p-3 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer min-w-0 ${
-                        isSelected
-                          ? isSophie 
-                            ? 'bg-pink-50/90 dark:bg-pink-950/40 border-2 border-pink-500 text-pink-600 dark:text-pink-300 shadow-xs scale-[1.02]' 
-                            : 'bg-blue-50/90 dark:bg-blue-950/40 border-2 border-blue-500 text-blue-600 dark:text-blue-300 shadow-xs scale-[1.02]'
-                          : 'bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="relative shrink-0">
-                        <span 
-                          className="w-7 h-7 rounded-full flex items-center justify-center text-white shadow-2xs text-xs font-bold"
-                          style={{ backgroundColor: userColor }}
-                        >
-                          {m.name.charAt(0)}
-                        </span>
-                        {isOnline ? (
-                          <span 
-                            title={`${m.name} est en ligne`}
-                            className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center"
-                          >
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-80" />
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 border border-white dark:border-slate-900" />
-                          </span>
-                        ) : (
-                          <span 
-                            title={`${m.name} est hors ligne`}
-                            className="w-2 h-2 rounded-full border border-white dark:border-slate-900 absolute -bottom-0.5 -right-0.5 bg-slate-300 dark:bg-slate-600" 
-                          />
-                        )}
-                      </div>
-                      <span className="truncate">{m.name}</span>
-                    </button>
-                  );
-                })}
-                
-                {/* Cagnotte */}
-                <button
-                  type="button"
-                  onClick={() => setUser(User.Commun)}
-                  className={`p-2 sm:p-3 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer min-w-0 ${
-                    user === User.Commun
-                      ? 'bg-emerald-50/90 dark:bg-emerald-950/40 border-2 border-emerald-500 text-emerald-700 dark:text-emerald-300 shadow-xs scale-[1.02]'
-                      : 'bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-slate-300'
-                  }`}
-                >
-                  <div className="w-7 h-7 rounded-full bg-emerald-500 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
-                    €
-                  </div>
-                  <span className="truncate">Cagnotte</span>
-                </button>
-              </div>
-            </div>
-
-            {/* 4. CATÉGORIE */}
-            <div>
-              <div className="mb-2.5">
-                <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
-                  Catégorie
-                </label>
-              </div>
-              
-              {categories.length === 0 ? (
-                <div className="p-4 bg-sky-50 dark:bg-sky-950/40 border border-sky-100 dark:border-sky-900/50 rounded-2xl text-xs text-sky-800 dark:text-sky-300">
-                  Aucune catégorie configurée.
-                </div>
-              ) : (
-                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-7 gap-2">
-                  {categories.map((cat) => {
-                    const visual = getVisual(cat);
-                    const Icon = visual?.icon;
-                    const isSelected = category === cat;
-                    const isHovered = hoveredCategory === cat;
-                    return (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => setCategory(cat)}
-                        onMouseEnter={() => setHoveredCategory(cat)}
-                        onMouseLeave={() => setHoveredCategory(null)}
-                        className={`aspect-square w-full rounded-2xl border transition-all duration-150 cursor-pointer p-1 flex flex-col items-center justify-center gap-1 ${
-                          isSelected
-                            ? `${visual?.borderColor || 'border-blue-400'} ${visual?.badgeBg || 'bg-blue-50'} ring-2 ring-current/25 ${visual?.textColor || 'text-blue-600'} shadow-xs scale-[1.03]`
-                            : isHovered
-                              ? `${visual?.borderColor || 'border-blue-200'} ${visual?.badgeBg || 'bg-blue-50/80'} ${visual?.textColor || 'text-blue-600'} shadow-xs scale-[1.02]`
-                              : 'border-slate-200/80 dark:border-slate-700/80 bg-slate-50/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300'
-                        }`}
-                        title={cat}
-                      >
-                        <div className={`w-6 h-6 flex items-center justify-center shrink-0 transition-transform ${isHovered || isSelected ? 'scale-110' : ''} ${visual?.textColor || 'text-slate-600 dark:text-slate-400'}`}>
-                          {Icon && <Icon className="w-5 h-5 shrink-0" />}
-                        </div>
-                        <span className={`text-[10px] leading-tight text-center px-0.5 line-clamp-2 transition-colors ${
-                          isSelected 
-                            ? 'font-black text-slate-950 dark:text-white' 
-                            : isHovered 
-                              ? `font-bold ${visual?.textColor || 'text-slate-900 dark:text-white'}` 
-                              : 'font-semibold text-slate-600 dark:text-slate-300'
-                        }`}>
-                          {cat}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Options spécifiques aux catégories */}
-            {category === 'Courses' && (
-              <div className="space-y-4 animate-fade-in bg-slate-50/70 dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/60">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label htmlFor="store-select" className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1">Magasin</label>
-                    <select id="store-select" value={store} onChange={e => setStore(e.target.value)} className="block w-full px-3 py-2.5 text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold rounded-xl">
-                      {groceryStores.map(s => <option key={s} value={s}>{s}</option>)}
-                      <option value="Autres">Autres</option>
-                    </select>
-                  </div>
-                  {store === 'Autres' && (
-                    <div>
-                      <label htmlFor="custom-store" className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1">Magasin personnalisé</label>
-                      <input type="text" id="custom-store" value={customStore} onChange={e => setCustomStore(e.target.value)} className="block w-full px-3 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold" placeholder="Nom du magasin" />
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {['Courses', 'Divers'].includes(category) && (
-              <ItemDeductionSection
-                showSubtractions={showSubtractions}
-                setShowSubtractions={setShowSubtractions}
-                subtractedItems={subtractedItems}
-                setSubtractedItems={setSubtractedItems}
-                receiptTotal={receiptTotal}
-                setReceiptTotal={setReceiptTotal}
-                categories={categories}
-                currentCategory={category}
-              />
-            )}
-
-            {!showSubtractions && (
-              <div className="space-y-4">
-                {category === 'Chauffage' && (
-                  <div className="animate-fade-in">
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Type de Chauffage</label>
-                    <SegmentedControl
-                      options={effectiveHeatingTypes}
-                      value={heatingType}
-                      onChange={setHeatingType}
-                      colorClass="text-brand-600 dark:text-brand-400"
-                    />
-                  </div>
-                )}
-
-                {category === 'Réparation voitures' && (
-                  <div className="animate-fade-in space-y-3 bg-slate-50/70 dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/60">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Véhicule</label>
-                      <SegmentedControl
-                        options={effectiveCars}
-                        value={repairedCar}
-                        onChange={setRepairedCar}
-                        colorClass="text-brand-600 dark:text-brand-400"
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label htmlFor="car-garage" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Garage</label>
-                        <input
-                          type="text"
-                          id="car-garage"
-                          value={carGarage}
-                          onChange={(e) => setCarGarage(e.target.value)}
-                          className="block w-full px-3 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold"
-                          placeholder="Ex: Renault, Norauto..."
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="car-mileage" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Kilométrage</label>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            id="car-mileage"
-                            value={carMileage}
-                            onChange={(e) => setCarMileage(e.target.value)}
-                            className="block w-full px-3 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold pr-10"
-                            placeholder="Ex: 120000"
-                          />
-                          <span className="absolute inset-y-0 right-3 flex items-center text-xs text-slate-400 font-semibold pointer-events-none">km</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {category === 'Vêtements' && isMainFoyer && (
-                  <div className="animate-fade-in">
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Pour qui ?</label>
-                    <SegmentedControl
-                      options={childrenOptions}
-                      value={clothingPerson}
-                      onChange={setClothingPerson}
-                      colorClass="text-brand-600 dark:text-brand-400"
-                    />
-                  </div>
-                )}
-
-                {category === 'Cadeau' && isMainFoyer && (
-                  <div className="space-y-3 animate-fade-in bg-slate-50/70 dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/60">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Pour qui ?</label>
-                      <SegmentedControl
-                        options={childrenOptions}
-                        value={giftPerson}
-                        onChange={setGiftPerson}
-                        colorClass="text-brand-600 dark:text-brand-400"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Occasion</label>
-                      <SegmentedControl
-                        options={occasionOptions}
-                        value={giftOccasion}
-                        onChange={setGiftOccasion}
-                        colorClass="text-brand-600 dark:text-brand-400"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {category === 'Complément alimentaire' && isMainFoyer && (
-                  <div className="space-y-3 animate-fade-in bg-slate-50/70 dark:bg-slate-800/50 p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-700/60">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">Boutique</label>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {SUPPLEMENT_STORES.map((storeOption) => {
-                          const isSelected = supplementStore === storeOption;
-                          return (
-                            <button
-                              key={storeOption}
-                              type="button"
-                              onClick={() => setSupplementStore(storeOption)}
-                              className={`px-3 py-2 rounded-xl border text-left transition-all font-semibold text-xs cursor-pointer truncate ${
-                                isSelected
-                                  ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300'
-                                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                              }`}
-                            >
-                              {storeOption}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {supplementStore === 'Autres' && (
-                        <input
-                          type="text"
-                          value={customSupplementStore}
-                          onChange={(e) => setCustomSupplementStore(e.target.value)}
-                          className="mt-2 block w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold placeholder-slate-400"
-                          placeholder="Nom de la boutique..."
-                        />
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">Complément</label>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {SUPPLEMENT_TYPES.map((typeOption) => {
-                          const isSelected = supplementType === typeOption;
-                          return (
-                            <button
-                              key={typeOption}
-                              type="button"
-                              onClick={() => setSupplementType(typeOption)}
-                              className={`px-3 py-2 rounded-xl border text-left transition-all font-semibold text-xs cursor-pointer truncate ${
-                                isSelected
-                                  ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300'
-                                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                              }`}
-                            >
-                              {typeOption}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {supplementType === 'Autres' && (
-                        <input
-                          type="text"
-                          value={customSupplementType}
-                          onChange={(e) => setCustomSupplementType(e.target.value)}
-                          className="mt-2 block w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold placeholder-slate-400"
-                          placeholder="Nom du complément..."
-                        />
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* 5. DESCRIPTION */}
-                {!['Chauffage', 'Courses', ...(isMainFoyer ? ['Complément alimentaire'] : [])].includes(category) && (
-                  <div>
-                    {category === "Carburant" ? (
-                      <div className="animate-fade-in">
-                        <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 mb-1.5">
-                          Véhicule
-                        </label>
-                        <SegmentedControl
-                          options={effectiveCars}
-                          value={description}
-                          onChange={(val) => setDescription(val)}
-                          colorClass="text-brand-600 dark:text-brand-400"
-                        />
-                      </div>
-                    ) : (
-                      <>
-                        <label htmlFor="description" className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 mb-1.5">
-                          {category === 'Restaurant' ? 'Restaurant' : category === 'Réparation voitures' ? 'Réparation effectuée' : 'Description'}
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            id="description"
-                            value={description}
-                            onChange={handleDescriptionChange}
-                            onFocus={(e) => handleDescriptionChange(e)}
-                            onBlur={() => setTimeout(() => setSuggestions([]), 150)}
-                            className="block w-full px-4 py-3 bg-slate-50/90 dark:bg-slate-800/90 text-slate-900 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700 rounded-2xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base font-semibold transition-all"
-                            placeholder={category === 'Restaurant' ? "Ex: La Pizzaiola, McDo..." : category === 'Vêtements' ? "Ex: Pantalon, Manteau..." : category === 'Cadeau' ? "Ex: Lego, Poupée..." : "Ex : McDo, Cinéma…"}
-                            autoComplete="off"
-                          />
-                          {suggestions.length > 0 && (
-                            <ul className="absolute z-[60] w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-2xl mt-1 shadow-xl max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-600">
-                              {suggestions.map((suggestion, index) => (
-                                <li
-                                  key={index}
-                                  className="px-4 py-2.5 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-sm font-medium"
-                                  onMouseDown={() => handleSuggestionClick(suggestion)}
-                                >
-                                  {suggestion}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* 6. TYPE (Dépense / Remb.) */}
-                <div>
-                  <label className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 mb-1.5">
-                    Type
-                  </label>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => setTransactionType('expense')}
-                      className={`py-2.5 sm:py-3 px-4 rounded-2xl flex items-center justify-center gap-2 transition-all cursor-pointer font-bold text-sm ${
-                        transactionType === 'expense'
-                          ? 'bg-rose-50 dark:bg-rose-950/40 border-2 border-rose-500 text-rose-600 dark:text-rose-400 shadow-xs ring-2 ring-rose-500/10'
-                          : 'bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      <span className="w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center font-black text-xs shrink-0">−</span>
-                      <span>Dépense</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setTransactionType('refund')}
-                      className={`py-2.5 sm:py-3 px-4 rounded-2xl flex items-center justify-center gap-2 transition-all cursor-pointer font-bold text-sm ${
-                        transactionType === 'refund'
-                          ? 'bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 shadow-xs ring-2 ring-emerald-500/10'
-                          : 'bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center font-black text-xs shrink-0">+</span>
-                      <span>Remb.</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* 7. MONTANT (€) */}
-                <div>
-                  <label htmlFor="amount" className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 mb-1.5">
-                    Montant (€)
-                  </label>
-                  <div className="relative flex items-center bg-[#f4f8ff] dark:bg-slate-800/90 border border-[#dbeafe] dark:border-blue-900/50 rounded-2xl px-4 py-3 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
-                    <input
-                      ref={amountInputRef}
-                      type="text"
-                      inputMode="decimal"
-                      id="amount"
-                      value={amount}
-                      onChange={(e) => {
-                        setAmount(e.target.value);
-                        setError('');
-                      }}
-                      className="w-full bg-transparent text-2xl sm:text-3xl font-black text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 focus:outline-none tracking-tight"
-                      placeholder="0,00"
-                    />
-                    <span className="text-xl sm:text-2xl font-black text-slate-700 dark:text-slate-300 ml-2 shrink-0 select-none">€</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {error && (
-              <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/40 rounded-xl text-red-600 dark:text-red-400 text-xs sm:text-sm font-bold animate-shake">
-                {error}
-              </div>
-            )}
-
-            {/* 8. DATE DE L'OPÉRATION */}
-            <div>
-              <div className="bg-[#f8fafc] dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/60 rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-3 shadow-2xs">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-900/40">
-                    <CalendarDaysIcon className="w-5 h-5" />
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-tight">Date de l’opération</span>
-                    <div className="flex items-center gap-1.5 mt-0.5 whitespace-nowrap">
-                      <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100">
-                        {formatOperationDate(date)}
-                      </span>
-                      <span className="text-slate-300 dark:text-slate-600 font-normal">·</span>
-                      <span className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">
-                        {formatOperationTime(date)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <label htmlFor="expense-date" className="bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/80 dark:hover:bg-blue-900/80 text-blue-600 dark:text-blue-300 font-bold text-xs px-3.5 py-2 rounded-xl transition-all cursor-pointer shrink-0 active:scale-95 border border-blue-200/60 dark:border-blue-800/60">
-                  Modifier
-                  <input
-                    type="datetime-local"
-                    id="expense-date"
-                    value={date}
-                    onChange={(e) => {
-                      setDate(e.target.value);
-                      setIsDateManuallySet(true);
-                    }}
-                    className="sr-only"
-                  />
-                </label>
-              </div>
-            </div>
-
-          </form>
+          {formBodyJSX}
         </div>
 
         {/* 9. BOUTON PRINCIPAL (Zone Sticky en bas du Bottom Sheet) */}
         <div className="sticky bottom-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-5 sm:px-6 py-4 border-t border-slate-100 dark:border-slate-800 pb-[calc(env(safe-area-inset-bottom)+12px)] z-30">
-          <button
-            type="submit"
-            form="bottom-sheet-expense-form"
-            disabled={disabled || (!showSubtractions && (!amount || parseFloat(amount.replace(',', '.')) <= 0))}
-            className="w-full flex items-center justify-center gap-2.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-extrabold py-3.5 sm:py-4 px-6 rounded-2xl shadow-lg shadow-blue-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base sm:text-lg cursor-pointer select-none"
-          >
-            {disabled ? (
-              <>
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Synchronisation...</span>
-              </>
-            ) : (
-              <>
-                <span className="w-5 h-5 rounded-full bg-white text-blue-600 flex items-center justify-center font-black text-sm shadow-2xs shrink-0">
-                  +
-                </span>
-                <span>{transactionType === 'refund' ? 'Ajouter le remboursement' : 'Ajouter la dépense'}</span>
-              </>
-            )}
-          </button>
+          {submitButtonJSX}
         </div>
 
       </div>
 
-      {/* Modal de doublons */}
-      <ConfirmationModal 
-        isOpen={duplicateConfirmationOpen}
-        onClose={() => {
-          setDuplicateConfirmationOpen(false);
-          setPendingExpenseData(null);
-          setDetectedDuplicates([]);
-        }}
-        onConfirm={handleConfirmDuplicate}
-        title="Doublon potentiel détecté"
-        message={detectedDuplicates.length > 0 ? (
-          <div className="text-left">
-            <p className="font-semibold text-slate-700 dark:text-slate-300 mb-2">
-              Attention, {detectedDuplicates.length} dépense{detectedDuplicates.length > 1 ? 's' : ''} identique{detectedDuplicates.length > 1 ? 's' : ''} trouvée{detectedDuplicates.length > 1 ? 's' : ''} pour ce mois :
-            </p>
-            <ul className="list-disc pl-4 mb-4 space-y-2 bg-slate-50 dark:bg-slate-700/50 p-2 rounded-lg text-xs sm:text-sm max-h-40 overflow-y-auto custom-scrollbar">
-              {detectedDuplicates.map(d => (
-                <li key={d.id} className="text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-600 last:border-0 pb-1 last:pb-0">
-                  <span className="font-bold text-slate-800 dark:text-slate-200 block">{new Date(d.date).toLocaleDateString()}</span>
-                  <span className="block break-words">{d.description}</span>
-                  <span className="block font-medium text-slate-800 dark:text-slate-100">{Math.abs(d.amount)} €</span>
-                </li>
-              ))}
-            </ul>
-            <p>Voulez-vous vraiment ajouter cette dépense à nouveau ?</p>
-          </div>
-        ) : "Une dépense très similaire existe déjà ce mois-ci. Voulez-vous confirmer l'ajout ?"}
-      />
+      {duplicateConfirmationModalJSX}
     </div>,
     document.body
   );

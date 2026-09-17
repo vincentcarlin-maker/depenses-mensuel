@@ -1483,8 +1483,16 @@ export const useAuth = () => {
     }, [user, username, profiles, setProfiles, syncProfilesToCloud]);
 
     // Mise à jour de la couleur d'un utilisateur (profil + membre de foyer)
-    const updateUserColor = useCallback(async (username: string, newColor: string): Promise<boolean> => {
-        const normUser = username.toLowerCase().trim();
+    const updateUserColor = useCallback(async (targetUsername: string, newColor: string): Promise<boolean> => {
+        const normUser = targetUsername.toLowerCase().trim();
+        const selfUsernameNorm = (username || (typeof user === 'string' ? user : '')).toLowerCase().trim();
+        const selfUserNorm = (typeof user === 'string' ? user : '').toLowerCase().trim();
+
+        // Safety check: ensure user can only modify their own profile color
+        if (selfUsernameNorm && normUser !== selfUsernameNorm && normUser !== selfUserNorm) {
+            console.warn(`Seul l'utilisateur connecté (${selfUsernameNorm || selfUserNorm}) peut modifier sa propre couleur.`);
+            return false;
+        }
 
         // 1. Mettre à jour profiles
         const updatedProfiles = profiles.map(p => 
@@ -1502,7 +1510,7 @@ export const useAuth = () => {
         }
 
         return true;
-    }, [profiles, setProfiles, syncProfilesToCloud, currentFoyer]);
+    }, [user, username, profiles, setProfiles, syncProfilesToCloud, currentFoyer]);
 
     // Fermer définitivement le foyer courant et supprimer toutes ses données
     const closeFoyer = useCallback(async (): Promise<{ success: boolean; error?: string }> => {

@@ -1561,34 +1561,25 @@ const MainApp: React.FC<{
             {activeTab === 'dashboard' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div id="expense-form-container" className="space-y-6 sm:space-y-8">
-                  {/* Bouton pour ouvrir le Bottom Sheet d'ajout de dépense */}
-                  <button
-                    type="button"
-                    id="btn-open-add-expense"
-                    onClick={() => setIsAddExpenseOpen(true)}
-                    className="w-full bg-white dark:bg-slate-800 hover:bg-blue-50/40 dark:hover:bg-slate-750 p-4 sm:p-5 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 cursor-pointer transition-all duration-200 group active:scale-[0.99]"
-                  >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-11 h-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/25 group-hover:scale-105 transition-transform shrink-0">
-                        <svg className="w-6 h-6 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                        </svg>
-                      </div>
-                      <div className="text-left min-w-0">
-                        <span className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight block truncate">
-                          Ajouter une dépense
-                        </span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block truncate">
-                          Enregistrez une transaction ou un remboursement
-                        </span>
-                      </div>
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-300 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 group-hover:text-blue-600 transition-colors shrink-0">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </button>
+                  {/* Formulaire d'ajout de dépense affiché directement sur la page d'accueil */}
+                  <ExpenseForm 
+                    key={formInitialData?.formKey || 'inline-add-expense'} 
+                    isInline={true}
+                    isOpen={true}
+                    onClose={() => setFormInitialData(null)}
+                    onAddExpense={addExpense} 
+                    expenses={expenses} 
+                    initialData={formInitialData} 
+                    loggedInUser={user} 
+                    onlineUsers={onlineUsers} 
+                    disabled={!isConnected} 
+                    categories={categories} 
+                    groceryStores={groceryStores} 
+                    cars={cars} 
+                    heatingTypes={heatingTypes}
+                    foyerMembers={currentFoyer?.members}
+                    isMainFoyer={isMainFoyer}
+                  />
                   <ExpenseSummary 
                     allExpenses={expenses} 
                     currentYear={currentYear} 
@@ -1605,7 +1596,6 @@ const MainApp: React.FC<{
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <div>
                         <h2 className={`text-xl sm:text-2xl text-slate-900 dark:text-slate-100 tracking-tight expense-monthly-title ${isMonthlyExpenseBold ? 'font-bold' : 'font-normal'}`}>Dépenses du mois</h2>
-                        <p className={`text-sm text-slate-400 dark:text-slate-500 mt-0.5 ${isMonthlyExpenseBold ? 'font-medium' : 'font-normal'}`}>Historique des transactions du mois</p>
                       </div>
                       <div className="flex items-center gap-1 bg-slate-50/80 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600 rounded-2xl p-1 shadow-2xs">
                         <button

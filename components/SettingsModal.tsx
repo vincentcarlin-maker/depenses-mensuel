@@ -18,7 +18,7 @@ import { useCategoryBudgets } from '../hooks/useCategoryBudgets';
 import { TabId } from './BottomNavigation';
 import BottomNavigation from './BottomNavigation';
 import { useTheme } from '../hooks/useTheme';
-import { USER_COLORS } from '../utils/userColors';
+import { USER_COLORS, getUserColorOption } from '../utils/userColors';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -612,53 +612,78 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                                 props.profiles.map((p, pIdx) => {
                                     const currentColor = p.color || (p.user === User.Sophie ? '#ec4899' : '#0284c7');
                                     const initial = p.username.charAt(0).toUpperCase() || 'U';
+                                    const currentConnectedName = (props.loggedInUsername || props.loggedInUser || '').toString().toLowerCase().trim();
+                                    const pNameNorm = p.username.toLowerCase().trim();
+                                    const pUserNorm = String(p.user || '').toLowerCase().trim();
+                                    const isSelf = pNameNorm === currentConnectedName || (pUserNorm !== '' && pUserNorm === currentConnectedName);
 
                                     return (
-                                        <div key={`${p.username}-${p.foyer_id || 'default'}-${pIdx}`} className="p-4 rounded-2xl bg-slate-50/70 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700 space-y-3">
-                                            <div className="flex items-center gap-3">
-                                                <div 
-                                                    className="w-10 h-10 rounded-full font-extrabold flex items-center justify-center text-sm shrink-0 text-white shadow-xs transition-transform hover:scale-105"
-                                                    style={{ backgroundColor: currentColor }}
-                                                >
-                                                    {initial}
-                                                </div>
-                                                <div>
-                                                    <div className="font-bold text-sm text-slate-900 dark:text-white">
-                                                        {p.username} {p.user && p.user !== p.username ? `(${p.user})` : ''}
+                                        <div key={`${p.username}-${p.foyer_id || 'default'}-${pIdx}`} className={`p-4 rounded-2xl border space-y-3 ${isSelf ? 'bg-slate-50/90 dark:bg-slate-700/60 border-sky-200 dark:border-sky-800/60' : 'bg-slate-50/40 dark:bg-slate-700/20 border-slate-100 dark:border-slate-700/60 opacity-90'}`}>
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div 
+                                                        className="w-10 h-10 rounded-full font-extrabold flex items-center justify-center text-sm shrink-0 text-white shadow-xs transition-transform hover:scale-105"
+                                                        style={{ backgroundColor: currentColor }}
+                                                    >
+                                                        {initial}
                                                     </div>
-                                                    <div className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                                                        Sélectionnez une couleur d'avatar :
+                                                    <div className="min-w-0">
+                                                        <div className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
+                                                            <span className="truncate">{p.username} {p.user && p.user !== p.username ? `(${p.user})` : ''}</span>
+                                                            {isSelf && (
+                                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 shrink-0">
+                                                                    Votre compte
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5">
+                                                            {isSelf ? "Sélectionnez votre couleur d'avatar :" : "Couleur attribuée à ce membre :"}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div className="flex flex-wrap gap-2.5 pt-1">
-                                                {USER_COLORS.map((c) => {
-                                                    const isSelected = currentColor.toLowerCase() === c.value.toLowerCase();
-                                                    return (
-                                                        <button
-                                                            key={c.value}
-                                                            type="button"
-                                                            onClick={async () => {
-                                                                if (props.onUpdateUserColor) {
-                                                                    await props.onUpdateUserColor(p.username, c.value);
-                                                                    props.setToastInfo({
-                                                                        message: `Couleur modifiée pour ${p.username} (${c.label})`,
-                                                                        type: 'info'
-                                                                    });
-                                                                }
-                                                            }}
-                                                            className={`w-7 h-7 rounded-full transition-all cursor-pointer ${c.bgClass} ${
-                                                                isSelected 
-                                                                    ? `ring-3 ring-offset-2 ring-offset-white dark:ring-offset-slate-800 ${c.ringClass} scale-110 shadow-sm` 
-                                                                    : 'opacity-70 hover:opacity-100 hover:scale-105'
-                                                            }`}
-                                                            title={`${c.label} (${p.username})`}
-                                                            aria-label={`Choisir ${c.label} pour ${p.username}`}
-                                                        />
-                                                    );
-                                                })}
-                                            </div>
+                                            {isSelf ? (
+                                                <div className="flex flex-wrap gap-2.5 pt-1">
+                                                    {USER_COLORS.map((c) => {
+                                                        const isSelected = currentColor.toLowerCase() === c.value.toLowerCase();
+                                                        return (
+                                                            <button
+                                                                key={c.value}
+                                                                type="button"
+                                                                onClick={async () => {
+                                                                    if (props.onUpdateUserColor) {
+                                                                        await props.onUpdateUserColor(p.username, c.value);
+                                                                        props.setToastInfo({
+                                                                            message: `Votre couleur a été mise à jour (${c.label})`,
+                                                                            type: 'info'
+                                                                        });
+                                                                    }
+                                                                }}
+                                                                className={`w-7 h-7 rounded-full transition-all cursor-pointer ${c.bgClass} ${
+                                                                    isSelected 
+                                                                        ? `ring-3 ring-offset-2 ring-offset-white dark:ring-offset-slate-800 ${c.ringClass} scale-110 shadow-sm` 
+                                                                        : 'opacity-70 hover:opacity-100 hover:scale-105'
+                                                                }`}
+                                                                title={`${c.label}`}
+                                                                aria-label={`Choisir ${c.label}`}
+                                                            />
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center justify-between gap-2 pt-1 px-3 py-2 rounded-xl bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <div className="w-5 h-5 rounded-full border border-slate-200 dark:border-slate-600 shadow-2xs shrink-0" style={{ backgroundColor: currentColor }} />
+                                                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">
+                                                            {getUserColorOption(currentColor).label}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-[11px] text-slate-400 dark:text-slate-500 italic shrink-0">
+                                                        Personnalisable depuis son compte
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })
