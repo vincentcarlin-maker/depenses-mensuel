@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { type Expense, User, type FoyerMember } from '../types';
-import { GiftIcon } from './icons/CategoryIcons';
+import { GiftIcon, MiscIcon } from './icons/CategoryIcons';
 import PiggyBankIcon from './icons/PiggyBankIcon';
 import HistoryIcon from './icons/HistoryIcon';
 import EditIcon from './icons/EditIcon';
@@ -12,10 +12,11 @@ import { resolveUserTheme } from '../utils/userColors';
 import { type Profile } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 
-const parseDescription = (fullDescription: string) => {
+const parseDescription = (fullDescription?: string) => {
+    if (!fullDescription) return { description: '' };
     const tagRegex = /(#\w+)/g;
     const description = fullDescription.replace(tagRegex, '').trim();
-    return { description };
+    return { description: description || fullDescription };
 };
 
 const ExpenseListItem: React.FC<{
@@ -51,12 +52,12 @@ const ExpenseListItem: React.FC<{
     }
 
     // Logique spéciale pour Noël
-    const isChristmas = (expense.category === 'Divers' && /no[uëe]l/i.test(expense.description)) || (expense.category === 'Cadeau' && /no[uëe]l/i.test(expense.description));
+    const isChristmas = (expense.category === 'Divers' && /no[uëe]l/i.test(expense.description || '')) || (expense.category === 'Cadeau' && /no[uëe]l/i.test(expense.description || ''));
     
-    const visual = getVisual(expense.category, expense.description);
-    let IconComponent = visual.icon;
-    let iconBgClass = visual.color;
-    let isFullBadge = visual.isFullBadge;
+    const visual = getVisual ? getVisual(expense.category, expense.description) : null;
+    let IconComponent = visual?.icon || MiscIcon;
+    let iconBgClass = visual?.color || 'bg-slate-500';
+    let isFullBadge = visual?.isFullBadge || false;
 
     if (isChristmas) {
         IconComponent = GiftIcon;
@@ -103,7 +104,7 @@ const ExpenseListItem: React.FC<{
                 {/* Info Text */}
                 <div className="min-w-0 flex-1">
                     <div className="flex items-start gap-1.5 justify-between">
-                        <p className={`text-slate-900 dark:text-slate-100 text-[15px] sm:text-base md:text-lg leading-snug line-clamp-2 break-words expense-item-title ${isMonthlyExpenseBold ? 'font-extrabold' : 'font-semibold'}`} title={description}>{description}</p>
+                        <p className={`text-slate-900 dark:text-slate-100 text-[13px] sm:text-[15px] md:text-base leading-snug line-clamp-2 break-words expense-item-title ${isMonthlyExpenseBold ? 'font-extrabold' : 'font-semibold'}`} title={description}>{description}</p>
                         {modificationTypes && modificationTypes.length > 0 && (
                             <span className="shrink-0 flex items-center gap-1 text-slate-400 dark:text-slate-500 mt-0.5" title="Cette dépense a été modifiée">
                                 {modificationTypes.includes('date') && <HistoryIcon />}

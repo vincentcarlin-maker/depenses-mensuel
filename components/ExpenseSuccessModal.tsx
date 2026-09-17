@@ -104,10 +104,22 @@ export const ExpenseSuccessModal: React.FC<ExpenseSuccessModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isRendered, handleClose]);
 
+  // Auto-close élégant après 1800ms
+  useEffect(() => {
+    if (isOpen && isRendered) {
+      const timer = setTimeout(() => {
+        handleClose();
+      }, 1800);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, isRendered, handleClose]);
+
   if (!isRendered || !expense) return null;
 
-  const visual = getVisual(expense.category, expense.description);
-  const CategoryIcon = visual.icon;
+  const visual = getVisual ? getVisual(expense.category || 'Divers', expense.description) : null;
+  const CategoryIcon = visual?.icon || MiscIcon;
+  const badgeBgClass = visual?.badgeBg || visual?.color || 'bg-emerald-100 dark:bg-emerald-900/50';
+  const textColorClass = visual?.textColor || 'text-emerald-700 dark:text-emerald-300';
 
   const isIncome = expense?.amount ? expense.amount < 0 : false;
   const absAmount = Math.abs(expense?.amount || 0);
@@ -115,16 +127,6 @@ export const ExpenseSuccessModal: React.FC<ExpenseSuccessModalProps> = ({
 
   const modalTitle = title || (isIncome ? 'Remboursement ajouté ✓' : 'Dépense ajoutée ✓');
   const modalSubtitle = subtitle || (isIncome ? 'Votre remboursement a bien été enregistré.' : 'Votre dépense a bien été enregistrée.');
-
-  // Auto-close élégant après 1800ms
-  useEffect(() => {
-    if (isOpen) {
-      const timer = setTimeout(() => {
-        handleClose();
-      }, 1800);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen, handleClose]);
 
   return createPortal(
     <div 
@@ -193,7 +195,7 @@ export const ExpenseSuccessModal: React.FC<ExpenseSuccessModalProps> = ({
         {/* Carte récapitulative de la dépense enregistrée */}
         <div className="mt-5 bg-[#f8fafc] dark:bg-slate-700/50 border border-slate-100/90 dark:border-slate-700 rounded-2xl p-3.5 flex items-center justify-between gap-3 text-left">
           {/* Icône de catégorie dans son badge rond coloré */}
-          <div className={`w-11 h-11 rounded-full ${visual.badgeBg || visual.color} ${visual.textColor} flex items-center justify-center shrink-0`}>
+          <div className={`w-11 h-11 rounded-full ${badgeBgClass} ${textColorClass} flex items-center justify-center shrink-0`}>
             <CategoryIcon className="w-6 h-6" />
           </div>
 

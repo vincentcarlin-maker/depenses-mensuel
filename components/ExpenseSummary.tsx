@@ -293,7 +293,6 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                           </div>
                           <div className="min-w-0">
                             <h3 className={`text-slate-900 dark:text-slate-100 text-[15px] sm:text-lg leading-tight ${isMonthlyExpenseBold ? 'font-bold' : 'font-semibold'}`}>Total {member.name}</h3>
-                            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">Dépenses de {member.name}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
