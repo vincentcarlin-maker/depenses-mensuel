@@ -14,7 +14,8 @@ import { useTheme } from '../hooks/useTheme';
 import { KeywordIconRulesTab } from './KeywordIconRulesTab';
 import ContactTab from './ContactTab';
 import { useContactMessages } from '../hooks/useContactMessages';
-import { USER_COLORS, getUserColorOption } from '../utils/userColors';
+import { USER_COLORS, getUserColorOption, getCustomUserColor, setCustomUserColor } from '../utils/userColors';
+import { DEFAULT_FOYER_ID } from '../utils/foyerService';
 
 import CategoryBudgetsTab from './CategoryBudgetsTab';
 import { useCategoryBudgets } from '../hooks/useCategoryBudgets';
@@ -60,6 +61,7 @@ interface SettingsTabProps {
   onLogout: () => void;
   resetTrigger?: number;
   currentFoyer?: Foyer;
+  isMainFoyer?: boolean;
   onDeleteOwnAccount?: (confirmPassword?: string) => Promise<{ success: boolean; error?: string } | boolean>;
   onUpdateUserColor?: (username: string, newColor: string) => Promise<boolean>;
   onLeaveFoyer?: () => Promise<{ success: boolean; error?: string }>;
@@ -120,6 +122,27 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
   const [activeView, setActiveView] = useState<SettingsViewType>(props.initialView || 'main');
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const { themeSetting, isMonthlyExpenseBold, changeMonthlyExpenseBold } = useTheme();
+
+  const isMainFoyer = props.isMainFoyer !== undefined
+    ? props.isMainFoyer
+    : (props.currentFoyer ? (props.currentFoyer.id === DEFAULT_FOYER_ID || props.currentFoyer.id === 'foyer_vincent_sophie') : true);
+
+  const [localColors, setLocalColors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const handleColorChanged = (e: any) => {
+      const { username, color } = e.detail || {};
+      if (username && color) {
+        setLocalColors(prev => ({ ...prev, [username]: color }));
+      }
+    };
+    window.addEventListener('duobudget_user_color_changed', handleColorChanged);
+    return () => window.removeEventListener('duobudget_user_color_changed', handleColorChanged);
+  }, []);
+
+  useEffect(() => {
+    setLocalColors({});
+  }, [props.resetTrigger]);
 
   useEffect(() => {
     const initView = props.initialView;
@@ -536,74 +559,76 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             <ThemeSelector />
           </div>
 
-          {/* Subview: Style du texte dans dépenses du mois */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] p-4 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-[#6366f1] dark:text-indigo-400 shrink-0">
-                  <span className="font-serif font-black text-lg sm:text-xl">B</span>
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base leading-tight">
-                    Texte en gras dans dépenses du mois
-                  </h3>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5">
-                    {isMonthlyExpenseBold
-                      ? "Texte actuellement en gras (titres, montants et détails)."
-                      : "Texte actuellement en style normal (sans gras)."}
-                  </p>
-                </div>
-              </div>
-
-              {/* Toggle Switch */}
-              <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                <input
-                  type="checkbox"
-                  checked={isMonthlyExpenseBold}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    changeMonthlyExpenseBold(checked);
-                    if (props.setToastInfo) {
-                      props.setToastInfo({
-                        message: checked 
-                          ? "Texte en gras activé dans les dépenses du mois" 
-                          : "Texte en gras désactivé dans les dépenses du mois",
-                        type: 'info'
-                      });
-                    }
-                  }}
-                  className="sr-only peer"
-                  aria-label="Activer ou désactiver le texte en gras dans dépenses du mois"
-                />
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-slate-600 peer-checked:bg-indigo-600"></div>
-              </label>
-            </div>
-
-            {/* Live Interactive Preview */}
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-700/60 space-y-2">
-              <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                Aperçu du rendu
-              </div>
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/40 border border-slate-200/70 dark:border-slate-600/60 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                    🛒
+          {/* Subview: Style du texte dans dépenses du mois (réservé aux utilisateurs du foyer principal) */}
+          {isMainFoyer && (
+            <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] p-4 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-[#6366f1] dark:text-indigo-400 shrink-0">
+                    <span className="font-serif font-black text-lg sm:text-xl">B</span>
                   </div>
-                  <div>
-                    <div className={`text-sm text-slate-900 dark:text-slate-100 ${isMonthlyExpenseBold ? 'font-extrabold' : 'font-normal'}`}>
-                      Courses Carrefour
-                    </div>
-                    <div className="text-[11px] text-slate-400 dark:text-slate-500">
-                      Aujourd'hui - Alimentation
-                    </div>
+                  <div className="min-w-0">
+                    <h3 className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base leading-tight">
+                      Texte en gras dans dépenses du mois
+                    </h3>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5">
+                      {isMonthlyExpenseBold
+                        ? "Texte actuellement en gras (titres, montants et détails)."
+                        : "Texte actuellement en style normal (sans gras)."}
+                    </p>
                   </div>
                 </div>
-                <div className={`text-sm text-slate-900 dark:text-slate-100 ${isMonthlyExpenseBold ? 'font-extrabold' : 'font-normal'}`}>
-                  42,50 €
+
+                {/* Toggle Switch */}
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={isMonthlyExpenseBold}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      changeMonthlyExpenseBold(checked);
+                      if (props.setToastInfo) {
+                        props.setToastInfo({
+                          message: checked 
+                            ? "Texte en gras activé dans les dépenses du mois" 
+                            : "Texte en gras désactivé dans les dépenses du mois",
+                          type: 'info'
+                        });
+                      }
+                    }}
+                    className="sr-only peer"
+                    aria-label="Activer ou désactiver le texte en gras dans dépenses du mois"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-slate-600 peer-checked:bg-indigo-600"></div>
+                </label>
+              </div>
+
+              {/* Live Interactive Preview */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-700/60 space-y-2">
+                <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  Aperçu du rendu
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/40 border border-slate-200/70 dark:border-slate-600/60 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                      🛒
+                    </div>
+                    <div>
+                      <div className={`text-sm text-slate-900 dark:text-slate-100 ${isMonthlyExpenseBold ? 'font-extrabold' : 'font-normal'}`}>
+                        Courses Carrefour
+                      </div>
+                      <div className="text-[11px] text-slate-400 dark:text-slate-500">
+                        Aujourd'hui - Alimentation
+                      </div>
+                    </div>
+                  </div>
+                  <div className={`text-sm text-slate-900 dark:text-slate-100 ${isMonthlyExpenseBold ? 'font-extrabold' : 'font-normal'}`}>
+                    42,50 €
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Subview: Couleur des profils / avatars */}
           <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] p-4 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-5">
@@ -626,12 +651,22 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             <div className="space-y-4 pt-1">
               {props.profiles && props.profiles.length > 0 ? (
                 props.profiles.map((p, pIdx) => {
-                  const currentColor = p.color || (p.user === User.Sophie ? '#ec4899' : '#0284c7');
-                  const initial = p.username.charAt(0).toUpperCase() || 'U';
-                  const currentConnectedName = (props.loggedInUsername || props.loggedInUser || '').toString().toLowerCase().trim();
                   const pNameNorm = p.username.toLowerCase().trim();
                   const pUserNorm = String(p.user || '').toLowerCase().trim();
+                  const member = props.currentFoyer?.members?.find(m => {
+                    const mUserNorm = (m.username || '').toLowerCase().trim();
+                    const mNameNorm = (m.name || '').toLowerCase().trim();
+                    const mIdNorm = (m.id || '').toLowerCase().trim();
+                    return (mUserNorm && (mUserNorm === pNameNorm || mUserNorm === pUserNorm)) ||
+                           (mNameNorm && (mNameNorm === pNameNorm || mNameNorm === pUserNorm)) ||
+                           (mIdNorm && (mIdNorm === pNameNorm || mIdNorm === pUserNorm));
+                  });
+                  const customCol = getCustomUserColor(pNameNorm) || (pUserNorm ? getCustomUserColor(pUserNorm) : undefined);
+                  const currentColor = localColors[pNameNorm] || customCol || member?.color || p.color || (p.user === User.Sophie ? '#ec4899' : '#0ea5e9');
+                  const initial = p.username.charAt(0).toUpperCase() || 'U';
+                  const currentConnectedName = (props.loggedInUsername || props.loggedInUser || '').toString().toLowerCase().trim();
                   const isSelf = pNameNorm === currentConnectedName || (pUserNorm !== '' && pUserNorm === currentConnectedName);
+                  const canEdit = isSelf || isVincentAdmin || Boolean(props.isAdmin);
 
                   return (
                     <div key={`${p.username}-${p.foyer_id || 'default'}-${pIdx}`} className={`p-4 rounded-2xl border space-y-3 ${isSelf ? 'bg-slate-50/90 dark:bg-slate-700/60 border-sky-200 dark:border-sky-800/60' : 'bg-slate-50/40 dark:bg-slate-700/20 border-slate-100 dark:border-slate-700/60 opacity-90'}`}>
@@ -651,15 +686,24 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
                                   Votre compte
                                 </span>
                               )}
+                              {!isSelf && props.isAdmin && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shrink-0">
+                                  Admin
+                                </span>
+                              )}
                             </div>
                             <div className="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5">
-                              {isSelf ? "Sélectionnez votre couleur d'avatar :" : "Couleur attribuée à ce membre :"}
+                              {isSelf 
+                                ? "Sélectionnez votre couleur d'avatar :" 
+                                : (props.isAdmin 
+                                    ? "Couleur attribuée à ce membre (modifiable par l'administrateur) :" 
+                                    : "Couleur attribuée à ce membre :")}
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      {isSelf ? (
+                      {canEdit ? (
                         <div className="flex flex-wrap gap-2.5 pt-1">
                           {USER_COLORS.map((c) => {
                             const isSelected = currentColor.toLowerCase() === c.value.toLowerCase();
@@ -668,12 +712,21 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
                                 key={c.value}
                                 type="button"
                                 onClick={async () => {
+                                  setCustomUserColor(pNameNorm, c.value);
+                                  if (pUserNorm && pUserNorm !== pNameNorm) {
+                                    setCustomUserColor(pUserNorm, c.value);
+                                  }
+                                  setLocalColors(prev => ({ ...prev, [pNameNorm]: c.value }));
                                   if (props.onUpdateUserColor) {
                                     await props.onUpdateUserColor(p.username, c.value);
-                                    props.setToastInfo({
-                                      message: `Votre couleur a été mise à jour (${c.label})`,
-                                      type: 'info'
-                                    });
+                                    if (props.setToastInfo) {
+                                      props.setToastInfo({
+                                        message: isSelf 
+                                          ? `Votre couleur a été mise à jour (${c.label})` 
+                                          : `Couleur mise à jour (${c.label})`,
+                                        type: 'info'
+                                      });
+                                    }
                                   }
                                 }}
                                 className={`w-7 h-7 rounded-full transition-all cursor-pointer ${c.bgClass} ${

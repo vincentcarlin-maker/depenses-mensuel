@@ -19,10 +19,12 @@ interface BalanceReportProps {
   vincentTotalMonth?: number;
   loggedInUser?: User | string | null;
   foyerMembers?: FoyerMember[];
+  isMainFoyer?: boolean;
 }
 
-const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear, currentMonth, loggedInUser, foyerMembers }) => {
+const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear, currentMonth, loggedInUser, foyerMembers, isMainFoyer = true }) => {
   const { isMonthlyExpenseBold } = useTheme();
+  const effectiveBold = Boolean(isMainFoyer && isMonthlyExpenseBold);
   const members = useMemo(() => {
     if (foyerMembers && foyerMembers.length > 0) {
       return foyerMembers;
@@ -250,7 +252,7 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
 
         {/* Dépenses du mois section */}
         <div>
-            <h2 className={`text-xl sm:text-2xl text-slate-900 dark:text-slate-100 tracking-tight mb-3.5 sm:mb-4 expense-monthly-title ${isMonthlyExpenseBold ? 'font-extrabold' : 'font-normal'}`}>Dépenses du mois</h2>
+            <h2 className={`text-xl sm:text-2xl text-slate-900 dark:text-slate-100 tracking-tight mb-3.5 sm:mb-4 expense-monthly-title ${effectiveBold ? 'font-extrabold' : 'font-normal'}`}>Dépenses du mois</h2>
             <div className="space-y-3 sm:space-y-3.5">
                  {/* Total Général */}
                  <div className="flex items-center justify-between p-4 sm:p-5 bg-blue-50/60 dark:bg-blue-950/30 border border-blue-100/80 dark:border-blue-900/40 rounded-2xl sm:rounded-3xl transition-all shadow-xs min-w-0">
@@ -261,11 +263,11 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                         </svg>
                       </div>
                       <div className="min-w-0">
-                        <h3 className={`text-slate-900 dark:text-slate-100 text-[15px] sm:text-lg leading-tight ${isMonthlyExpenseBold ? 'font-bold' : 'font-semibold'}`}>Total Général</h3>
+                        <h3 className={`text-slate-900 dark:text-slate-100 text-[15px] sm:text-lg leading-tight ${effectiveBold ? 'font-bold' : 'font-semibold'}`}>Total Général</h3>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className={`text-base sm:text-2xl text-blue-600 dark:text-blue-400 whitespace-nowrap expense-monthly-amount ${isMonthlyExpenseBold ? 'font-extrabold' : 'font-bold'}`}>
+                      <span className={`text-base sm:text-2xl text-blue-600 dark:text-blue-400 whitespace-nowrap expense-monthly-amount ${effectiveBold ? 'font-extrabold' : 'font-bold'}`}>
                           {totalExpenses.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                       </span>
                     </div>
@@ -284,18 +286,18 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                         <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1 pr-2">
                           <div 
                             className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center font-extrabold text-base sm:text-lg shrink-0 text-white shadow-2xs"
-                            style={{ backgroundColor: (member as any).color || theme.hex }}
+                            style={{ backgroundColor: theme.hex }}
                           >
                             <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                             </svg>
                           </div>
                           <div className="min-w-0">
-                            <h3 className={`text-slate-900 dark:text-slate-100 text-[15px] sm:text-lg leading-tight ${isMonthlyExpenseBold ? 'font-bold' : 'font-semibold'}`}>Total {member.name}</h3>
+                            <h3 className={`text-slate-900 dark:text-slate-100 text-[15px] sm:text-lg leading-tight ${effectiveBold ? 'font-bold' : 'font-semibold'}`}>Total {member.name}</h3>
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                          <span className={`text-base sm:text-2xl ${theme.textClass} whitespace-nowrap expense-monthly-amount ${isMonthlyExpenseBold ? 'font-extrabold' : 'font-bold'}`}>
+                          <span className={`text-base sm:text-2xl ${theme.textClass} whitespace-nowrap expense-monthly-amount ${effectiveBold ? 'font-extrabold' : 'font-bold'}`}>
                               {monthTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                           </span>
                           <ChevronRightIcon />
@@ -312,12 +314,12 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                         <PiggyBankIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                       </div>
                       <div className="min-w-0">
-                        <h3 className={`text-slate-900 dark:text-slate-100 text-[15px] sm:text-lg leading-tight ${isMonthlyExpenseBold ? 'font-bold' : 'font-semibold'}`}>Payé par la Cagnotte</h3>
+                        <h3 className={`text-slate-900 dark:text-slate-100 text-[15px] sm:text-lg leading-tight ${effectiveBold ? 'font-bold' : 'font-semibold'}`}>Payé par la Cagnotte</h3>
                         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">Dépenses communes</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className={`text-base sm:text-2xl text-emerald-600 dark:text-emerald-400 whitespace-nowrap expense-monthly-amount ${isMonthlyExpenseBold ? 'font-extrabold' : 'font-bold'}`}>
+                      <span className={`text-base sm:text-2xl text-emerald-600 dark:text-emerald-400 whitespace-nowrap expense-monthly-amount ${effectiveBold ? 'font-extrabold' : 'font-bold'}`}>
                           {communTotalMonth.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                       </span>
                     </div>

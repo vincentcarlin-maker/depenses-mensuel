@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { User, Foyer, FoyerJoinRequest } from '../types';
 import { useLocalStorage } from './useLocalStorage';
 import { supabase } from '../supabase/client';
+import { getCustomUserColor, setCustomUserColor } from '../utils/userColors';
 import { 
     DEFAULT_FOYER, 
     DEFAULT_FOYER_ID, 
@@ -20,7 +21,8 @@ import {
     removeMemberFromFoyer,
     deleteFoyer,
     getLocalFoyers,
-    saveLocalFoyers
+    saveLocalFoyers,
+    applyCustomColorsToFoyer
 } from '../utils/foyerService';
 
 const SESSION_KEY = 'expense-app-session-v2';
@@ -107,13 +109,14 @@ const deduplicateProfiles = (profilesList: Profile[]): Profile[] => {
             const chosenUsername = isAutoUser && isNewReadable ? p.username : existing.username;
             const chosenUser = isAutoUser && isNewReadable ? p.user : existing.user;
 
+            const customColor = getCustomUserColor(chosenUsername) || getCustomUserColor(normUsername);
             const merged = {
                 ...existing,
                 ...p,
                 username: chosenUsername,
                 user: chosenUser,
                 email: normEmail || existing.email,
-                color: p.color || existing.color,
+                color: customColor || p.color || existing.color,
                 blocked: p.blocked !== undefined ? p.blocked : existing.blocked,
                 foyer_id: p.foyer_id || existing.foyer_id,
                 foyer_name: p.foyer_name || existing.foyer_name,
@@ -124,7 +127,8 @@ const deduplicateProfiles = (profilesList: Profile[]): Profile[] => {
                 emailToUsernameMap.set(normEmail, targetKey);
             }
         } else {
-            map.set(normUsername, p);
+            const customColor = getCustomUserColor(normUsername);
+            map.set(normUsername, customColor ? { ...p, color: customColor } : p);
             if (normEmail) {
                 emailToUsernameMap.set(normEmail, normUsername);
             }
@@ -132,8 +136,12 @@ const deduplicateProfiles = (profilesList: Profile[]): Profile[] => {
     }
     for (const initP of INITIAL_PROFILES) {
         const key = initP.username.toLowerCase().trim();
+        const customColor = getCustomUserColor(key);
         if (!map.has(key)) {
-            map.set(key, initP);
+            map.set(key, customColor ? { ...initP, color: customColor } : initP);
+        } else if (customColor) {
+            const existing = map.get(key)!;
+            map.set(key, { ...existing, color: customColor });
         }
     }
     return Array.from(map.values());
@@ -142,7 +150,25 @@ const deduplicateProfiles = (profilesList: Profile[]): Profile[] => {
 export const useAuth = () => {
     const [user, setUser] = useState<User | string | null>(null);
     const [username, setUsername] = useState<string | null>(null);
-    const [currentFoyer, setCurrentFoyer] = useState<Foyer>(DEFAULT_FOYER);
+    const [currentFoyer, setCurrentFoyer] = useState<Foyer>(() => applyCustomColorsToFoyer(DEFAULT_FOYER));
+
+    // Listen for custom avatar color updates and sync currentFoyer immediately
+    useEffect(() => {
+        const handleColorEvent = () => {
+            setCurrentFoyer(prev => prev ? applyCustomColorsToFoyer(prev) : prev);
+        };
+        window.addEventListener('duobudget_user_color_changed', handleColorEvent);
+        return () => window.removeEventListener('duobudget_user_color_changed', handleColorEvent);
+    }, []);
+
+    // Only the exact account "vincent" is Super Administrator (never Vincent1, VincentA, etc.)
+    const normalizedUsername = username ? username.toLowerCase().trim() : '';
+    const normalizedUser = typeof user === 'string' ? user.toLowerCase().trim() : '';
+    const isAdmin = Boolean(
+        normalizedUsername === 'vincent' ||
+        (user === User.Vincent && (!normalizedUsername || normalizedUsername === 'vincent')) ||
+        (normalizedUser === 'vincent' && (!normalizedUsername || normalizedUsername === 'vincent'))
+    );
     const [isLoading, setIsLoading] = useState(true);
     const [profiles, setProfiles] = useLocalStorage<Profile[]>(PROFILES_KEY, INITIAL_PROFILES);
     const [loginHistory, setLoginHistory] = useState<LoginEvent[]>([]);
@@ -1485,32 +1511,53 @@ export const useAuth = () => {
     // Mise à jour de la couleur d'un utilisateur (profil + membre de foyer)
     const updateUserColor = useCallback(async (targetUsername: string, newColor: string): Promise<boolean> => {
         const normUser = targetUsername.toLowerCase().trim();
-        const selfUsernameNorm = (username || (typeof user === 'string' ? user : '')).toLowerCase().trim();
-        const selfUserNorm = (typeof user === 'string' ? user : '').toLowerCase().trim();
-
-        // Safety check: ensure user can only modify their own profile color
-        if (selfUsernameNorm && normUser !== selfUsernameNorm && normUser !== selfUserNorm) {
-            console.warn(`Seul l'utilisateur connecté (${selfUsernameNorm || selfUserNorm}) peut modifier sa propre couleur.`);
-            return false;
-        }
+        // Sauvegarde immédiate dans le registre global de couleurs
+        setCustomUserColor(normUser, newColor);
 
         // 1. Mettre à jour profiles
-        const updatedProfiles = profiles.map(p => 
-            p.username.toLowerCase().trim() === normUser ? { ...p, color: newColor } : p
-        );
+        let profileFound = false;
+        const updatedProfiles = profiles.map(p => {
+            const pUsernameNorm = p.username.toLowerCase().trim();
+            const pUserNorm = String(p.user || '').toLowerCase().trim();
+            if (pUsernameNorm === normUser || pUserNorm === normUser) {
+                profileFound = true;
+                return { ...p, color: newColor };
+            }
+            return p;
+        });
+
+        if (!profileFound) {
+            updatedProfiles.push({
+                username: targetUsername,
+                user: targetUsername,
+                password: '',
+                foyer_id: currentFoyer?.id,
+                color: newColor
+            });
+        }
+
         setProfiles(updatedProfiles);
         syncProfilesToCloud(updatedProfiles);
 
         // 2. Mettre à jour currentFoyer
-        if (currentFoyer) {
-            const res = await updateMemberColor(currentFoyer.id, normUser, newColor);
-            if (res.success && res.foyer) {
-                setCurrentFoyer(res.foyer);
-            }
+        if (currentFoyer && currentFoyer.members) {
+            const updatedMembers = currentFoyer.members.map(m => {
+                const mUserNorm = (m.username || '').toLowerCase().trim();
+                const mNameNorm = (m.name || '').toLowerCase().trim();
+                const mIdNorm = (m.id || '').toLowerCase().trim();
+                if (mUserNorm === normUser || mNameNorm === normUser || mIdNorm === normUser) {
+                    return { ...m, color: newColor };
+                }
+                return m;
+            });
+            const updatedFoyer: Foyer = { ...currentFoyer, members: updatedMembers };
+            setCurrentFoyer(updatedFoyer);
+            await updateMemberColor(currentFoyer.id, normUser, newColor);
+            await saveFoyerToCloudAndLocal(updatedFoyer);
         }
 
         return true;
-    }, [user, username, profiles, setProfiles, syncProfilesToCloud, currentFoyer]);
+    }, [profiles, setProfiles, syncProfilesToCloud, currentFoyer]);
 
     // Fermer définitivement le foyer courant et supprimer toutes ses données
     const closeFoyer = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
@@ -1701,15 +1748,6 @@ export const useAuth = () => {
         // Pour un membre classique, quitter le foyer supprime définitivement son compte et le déconnecte
         return await deleteOwnAccount();
     }, [user, username, currentFoyer, closeFoyer, deleteOwnAccount]);
-
-    // Only the exact account "vincent" is Super Administrator (never Vincent1, VincentA, etc.)
-    const normalizedUsername = username ? username.toLowerCase().trim() : '';
-    const normalizedUser = typeof user === 'string' ? user.toLowerCase().trim() : '';
-    const isAdmin = Boolean(
-        normalizedUsername === 'vincent' ||
-        (user === User.Vincent && (!normalizedUsername || normalizedUsername === 'vincent')) ||
-        (normalizedUser === 'vincent' && (!normalizedUsername || normalizedUsername === 'vincent'))
-    );
 
     return { 
         user, 

@@ -37,7 +37,7 @@ import PiggyBankIcon from './components/icons/PiggyBankIcon';
 import UserIcon from './components/icons/UserIcon';
 import { notifySubscriptionsDirectly } from './webpush-client';
 import { DEFAULT_FOYER_ID, DEFAULT_FOYER } from './utils/foyerService';
-import { resolveUserTheme } from './utils/userColors';
+import { resolveUserTheme, getCustomUserColor } from './utils/userColors';
 
 type UndoableAction = {
     type: 'delete' | 'update';
@@ -132,12 +132,30 @@ const MainApp: React.FC<{
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [formInitialData, setFormInitialData] = useState<(Omit<Expense, 'id' | 'date' | 'created_at'> & { formKey?: string }) | null>(null);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+  const [userColorUpdateTick, setUserColorUpdateTick] = useState(0);
+
+  useEffect(() => {
+    const handleColorUpdate = () => {
+      setUserColorUpdateTick(prev => prev + 1);
+    };
+    window.addEventListener('duobudget_user_color_changed', handleColorUpdate);
+    return () => window.removeEventListener('duobudget_user_color_changed', handleColorUpdate);
+  }, []);
 
   useEffect(() => {
     if (formInitialData) {
-      setIsAddExpenseOpen(true);
+      // If user is not on dashboard, switch to dashboard so inline form handles it
+      if (activeTab !== 'dashboard') {
+        setActiveTab('dashboard');
+      }
+      setTimeout(() => {
+        const el = document.getElementById('expense-form-card') || document.getElementById('expense-form-container');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 50);
     }
-  }, [formInitialData]);
+  }, [formInitialData, activeTab]);
   const [successExpense, setSuccessExpense] = useState<Expense | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [highlightedExpenseIds, setHighlightedExpenseIds] = useState<Set<string>>(new Set());
@@ -179,11 +197,30 @@ const MainApp: React.FC<{
       }
     }
 
-    // 3. Dédupliquer les profils par e-mail et username
+    // 3. Synchroniser la couleur avec le membre de foyer pour un affichage toujours à jour
+    const synced = filtered.map(p => {
+      const pNorm = p.username.toLowerCase().trim();
+      const pUserNorm = String(p.user || '').toLowerCase().trim();
+      const member = currentFoyer?.members?.find(m => {
+        const mUserNorm = (m.username || '').toLowerCase().trim();
+        const mNameNorm = (m.name || '').toLowerCase().trim();
+        const mIdNorm = (m.id || '').toLowerCase().trim();
+        return (mUserNorm && (mUserNorm === pNorm || mUserNorm === pUserNorm)) ||
+               (mNameNorm && (mNameNorm === pNorm || mNameNorm === pUserNorm)) ||
+               (mIdNorm && (mIdNorm === pNorm || mIdNorm === pUserNorm));
+      });
+      const customCol = getCustomUserColor(pNorm) || (pUserNorm ? getCustomUserColor(pUserNorm) : undefined) || (member?.name ? getCustomUserColor(member.name) : undefined);
+      return {
+        ...p,
+        color: customCol || member?.color || p.color
+      };
+    });
+
+    // 4. Dédupliquer les profils par e-mail et username
     const dedupMap = new Map<string, Profile>();
     const emailSeen = new Set<string>();
 
-    for (const p of filtered) {
+    for (const p of synced) {
       if (!p || !p.username) continue;
       const email = p.email ? p.email.toLowerCase().trim() : '';
       const normUser = p.username.toLowerCase().trim();
@@ -198,7 +235,7 @@ const MainApp: React.FC<{
     }
 
     return Array.from(dedupMap.values());
-  }, [profiles, currentFoyer, activeFoyerId]);
+  }, [profiles, currentFoyer, activeFoyerId, userColorUpdateTick]);
 
   // Filtre d'isolation strict des foyers :
   // - Tout élément portant un foyer_id DOIT correspondre exactement au foyer actif (activeFoyerId)
@@ -1588,6 +1625,7 @@ const MainApp: React.FC<{
                     vincentTotalMonth={vincentTotalMonth} 
                     loggedInUser={user}
                     foyerMembers={currentFoyer?.members}
+                    isMainFoyer={isMainFoyer}
                   />
                 </div>
                 <div className="space-y-8">
@@ -1595,7 +1633,7 @@ const MainApp: React.FC<{
                     {/* Header with Title and Month badge */}
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <div>
-                        <h2 className={`text-xl sm:text-2xl text-slate-900 dark:text-slate-100 tracking-tight expense-monthly-title ${isMonthlyExpenseBold ? 'font-bold' : 'font-normal'}`}>Dépenses du mois</h2>
+                        <h2 className={`text-xl sm:text-2xl text-slate-900 dark:text-slate-100 tracking-tight expense-monthly-title ${isMonthlyExpenseBold && isMainFoyer ? 'font-bold' : 'font-normal'}`}>Dépenses du mois</h2>
                       </div>
                       <div className="flex items-center gap-1 bg-slate-50/80 dark:bg-slate-700/60 border border-slate-200/80 dark:border-slate-600 rounded-2xl p-1 shadow-2xs">
                         <button
@@ -1824,6 +1862,7 @@ const MainApp: React.FC<{
                 onLogout={onLogout} 
                 resetTrigger={settingsResetTrigger}
                 currentFoyer={currentFoyer}
+                isMainFoyer={isMainFoyer}
                 onDeleteOwnAccount={onDeleteOwnAccount}
                 onUpdateUserColor={onUpdateUserColor}
                 onLeaveFoyer={leaveFoyer}
@@ -1914,6 +1953,7 @@ const MainApp: React.FC<{
         initialView={settingsInitialView}
         resetTrigger={settingsResetTrigger}
         currentFoyer={currentFoyer}
+        isMainFoyer={isMainFoyer}
         onDeleteOwnAccount={onDeleteOwnAccount}
         onUpdateUserColor={onUpdateUserColor}
         onLeaveFoyer={leaveFoyer}

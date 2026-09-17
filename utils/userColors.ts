@@ -30,6 +30,41 @@ export const USER_COLORS: UserColorOption[] = [
   { label: 'Ardoise chic', value: '#64748b', bgClass: 'bg-slate-500', ringClass: 'ring-slate-500', lightBgClass: 'bg-slate-50/50 dark:bg-slate-800/40', borderClass: 'border-slate-200/80 dark:border-slate-700', textClass: 'text-slate-600 dark:text-slate-400', badgeClass: 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200' },
 ];
 
+export const USER_COLORS_STORAGE_KEY = 'duobudget_user_avatar_colors_v1';
+
+export function getCustomUserColors(): Record<string, string> {
+  if (typeof window === 'undefined' || !window.localStorage) return {};
+  try {
+    const raw = window.localStorage.getItem(USER_COLORS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function getCustomUserColor(userNameOrUser?: string | null): string | undefined {
+  if (!userNameOrUser) return undefined;
+  const norm = String(userNameOrUser).toLowerCase().trim();
+  const colors = getCustomUserColors();
+  return colors[norm];
+}
+
+export function setCustomUserColor(userNameOrUser: string, color: string): void {
+  if (!userNameOrUser || typeof window === 'undefined' || !window.localStorage) return;
+  const norm = String(userNameOrUser).toLowerCase().trim();
+  try {
+    const colors = getCustomUserColors();
+    colors[norm] = color;
+    window.localStorage.setItem(USER_COLORS_STORAGE_KEY, JSON.stringify(colors));
+    // Dispatche un événement global pour une mise à jour instantanée de tous les composants
+    window.dispatchEvent(new CustomEvent('duobudget_user_color_changed', { 
+      detail: { username: norm, color } 
+    }));
+  } catch (e) {
+    console.error('Erreur lors de la sauvegarde de la couleur utilisateur:', e);
+  }
+}
+
 export function getUserColorOption(hexColor?: string): UserColorOption {
   if (!hexColor) return USER_COLORS[0];
   const found = USER_COLORS.find(c => c.value.toLowerCase() === hexColor.toLowerCase());
@@ -79,9 +114,11 @@ export function resolveUserTheme(
     };
   }
 
+  // 0. Priorité absolue : couleur personnalisée enregistrée par l'utilisateur
+  let hex: string | undefined = getCustomUserColor(norm);
+
   // 1. Check in members
-  let hex: string | undefined;
-  if (members && Array.isArray(members)) {
+  if (!hex && members && Array.isArray(members)) {
     const matchedMember = members.find(m => 
       (m.name && m.name.toLowerCase().trim() === norm) ||
       (m.username && m.username.toLowerCase().trim() === norm)

@@ -1,5 +1,6 @@
 import { supabase } from '../supabase/client';
 import { Foyer, FoyerMember, FoyerJoinRequest, MAX_FOYER_MEMBERS } from '../types';
+import { getCustomUserColor, setCustomUserColor } from './userColors';
 
 export const DEFAULT_FOYER_ID = 'foyer_vincent_sophie';
 
@@ -16,6 +17,15 @@ export const DEFAULT_FOYER: Foyer = {
 
 const LOCAL_FOYERS_KEY = 'duobudget_local_foyers_v1';
 const ACTIVE_FOYER_KEY = 'duobudget_active_foyer_id';
+
+export function applyCustomColorsToFoyer(foyer: Foyer): Foyer {
+  if (!foyer || !foyer.members) return foyer;
+  const updatedMembers = foyer.members.map(m => {
+    const custom = getCustomUserColor(m.username) || getCustomUserColor(m.name) || getCustomUserColor(m.id);
+    return custom ? { ...m, color: custom } : m;
+  });
+  return { ...foyer, members: updatedMembers };
+}
 
 // Generate clean 6-character code like "PAR-839" or "FOY-421"
 export function generateFoyerCode(name?: string): string {
@@ -34,9 +44,13 @@ export function getLocalFoyers(): Record<string, Foyer> {
     if (!parsed[DEFAULT_FOYER_ID]) {
       parsed[DEFAULT_FOYER_ID] = DEFAULT_FOYER;
     }
+    // Assure que les couleurs personnalisées des membres sont appliquées
+    for (const id in parsed) {
+      parsed[id] = applyCustomColorsToFoyer(parsed[id]);
+    }
     return parsed;
   } catch {
-    return { [DEFAULT_FOYER_ID]: DEFAULT_FOYER };
+    return { [DEFAULT_FOYER_ID]: applyCustomColorsToFoyer(DEFAULT_FOYER) };
   }
 }
 
@@ -67,26 +81,27 @@ export function setStoredActiveFoyerId(foyerId: string): void {
 
 // Save Foyer both locally and to Supabase Cloud
 export async function saveFoyerToCloudAndLocal(foyer: Foyer): Promise<boolean> {
+  const preparedFoyer = applyCustomColorsToFoyer(foyer);
   // Save local
   const local = getLocalFoyers();
-  local[foyer.id] = foyer;
+  local[preparedFoyer.id] = preparedFoyer;
   saveLocalFoyers(local);
 
   // Sync to Supabase push_subscriptions (acts as durable JSON registry)
   try {
     // Save by foyer_id
-    await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `foyer_id_${foyer.id}`);
+    await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `foyer_id_${preparedFoyer.id}`);
     await (supabase.from('push_subscriptions') as any).insert({
-      user_id: `foyer_id_${foyer.id}`,
-      subscription: foyer
+      user_id: `foyer_id_${preparedFoyer.id}`,
+      subscription: preparedFoyer
     });
 
     // Save by invite code (normalized uppercase)
-    const normalizedCode = foyer.code.toUpperCase().trim();
+    const normalizedCode = preparedFoyer.code.toUpperCase().trim();
     await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `foyer_reg_${normalizedCode}`);
     await (supabase.from('push_subscriptions') as any).insert({
       user_id: `foyer_reg_${normalizedCode}`,
-      subscription: foyer
+      subscription: preparedFoyer
     });
 
     // Real-time broadcast
@@ -94,7 +109,7 @@ export async function saveFoyerToCloudAndLocal(foyer: Foyer): Promise<boolean> {
     channel.send({
       type: 'broadcast',
       event: 'foyer_updated',
-      payload: { foyer }
+      payload: { foyerId: preparedFoyer.id, foyer: preparedFoyer }
     });
 
     return true;
@@ -106,11 +121,7 @@ export async function saveFoyerToCloudAndLocal(foyer: Foyer): Promise<boolean> {
 
 // Fetch Foyer by ID (Cloud + Local fallback)
 export async function fetchFoyerById(foyerId: string): Promise<Foyer | null> {
-  if (foyerId === DEFAULT_FOYER_ID) {
-    return DEFAULT_FOYER;
-  }
-
-  // Check local cache
+  // Check local cache first (allows persistence of custom colors and settings even for default foyer)
   const local = getLocalFoyers();
   if (local[foyerId]) {
     // Also re-check cloud asynchronously
@@ -120,12 +131,17 @@ export async function fetchFoyerById(foyerId: string): Promise<Foyer | null> {
       .maybeSingle()
       .then(({ data }: any) => {
         if (data?.subscription) {
-          const cloudFoyer = data.subscription as Foyer;
+          const cloudFoyer = applyCustomColorsToFoyer(data.subscription as Foyer);
           local[foyerId] = cloudFoyer;
           saveLocalFoyers(local);
         }
-      });
-    return local[foyerId];
+      })
+      .catch(() => {});
+    return applyCustomColorsToFoyer(local[foyerId]);
+  }
+
+  if (foyerId === DEFAULT_FOYER_ID) {
+    return applyCustomColorsToFoyer(DEFAULT_FOYER);
   }
 
   try {
@@ -135,7 +151,7 @@ export async function fetchFoyerById(foyerId: string): Promise<Foyer | null> {
       .maybeSingle();
 
     if (!error && data?.subscription) {
-      const cloudFoyer = data.subscription as Foyer;
+      const cloudFoyer = applyCustomColorsToFoyer(data.subscription as Foyer);
       local[foyerId] = cloudFoyer;
       saveLocalFoyers(local);
       return cloudFoyer;
@@ -144,7 +160,7 @@ export async function fetchFoyerById(foyerId: string): Promise<Foyer | null> {
     console.error('Error fetching foyer from cloud:', e);
   }
 
-  return local[foyerId] || null;
+  return local[foyerId] ? applyCustomColorsToFoyer(local[foyerId]) : null;
 }
 
 // Fetch Foyer by Invitation Code (used when a partner links their account)
@@ -1169,11 +1185,17 @@ export async function updateMemberColor(
   username: string,
   newColor: string
 ): Promise<{ success: boolean; foyer?: Foyer; error?: string }> {
+  const normUser = username.toLowerCase().trim();
+  setCustomUserColor(normUser, newColor);
+
   const foyer = await fetchFoyerById(foyerId);
   if (!foyer) return { success: false, error: 'Foyer introuvable.' };
 
-  const normUser = username.toLowerCase().trim();
-  const memberIndex = foyer.members.findIndex(m => m.username === normUser);
+  const memberIndex = foyer.members.findIndex(m => 
+    (m.username && m.username.toLowerCase().trim() === normUser) ||
+    (m.name && m.name.toLowerCase().trim() === normUser) ||
+    (m.id && m.id.toLowerCase().trim() === normUser)
+  );
   if (memberIndex === -1) {
     return { success: false, error: 'Membre introuvable dans ce foyer.' };
   }
