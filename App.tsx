@@ -447,15 +447,39 @@ const MainApp: React.FC<{
   
   const mergeAndDedupeActivities = useCallback((existing: any[], toAdd: any[]): any[] => {
       const combined = [...toAdd, ...existing];
-      const uniqueMap = new Map<string, any>();
+      const seenIds = new Set<string>();
+      const seenAddExpenseIds = new Set<string>();
+      const result: Activity[] = [];
 
-      for (const act of combined) {
-          uniqueMap.set(act.id, act);
+      // Sort prioritizing real activities over purely synthetic ones, then by timestamp desc
+      const sorted = combined
+          .filter(Boolean)
+          .sort((a, b) => {
+              const aIsSynthetic = a.id === `act_${a.expense?.id}`;
+              const bIsSynthetic = b.id === `act_${b.expense?.id}`;
+              if (aIsSynthetic !== bIsSynthetic) {
+                  return aIsSynthetic ? 1 : -1; // Put real activities first so they take precedence in deduplication
+              }
+              return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+          });
+
+      for (const act of sorted) {
+          if (!act?.id) continue;
+          if (seenIds.has(act.id)) continue;
+
+          // Deduplicate 'add' events for the same expense ID
+          if (act.type === 'add' && act.expense?.id) {
+              if (seenAddExpenseIds.has(act.expense.id)) {
+                  continue;
+              }
+              seenAddExpenseIds.add(act.expense.id);
+          }
+
+          seenIds.add(act.id);
+          result.push(act);
       }
 
-      return Array.from(uniqueMap.values())
-          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-          .slice(0, 100); // Limit to last 100 activities
+      return result.slice(0, 100); // Limit to last 100 activities
   }, []);
 
   const syncData = useCallback(async () => {
@@ -509,16 +533,25 @@ const MainApp: React.FC<{
     
     const dbActivities = activitiesResponse.data ? (activitiesResponse.data as Activity[]).filter(belongsToCurrentFoyer) : [];
     
-    // Generate synthetic activities from current expenses so that even if the activities table fails,
-    // or is delayed, we still show correct notifications in the bell icon.
-    const syntheticActivities: Activity[] = scopedExpenses.slice(0, 50).map(expense => ({
-        id: `act_${expense.id}`,
-        type: 'add',
-        performedBy: expense.user,
-        expense: expense,
-        timestamp: expense.created_at || expense.date || new Date().toISOString(),
-        foyer_id: expense.foyer_id || activeFoyerId,
-    }));
+    // Set of expense IDs that already have an activity from the database
+    const existingAddExpenseIds = new Set(
+        dbActivities
+            .filter(a => a.type === 'add' && a.expense?.id)
+            .map(a => a.expense.id)
+    );
+
+    // Generate synthetic activities ONLY for expenses that do not already have an activity in the DB
+    const syntheticActivities: Activity[] = scopedExpenses
+        .filter(expense => !existingAddExpenseIds.has(expense.id))
+        .slice(0, 50)
+        .map(expense => ({
+            id: `act_${expense.id}`,
+            type: 'add',
+            performedBy: expense.user,
+            expense: expense,
+            timestamp: expense.created_at || expense.date || new Date().toISOString(),
+            foyer_id: expense.foyer_id || activeFoyerId,
+        }));
     
     const merged = mergeAndDedupeActivities(dbActivities, syntheticActivities);
     setActivities(merged);

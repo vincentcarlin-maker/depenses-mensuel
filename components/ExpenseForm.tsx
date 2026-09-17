@@ -594,7 +594,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           transform: dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined,
           transition: dragOffset > 0 ? 'none' : 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
-        className="relative z-10 w-full max-w-2xl mx-auto bg-white dark:bg-slate-850 rounded-t-[32px] sm:rounded-t-[36px] shadow-2xl border-t border-x border-slate-100 dark:border-slate-700/70 flex flex-col max-h-[92vh] sm:max-h-[88vh] animate-bottomsheet-up overflow-hidden"
+        className="relative z-10 w-full max-w-2xl mx-auto bg-white dark:bg-slate-900 rounded-t-[32px] sm:rounded-t-[36px] shadow-2xl border-t border-x border-slate-100 dark:border-slate-800 flex flex-col max-h-[92vh] sm:max-h-[88vh] animate-bottomsheet-up overflow-hidden"
       >
         {/* Poignée et En-tête Sticky */}
         <div 
@@ -602,7 +602,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onMouseDown={handleMouseDown}
-          className="sticky top-0 bg-white/95 dark:bg-slate-850/95 backdrop-blur-md z-30 px-5 sm:px-6 pt-2.5 pb-3 border-b border-slate-100 dark:border-slate-700/60 select-none cursor-grab active:cursor-grabbing touch-none"
+          className="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md z-30 px-5 sm:px-6 pt-2.5 pb-3 border-b border-slate-100 dark:border-slate-800 select-none cursor-grab active:cursor-grabbing touch-none"
         >
           {/* Poignée horizontale bien visible */}
           <div className="w-14 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 mx-auto mb-3 hover:bg-slate-400 transition-colors" />
@@ -698,12 +698,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                             className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center"
                           >
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-80" />
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 border border-white dark:border-slate-850" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 border border-white dark:border-slate-900" />
                           </span>
                         ) : (
                           <span 
                             title={`${m.name} est hors ligne`}
-                            className="w-2 h-2 rounded-full border border-white dark:border-slate-850 absolute -bottom-0.5 -right-0.5 bg-slate-300 dark:bg-slate-600" 
+                            className="w-2 h-2 rounded-full border border-white dark:border-slate-900 absolute -bottom-0.5 -right-0.5 bg-slate-300 dark:bg-slate-600" 
                           />
                         )}
                       </div>
@@ -1131,7 +1131,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         </div>
 
         {/* 9. BOUTON PRINCIPAL (Zone Sticky en bas du Bottom Sheet) */}
-        <div className="sticky bottom-0 bg-white/95 dark:bg-slate-850/95 backdrop-blur-md px-5 sm:px-6 py-4 border-t border-slate-100 dark:border-slate-700/60 pb-[calc(env(safe-area-inset-bottom)+12px)] z-30">
+        <div className="sticky bottom-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-5 sm:px-6 py-4 border-t border-slate-100 dark:border-slate-800 pb-[calc(env(safe-area-inset-bottom)+12px)] z-30">
           <button
             type="submit"
             form="bottom-sheet-expense-form"
