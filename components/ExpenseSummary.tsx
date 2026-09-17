@@ -186,17 +186,17 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
               return (
                 <div className={`mt-4 sm:mt-5 p-4 sm:p-6 rounded-3xl transition-all duration-300 relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 shadow-sm min-h-[120px] sm:min-h-[140px] ${
                   statusType === 'ahead' 
-                    ? 'bg-emerald-50/90 dark:bg-emerald-950/50 border border-emerald-100/90 dark:border-emerald-900/40' 
+                    ? 'bg-emerald-50/95 dark:bg-emerald-950/85 border border-emerald-200/90 dark:border-emerald-800/60' 
                     : statusType === 'behind'
-                    ? 'bg-rose-50/90 dark:bg-rose-950/50 border border-rose-100/90 dark:border-rose-900/40'
-                    : 'bg-blue-50/90 dark:bg-blue-950/50 border border-blue-100/90 dark:border-blue-900/40'
+                    ? 'bg-rose-50/95 dark:bg-rose-950/85 border border-rose-200/90 dark:border-rose-800/60'
+                    : 'bg-blue-50/95 dark:bg-blue-950/85 border border-blue-200/90 dark:border-blue-800/60'
                 }`}>
-                  {/* Custom Background Image */}
+                  {/* Custom Background Image with dark mode dimming */}
                   <div className="absolute inset-0 z-0 pointer-events-none select-none">
                     <img
                       src={bannerBg}
                       alt="Statut balance"
-                      className="w-full h-full object-cover object-center"
+                      className="w-full h-full object-cover object-center opacity-90 dark:opacity-20 dark:brightness-[0.35]"
                       onError={(e) => {
                         const fallback = statusType === 'behind' ? 'banner-retard.png' : 'banner-avance.png';
                         if (!e.currentTarget.src.endsWith(fallback)) {
@@ -207,7 +207,7 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                     />
                   </div>
 
-                  <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shrink-0 relative z-10 backdrop-blur-xs shadow-sm bg-white/70 dark:bg-black/30">
+                  <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shrink-0 relative z-10 backdrop-blur-xs shadow-sm bg-white/80 dark:bg-black/40 border border-black/5 dark:border-white/10">
                     <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white shadow-xs ${
                       statusType === 'ahead'
                         ? 'bg-emerald-600'
@@ -222,22 +222,22 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
                   </div>
 
                   <div className="flex-1 relative z-10 min-w-0">
-                    <p className={`text-base sm:text-xl font-extrabold leading-snug break-words ${
+                    <p className={`text-base sm:text-xl font-black leading-snug break-words tracking-tight ${
                       statusType === 'ahead'
                         ? 'text-emerald-950 dark:text-emerald-50'
                         : statusType === 'behind'
                         ? 'text-rose-950 dark:text-rose-50'
                         : 'text-blue-950 dark:text-blue-50'
-                    }`}>
+                    } [text-shadow:_0_1px_1px_rgba(255,255,255,0.8)] dark:[text-shadow:_0_1px_2px_rgba(0,0,0,0.85)]`}>
                       {message}
                     </p>
 
-                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 mt-2.5 sm:mt-3 rounded-2xl text-[11px] sm:text-sm font-semibold backdrop-blur-md shadow-xs flex-wrap ${
+                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 mt-2.5 sm:mt-3 rounded-2xl text-[11px] sm:text-sm font-bold backdrop-blur-md shadow-xs flex-wrap ${
                       statusType === 'ahead'
-                        ? 'bg-white/80 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-100 border border-emerald-200/60 dark:border-emerald-800/40'
+                        ? 'bg-emerald-900/90 text-emerald-50 dark:bg-emerald-950/90 dark:text-emerald-200 border border-emerald-800/50 dark:border-emerald-800/60'
                         : statusType === 'behind'
-                        ? 'bg-white/80 dark:bg-rose-950/80 text-rose-900 dark:text-rose-100 border border-rose-200/60 dark:border-rose-800/40'
-                        : 'bg-white/80 dark:bg-blue-950/80 text-blue-900 dark:text-blue-100 border border-blue-200/60 dark:border-blue-800/40'
+                        ? 'bg-rose-900/90 text-rose-50 dark:bg-rose-950/90 dark:text-rose-200 border border-rose-800/50 dark:border-rose-800/60'
+                        : 'bg-blue-900/90 text-blue-50 dark:bg-blue-950/90 dark:text-blue-200 border border-blue-800/50 dark:border-blue-800/60'
                     }`}>
                       <TrendingUpIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                       <span className="leading-tight">{historyBadgeText}</span>
