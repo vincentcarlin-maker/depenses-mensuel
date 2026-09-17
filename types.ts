@@ -17,6 +17,8 @@ export interface FoyerMember {
   joined_at?: string;
 }
 
+export const MAX_FOYER_MEMBERS = 2;
+
 export interface FoyerJoinRequest {
   id: string;
   foyer_id: string;

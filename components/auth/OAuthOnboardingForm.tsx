@@ -465,8 +465,15 @@ export const OAuthOnboardingForm: React.FC<OAuthOnboardingFormProps> = ({
               <p className="text-[11px] text-slate-500 mt-1">Vérification en cours...</p>
             )}
             {oauthFoundFoyer && (
-              <div className="mt-2 p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs text-emerald-800 dark:text-emerald-300 font-bold">
-                ✅ Foyer trouvé : {oauthFoundFoyer.name} ({oauthFoundFoyer.members?.length || 0} membres)
+              <div className={`mt-2 p-2.5 border rounded-xl text-xs font-bold ${
+                (oauthFoundFoyer.members?.length || 0) >= 2
+                  ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200'
+                  : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+              }`}>
+                {(oauthFoundFoyer.members?.length || 0) >= 2
+                  ? `⚠️ Foyer : ${oauthFoundFoyer.name} (Complet - 2/2 membres). Impossible de rejoindre.`
+                  : `✅ Foyer trouvé : ${oauthFoundFoyer.name} (${oauthFoundFoyer.members?.length || 0}/2 membres)`
+                }
               </div>
             )}
             {oauthCodeError && (

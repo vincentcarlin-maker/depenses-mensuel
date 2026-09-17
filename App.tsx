@@ -200,15 +200,28 @@ const MainApp: React.FC<{
     return Array.from(dedupMap.values());
   }, [profiles, currentFoyer, activeFoyerId]);
 
-  // Filtre d'isolation des foyers :
-  // - Vincent & Sophie (DEFAULT_FOYER_ID) : accès à leur historique (sans foyer_id ou marqué foyer_vincent_sophie)
-  // - Tout autre foyer : uniquement ses propres données portant son foyer_id
-  const belongsToCurrentFoyer = useCallback((item: { foyer_id?: string } | null | undefined): boolean => {
+  // Filtre d'isolation strict des foyers :
+  // - Tout élément portant un foyer_id DOIT correspondre exactement au foyer actif (activeFoyerId)
+  // - Les éléments sans foyer_id (historique hérité) n'appartiennent qu'au foyer par défaut ET uniquement si l'auteur est Vincent, Sophie ou Commun
+  const belongsToCurrentFoyer = useCallback((item: { foyer_id?: string; user?: any; user_name?: any } | null | undefined): boolean => {
     if (!item) return false;
-    if (activeFoyerId === DEFAULT_FOYER_ID) {
-      return !item.foyer_id || item.foyer_id === DEFAULT_FOYER_ID;
+    
+    // 1. Si l'élément a un foyer_id explicite, isolation stricte
+    if (item.foyer_id) {
+      return item.foyer_id === activeFoyerId;
     }
-    return item.foyer_id === activeFoyerId;
+
+    // 2. Si l'élément n'a pas de foyer_id (données historiques antérieures au multi-foyer)
+    if (activeFoyerId === DEFAULT_FOYER_ID) {
+      const author = item.user || item.user_name;
+      if (author) {
+        const u = String(author).toLowerCase().trim();
+        return u === 'vincent' || u === 'sophie' || u === 'commun';
+      }
+      return true;
+    }
+
+    return false;
   }, [activeFoyerId]);
 
   const broadcastChange = useCallback((table: string, eventType: 'INSERT' | 'UPDATE' | 'DELETE', payload: any, performedBy?: string) => {

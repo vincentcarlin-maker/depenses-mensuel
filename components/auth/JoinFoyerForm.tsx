@@ -415,12 +415,28 @@ export const JoinFoyerForm: React.FC<JoinFoyerFormProps> = ({
 
           {/* Live Preview Badge if Found */}
           {foundFoyer && (
-            <div className="mt-2.5 p-3 rounded-2xl bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-medium flex items-center gap-2.5 animate-fade-in">
-              <span className="text-base">🎉</span>
-              <div>
-                <p className="font-bold">Foyer trouvé : {foundFoyer.name}</p>
-                <p className="text-[11px] text-emerald-700 dark:text-emerald-300">
-                  Admin : {foundFoyer.members?.find(m => m.role === 'admin')?.name || foundFoyer.members?.[0]?.name || 'Administrateur'}
+            <div className={`mt-2.5 p-3 rounded-2xl border text-xs font-medium flex items-center gap-2.5 animate-fade-in ${
+              (foundFoyer.members?.length || 0) >= 2
+                ? 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200'
+                : 'bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
+            }`}>
+              <span className="text-base">{(foundFoyer.members?.length || 0) >= 2 ? '⚠️' : '🎉'}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-bold truncate">Foyer trouvé : {foundFoyer.name}</p>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                    (foundFoyer.members?.length || 0) >= 2
+                      ? 'bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-100'
+                      : 'bg-emerald-200 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-100'
+                  }`}>
+                    {foundFoyer.members?.length || 0}/2 membres
+                  </span>
+                </div>
+                <p className="text-[11px] opacity-90 mt-0.5">
+                  {(foundFoyer.members?.length || 0) >= 2
+                    ? 'Ce foyer a atteint sa capacité maximale de 2 utilisateurs (1 admin et 1 partenaire).'
+                    : `Admin : ${foundFoyer.members?.find(m => m.role === 'admin')?.name || foundFoyer.members?.[0]?.name || 'Administrateur'}`
+                  }
                 </p>
               </div>
             </div>

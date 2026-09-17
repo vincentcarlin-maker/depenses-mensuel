@@ -375,21 +375,35 @@ const UserManagement: React.FC<{
                             </p>
                         </div>
                     </div>
-                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
-                        {displayProfiles.length} membre{displayProfiles.length > 1 ? 's' : ''}
+                    <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
+                        displayProfiles.length >= 2
+                            ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                            : 'bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800'
+                    }`}>
+                        {displayProfiles.length}/2 membres {displayProfiles.length >= 2 ? '(Complet)' : ''}
                     </span>
                 </div>
 
                 <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-600/50 flex flex-col sm:flex-row items-center justify-between gap-3">
                     <div>
-                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                            Code d'invitation du foyer :
-                        </p>
+                        <div className="flex items-center gap-2">
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                Code d'invitation du foyer :
+                            </p>
+                            {displayProfiles.length >= 2 && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                                    Limite max 2 utilisateurs atteinte
+                                </span>
+                            )}
+                        </div>
                         <p className="text-2xl font-mono font-black tracking-widest text-sky-600 dark:text-sky-400 mt-0.5">
                             {currentFoyer?.code || 'Actif'}
                         </p>
                         <p className="text-[11px] text-slate-400 dark:text-slate-400 mt-1">
-                            Partagez ce code avec votre partenaire pour rejoindre ce foyer.
+                            {displayProfiles.length >= 2
+                                ? "Ce foyer est complet (2 utilisateurs maximum). Aucun nouvel utilisateur ne peut l'intégrer."
+                                : "Partagez ce code avec votre partenaire pour rejoindre ce foyer (2 utilisateurs max par foyer)."
+                            }
                         </p>
                     </div>
                     <button
@@ -419,6 +433,7 @@ const UserManagement: React.FC<{
                     !currentFoyer?.members?.some(m => m.username?.toLowerCase().trim() === req.username?.toLowerCase().trim())
                 );
                 if (pendingRequests.length === 0) return null;
+                const isFoyerFull = displayProfiles.length >= 2;
 
                 return (
                     <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 rounded-[26px] p-5 sm:p-6 border border-amber-200/90 dark:border-amber-800/60 shadow-xs space-y-4 animate-fade-in">
@@ -432,7 +447,10 @@ const UserManagement: React.FC<{
                                         Demandes d’intégration en attente
                                     </h3>
                                     <p className="text-xs text-amber-700 dark:text-amber-300 font-medium">
-                                        Validez l’accès des nouveaux membres souhaitant rejoindre ce foyer
+                                        {isFoyerFull 
+                                            ? "Foyer déjà au complet (2/2 membres). Vous devez retirer un membre pour accepter une nouvelle demande."
+                                            : "Validez l’accès des nouveaux membres souhaitant rejoindre ce foyer (limite 2 max)"
+                                        }
                                     </p>
                                 </div>
                             </div>

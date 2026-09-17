@@ -666,22 +666,33 @@ export const AdminFoyersSection: React.FC<AdminFoyersSectionProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                     <span>👥</span>
-                    <span>Membres du foyer ({f.members?.length || 0})</span>
+                    <span>Membres du foyer ({f.members?.length || 0}/2)</span>
+                    {(f.members?.length || 0) >= 2 && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                        Complet (2/2)
+                      </span>
+                    )}
                   </span>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAddingMemberFoyerId(f.id);
-                      setMemberDisplayName('');
-                      setMemberUsername('');
-                      setMemberRole('member');
-                      setMemberColor('#10b981');
-                    }}
-                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 font-extrabold flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>➕ Ajouter un membre</span>
-                  </button>
+                  {(f.members?.length || 0) < 2 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAddingMemberFoyerId(f.id);
+                        setMemberDisplayName('');
+                        setMemberUsername('');
+                        setMemberRole('member');
+                        setMemberColor('#10b981');
+                      }}
+                      className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 font-extrabold flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>➕ Ajouter un membre</span>
+                    </button>
+                  ) : (
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                      Max 2 membres atteint
+                    </span>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

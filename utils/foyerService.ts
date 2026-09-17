@@ -1,5 +1,5 @@
 import { supabase } from '../supabase/client';
-import { Foyer, FoyerMember, FoyerJoinRequest } from '../types';
+import { Foyer, FoyerMember, FoyerJoinRequest, MAX_FOYER_MEMBERS } from '../types';
 
 export const DEFAULT_FOYER_ID = 'foyer_vincent_sophie';
 
@@ -299,6 +299,12 @@ export async function joinFoyerWithCode(
     }
 
     const existingIndex = foyer.members.findIndex(m => m.username === normalizedUsername);
+    if (existingIndex === -1 && (foyer.members?.length || 0) >= MAX_FOYER_MEMBERS) {
+      return { 
+        success: false, 
+        error: `Ce foyer a déjà atteint sa limite maximale de ${MAX_FOYER_MEMBERS} utilisateurs (1 administrateur et 1 partenaire). Impossible d’intégrer ce foyer.` 
+      };
+    }
 
     const memberObj: FoyerMember = {
       id: normalizedUsername,
@@ -362,6 +368,14 @@ export async function requestJoinFoyer(
     // Check if user is already an approved member
     if (foyer.members?.some(m => m.username.toLowerCase().trim() === normalizedUsername)) {
       return { success: false, error: 'Vous êtes déjà membre de ce foyer.' };
+    }
+
+    // Check if foyer has already reached max capacity (2 members max)
+    if ((foyer.members?.length || 0) >= MAX_FOYER_MEMBERS) {
+      return {
+        success: false,
+        error: `Ce foyer est déjà complet (${foyer.members.length}/${MAX_FOYER_MEMBERS} membres). Un foyer ne peut accueillir que 2 utilisateurs au maximum.`
+      };
     }
 
     const existingPending = (foyer.pending_requests || []).find(
@@ -479,6 +493,13 @@ export async function approveJoinRequest(
     };
 
     const existingMemberIdx = foyer.members.findIndex(m => m.username.toLowerCase().trim() === normalizedUsername);
+    if (existingMemberIdx === -1 && (foyer.members?.length || 0) >= MAX_FOYER_MEMBERS) {
+      return {
+        success: false,
+        error: `Ce foyer a déjà atteint la limite maximale de ${MAX_FOYER_MEMBERS} utilisateurs. Vous devez retirer un membre existant avant de pouvoir en valider un nouveau.`
+      };
+    }
+
     let updatedMembers: FoyerMember[];
     if (existingMemberIdx >= 0) {
       updatedMembers = [...foyer.members];
@@ -640,6 +661,14 @@ export async function addMemberToFoyer(
   if (!foyer) return { success: false, error: 'Foyer introuvable.' };
 
   const normalizedUsername = member.username.toLowerCase().trim();
+  const isAlreadyMember = foyer.members?.some(m => m.username.toLowerCase().trim() === normalizedUsername);
+  if (!isAlreadyMember && (foyer.members?.length || 0) >= MAX_FOYER_MEMBERS) {
+    return { 
+      success: false, 
+      error: `Ce foyer a déjà atteint sa limite maximale de ${MAX_FOYER_MEMBERS} utilisateurs.` 
+    };
+  }
+
   if (await isUsernameAlreadyUsed(normalizedUsername)) {
     return { success: false, error: 'Cet identifiant est déjà utilisé par un autre compte.' };
   }
