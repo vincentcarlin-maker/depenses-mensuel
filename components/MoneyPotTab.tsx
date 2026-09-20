@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { type MoneyPotTransaction } from '../types';
 import TrashIcon from './icons/TrashIcon';
 import ConfirmationModal from './ConfirmationModal';
-import piggyBankImg from '../src/assets/piggy-bank.png';
+const piggyBankImg = './piggy-bank.png';
 import { useSyncedSettings } from '../hooks/useSyncedSettings';
 
 

@@ -8,8 +8,8 @@ import TrendingUpIcon from './icons/TrendingUpIcon';
 import PiggyBankIcon from './icons/PiggyBankIcon';
 import { resolveUserTheme } from '../utils/userColors';
 import { useTheme } from '../hooks/useTheme';
-import bannerRetardImg from '../src/assets/banner-retard.png';
-import bannerAvanceImg from '../src/assets/banner-avance.png';
+const bannerRetardImg = './banner-retard.png';
+const bannerAvanceImg = './banner-avance.png';
 
 interface BalanceReportProps {
   allExpenses: Expense[];

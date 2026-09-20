@@ -7,7 +7,7 @@ interface ToastProps {
   message: string;
   onClose: () => void;
   duration?: number;
-  type?: 'info' | 'error';
+  type?: 'info' | 'error' | 'success' | 'warning';
 }
 
 const Toast: React.FC<ToastProps> = ({ message, onClose, duration = 5000, type = 'info' }) => {
@@ -21,11 +21,15 @@ const Toast: React.FC<ToastProps> = ({ message, onClose, duration = 5000, type =
     };
   }, [onClose, duration]);
 
-  const isError = type === 'error';
+  const isError = type === 'error' || type === 'warning';
+  const isSuccess = type === 'success';
 
-  const iconContainerClass = isError 
-    ? "inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-red-500 bg-red-100 dark:bg-red-800 dark:text-red-200 rounded-lg"
-    : "inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-cyan-500 bg-cyan-100 dark:bg-cyan-800 dark:text-cyan-200 rounded-lg";
+  let iconContainerClass = "inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-cyan-500 bg-cyan-100 dark:bg-cyan-800 dark:text-cyan-200 rounded-lg";
+  if (isError) {
+    iconContainerClass = "inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-red-500 bg-red-100 dark:bg-red-800 dark:text-red-200 rounded-lg";
+  } else if (isSuccess) {
+    iconContainerClass = "inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-emerald-500 bg-emerald-100 dark:bg-emerald-800 dark:text-emerald-200 rounded-lg";
+  }
 
   return (
     <div

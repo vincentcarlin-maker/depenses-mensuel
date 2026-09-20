@@ -126,7 +126,7 @@ const MainApp: React.FC<{
   const [filterUser, setFilterUser] = useState<User | 'All'>('All');
   const [filterCategory, setFilterCategory] = useState<any | 'All'>('All');
 
-  const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' } | null>(null);
+  const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' | 'success' | 'warning' } | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsInitialView, setSettingsInitialView] = useState<SettingsViewType>('main');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -863,6 +863,11 @@ const MainApp: React.FC<{
             if (icons && Array.isArray(icons)) {
                 window.dispatchEvent(new CustomEvent('duobudget_icons_sync', { detail: { icons } }));
             }
+        } else if (table === 'category_keywords') {
+            const { rules } = data || {};
+            if (rules && Array.isArray(rules)) {
+                window.dispatchEvent(new CustomEvent('duobudget_keywords_sync', { detail: { rules } }));
+            }
         }
       })
       .subscribe((status, err) => {
@@ -886,7 +891,7 @@ const MainApp: React.FC<{
     };
   }, [highlightExpense, user, syncData, mergeAndDedupeActivities, belongsToCurrentFoyer, activeFoyerId]);
 
-  // Listen to local category visual changes to broadcast instantly to other devices in foyer
+  // Listen to local category visual and keyword changes to broadcast instantly to other devices in foyer
   useEffect(() => {
     const handleLocalIconChange = (event: any) => {
       const { icons, foyerId } = event.detail || {};
@@ -895,9 +900,18 @@ const MainApp: React.FC<{
       }
     };
 
+    const handleLocalKeywordChange = (event: any) => {
+      const { rules, foyerId } = event.detail || {};
+      if (rules && Array.isArray(rules) && (!foyerId || belongsToCurrentFoyer({ foyer_id: foyerId }))) {
+        broadcastChange('category_keywords', 'UPDATE', { rules, foyer_id: activeFoyerId });
+      }
+    };
+
     window.addEventListener('duobudget_icons_local_change', handleLocalIconChange);
+    window.addEventListener('duobudget_keywords_local_change', handleLocalKeywordChange);
     return () => {
       window.removeEventListener('duobudget_icons_local_change', handleLocalIconChange);
+      window.removeEventListener('duobudget_keywords_local_change', handleLocalKeywordChange);
     };
   }, [broadcastChange, belongsToCurrentFoyer, activeFoyerId]);
 
