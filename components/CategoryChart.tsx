@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { type Expense, type Category, type FoyerMember, canonicalCategory } from '../types';
+import { type Expense, type Category, type FoyerMember, canonicalCategory, isSameCategory } from '../types';
 import { type Profile } from '../hooks/useAuth';
 import { 
     MandatoryIcon, 
@@ -83,12 +83,14 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
     if (!isBudgetEnabled) return [];
     const categorySpentMap = new Map<string, number>();
     expenses.forEach(e => {
-      categorySpentMap.set(e.category, (categorySpentMap.get(e.category) || 0) + e.amount);
+      const key = canonicalCategory(e.category);
+      categorySpentMap.set(key, (categorySpentMap.get(key) || 0) + e.amount);
     });
 
     const entries = Object.entries(categoryBudgets).filter(([, limit]) => limit > 0);
     return entries.map(([category, budget]) => {
-      const spent = categorySpentMap.get(category) || 0;
+      const key = canonicalCategory(category);
+      const spent = categorySpentMap.get(key) || 0;
       const isOver = spent > budget;
       const overAmount = Math.max(0, spent - budget);
       const percentage = Math.min(100, Math.round((spent / budget) * 100));
@@ -178,7 +180,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
 
   const filteredCategoryExpenses = useMemo(() => {
     if (!selectedCategory) return [];
-    return expenses.filter(e => e.category === selectedCategory);
+    return expenses.filter(e => isSameCategory(e.category, selectedCategory));
   }, [selectedCategory, expenses]);
 
   if (expenses.length === 0) {

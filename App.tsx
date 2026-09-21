@@ -27,7 +27,7 @@ import Login from './components/Login';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useSyncedSettings } from './hooks/useSyncedSettings';
 import UndoToast from './components/UndoToast';
-import { DEFAULT_CATEGORIES } from './types';
+import { DEFAULT_CATEGORIES, isSameCategory } from './types';
 import GlobalSearchModal from './components/GlobalSearchModal';
 import FunnelIcon from './components/icons/FunnelIcon';
 import MoneyPotTab from './components/MoneyPotTab';
@@ -1332,7 +1332,7 @@ const MainApp: React.FC<{
     return filteredExpenses.filter(e => {
         const matchesSearch = !searchTerm || e.description.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesUser = filterUser === 'All' || e.user === filterUser;
-        const matchesCategory = filterCategory === 'All' || e.category === filterCategory;
+        const matchesCategory = filterCategory === 'All' || isSameCategory(e.category, filterCategory);
         return matchesSearch && matchesUser && matchesCategory;
     });
   }, [filteredExpenses, searchTerm, filterUser, filterCategory]);

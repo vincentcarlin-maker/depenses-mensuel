@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { type Expense, type Category, canonicalCategory } from '../types';
+import { type Expense, type Category, canonicalCategory, isSameCategory } from '../types';
 import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Line, Area } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
 import CloseIcon from './icons/CloseIcon';
@@ -97,12 +97,12 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
 
   const filteredCurrentExpenses = useMemo(() => {
     if (chartCategoryFilter === 'all') return expenses;
-    return expenses.filter(e => e.category === chartCategoryFilter);
+    return expenses.filter(e => isSameCategory(e.category, chartCategoryFilter));
   }, [expenses, chartCategoryFilter]);
 
   const filteredPreviousExpenses = useMemo(() => {
     if (chartCategoryFilter === 'all') return previousYearExpenses;
-    return previousYearExpenses.filter(e => e.category === chartCategoryFilter);
+    return previousYearExpenses.filter(e => isSameCategory(e.category, chartCategoryFilter));
   }, [previousYearExpenses, chartCategoryFilter]);
 
   const activeColor = useMemo(() => {
@@ -170,12 +170,12 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
     const uniqueCats = new Set<string>();
     for (const exp of expenses) {
       if (exp.category) {
-        uniqueCats.add(exp.category);
+        uniqueCats.add(canonicalCategory(exp.category));
       }
     }
     for (const exp of previousYearExpenses) {
       if (exp.category) {
-        uniqueCats.add(exp.category);
+        uniqueCats.add(canonicalCategory(exp.category));
       }
     }
     return Array.from(uniqueCats).sort((a, b) => a.localeCompare(b, 'fr'));
@@ -216,13 +216,13 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
   const breakdownData = useMemo(() => {
       if (!selectedCategory) return [];
 
-      const categoryExpenses = expenses.filter(e => e.category === selectedCategory);
+      const categoryExpenses = expenses.filter(e => isSameCategory(e.category, selectedCategory));
       const breakdownMap = new Map<string, { total: number, count: number, items: Expense[] }>();
 
       categoryExpenses.forEach(expense => {
           let label = "Autre";
 
-          if (selectedCategory === 'Courses') {
+          if (isSameCategory(selectedCategory, 'Courses')) {
               const storeRegex = /\s\(([^)]+)\)$/;
               const match = expense.description.match(storeRegex);
               if (match && expense.description.startsWith('Courses')) {
@@ -231,7 +231,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                   label = expense.description; 
               }
           } 
-          else if (selectedCategory === 'Cadeau') {
+          else if (isSameCategory(selectedCategory, 'Cadeau')) {
               const detailsRegex = /\s\(([^)]+)\s-\s([^)]+)\)$/;
               const match = expense.description.match(detailsRegex);
               if (match) {
@@ -240,10 +240,10 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                   label = expense.description;
               }
           }
-          else if (selectedCategory === 'Carburant') {
+          else if (isSameCategory(selectedCategory, 'Carburant')) {
               label = expense.description;
           }
-          else if (selectedCategory === 'Vêtements') {
+          else if (isSameCategory(selectedCategory, 'Vêtements')) {
               const personRegex = /\s\(([^)]+)\)$/;
               const match = expense.description.match(personRegex);
               if (match) {
@@ -252,7 +252,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
                   label = expense.description;
               }
           }
-          else if (selectedCategory === 'Réparation voitures') {
+          else if (isSameCategory(selectedCategory, 'Réparation voitures')) {
               const carRegex = /\s\(([^)]+)\)$/;
               const match = expense.description.match(carRegex);
               if (match) {

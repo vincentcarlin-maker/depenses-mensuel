@@ -173,17 +173,23 @@ export interface ContactMessage {
 
 export const canonicalCategory = (name: string): string => {
   if (!name) return 'Divers';
-  const lower = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  const clean = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
   if (
-    lower.includes('recurent') ||
-    lower.includes('récurrent') ||
-    lower.includes('obligatoire') ||
-    lower === 'dép. recurentes' ||
-    lower === 'dép. récurrentes' ||
-    lower === 'depenses recurrentes' ||
-    lower === 'depenses obligatoires'
+    clean.includes('recurent') ||
+    clean.includes('recurrent') ||
+    clean.includes('obligatoire') ||
+    clean.includes('loyer') ||
+    clean.startsWith('dep. rec') ||
+    clean.startsWith('depenses rec') ||
+    clean === 'dep. recurentes' ||
+    clean === 'dep. recurrentes'
   ) {
     return 'Dép. recurentes';
   }
-  return name;
+  return name.trim();
+};
+
+export const isSameCategory = (cat1: string | null | undefined, cat2: string | null | undefined): boolean => {
+  if (!cat1 || !cat2) return false;
+  return canonicalCategory(cat1) === canonicalCategory(cat2);
 };
