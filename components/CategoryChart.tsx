@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { type Expense, type Category, type FoyerMember } from '../types';
+import { type Expense, type Category, type FoyerMember, canonicalCategory } from '../types';
 import { type Profile } from '../hooks/useAuth';
 import { 
     MandatoryIcon, 
@@ -51,7 +51,8 @@ const TrendArrowIcon = ({ isUp, className = "w-6 h-6" }: { isUp: boolean; classN
 );
 
 const getCategoryDisplayName = (name: string): string => {
-  if (name === 'Dépenses récurrentes' || name === 'Dépenses obligatoires' || name === 'Dép. récurrentes' || name === 'Dép. recurentes') {
+  const canon = canonicalCategory(name);
+  if (canon === 'Dép. recurentes') {
     return 'Dép. récurrentes';
   }
   return name;
@@ -62,23 +63,6 @@ const ChevronRightIcon = ({ className = "w-5 h-5" }: { className?: string }) => 
     <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
   </svg>
 );
-
-const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string } } = {
-  "Dépenses récurrentes": { icon: MandatoryIcon, color: 'bg-slate-600' },
-  "Dép. récurrentes": { icon: MandatoryIcon, color: 'bg-slate-600' },
-  "Dép. recurentes": { icon: MandatoryIcon, color: 'bg-slate-600' },
-  "Dépenses obligatoires": { icon: MandatoryIcon, color: 'bg-slate-600' },
-  "Courses": { icon: GroceriesIcon, color: 'bg-emerald-500' },
-  "Divers": { icon: MiscIcon, color: 'bg-cyan-500' },
-  "Restaurant": { icon: RestaurantIcon, color: 'bg-purple-500' },
-  "Carburant": { icon: FuelIcon, color: 'bg-orange-500' },
-  "Complément alimentaire": { icon: PillIcon, color: 'bg-emerald-500' },
-  "Chauffage": { icon: HeatingIcon, color: 'bg-red-500' },
-  "Vacances": { icon: PalmTreeIcon, color: 'bg-teal-500' },
-  "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-amber-500' },
-  "Vêtements": { icon: ClothingIcon, color: 'bg-indigo-500' },
-  "Cadeau": { icon: GiftIcon, color: 'bg-fuchsia-500' },
-};
 
 interface CategoryTotalsProps {
   expenses: Expense[];
@@ -151,14 +135,16 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
   const { chartData, niceMax, ticks } = useMemo(() => {
     const totals = new Map<Category, number>();
     for (const expense of expenses) {
-      totals.set(expense.category, (totals.get(expense.category) || 0) + expense.amount);
+      const catKey = canonicalCategory(expense.category);
+      totals.set(catKey, (totals.get(catKey) || 0) + expense.amount);
     }
 
     const categoryAverages = new Map<Category, number>();
     const categoryTotalsLast3Months = new Map<Category, number>();
     
     last3MonthsExpenses.forEach(e => {
-      categoryTotalsLast3Months.set(e.category, (categoryTotalsLast3Months.get(e.category) || 0) + e.amount);
+      const catKey = canonicalCategory(e.category);
+      categoryTotalsLast3Months.set(catKey, (categoryTotalsLast3Months.get(catKey) || 0) + e.amount);
     });
 
     categoryTotalsLast3Months.forEach((total, cat) => {

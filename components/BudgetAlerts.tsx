@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { type Expense } from '../types';
+import { type Expense, canonicalCategory } from '../types';
 import { useCategoryBudgets } from '../hooks/useCategoryBudgets';
 
 interface BudgetAlertsProps {
@@ -21,7 +21,8 @@ export const BudgetAlerts: React.FC<BudgetAlertsProps> = ({
   // Calculate totals per category for the current month
   const totals = new Map<string, number>();
   monthlyExpenses.forEach(e => {
-    totals.set(e.category, (totals.get(e.category) || 0) + e.amount);
+    const catKey = canonicalCategory(e.category);
+    totals.set(catKey, (totals.get(catKey) || 0) + e.amount);
   });
 
   const overruns = Object.entries(categoryBudgets)

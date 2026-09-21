@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { type Expense, type Category } from '../types';
+import { type Expense, type Category, canonicalCategory } from '../types';
 import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Line, Area } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
 import CloseIcon from './icons/CloseIcon';
@@ -45,7 +45,8 @@ const ChevronRightIcon = ({ className = "w-5 h-5" }: { className?: string }) => 
 );
 
 const getCategoryDisplayName = (name: string): string => {
-  if (name === 'Dépenses récurrentes' || name === 'Dépenses obligatoires' || name === 'Dép. récurrentes' || name === 'Dép. recurentes') {
+  const canon = canonicalCategory(name);
+  if (canon === 'Dép. recurentes') {
     return 'Dép. récurrentes';
   }
   return name;
@@ -131,7 +132,8 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
     const currentYear = new Date().getFullYear();
 
     for (const expense of expenses) {
-      categoryTotals.set(expense.category, (categoryTotals.get(expense.category) || 0) + expense.amount);
+      const catKey = canonicalCategory(expense.category);
+      categoryTotals.set(catKey, (categoryTotals.get(catKey) || 0) + expense.amount);
       total += expense.amount;
       
       const expenseMonth = new Date(expense.date).getMonth();

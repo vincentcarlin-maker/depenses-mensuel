@@ -170,3 +170,20 @@ export interface ContactMessage {
   isReadByUser: boolean;
   deviceInfo?: string;
 }
+
+export const canonicalCategory = (name: string): string => {
+  if (!name) return 'Divers';
+  const lower = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  if (
+    lower.includes('recurent') ||
+    lower.includes('récurrent') ||
+    lower.includes('obligatoire') ||
+    lower === 'dép. recurentes' ||
+    lower === 'dép. récurrentes' ||
+    lower === 'depenses recurrentes' ||
+    lower === 'depenses obligatoires'
+  ) {
+    return 'Dép. recurentes';
+  }
+  return name;
+};

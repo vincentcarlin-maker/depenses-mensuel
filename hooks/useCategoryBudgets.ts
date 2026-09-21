@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useSyncedSettings } from './useSyncedSettings';
-import { type Category, type Expense } from '../types';
+import { type Category, type Expense, canonicalCategory } from '../types';
 
 export interface CategoryBudgetInfo {
   category: Category;
@@ -66,7 +66,7 @@ export function useCategoryBudgets(foyerId?: string) {
     // Sum expenses per category
     const spentMap = new Map<string, number>();
     monthExpenses.forEach(e => {
-      const catKey = e.category || 'Divers';
+      const catKey = canonicalCategory(e.category || 'Divers');
       spentMap.set(catKey, (spentMap.get(catKey) || 0) + e.amount);
     });
 
