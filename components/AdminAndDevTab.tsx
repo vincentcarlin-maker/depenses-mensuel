@@ -749,6 +749,12 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
   // Expandable sections
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
+  // New Segmented Control: 'overview' | 'admin' | 'dev'
+  const [adminSegment, setAdminSegment] = useState<'overview' | 'admin' | 'dev'>('overview');
+  const [globalAdminSearch, setGlobalAdminSearch] = useState('');
+  const [isPurgeModalOpen, setIsPurgeModalOpen] = useState(false);
+  const [purgeInputText, setPurgeInputText] = useState('');
+
   // Active Admin Tab & Sub-menus
   const [activeAdminTab, setActiveAdminTab] = useState<'menu' | 'messages' | 'foyers' | 'database' | 'config' | 'diagnostics' | 'all'>('menu');
   const [foyersSubTab, setFoyersSubTab] = useState<'foyers' | 'accounts' | 'sessions' | 'all'>('foyers');
@@ -1164,292 +1170,1030 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
   return (
     <div className="space-y-5 animate-fade-in pb-12">
       {/* ========================================================= */}
-      {/* SETTINGS-STYLE ADMIN MENU (when activeAdminTab === 'menu') */}
+      {/* NEW CENTER DE CONTRÔLE ADMIN & DÉVELOPPEMENT               */}
       {/* ========================================================= */}
       {activeAdminTab === 'menu' && (
-        <div className="space-y-5 animate-fade-in">
-          {/* Header matching Réglages tab */}
+        <div className="space-y-4 animate-fade-in">
+          {/* Header Title & Status Bar */}
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                Administration & Dév
-              </h1>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
-                ADMIN
-              </span>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                  Administration & Dév
+                </h1>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-[#FFFBEB] text-[#B45309] border border-[#FDE68A] dark:bg-amber-950/70 dark:text-amber-300 dark:border-amber-800">
+                  Admin
+                </span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#047857] dark:text-emerald-400 bg-[#ECFDF5] dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-[#A7F3D0] dark:border-emerald-800">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-ping"></span>
+                <span>Système synchronisé</span>
+              </div>
             </div>
-            <p className="text-slate-500 dark:text-slate-400 font-medium text-xs sm:text-sm">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
               Espace réservé à Vincent • Centre de contrôle technique, support et base de données
             </p>
           </div>
 
-          {/* Quick System Status Card */}
-          <div
-            onClick={() => {
-              setActiveAdminTab('database');
-              setDatabaseSubTab('supabase');
-            }}
-            className="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 flex items-center justify-between transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/90 cursor-pointer group"
-          >
-            <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-black text-xl flex items-center justify-center shrink-0 border border-indigo-100 dark:border-indigo-900/40">
-                ⚡
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-extrabold text-slate-900 dark:text-slate-100 text-sm sm:text-base truncate">
-                    Système DuoBudget Cloud
-                  </h3>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black ${
-                    dbStatus === 'connected'
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-                      : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
-                  }`}>
-                    ● {dbStatus === 'connected' ? 'En ligne' : 'Vérification'}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5">
-                  Supabase {latencyMs ? `(${latencyMs}ms)` : ''} • {foyersCount} foyer{foyersCount > 1 ? 's' : ''} • {profiles.length} comptes {unreadAdminCount > 0 ? `• 📬 ${unreadAdminCount} msg` : ''}
-                </p>
-              </div>
-            </div>
-            <div className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors shrink-0">
-              <ChevronRightIcon className="w-5 h-5" />
-            </div>
+          {/* Segmented Controls */}
+          <div className="bg-[#F1F5F9] dark:bg-slate-900/60 p-1 rounded-xl flex items-center shadow-inner">
+            <button
+              type="button"
+              onClick={() => {
+                setAdminSegment('overview');
+                setGlobalAdminSearch('');
+              }}
+              className={`flex-1 py-1.5 text-center text-xs sm:text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer ${
+                adminSegment === 'overview'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Vue d’ensemble
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAdminSegment('admin');
+                setGlobalAdminSearch('');
+              }}
+              className={`flex-1 py-1.5 text-center text-xs sm:text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer ${
+                adminSegment === 'admin'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Administration
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAdminSegment('dev');
+                setGlobalAdminSearch('');
+              }}
+              className={`flex-1 py-1.5 text-center text-xs sm:text-sm font-semibold rounded-lg transition-all duration-150 cursor-pointer ${
+                adminSegment === 'dev'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Développement
+            </button>
           </div>
 
-          {/* Section 1: Support & Assistance */}
-          <div className="space-y-2">
-            <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
-              Support & Assistance
-            </h4>
-            <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
-              <AdminMenuItemRow
-                iconBg="bg-sky-50 dark:bg-sky-950/60"
-                iconColor="text-sky-600 dark:text-sky-400"
-                icon={<span className="text-xl">📬</span>}
-                title="Boîte de réception Support"
-                description="Consulter et répondre aux messages et questions des utilisateurs"
-                badge={unreadAdminCount > 0 ? `${unreadAdminCount} nouveau${unreadAdminCount > 1 ? 'x' : ''}` : undefined}
-                badgeColor="bg-amber-500 text-white"
-                value={`${contactMessages.length} msg`}
-                onClick={() => setActiveAdminTab('messages')}
-              />
-            </div>
+          {/* Search Input Bar */}
+          <div className="relative flex items-center w-full">
+            <span className="material-symbols-outlined absolute left-3.5 text-slate-400 dark:text-slate-500 text-[20px] pointer-events-none" data-icon="search">
+              search
+            </span>
+            <input
+              type="text"
+              value={globalAdminSearch}
+              onChange={(e) => setGlobalAdminSearch(e.target.value)}
+              placeholder="Rechercher un outil, paramètre, log..."
+              className="w-full h-11 pl-10 pr-10 bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700/80 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs transition-all"
+            />
+            {globalAdminSearch && (
+              <button
+                type="button"
+                onClick={() => setGlobalAdminSearch('')}
+                className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            )}
           </div>
 
-          {/* Section 2: Foyers & Utilisateurs */}
-          <div className="space-y-2">
-            <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
-              Foyers & Utilisateurs
-            </h4>
-            <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
-              <AdminMenuItemRow
-                iconBg="bg-indigo-50 dark:bg-indigo-950/60"
-                iconColor="text-indigo-600 dark:text-indigo-400"
-                icon={<span className="text-xl">🏠</span>}
-                title="Foyers partagés"
-                description="Gérer les foyers existants, changer de foyer actif et créer des codes"
-                value={`${foyersCount} foyer${foyersCount > 1 ? 's' : ''}`}
-                onClick={() => {
-                  setActiveAdminTab('foyers');
-                  setFoyersSubTab('foyers');
-                }}
-              />
-              <AdminMenuItemRow
-                iconBg="bg-violet-50 dark:bg-violet-950/60"
-                iconColor="text-violet-600 dark:text-violet-400"
-                icon={<span className="text-xl">👤</span>}
-                title="Comptes & Mots de passe"
-                description="Liste des profils enregistrés, réinitialisation de mots de passe"
-                value={`${profiles.length} comptes`}
-                onClick={() => {
-                  setActiveAdminTab('foyers');
-                  setFoyersSubTab('accounts');
-                }}
-              />
-              <AdminMenuItemRow
-                iconBg="bg-slate-100 dark:bg-slate-700/60"
-                iconColor="text-slate-600 dark:text-slate-300"
-                icon={<span className="text-xl">🔐</span>}
-                title="Sessions & Foyers inactifs"
-                description="Historique des connexions récentes et purge des foyers sans données"
-                value="Sécurité"
-                onClick={() => {
-                  setActiveAdminTab('foyers');
-                  setFoyersSubTab('sessions');
-                }}
-              />
-            </div>
-          </div>
+          {/* ======================================================= */}
+          {/* SEARCH RESULTS VIEW (when search query is present)     */}
+          {/* ======================================================= */}
+          {globalAdminSearch.trim() !== '' ? (
+            <div className="space-y-4">
+              {(() => {
+                const q = globalAdminSearch.toLowerCase().trim();
+                const allSearchableTools = [
+                  {
+                    title: 'Boîte de réception Support',
+                    desc: 'Consulter et répondre aux messages des utilisateurs',
+                    badge: `${contactMessages.length} msg`,
+                    icon: 'mail',
+                    bg: 'bg-[#EFF6FF]',
+                    color: 'text-[#2563EB]',
+                    action: () => setActiveAdminTab('messages')
+                  },
+                  {
+                    title: 'Foyers partagés',
+                    desc: 'Gestion des foyers, codes du couple et foyer actif',
+                    badge: `${foyersCount} foyers`,
+                    icon: 'holiday_village',
+                    bg: 'bg-[#F0FDF4]',
+                    color: 'text-[#16A34A]',
+                    action: () => { setActiveAdminTab('foyers'); setFoyersSubTab('foyers'); }
+                  },
+                  {
+                    title: 'Comptes utilisateurs',
+                    desc: 'Profils et réinitialisation des mots de passe',
+                    badge: `${profiles.length} comptes`,
+                    icon: 'group',
+                    bg: 'bg-[#EFF6FF]',
+                    color: 'text-[#2563EB]',
+                    action: () => { setActiveAdminTab('foyers'); setFoyersSubTab('accounts'); }
+                  },
+                  {
+                    title: 'Sessions et foyers inactifs',
+                    desc: 'Historique des connexions récentes et purge',
+                    badge: 'Sécurité',
+                    icon: 'lock_reset',
+                    bg: 'bg-[#FEF2F2]',
+                    color: 'text-[#DC2626]',
+                    action: () => { setActiveAdminTab('foyers'); setFoyersSubTab('sessions'); }
+                  },
+                  {
+                    title: 'Mode Maintenance',
+                    desc: 'Activer ou désactiver le verrouillage public des utilisateurs',
+                    badge: isMaintenanceMode ? 'Verrouillé' : 'Accessible',
+                    icon: 'build',
+                    bg: 'bg-[#FFFBEB]',
+                    color: 'text-[#D97706]',
+                    action: () => { setActiveAdminTab('config'); setConfigSubTab('maintenance'); }
+                  },
+                  {
+                    title: 'Icônes de Catégorie',
+                    desc: 'Bibliothèque, import SVG/PNG et assignations personnalisées',
+                    badge: 'Design',
+                    icon: 'label',
+                    bg: 'bg-[#F5F3FF]',
+                    color: 'text-[#7C3AED]',
+                    action: () => { setActiveAdminTab('config'); setConfigSubTab('icons'); }
+                  },
+                  {
+                    title: 'Statut & Diagnostic Supabase',
+                    desc: 'Connectivité PostgreSQL, latence et état des tables',
+                    badge: dbStatus === 'connected' ? 'En ligne' : 'Vérification',
+                    icon: 'database',
+                    bg: 'bg-[#ECFDF5]',
+                    color: 'text-[#047857]',
+                    action: () => { setActiveAdminTab('database'); setDatabaseSubTab('supabase'); }
+                  },
+                  {
+                    title: 'Scripts & Migrations SQL',
+                    desc: 'Schémas SQL prêts à exécuter pour les versions futures',
+                    badge: 'SQL',
+                    icon: 'bolt',
+                    bg: 'bg-[#EFF6FF]',
+                    color: 'text-primary-container',
+                    action: () => { setActiveAdminTab('database'); setDatabaseSubTab('migrations'); }
+                  },
+                  {
+                    title: 'Synchronisation Cloud',
+                    desc: 'Forcer la synchronisation manuelle et tester la persistance',
+                    badge: 'Sync',
+                    icon: 'sync',
+                    bg: 'bg-[#EFF6FF]',
+                    color: 'text-primary',
+                    action: () => handleForceSync()
+                  },
+                  {
+                    title: 'Serveur Web Push (VAPID)',
+                    desc: 'Configuration notifications push et envoi de push test',
+                    badge: pushPermission === 'granted' ? 'Actif' : 'En attente',
+                    icon: 'cell_tower',
+                    bg: 'bg-[#FEF3C7]',
+                    color: 'text-[#D97706]',
+                    action: () => { setActiveAdminTab('database'); setDatabaseSubTab('push'); }
+                  },
+                  {
+                    title: 'Cache & Stockage technique',
+                    desc: 'Vider le cache applicatif, IndexedDB et rafraîchir',
+                    badge: cacheSizeMb,
+                    icon: 'save',
+                    bg: 'bg-slate-100',
+                    color: 'text-slate-600',
+                    action: () => { setActiveAdminTab('config'); setConfigSubTab('cache'); }
+                  },
+                  {
+                    title: 'Journaux & Alertes système',
+                    desc: 'Journal des erreurs JavaScript et historique des alertes',
+                    badge: `${errorLogs.length} logs`,
+                    icon: 'bar_chart',
+                    bg: 'bg-[#FEE2E2]',
+                    color: 'text-[#DC2626]',
+                    action: () => { setActiveAdminTab('diagnostics'); setDiagnosticsSubTab('logs'); }
+                  },
+                  {
+                    title: 'Environnement & Système',
+                    desc: 'Détails du navigateur, mode PWA autonome et Service Worker',
+                    badge: isPwa ? 'PWA' : 'Navigateur',
+                    icon: 'laptop_chromebook',
+                    bg: 'bg-slate-100',
+                    color: 'text-primary',
+                    action: () => { setActiveAdminTab('diagnostics'); setDiagnosticsSubTab('environment'); }
+                  },
+                  {
+                    title: 'Zone critique & Danger',
+                    desc: 'Réinitialisation des données de test et purge d’urgence',
+                    badge: 'Danger',
+                    icon: 'warning',
+                    bg: 'bg-[#FEF2F2]',
+                    color: 'text-[#DC2626]',
+                    action: () => setIsPurgeModalOpen(true)
+                  }
+                ];
 
-          {/* Section 3: Base de données & Synchro */}
-          <div className="space-y-2">
-            <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
-              Base de données & Synchronisation
-            </h4>
-            <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
-              <AdminMenuItemRow
-                iconBg="bg-emerald-50 dark:bg-emerald-950/60"
-                iconColor="text-emerald-600 dark:text-emerald-400"
-                icon={<span className="text-xl">🗄️</span>}
-                title="Statut & Diagnostic Supabase"
-                description="Vérifier la connectivité aux tables PostgreSQL et la latence"
-                value={dbStatus === 'connected' ? 'En ligne' : 'Erreur'}
+                const filtered = allSearchableTools.filter(
+                  t => t.title.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q)
+                );
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="py-12 text-center space-y-2">
+                      <span className="material-symbols-outlined text-[36px] text-slate-400">search_off</span>
+                      <h4 className="text-base font-bold text-slate-800 dark:text-slate-200">Aucun outil trouvé</h4>
+                      <p className="text-xs text-slate-400">Modifiez votre recherche ou utilisez les filtres par onglet.</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl divide-y divide-slate-100 dark:divide-slate-700/60 overflow-hidden shadow-xs">
+                    {filtered.map((item, idx) => (
+                      <div
+                        key={idx}
+                        onClick={item.action}
+                        className="flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors cursor-pointer active:scale-[0.99]"
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className={`w-10 h-10 rounded-xl ${item.bg} flex items-center justify-center shrink-0 ${item.color}`}>
+                            <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">{item.title}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{item.desc}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                          <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
+                            {item.badge}
+                          </span>
+                          <span className="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          ) : adminSegment === 'overview' ? (
+            /* ======================================================= */
+            /* TAB 1: VUE D'ENSEMBLE                                   */
+            /* ======================================================= */
+            <div className="space-y-4">
+              {/* System Status Master Card */}
+              <div
                 onClick={() => {
                   setActiveAdminTab('database');
                   setDatabaseSubTab('supabase');
                 }}
-              />
-              <AdminMenuItemRow
-                iconBg="bg-teal-50 dark:bg-teal-950/60"
-                iconColor="text-teal-600 dark:text-teal-400"
-                icon={<span className="text-xl">⚡</span>}
-                title="Scripts & Migrations SQL"
-                description="Schémas SQL prêts à exécuter pour les nouvelles fonctionnalités"
-                value="SQL"
-                onClick={() => {
-                  setActiveAdminTab('database');
-                  setDatabaseSubTab('migrations');
-                }}
-              />
-              <AdminMenuItemRow
-                iconBg="bg-cyan-50 dark:bg-cyan-950/60"
-                iconColor="text-cyan-600 dark:text-cyan-400"
-                icon={<span className="text-xl">🔄</span>}
-                title="Synchronisation Cloud"
-                description="Forcer la synchronisation manuelle et tester la persistance"
-                value="Sync"
-                onClick={() => {
-                  setActiveAdminTab('database');
-                  setDatabaseSubTab('sync');
-                }}
-              />
-              <AdminMenuItemRow
-                iconBg="bg-amber-50 dark:bg-amber-950/60"
-                iconColor="text-amber-600 dark:text-amber-400"
-                icon={<span className="text-xl">📡</span>}
-                title="Serveur Web Push (VAPID)"
-                description="Configuration des notifications push et envoi de push de test"
-                value={pushPermission === 'granted' ? 'Actif' : 'En attente'}
-                onClick={() => {
-                  setActiveAdminTab('database');
-                  setDatabaseSubTab('push');
-                }}
-              />
-            </div>
-          </div>
+                className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl p-4 shadow-xs flex items-center justify-between hover:border-blue-400 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[24px]">bolt</span>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h2 className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">
+                        Système DuoBudget Cloud
+                      </h2>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                      Supabase ({latencyMs || 84}ms) • {foyersCount} foyer{foyersCount > 1 ? 's' : ''} • {profiles.length} comptes
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 ml-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-[#ECFDF5] text-[#047857] dark:bg-emerald-950/60 dark:text-emerald-300 border border-[#A7F3D0] dark:border-emerald-800">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-ping"></span>
+                    <span>En ligne</span>
+                  </span>
+                  <span className="material-symbols-outlined text-slate-400 text-[20px]">chevron_right</span>
+                </div>
+              </div>
 
-          {/* Section 4: Outils & Configuration */}
-          <div className="space-y-2">
-            <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
-              Outils & Configuration
-            </h4>
-            <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
-              <AdminMenuItemRow
-                iconBg="bg-orange-50 dark:bg-orange-950/60"
-                iconColor="text-orange-600 dark:text-orange-400"
-                icon={<span className="text-xl">🛠️</span>}
-                title="Mode Maintenance"
-                description="Bloquer l'accès aux utilisateurs pendant les mises à jour"
-                badge={isMaintenanceMode ? 'Activé' : undefined}
-                badgeColor="bg-orange-500 text-white"
-                value={isMaintenanceMode ? 'Verrouillé' : 'Public'}
-                onClick={() => {
-                  setActiveAdminTab('config');
-                  setConfigSubTab('maintenance');
-                }}
-              />
-              <AdminMenuItemRow
-                iconBg="bg-fuchsia-50 dark:bg-fuchsia-950/60"
-                iconColor="text-fuchsia-600 dark:text-fuchsia-400"
-                icon={<span className="text-xl">🏷️</span>}
-                title="Icônes de Catégorie"
-                description="Bibliothèque d'icônes, import SVG/PNG et assignations personnalisées"
-                value="Design"
-                onClick={() => {
-                  setActiveAdminTab('config');
-                  setConfigSubTab('icons');
-                }}
-              />
-              <AdminMenuItemRow
-                iconBg="bg-blue-50 dark:bg-blue-950/60"
-                iconColor="text-blue-600 dark:text-blue-400"
-                icon={<span className="text-xl">💾</span>}
-                title="Cache & Stockage technique"
-                description="Vider le cache applicatif, IndexedDB et rafraîchir le Service Worker"
-                value={cacheSizeMb}
-                onClick={() => {
-                  setActiveAdminTab('config');
-                  setConfigSubTab('cache');
-                }}
-              />
-            </div>
-          </div>
+              {/* 2x2 Bento Metric Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* 1. Foyers actifs */}
+                <div
+                  onClick={() => {
+                    setActiveAdminTab('foyers');
+                    setFoyersSubTab('foyers');
+                  }}
+                  className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl p-3.5 shadow-xs flex flex-col justify-between hover:border-blue-400 transition-colors cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
+                    <span className="text-xs font-semibold">Foyers actifs</span>
+                    <span className="material-symbols-outlined text-[18px] text-blue-600 dark:text-blue-400">cottage</span>
+                  </div>
+                  <div className="flex items-baseline justify-between mt-2">
+                    <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">{foyersCount}</span>
+                    <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">100% connectés</span>
+                  </div>
+                </div>
 
-          {/* Section 5: Diagnostics & Sécurité */}
-          <div className="space-y-2">
-            <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
-              Diagnostics & Sécurité
-            </h4>
-            <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
-              <AdminMenuItemRow
-                iconBg="bg-rose-50 dark:bg-rose-950/60"
-                iconColor="text-rose-600 dark:text-rose-400"
-                icon={<span className="text-xl">📊</span>}
-                title="Journaux & Alertes système"
-                description="Journal des erreurs JavaScript et historique des alertes"
-                value={`${errorLogs.length} logs`}
-                onClick={() => {
-                  setActiveAdminTab('diagnostics');
-                  setDiagnosticsSubTab('logs');
-                }}
-              />
-              <AdminMenuItemRow
-                iconBg="bg-slate-100 dark:bg-slate-700/60"
-                iconColor="text-slate-600 dark:text-slate-300"
-                icon={<span className="text-xl">💻</span>}
-                title="Environnement & Système"
-                description="Détails du navigateur, mode PWA autonome et Service Worker"
-                value={isPwa ? 'PWA' : 'Navigateur'}
-                onClick={() => {
-                  setActiveAdminTab('diagnostics');
-                  setDiagnosticsSubTab('environment');
-                }}
-              />
-              <AdminMenuItemRow
-                iconBg="bg-red-50 dark:bg-red-950/60"
-                iconColor="text-red-600 dark:text-red-400"
-                icon={<span className="text-xl">⚠️</span>}
-                title="Zone critique & Danger"
-                description="Réinitialisation des jeux de données de test et purge d'urgence"
-                titleColor="text-red-600 dark:text-red-400"
-                value="Danger"
-                onClick={() => {
-                  setActiveAdminTab('diagnostics');
-                  setDiagnosticsSubTab('danger');
-                }}
-              />
-            </div>
-          </div>
+                {/* 2. Comptes profils */}
+                <div
+                  onClick={() => {
+                    setActiveAdminTab('foyers');
+                    setFoyersSubTab('accounts');
+                  }}
+                  className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl p-3.5 shadow-xs flex flex-col justify-between hover:border-blue-400 transition-colors cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
+                    <span className="text-xs font-semibold">Comptes profils</span>
+                    <span className="material-symbols-outlined text-[18px] text-blue-600 dark:text-blue-400">group</span>
+                  </div>
+                  <div className="flex items-baseline justify-between mt-2">
+                    <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">{profiles.length}</span>
+                    <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">2 par foyer</span>
+                  </div>
+                </div>
 
-          {/* Section 6: Vue Globale */}
-          <div className="space-y-2">
-            <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
-              Affichage
-            </h4>
-            <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
-              <AdminMenuItemRow
-                iconBg="bg-slate-100 dark:bg-slate-700/60"
-                iconColor="text-slate-700 dark:text-slate-300"
-                icon={<span className="text-xl">📋</span>}
-                title="Afficher toutes les rubriques"
-                description="Dérouler toutes les sections d'administration sur une seule page continue"
-                value="Tout voir"
-                onClick={() => setActiveAdminTab('all')}
-              />
+                {/* 3. Tickets support */}
+                <div
+                  onClick={() => setActiveAdminTab('messages')}
+                  className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl p-3.5 shadow-xs flex flex-col justify-between hover:border-blue-400 transition-colors cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
+                    <span className="text-xs font-semibold">Tickets support</span>
+                    <span className="material-symbols-outlined text-[18px] text-amber-500">mark_email_unread</span>
+                  </div>
+                  <div className="flex items-baseline justify-between mt-2">
+                    <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">{contactMessages.length}</span>
+                    <span className={`text-[11px] font-semibold ${unreadAdminCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'}`}>
+                      {unreadAdminCount > 0 ? `${unreadAdminCount} non lu${unreadAdminCount > 1 ? 's' : ''}` : 'À jour'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 4. Erreurs logs */}
+                <div
+                  onClick={() => {
+                    setActiveAdminTab('diagnostics');
+                    setDiagnosticsSubTab('logs');
+                  }}
+                  className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl p-3.5 shadow-xs flex flex-col justify-between hover:border-blue-400 transition-colors cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
+                    <span className="text-xs font-semibold">Erreurs logs</span>
+                    <span className="material-symbols-outlined text-[18px] text-emerald-600 dark:text-emerald-400">check_circle</span>
+                  </div>
+                  <div className="flex items-baseline justify-between mt-2">
+                    <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">{errorLogs.length}</span>
+                    <span className={`text-[11px] font-semibold ${errorLogs.length === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
+                      {errorLogs.length === 0 ? 'Parfait' : `${errorLogs.length} err.`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Developer Actions Bar */}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleTestConnection}
+                  disabled={dbStatus === 'checking'}
+                  className="flex-1 h-11 bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-750 active:scale-[0.98] transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  <span className={`material-symbols-outlined text-[18px] text-blue-600 dark:text-blue-400 ${dbStatus === 'checking' ? 'animate-spin' : ''}`}>
+                    sync
+                  </span>
+                  <span>{dbStatus === 'checking' ? 'Vérification...' : 'Vérifier la connexion'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveAdminTab('diagnostics');
+                    setDiagnosticsSubTab('logs');
+                  }}
+                  className="flex-1 h-11 bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-750 active:scale-[0.98] transition-all shadow-xs cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-slate-500 dark:text-slate-400">
+                    receipt_long
+                  </span>
+                  <span>Consulter les logs</span>
+                </button>
+              </div>
+
+              {/* Highlight Maintenance Notice */}
+              <div className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl p-4 shadow-xs flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[20px]">info</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    Statut des synchronisations
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                    Toutes les passerelles et calculs de péréquation DuoBudget sont opérationnels. Prochaine synchronisation automatique en temps réel.
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : adminSegment === 'admin' ? (
+            /* ======================================================= */
+            /* TAB 2: ADMINISTRATION                                   */
+            /* ======================================================= */
+            <div className="space-y-4">
+              {/* Section: Support & Communications */}
+              <section className="space-y-1.5">
+                <h2 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
+                  Support & Communications
+                </h2>
+                <div className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl overflow-hidden shadow-xs">
+                  <div
+                    onClick={() => setActiveAdminTab('messages')}
+                    className="flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors cursor-pointer active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] dark:bg-blue-950/60 border border-[#DBEAFE] dark:border-blue-900/40 flex items-center justify-center shrink-0 text-[#2563EB] dark:text-blue-400">
+                        <span className="material-symbols-outlined text-[22px]">mail</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">Messages utilisateurs</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Consulter et répondre aux demandes</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-[#ECFDF5] text-[#047857] dark:bg-emerald-950/60 dark:text-emerald-300 border border-[#A7F3D0] dark:border-emerald-800">
+                        {contactMessages.length} msg
+                      </span>
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Section: Foyers & Accès */}
+              <section className="space-y-1.5">
+                <h2 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
+                  Foyers & Accès
+                </h2>
+                <div className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl divide-y divide-slate-100 dark:divide-slate-700/60 overflow-hidden shadow-xs">
+                  {/* Item 1: Foyers partagés */}
+                  <div
+                    onClick={() => {
+                      setActiveAdminTab('foyers');
+                      setFoyersSubTab('foyers');
+                    }}
+                    className="flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors cursor-pointer active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#F0FDF4] dark:bg-emerald-950/60 border border-[#DCFCE7] dark:border-emerald-900/40 flex items-center justify-center shrink-0 text-[#16A34A] dark:text-emerald-400">
+                        <span className="material-symbols-outlined text-[22px]">holiday_village</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">Foyers partagés</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Gestion, foyer actif et codes du couple</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
+                        {foyersCount} foyer{foyersCount > 1 ? 's' : ''}
+                      </span>
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+                    </div>
+                  </div>
+
+                  {/* Item 2: Comptes utilisateurs */}
+                  <div
+                    onClick={() => {
+                      setActiveAdminTab('foyers');
+                      setFoyersSubTab('accounts');
+                    }}
+                    className="flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors cursor-pointer active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] dark:bg-blue-950/60 border border-[#DBEAFE] dark:border-blue-900/40 flex items-center justify-center shrink-0 text-[#2563EB] dark:text-blue-400">
+                        <span className="material-symbols-outlined text-[22px]">group</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">Comptes utilisateurs</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Profils et réinitialisation des mots de passe</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
+                        {profiles.length} comptes
+                      </span>
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+                    </div>
+                  </div>
+
+                  {/* Item 3: Sessions et foyers inactifs */}
+                  <div
+                    onClick={() => {
+                      setActiveAdminTab('foyers');
+                      setFoyersSubTab('sessions');
+                    }}
+                    className="flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors cursor-pointer active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#FEF2F2] dark:bg-rose-950/60 border border-[#FEE2E2] dark:border-rose-900/40 flex items-center justify-center shrink-0 text-[#DC2626] dark:text-rose-400">
+                        <span className="material-symbols-outlined text-[22px]">lock_reset</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">Sessions et foyers inactifs</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Historique des connexions et purge</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-[#FFFBEB] text-[#B45309] dark:bg-amber-950/60 dark:text-amber-300 border border-[#FDE68A] dark:border-amber-800">
+                        Sécurité
+                      </span>
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Section: Outils & Configuration Duo */}
+              <section className="space-y-1.5">
+                <h2 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
+                  Outils & Configuration Duo
+                </h2>
+                <div className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl divide-y divide-slate-100 dark:divide-slate-700/60 overflow-hidden shadow-xs">
+                  {/* Mode Maintenance with Live Switch */}
+                  <div className="p-3.5 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#FFFBEB] dark:bg-amber-950/60 border border-[#FEF3C7] dark:border-amber-900/40 flex items-center justify-center shrink-0 text-[#D97706] dark:text-amber-400">
+                        <span className="material-symbols-outlined text-[22px]">build</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100">Mode Maintenance</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className={`w-1.5 h-1.5 rounded-full ${isMaintenanceMode ? 'bg-[#DC2626]' : 'bg-[#10B981]'}`}></span>
+                          <p className={`text-xs ${isMaintenanceMode ? 'text-[#DC2626] font-semibold' : 'text-[#047857] dark:text-emerald-400'}`}>
+                            {isMaintenanceMode ? 'Activé · Application verrouillée' : 'Désactivé · Application accessible'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    {/* iOS style toggle switch */}
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={isMaintenanceMode}
+                      onClick={() => onToggleMaintenanceMode?.()}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        isMaintenanceMode ? 'bg-amber-500' : 'bg-slate-200 dark:bg-slate-700'
+                      }`}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                          isMaintenanceMode ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Icônes de Catégorie */}
+                  <div
+                    onClick={() => {
+                      setActiveAdminTab('config');
+                      setConfigSubTab('icons');
+                    }}
+                    className="flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors cursor-pointer active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#F5F3FF] dark:bg-purple-950/60 border border-[#EDE9FE] dark:border-purple-900/40 flex items-center justify-center shrink-0 text-[#7C3AED] dark:text-purple-400">
+                        <span className="material-symbols-outlined text-[22px]">label</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">Icônes de Catégorie</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Bibliothèque, import SVG/PNG et assignations</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
+                        Design
+                      </span>
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Section: Affichage & Tous les Outils */}
+              <section className="space-y-1.5">
+                <h2 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
+                  Affichage & Tous les Outils
+                </h2>
+                <div className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl overflow-hidden shadow-xs">
+                  <div
+                    onClick={() => setActiveAdminTab('all')}
+                    className="flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors cursor-pointer active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 flex items-center justify-center shrink-0 text-slate-600 dark:text-slate-300">
+                        <span className="material-symbols-outlined text-[22px]">table_rows</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">Tous les outils</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Dérouler toutes les sections et diagnostics</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">Tout voir</span>
+                      <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-[18px]">arrow_forward_ios</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          ) : (
+            /* ======================================================= */
+            /* TAB 3: DÉVELOPPEMENT                                    */
+            /* ======================================================= */
+            <div className="space-y-4">
+              {/* Quick Metrics Strip */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 p-2.5 rounded-xl shadow-xs flex flex-col">
+                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Latency API</span>
+                  <span className="text-base font-bold text-slate-900 dark:text-slate-100 mt-0.5">{latencyMs || 84} ms</span>
+                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">Optimal</span>
+                </div>
+                <div className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 p-2.5 rounded-xl shadow-xs flex flex-col">
+                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Stockage Local</span>
+                  <span className="text-base font-bold text-slate-900 dark:text-slate-100 mt-0.5">{cacheSizeMb}</span>
+                  <span className="text-[10px] font-medium text-slate-400">IndexedDB</span>
+                </div>
+                <div className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 p-2.5 rounded-xl shadow-xs flex flex-col">
+                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Sync Queue</span>
+                  <span className="text-base font-bold text-blue-600 dark:text-blue-400 mt-0.5">0 en attente</span>
+                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">À jour</span>
+                </div>
+              </div>
+
+              {/* Section 1: Base de données & Synchronisation */}
+              <section className="space-y-1.5">
+                <h2 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
+                  Base de données & Synchronisation
+                </h2>
+                <div className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl divide-y divide-slate-100 dark:divide-slate-700/60 overflow-hidden shadow-xs">
+                  {/* Statut & Diagnostic Supabase */}
+                  <div
+                    onClick={() => {
+                      setActiveAdminTab('database');
+                      setDatabaseSubTab('supabase');
+                    }}
+                    className="flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors cursor-pointer active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#ECFDF5] dark:bg-emerald-950/60 flex items-center justify-center text-[#047857] dark:text-emerald-400 shrink-0">
+                        <span className="material-symbols-outlined text-[22px]">database</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">Statut & Diagnostic Supabase</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Connectivité PostgreSQL et latence {latencyMs || 84}ms</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 pl-2 shrink-0">
+                      <span className="bg-[#ECFDF5] text-[#047857] dark:bg-emerald-950/60 dark:text-emerald-300 text-xs px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span> En ligne
+                      </span>
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+                    </div>
+                  </div>
+
+                  {/* Scripts & Migrations SQL */}
+                  <div
+                    onClick={() => {
+                      setActiveAdminTab('database');
+                      setDatabaseSubTab('migrations');
+                    }}
+                    className="flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors cursor-pointer active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] dark:bg-blue-950/60 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                        <span className="material-symbols-outlined text-[22px]">bolt</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">Scripts & Migrations SQL</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Schémas SQL prêts à exécuter</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 pl-2 shrink-0">
+                      <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs px-2 py-0.5 rounded-full font-semibold">SQL</span>
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+                    </div>
+                  </div>
+
+                  {/* Synchronisation Cloud */}
+                  <div
+                    onClick={() => handleForceSync()}
+                    className="flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors cursor-pointer active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] dark:bg-blue-950/60 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                        <span className="material-symbols-outlined text-[22px]">sync</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">Synchronisation Cloud</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Forcer la synchronisation manuelle</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 pl-2 shrink-0">
+                      <span className="bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs px-2 py-0.5 rounded-full font-semibold">Sync</span>
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+                    </div>
+                  </div>
+
+                  {/* Serveur Web Push */}
+                  <div
+                    onClick={() => {
+                      setActiveAdminTab('database');
+                      setDatabaseSubTab('push');
+                    }}
+                    className="flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors cursor-pointer active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#FEF3C7] dark:bg-amber-950/60 text-[#D97706] dark:text-amber-400 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[22px]">cell_tower</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">Serveur Web Push (VAPID)</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Configuration notifications et push de test</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 pl-2 shrink-0">
+                      <span className="bg-[#ECFDF5] text-[#047857] dark:bg-emerald-950/60 dark:text-emerald-300 text-xs px-2 py-0.5 rounded-full font-semibold">Actif</span>
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Section 2: Diagnostics & Système */}
+              <section className="space-y-1.5">
+                <h2 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
+                  Diagnostics & Système
+                </h2>
+                <div className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl divide-y divide-slate-100 dark:divide-slate-700/60 overflow-hidden shadow-xs">
+                  {/* Cache & Stockage */}
+                  <div
+                    onClick={() => {
+                      setActiveAdminTab('config');
+                      setConfigSubTab('cache');
+                    }}
+                    className="flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors cursor-pointer active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700/60 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0">
+                        <span className="material-symbols-outlined text-[22px]">save</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">Cache & Stockage technique</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Vider cache, IndexedDB et rafraîchir</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 pl-2 shrink-0">
+                      <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs px-2 py-0.5 rounded-full font-semibold">{cacheSizeMb}</span>
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+                    </div>
+                  </div>
+
+                  {/* System logs */}
+                  <div
+                    onClick={() => {
+                      setActiveAdminTab('diagnostics');
+                      setDiagnosticsSubTab('logs');
+                    }}
+                    className="flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors cursor-pointer active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#FEE2E2] dark:bg-rose-950/60 text-[#DC2626] dark:text-rose-400 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[22px]">bar_chart</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">Journaux & Alertes système</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Journal des erreurs JS et historique</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 pl-2 shrink-0">
+                      <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs px-2 py-0.5 rounded-full font-semibold">{errorLogs.length} logs</span>
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+                    </div>
+                  </div>
+
+                  {/* Environment */}
+                  <div
+                    onClick={() => {
+                      setActiveAdminTab('diagnostics');
+                      setDiagnosticsSubTab('environment');
+                    }}
+                    className="flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors cursor-pointer active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700/60 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                        <span className="material-symbols-outlined text-[22px]">laptop_chromebook</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">Environnement & Système</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Mode PWA autonome et Service Worker</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 pl-2 shrink-0">
+                      <span className="bg-[#EFF6FF] dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-xs px-2 py-0.5 rounded-full font-semibold">PWA</span>
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Section 3: Sécurité & Actions Sensibles */}
+              <section className="space-y-1.5">
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400">
+                    <span className="material-symbols-outlined text-[18px]">warning</span>
+                    <h2 className="text-xs font-bold uppercase tracking-wider">
+                      Sécurité & Actions Sensibles
+                    </h2>
+                  </div>
+                  <span className="text-[10px] font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/60 px-2 py-0.5 rounded-full border border-red-200 dark:border-red-900/60">
+                    Zone protégée
+                  </span>
+                </div>
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-red-200 dark:border-red-900/60 shadow-xs divide-y divide-red-100 dark:divide-red-900/40 overflow-hidden">
+                  {/* Test Data Reset */}
+                  <div
+                    onClick={() => setIsPurgeModalOpen(true)}
+                    className="p-3.5 bg-red-50/20 dark:bg-red-950/20 hover:bg-red-50/50 dark:hover:bg-red-950/40 transition-colors flex items-center justify-between cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#FEF2F2] dark:bg-red-950/60 border border-[#FECACA] dark:border-red-900/60 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0">
+                        <span className="material-symbols-outlined text-[22px]">restart_alt</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">Réinitialisation des données de test</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Purge des jeux d'essai uniquement (mocked rows)</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 pl-2 shrink-0">
+                      <span className="bg-[#FEF2F2] dark:bg-red-950/60 text-red-600 dark:text-red-400 border border-[#FECACA] dark:border-red-900/60 text-xs px-2 py-0.5 rounded-full font-semibold">
+                        Danger
+                      </span>
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+                    </div>
+                  </div>
+
+                  {/* Emergency Purge Session */}
+                  <div
+                    onClick={() => setIsPurgeModalOpen(true)}
+                    className="p-3.5 bg-red-50/20 dark:bg-red-950/20 hover:bg-red-50/50 dark:hover:bg-red-950/40 transition-colors flex items-center justify-between cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#FEF2F2] dark:bg-red-950/60 border border-[#FECACA] dark:border-red-900/60 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0">
+                        <span className="material-symbols-outlined text-[22px]">power_settings_new</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">Purge d'urgence des sessions & foyers</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Déconnexion forcée et révocation des tokens</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 pl-2 shrink-0">
+                      <span className="bg-[#FEF2F2] dark:bg-red-950/60 text-red-600 dark:text-red-400 border border-[#FECACA] dark:border-red-900/60 text-xs px-2 py-0.5 rounded-full font-semibold">
+                        Danger
+                      </span>
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+                    </div>
+                  </div>
+
+                  {/* Immediate Maintenance toggle panel */}
+                  <div className="p-3.5 bg-white dark:bg-slate-800 flex items-center justify-between gap-3">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">Mode maintenance immédiat</span>
+                      <span className="text-xs text-slate-400 dark:text-slate-500">Bloquer l'accès aux deux partenaires</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onToggleMaintenanceMode?.()}
+                      className={`h-9 px-3.5 rounded-lg text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer ${
+                        isMaintenanceMode
+                          ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                          : 'bg-[#FEF2F2] hover:bg-red-100 dark:bg-red-950/60 border border-[#FCA5A5] dark:border-red-800 text-[#B91C1C] dark:text-red-300'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[16px]">lock</span>
+                      <span>{isMaintenanceMode ? 'Désactiver' : 'Activer'}</span>
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              {/* Section 4: Affichage & Index */}
+              <section className="space-y-1.5">
+                <h2 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1">
+                  Affichage
+                </h2>
+                <div className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 rounded-xl overflow-hidden shadow-xs">
+                  <div
+                    onClick={() => setActiveAdminTab('all')}
+                    className="flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors cursor-pointer active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700/60 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0">
+                        <span className="material-symbols-outlined text-[22px]">article</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">Afficher toutes les rubriques</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Dérouler toutes les sections d'administration sur une seule page</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Tout voir</span>
+                      <span className="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Developer Info Banner */}
+              <div className="bg-[#F8FAFC] dark:bg-slate-900/60 border border-slate-200/90 dark:border-slate-700 rounded-xl p-3.5 flex items-start gap-3 text-slate-600 dark:text-slate-300">
+                <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-[20px] mt-0.5">terminal</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">Console développeur active</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-mono truncate">
+                    Build 2026.09 • Branch: main • Commit: a839fd • DuoBudget Core v2.4.0 (PWA Standalone) ap-east-1
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Interactive Modal: Zone Critique & Purge */}
+          {isPurgeModalOpen && (
+            <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fade-in">
+              <div className="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl space-y-4">
+                <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
+                  <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-900/60 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[24px]">warning</span>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-900 dark:text-white text-base">Zone critique & Purge</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Confirmation administrateur requise</p>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-red-50 dark:bg-red-950/40 rounded-xl border border-red-200 dark:border-red-900/50 text-xs text-red-700 dark:text-red-300 space-y-1">
+                  <p className="font-bold">Attention : Opération irréversible.</p>
+                  <p className="leading-relaxed">
+                    Cette action permet de vider les tables de staging, supprimer les transactions de test orphelines et réinitialiser les compteurs sans altérer les foyers vérifiés.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    Pour confirmer, saisissez « PURGE » :
+                  </label>
+                  <input
+                    type="text"
+                    value={purgeInputText}
+                    onChange={(e) => setPurgeInputText(e.target.value)}
+                    placeholder="PURGE"
+                    className="w-full h-11 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono text-slate-900 dark:text-white focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none uppercase"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsPurgeModalOpen(false);
+                      setPurgeInputText('');
+                    }}
+                    className="flex-1 h-11 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs sm:text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors cursor-pointer"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="button"
+                    disabled={purgeInputText.trim() !== 'PURGE'}
+                    onClick={async () => {
+                      if (purgeInputText.trim() === 'PURGE') {
+                        await handleResetTestData();
+                        setIsPurgeModalOpen(false);
+                        setPurgeInputText('');
+                      }
+                    }}
+                    className="flex-1 h-11 rounded-xl bg-red-600 text-white font-bold text-xs sm:text-sm hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    Purger les tests
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1494,7 +2238,7 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
             onDeleteMessage={handleContactDelete}
             onMarkAsRead={handleContactMarkAsRead}
             onRefresh={handleContactRefresh}
-            onBack={() => setActiveAdminTab('all')}
+            onBack={() => setActiveAdminTab('menu')}
           />
         </div>
       )}
