@@ -142,16 +142,53 @@ export async function notifySubscriptionsDirectly(
       return { success: true, count: 0 };
     }
 
+    const performedBy = notificationData?.performedBy;
+    const senderUser = notificationData?.senderUser;
+    const senderUsername = notificationData?.senderUsername;
+    const senderEndpoint = notificationData?.senderEndpoint;
+    const senderEmail = notificationData?.senderEmail;
+
+    // Collect all identifiers of the sender
+    const senderKeys = new Set<string>();
+    [currentUser, performedBy, senderUser, senderUsername, senderEmail, notificationData?.author, notificationData?.user]
+      .filter(Boolean)
+      .forEach(k => {
+        const norm = String(k).toLowerCase().trim();
+        if (norm) {
+          senderKeys.add(norm);
+          if (norm === 'vincent') { senderKeys.add('vincent'); senderKeys.add('user.vincent'); }
+          if (norm === 'sophie') { senderKeys.add('sophie'); senderKeys.add('user.sophie'); }
+        }
+      });
+
     const targetFoyerId = notificationData?.foyer_id || notificationData?.expense?.foyer_id || notificationData?.moneyPotTransaction?.foyer_id || 'foyer_vincent_sophie';
 
-    // 2. Filter out current user's own subscription and subscriptions outside the target foyer
+    // 2. Filter out current user's own subscription, sender device endpoint, and subscriptions outside target foyer
     const otherSubscriptions = subscriptionsList.filter(sub => {
-      if (sub.user_id === currentUser) return false;
-      
       const subObj = typeof sub.subscription === 'string' ? JSON.parse(sub.subscription) : sub.subscription;
       if (!subObj || !subObj.endpoint) return false;
 
-      const subFoyerId = subObj.foyer_id || (sub.user_id === 'Vincent' || sub.user_id === 'Sophie' || sub.user_id === 'Commun' ? 'foyer_vincent_sophie' : undefined);
+      // Exclude by sender endpoint
+      if (senderEndpoint && subObj.endpoint === senderEndpoint) {
+        return false;
+      }
+
+      // Exclude by sender identifiers (case-insensitive)
+      const subUserId = String(sub.user_id || '').toLowerCase().trim();
+      const subObjUser = String(subObj.user_id || subObj.username || subObj.user || '').toLowerCase().trim();
+      const subObjEmail = String(subObj.email || subObj.user_email || '').toLowerCase().trim();
+
+      if (subUserId && (senderKeys.has(subUserId) || (performedBy && subUserId === String(performedBy).toLowerCase().trim()))) {
+        return false;
+      }
+      if (subObjUser && senderKeys.has(subObjUser)) {
+        return false;
+      }
+      if (subObjEmail && senderKeys.has(subObjEmail)) {
+        return false;
+      }
+
+      const subFoyerId = subObj.foyer_id || (subUserId === 'vincent' || subUserId === 'sophie' || subUserId === 'commun' ? 'foyer_vincent_sophie' : undefined);
       if (targetFoyerId === 'foyer_vincent_sophie') {
         return !subFoyerId || subFoyerId === 'foyer_vincent_sophie';
       }

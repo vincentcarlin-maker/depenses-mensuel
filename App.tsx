@@ -945,7 +945,29 @@ const MainApp: React.FC<{
   const dispatchPushNotification = useCallback(async (payload: { type: 'add' | 'delete' | 'update' | 'moneypot'; expense?: any; moneyPotTransaction?: any; performedBy?: string; foyer_id?: string }) => {
     try {
       const author = user === 'Duo' ? 'Commun' : user;
-      const fullPayload = { ...payload, performedBy: author, foyer_id: payload.foyer_id || activeFoyerId };
+
+      // Récupérer l'endpoint du push subscription local actuel pour l'exclure à 100% de l'envoi
+      let senderEndpoint: string | null = null;
+      try {
+        if ('serviceWorker' in navigator) {
+          const reg = await navigator.serviceWorker.getRegistration();
+          const sub = await reg?.pushManager?.getSubscription();
+          if (sub?.endpoint) {
+            senderEndpoint = sub.endpoint;
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      const fullPayload = { 
+        ...payload, 
+        performedBy: author, 
+        senderUser: user,
+        senderUsername: username,
+        senderEndpoint: senderEndpoint,
+        foyer_id: payload.foyer_id || activeFoyerId 
+      };
 
       // 1. Essayer l'Edge Function Supabase en priorité
       let dispatched = false;
@@ -979,7 +1001,7 @@ const MainApp: React.FC<{
       // 3. Dernier recours : envoi direct Web Push depuis le navigateur
       if (!dispatched) {
         try {
-          await notifySubscriptionsDirectly(author, fullPayload);
+          await notifySubscriptionsDirectly(String(author), fullPayload);
         } catch (err) {
           console.error("Erreur d'envoi push direct:", err);
         }
@@ -987,7 +1009,7 @@ const MainApp: React.FC<{
     } catch(e) {
       console.error("Erreur d'émission d'avis push:", e);
     }
-  }, [user, activeFoyerId]);
+  }, [user, username, activeFoyerId]);
 
   // Money Pot Handlers
   const addMoneyPotTransaction = async (transaction: Omit<MoneyPotTransaction, 'id' | 'created_at'>) => {

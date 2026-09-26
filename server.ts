@@ -203,26 +203,64 @@ async function startServer() {
             }
 
             const performedBy = req.body?.performedBy;
-            
+            const senderUser = req.body?.senderUser;
+            const senderUsername = req.body?.senderUsername;
+            const senderEndpoint = req.body?.senderEndpoint;
+            const senderEmail = req.body?.senderEmail;
+
             // Déduire l'auteur de l'événement
             const author = performedBy 
-                ? performedBy
-                : (expense 
-                    ? (expense.user || "Quelqu'un") 
-                    : (moneyPotTransaction ? (moneyPotTransaction.user_name || "Quelqu'un") : "Quelqu'un"));
+                || senderUser 
+                || senderUsername 
+                || (expense ? expense.user : undefined) 
+                || (moneyPotTransaction ? moneyPotTransaction.user_name : undefined) 
+                || "Quelqu'un";
 
             const targetFoyerId = req.body?.foyer_id || expense?.foyer_id || moneyPotTransaction?.foyer_id || 'foyer_vincent_sophie';
 
+            // Construire l'ensemble des identifiants normalisés de l'auteur pour une exclusion robuste
+            const senderKeys = new Set<string>();
+            [performedBy, senderUser, senderUsername, senderEmail, author, req.body?.user, req.body?.username]
+                .filter(Boolean)
+                .forEach(k => {
+                    const norm = String(k).toLowerCase().trim();
+                    if (norm) {
+                        senderKeys.add(norm);
+                        if (norm === 'vincent') { senderKeys.add('vincent'); senderKeys.add('user.vincent'); }
+                        if (norm === 'sophie') { senderKeys.add('sophie'); senderKeys.add('user.sophie'); }
+                    }
+                });
+
             // Filtrer les abonnements :
-            // 1. Ne pas envoyer à l'auteur lui-même
-            // 2. Ne notifier QUE les membres du même foyer
+            // 1. Ne pas envoyer au terminal/navigateur ayant initié l'action (par endpoint WebPush)
+            // 2. Ne pas envoyer à l'auteur lui-même (par user_id, username, email ou souscription)
+            // 3. Ne notifier QUE les membres du même foyer
             const targetSubs = subscriptions.filter((sub) => {
-                if (sub.user_id === author) return false;
-                
                 const subObj = typeof sub.subscription === 'string' ? JSON.parse(sub.subscription) : sub.subscription;
                 if (!subObj || !subObj.endpoint) return false;
 
-                const subFoyerId = subObj.foyer_id || (sub.user_id === 'Vincent' || sub.user_id === 'Sophie' || sub.user_id === 'Commun' ? 'foyer_vincent_sophie' : undefined);
+                // 1. Exclusion stricte par endpoint émetteur
+                if (senderEndpoint && subObj.endpoint === senderEndpoint) {
+                    return false;
+                }
+
+                // 2. Exclusion insensible à la casse par identifiant auteur
+                const subUserId = String(sub.user_id || '').toLowerCase().trim();
+                const subObjUser = String(subObj.user_id || subObj.username || subObj.user || '').toLowerCase().trim();
+                const subObjEmail = String(subObj.email || subObj.user_email || '').toLowerCase().trim();
+
+                if (subUserId && (senderKeys.has(subUserId) || (performedBy && subUserId === String(performedBy).toLowerCase().trim()))) {
+                    return false;
+                }
+                if (subObjUser && senderKeys.has(subObjUser)) {
+                    return false;
+                }
+                if (subObjEmail && senderKeys.has(subObjEmail)) {
+                    return false;
+                }
+
+                // 3. Ne notifier QUE les membres du foyer cible
+                const subFoyerId = subObj.foyer_id || (subUserId === 'vincent' || subUserId === 'sophie' || subUserId === 'commun' ? 'foyer_vincent_sophie' : undefined);
                 if (targetFoyerId === 'foyer_vincent_sophie') {
                     return !subFoyerId || subFoyerId === 'foyer_vincent_sophie';
                 }
