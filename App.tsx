@@ -1103,7 +1103,23 @@ const MainApp: React.FC<{
       });
       
       setFormInitialData(null);
-      setSuccessExpense(data as Expense);
+
+      // Déterminer si l'écran de confirmation d'ajout doit s'afficher
+      // Pour Sophie dans le foyer principal, la confirmation d'ajout est désactivée par défaut
+      const isSophieInMainFoyer = (isMainFoyer || activeFoyerId === 'foyer_vincent_sophie' || !activeFoyerId) && (
+          (typeof user === 'string' && user.toLowerCase().trim() === 'sophie') ||
+          (typeof username === 'string' && username.toLowerCase().trim() === 'sophie')
+      );
+      const confirmUserKey = String(user || username || '').toLowerCase().trim();
+      const confirmKey = `show_expense_confirm_${activeFoyerId || 'foyer_vincent_sophie'}_${confirmUserKey}`;
+      const storedConfirm = localStorage.getItem(confirmKey);
+      const shouldShowConfirmation = storedConfirm !== null
+          ? storedConfirm === 'true'
+          : !isSophieInMainFoyer;
+
+      if (shouldShowConfirmation) {
+          setSuccessExpense(data as Expense);
+      }
       broadcastChange('expenses', 'INSERT', data, user);
       await logActivity({ type: 'add', expense: data as Expense, performedBy: user });
     }

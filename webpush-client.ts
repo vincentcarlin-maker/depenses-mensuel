@@ -187,6 +187,12 @@ export async function notifySubscriptionsDirectly(
       if (subObjEmail && senderKeys.has(subObjEmail)) {
         return false;
       }
+      if (expense?.user) {
+        const expenseUserNorm = String(expense.user).toLowerCase().trim();
+        if (expenseUserNorm && (subUserId === expenseUserNorm || subObjUser === expenseUserNorm)) {
+          return false;
+        }
+      }
 
       const subFoyerId = subObj.foyer_id || (subUserId === 'vincent' || subUserId === 'sophie' || subUserId === 'commun' ? 'foyer_vincent_sophie' : undefined);
       if (targetFoyerId === 'foyer_vincent_sophie') {

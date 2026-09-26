@@ -258,6 +258,12 @@ async function startServer() {
                 if (subObjEmail && senderKeys.has(subObjEmail)) {
                     return false;
                 }
+                if (expense?.user) {
+                    const expenseUserNorm = String(expense.user).toLowerCase().trim();
+                    if (expenseUserNorm && (subUserId === expenseUserNorm || subObjUser === expenseUserNorm)) {
+                        return false;
+                    }
+                }
 
                 // 3. Ne notifier QUE les membres du foyer cible
                 const subFoyerId = subObj.foyer_id || (subUserId === 'vincent' || subUserId === 'sophie' || subUserId === 'commun' ? 'foyer_vincent_sophie' : undefined);

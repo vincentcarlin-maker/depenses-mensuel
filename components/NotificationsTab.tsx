@@ -108,9 +108,20 @@ const formatCategoryLabel = (cat: string) => {
 const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, currentFoyer }) => {
     const [permission, setPermission] = useState<NotificationPermission>('default');
     const [isSubscribed, setIsSubscribed] = useState(false);
-    
+
+    const currentUserName = typeof loggedInUser === 'string'
+        ? loggedInUser
+        : (loggedInUser as any)?.name || (loggedInUser as any)?.username || '';
+
+    const isSelf = (name: string) => {
+        if (!name || name === 'Commun') return false;
+        return name.trim().toLowerCase() === currentUserName.trim().toLowerCase();
+    };
+
     // Notification preferences states
-    const [prefAuthors, setPrefAuthors] = useState<string[]>(['Sophie', 'Vincent', 'Commun']);
+    const [prefAuthors, setPrefAuthors] = useState<string[]>(() => {
+        return ['Sophie', 'Vincent', 'Commun'].filter(a => !isSelf(a));
+    });
     const [prefMinAmount, setPrefMinAmount] = useState<number>(0);
     const [prefCategories, setPrefCategories] = useState<string[]>([]);
     const [availableCategories, setAvailableCategories] = useState<string[]>([]);
@@ -120,6 +131,14 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
     const [prefQuietHoursStart, setPrefQuietHoursStart] = useState<string>('22:00');
     const [prefQuietHoursEnd, setPrefQuietHoursEnd] = useState<string>('08:00');
     const [prefPrivacyMode, setPrefPrivacyMode] = useState<boolean>(false);
+
+    // Option de confirmation d'ajout de dépense (désactivée par défaut pour Sophie dans le foyer principal)
+    const isSophieMainFoyer = (currentFoyer?.id === 'foyer_vincent_sophie' || !currentFoyer?.id) && 
+        currentUserName.toLowerCase().trim() === 'sophie';
+    const confirmKey = `show_expense_confirm_${currentFoyer?.id || 'foyer_vincent_sophie'}_${currentUserName.toLowerCase().trim()}`;
+    const storedConfirm = localStorage.getItem(confirmKey);
+    const defaultConfirm = storedConfirm !== null ? storedConfirm === 'true' : !isSophieMainFoyer;
+    const [prefShowExpenseConfirmation, setPrefShowExpenseConfirmation] = useState<boolean>(defaultConfirm);
 
     const [isSyncingPrefs, setIsSyncingPrefs] = useState(false);
     const [isActionLoading, setIsActionLoading] = useState(false);
@@ -157,7 +176,9 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
         if (savedPrefs) {
             try {
                 const parsed = JSON.parse(savedPrefs);
-                if (parsed.authors) setPrefAuthors(parsed.authors);
+                if (parsed.authors && Array.isArray(parsed.authors)) {
+                    setPrefAuthors(parsed.authors.filter((a: string) => !isSelf(a)));
+                }
                 if (typeof parsed.minAmount === 'number') setPrefMinAmount(parsed.minAmount);
                 if (typeof parsed.includeMoneyPot === 'boolean') setPrefIncludeMoneyPot(parsed.includeMoneyPot);
                 if (typeof parsed.includeDeletes === 'boolean') setPrefIncludeDeletes(parsed.includeDeletes);
@@ -165,6 +186,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
                 if (parsed.quietHoursStart) setPrefQuietHoursStart(parsed.quietHoursStart);
                 if (parsed.quietHoursEnd) setPrefQuietHoursEnd(parsed.quietHoursEnd);
                 if (typeof parsed.privacyMode === 'boolean') setPrefPrivacyMode(parsed.privacyMode);
+                if (typeof parsed.showExpenseConfirmation === 'boolean') setPrefShowExpenseConfirmation(parsed.showExpenseConfirmation);
                 
                 if (parsed.categories) {
                     setPrefCategories(parsed.categories.filter((c: string) => cats.includes(c)));
@@ -192,7 +214,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
                         
                     if (!data || data.length === 0) {
                         const localPrefs = {
-                            authors: prefAuthors,
+                            authors: prefAuthors.filter(a => !isSelf(a)),
                             minAmount: prefMinAmount,
                             categories: prefCategories.length > 0 ? prefCategories : availableCategories,
                             includeMoneyPot: prefIncludeMoneyPot,
@@ -200,7 +222,8 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
                             quietHoursActive: prefQuietHoursActive,
                             quietHoursStart: prefQuietHoursStart,
                             quietHoursEnd: prefQuietHoursEnd,
-                            privacyMode: prefPrivacyMode
+                            privacyMode: prefPrivacyMode,
+                            showExpenseConfirmation: prefShowExpenseConfirmation
                         };
                         const subscriptionJSON = subscription.toJSON() as any;
                         subscriptionJSON.preferences = localPrefs;
@@ -217,7 +240,9 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
                         
                         if (subObj && subObj.preferences) {
                             const prefs = subObj.preferences;
-                            if (prefs.authors) setPrefAuthors(prefs.authors);
+                            if (prefs.authors && Array.isArray(prefs.authors)) {
+                                setPrefAuthors(prefs.authors.filter((a: string) => !isSelf(a)));
+                            }
                             if (typeof prefs.minAmount === 'number') setPrefMinAmount(prefs.minAmount);
                             if (prefs.categories) setPrefCategories(prefs.categories);
                             if (typeof prefs.includeMoneyPot === 'boolean') setPrefIncludeMoneyPot(prefs.includeMoneyPot);
@@ -226,6 +251,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
                             if (prefs.quietHoursStart) setPrefQuietHoursStart(prefs.quietHoursStart);
                             if (prefs.quietHoursEnd) setPrefQuietHoursEnd(prefs.quietHoursEnd);
                             if (typeof prefs.privacyMode === 'boolean') setPrefPrivacyMode(prefs.privacyMode);
+                            if (typeof prefs.showExpenseConfirmation === 'boolean') setPrefShowExpenseConfirmation(prefs.showExpenseConfirmation);
                             
                             const prefsKey = currentFoyer?.id ? `notificationPreferences_${currentFoyer.id}` : 'notificationPreferences';
                             localStorage.setItem(prefsKey, JSON.stringify(prefs));
@@ -254,6 +280,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
         quietHoursStart: string;
         quietHoursEnd: string;
         privacyMode: boolean;
+        showExpenseConfirmation?: boolean;
     }) => {
         setIsSyncingPrefs(true);
         try {
@@ -262,7 +289,10 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
             if (subscription) {
                 const userId = (loggedInUser as string) === 'Duo' ? 'Commun' : loggedInUser;
                 const subscriptionJSON = subscription.toJSON() as any;
-                subscriptionJSON.preferences = updatedPrefs;
+                subscriptionJSON.preferences = {
+                    ...updatedPrefs,
+                    authors: updatedPrefs.authors.filter(a => !isSelf(a))
+                };
                 subscriptionJSON.foyer_id = currentFoyer?.id || 'foyer_vincent_sophie';
                 
                 await (supabase.from('push_subscriptions') as any).delete().eq('user_id', userId);
@@ -288,9 +318,10 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
         quietHoursStart: string;
         quietHoursEnd: string;
         privacyMode: boolean;
+        showExpenseConfirmation: boolean;
     }>) => {
         const fullPrefs = {
-            authors: newFields.authors !== undefined ? newFields.authors : prefAuthors,
+            authors: (newFields.authors !== undefined ? newFields.authors : prefAuthors).filter(a => !isSelf(a)),
             minAmount: newFields.minAmount !== undefined ? newFields.minAmount : prefMinAmount,
             categories: newFields.categories !== undefined ? newFields.categories : prefCategories,
             includeMoneyPot: newFields.includeMoneyPot !== undefined ? newFields.includeMoneyPot : prefIncludeMoneyPot,
@@ -298,10 +329,11 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
             quietHoursActive: newFields.quietHoursActive !== undefined ? newFields.quietHoursActive : prefQuietHoursActive,
             quietHoursStart: newFields.quietHoursStart !== undefined ? newFields.quietHoursStart : prefQuietHoursStart,
             quietHoursEnd: newFields.quietHoursEnd !== undefined ? newFields.quietHoursEnd : prefQuietHoursEnd,
-            privacyMode: newFields.privacyMode !== undefined ? newFields.privacyMode : prefPrivacyMode
+            privacyMode: newFields.privacyMode !== undefined ? newFields.privacyMode : prefPrivacyMode,
+            showExpenseConfirmation: newFields.showExpenseConfirmation !== undefined ? newFields.showExpenseConfirmation : prefShowExpenseConfirmation
         };
 
-        if (newFields.authors !== undefined) setPrefAuthors(newFields.authors);
+        if (newFields.authors !== undefined) setPrefAuthors(newFields.authors.filter(a => !isSelf(a)));
         if (newFields.minAmount !== undefined) setPrefMinAmount(newFields.minAmount);
         if (newFields.categories !== undefined) setPrefCategories(newFields.categories);
         if (newFields.includeMoneyPot !== undefined) setPrefIncludeMoneyPot(newFields.includeMoneyPot);
@@ -310,6 +342,7 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
         if (newFields.quietHoursStart !== undefined) setPrefQuietHoursStart(newFields.quietHoursStart);
         if (newFields.quietHoursEnd !== undefined) setPrefQuietHoursEnd(newFields.quietHoursEnd);
         if (newFields.privacyMode !== undefined) setPrefPrivacyMode(newFields.privacyMode);
+        if (newFields.showExpenseConfirmation !== undefined) setPrefShowExpenseConfirmation(newFields.showExpenseConfirmation);
 
         const prefsKey = currentFoyer?.id ? `notificationPreferences_${currentFoyer.id}` : 'notificationPreferences';
         localStorage.setItem(prefsKey, JSON.stringify(fullPrefs));
@@ -317,10 +350,18 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
     };
 
     const handleAuthorToggle = (author: string) => {
+        if (isSelf(author)) return; // Protection absolue : on ne s'ajoute jamais soi-même
         const nextAuthors = prefAuthors.includes(author)
             ? prefAuthors.filter(a => a !== author)
             : [...prefAuthors, author];
         handleUpdatePreference({ authors: nextAuthors });
+    };
+
+    const handleToggleExpenseConfirmation = (val: boolean) => {
+        setPrefShowExpenseConfirmation(val);
+        localStorage.setItem(confirmKey, String(val));
+        window.dispatchEvent(new CustomEvent('duobudget_confirm_pref_changed', { detail: { enabled: val } }));
+        handleUpdatePreference({ showExpenseConfirmation: val });
     };
 
     const handleMinAmountChange = (val: number) => {
@@ -601,20 +642,28 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
 
                 {/* Subsection 1: Auteurs à suivre */}
                 <div className="space-y-2.5">
-                    <div>
-                        <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                            Auteurs à suivre
-                        </h4>
-                        <p className="text-xs text-slate-400 dark:text-slate-500">
-                            Choisissez qui peut déclencher des notifications.
-                        </p>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div>
+                            <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                                Auteurs à suivre
+                            </h4>
+                            <p className="text-xs text-slate-400 dark:text-slate-500">
+                                Choisissez qui peut déclencher des notifications sur cet appareil.
+                            </p>
+                        </div>
+                        <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-full border border-emerald-200/70 dark:border-emerald-800/40">
+                            Vos propres dépenses sont exclues
+                        </span>
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2.5">
                         {(() => {
-                            const authorList = currentFoyer?.members && currentFoyer.members.length > 0
+                            const rawAuthorList = currentFoyer?.members && currentFoyer.members.length > 0
                                 ? [...currentFoyer.members.map((m: any) => m.name), 'Commun']
                                 : ['Sophie', 'Vincent', 'Commun'];
+
+                            // Exclure formellement l'utilisateur connecté : on ne peut jamais s'abonner à ses propres dépenses
+                            const authorList = rawAuthorList.filter((name: string) => !isSelf(name));
 
                             return authorList.map((authorName: string) => {
                                 const isChecked = prefAuthors.includes(authorName);
@@ -890,6 +939,45 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
                                     aria-hidden="true"
                                     className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
                                         prefPrivacyMode ? 'translate-x-5' : 'translate-x-0'
+                                    }`}
+                                />
+                            </button>
+                        </div>
+
+                        {/* 5. Confirmation d'ajout de dépense */}
+                        <div className="p-3.5 sm:p-4 bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-100/90 dark:border-slate-700/60 flex items-center justify-between gap-3.5 shadow-2xs">
+                            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
+                                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#dcfce7] dark:bg-emerald-950/60 text-[#16a34a] dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                    <svg className="w-5 h-5 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 leading-snug">
+                                        Confirmation d'ajout de dépense
+                                    </p>
+                                    <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">
+                                        {isSophieMainFoyer && !prefShowExpenseConfirmation
+                                            ? "Désactivé pour Sophie (fermeture directe sans fenêtre de confirmation)"
+                                            : "Afficher l'écran de confirmation après chaque ajout de dépense"}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Toggle switch */}
+                            <button
+                                type="button"
+                                role="switch"
+                                aria-checked={prefShowExpenseConfirmation}
+                                onClick={() => handleToggleExpenseConfirmation(!prefShowExpenseConfirmation)}
+                                className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                    prefShowExpenseConfirmation ? 'bg-[#0284c7]' : 'bg-slate-200 dark:bg-slate-700'
+                                }`}
+                            >
+                                <span
+                                    aria-hidden="true"
+                                    className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                                        prefShowExpenseConfirmation ? 'translate-x-5' : 'translate-x-0'
                                     }`}
                                 />
                             </button>
