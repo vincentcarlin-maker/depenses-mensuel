@@ -1,49 +1,14 @@
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { type Expense, type Category, User, type SubtractedItem, PRODUCT_CATEGORIES, type FoyerMember } from '../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { type Expense, type Category, User, type SubtractedItem, type FoyerMember } from '../types';
 import { DEFAULT_FOYER } from '../utils/foyerService';
 import ConfirmationModal from './ConfirmationModal';
 import TrashIcon from './icons/TrashIcon';
 import SegmentedControl from './SegmentedControl';
-import PiggyBankIcon from './icons/PiggyBankIcon';
-import ScissorsIcon from './icons/ScissorsIcon';
 import CalendarDaysIcon from './icons/CalendarDaysIcon';
 import ItemDeductionSection from './ItemDeductionSection';
-import { 
-    MandatoryIcon, 
-    FuelIcon, 
-    HeatingIcon, 
-    GroceriesIcon, 
-    RestaurantIcon, 
-    CarRepairsIcon, 
-    MiscIcon,
-    ClothingIcon,
-    GiftIcon,
-    PalmTreeIcon,
-    PillIcon
-} from './icons/CategoryIcons';
 import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
-
-const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; bgColor: string; borderColor: string } } = {
-  "Dépenses récurrentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
-  "Dép. récurrentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
-  "Dép. recurentes": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
-  "Dépenses obligatoires": { icon: MandatoryIcon, color: 'text-slate-600 dark:text-slate-300', bgColor: 'bg-slate-100 dark:bg-slate-700', borderColor: 'border-slate-200 dark:border-slate-600' },
-  "Carburant": { icon: FuelIcon, color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-50 dark:bg-orange-500/10', borderColor: 'border-orange-100 dark:border-orange-500/20' },
-  "Chauffage": { icon: HeatingIcon, color: 'text-red-600 dark:text-red-400', bgColor: 'bg-red-50 dark:bg-red-500/10', borderColor: 'border-red-100 dark:border-red-500/20' },
-  "Courses": { icon: GroceriesIcon, color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-50 dark:bg-green-500/10', borderColor: 'border-green-100 dark:border-green-500/20' },
-  "Restaurant": { icon: RestaurantIcon, color: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-500/10', borderColor: 'border-purple-100 dark:border-purple-500/20' },
-  "Vacances": { icon: PalmTreeIcon, color: 'text-teal-600 dark:text-teal-400', bgColor: 'bg-teal-50 dark:bg-teal-500/10', borderColor: 'border-teal-100 dark:border-teal-500/20' },
-  "Réparation voitures": { icon: CarRepairsIcon, color: 'text-yellow-600 dark:text-yellow-400', bgColor: 'bg-yellow-50 dark:bg-yellow-500/10', borderColor: 'border-yellow-100 dark:border-yellow-500/20' },
-  "Vêtements": { icon: ClothingIcon, color: 'text-indigo-600 dark:text-indigo-400', bgColor: 'bg-indigo-50 dark:bg-indigo-500/10', borderColor: 'border-indigo-100 dark:border-indigo-500/20' },
-  "Cadeau": { icon: GiftIcon, color: 'text-fuchsia-600 dark:text-fuchsia-400', bgColor: 'bg-fuchsia-50 dark:bg-fuchsia-500/10', borderColor: 'border-fuchsia-100 dark:border-fuchsia-500/20' },
-  "Complément alimentaire": { icon: PillIcon, color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-500/10', borderColor: 'border-emerald-100 dark:border-emerald-500/20' },
-  "Divers": { icon: MiscIcon, color: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-50 dark:bg-cyan-500/10', borderColor: 'border-cyan-100 dark:border-cyan-500/20' },
-};
-
-const TICKET_RESTAURANT_KEYWORDS = [
-  't restaurant', 't restau', 't.rest', 'cb rest', 'ticket rest', 't. restaurant', 'restau'
-];
+import { formatDateTimeLocalForInput, formatDateFrench } from '../utils/dateUtils';
 
 const SUPPLEMENT_STORES = ['Nutripure', 'Nutri&co', 'Greenwhey', 'Prozis', 'Autres'] as const;
 const SUPPLEMENT_TYPES = ['Oméga 3', 'Vitamine C', 'Vitamine D', 'Magnésium', 'Autres'] as const;
@@ -66,16 +31,10 @@ interface EditExpenseModalProps {
 }
 
 const toDatetimeLocal = (isoString: string): string => {
-    const date = new Date(isoString);
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    return formatDateTimeLocalForInput(isoString);
 };
 
-const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, onUpdateExpense, onDeleteExpense, onClose, categories, groceryStores, cars, heatingTypes, loggedInUser, onlineUsers = [], onAddExpense, foyerMembers, isMainFoyer = true }) => {
+const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses: _expenses, onUpdateExpense, onDeleteExpense, onClose, categories, groceryStores, cars, heatingTypes, loggedInUser, onlineUsers = [], onAddExpense, foyerMembers, isMainFoyer = true }) => {
     const { getVisual } = useCategoryVisuals();
     const members = useMemo(() => foyerMembers && foyerMembers.length > 0 ? foyerMembers : DEFAULT_FOYER.members, [foyerMembers]);
     const [description, setDescription] = useState('');
@@ -97,13 +56,6 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
         create_expense: item.expense_created ? false : (item.create_expense ?? false)
     }));
     const [subtractedItems, setSubtractedItems] = useState<SubtractedItem[]>(initialShowSubtractions ? initialSubtractedItemsList : []);
-    const [selectedItems, setSelectedItems] = useState<number[]>([]);
-    const [itemDescription, setItemDescription] = useState('');
-    const [itemAmount, setItemAmount] = useState('');
-    const [itemCategory, setItemCategory] = useState(PRODUCT_CATEGORIES[0]);
-    const [itemTargetCategory, setItemTargetCategory] = useState<string>('');
-    const [createExpenseForItem, setCreateExpenseForItem] = useState<boolean>(true);
-    const itemDescriptionInputRef = useRef<HTMLInputElement>(null);
 
     const [store, setStore] = useState('');
     const [customStore, setCustomStore] = useState('');
@@ -125,27 +77,6 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
     
     const childrenOptions = ['Nathan', 'Chloé'];
     const occasionOptions = ['Noël', 'Anniversaire'];
-
-    const knownProducts = useMemo(() => {
-        const products = new Set<string>();
-        expenses.forEach(e => {
-            if (e.subtracted_items) {
-                e.subtracted_items.forEach(item => {
-                    products.add(item.description.trim());
-                });
-            }
-        });
-        return Array.from(products);
-    }, [expenses]);
-    
-    const finalCalculatedAmount = useMemo(() => {
-        const total = parseFloat(receiptTotal.replace(',', '.')) || 0;
-        const subtractions = subtractedItems.filter(i => i.is_subtracted !== false).reduce((sum, item) => sum + item.amount, 0);
-        const currentItemAmount = parseFloat(itemAmount.replace(',', '.')) || 0;
-        const intentionalSubtraction = itemDescription.trim() ? currentItemAmount : 0;
-        return total - subtractions - intentionalSubtraction;
-    }, [receiptTotal, subtractedItems, itemAmount, itemDescription]);
-
 
     useEffect(() => {
         if (expense.category === 'Courses') {
@@ -278,17 +209,6 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
 
         if (['Courses', 'Divers'].includes(category) && showSubtractions) {
           const currentSubtractedItems = [...subtractedItems];
-          const parsedPendingAmount = parseFloat(itemAmount.replace(',', '.'));
-          if (itemDescription.trim() && !isNaN(parsedPendingAmount) && parsedPendingAmount > 0) {
-            currentSubtractedItems.push({ 
-              description: itemDescription.trim(), 
-              amount: parsedPendingAmount, 
-              is_subtracted: true,
-              category: itemCategory,
-              target_category: itemTargetCategory || undefined,
-              create_expense: itemTargetCategory ? createExpenseForItem : false
-            });
-          }
 
           const parsedTotal = parseFloat(receiptTotal.replace(',', '.'));
           if (isNaN(parsedTotal) || parsedTotal <= 0) {
@@ -428,43 +348,6 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
 
         onClose();
     };
-    
-    const handleAddSubtractedItem = () => {
-        const parsedItemAmount = parseFloat(itemAmount.replace(',', '.'));
-        if (itemDescription.trim() && !isNaN(parsedItemAmount) && parsedItemAmount > 0) {
-            setSubtractedItems([...subtractedItems, { 
-                description: itemDescription.trim(), 
-                amount: parsedItemAmount, 
-                is_subtracted: true,
-                category: itemCategory,
-                target_category: itemTargetCategory || undefined,
-                create_expense: itemTargetCategory ? createExpenseForItem : false
-            }]);
-            setItemDescription('');
-            setItemAmount('');
-            setItemTargetCategory('');
-            setCreateExpenseForItem(true);
-            itemDescriptionInputRef.current?.focus();
-        }
-    };
-
-    const handleRemoveSubtractedItem = (index: number) => {
-        setSubtractedItems(subtractedItems.filter((_, i) => i !== index));
-    };
-
-    const handleToggleSubtractedItem = (index: number) => {
-        const newItems = [...subtractedItems];
-        newItems[index].is_subtracted = newItems[index].is_subtracted === false ? true : false;
-        setSubtractedItems(newItems);
-    };
-
-    const handleItemInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            handleAddSubtractedItem();
-        }
-    };
-
 
     const handleDelete = () => {
         onDeleteExpense(expense.id);
@@ -489,18 +372,6 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
         }
         return Array.from(options);
     }, [cars, category, repairedCar, description]);
-
-    const baseInputStyle = "mt-1 block w-full py-2.5 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm";
-    const placeholderStyle = "placeholder-slate-400 dark:placeholder-slate-500";
-
-    const getUserSliderPosition = () => {
-        switch (user) {
-            case User.Sophie: return 'translate-x-0';
-            case User.Vincent: return 'translate-x-[100%]';
-            case User.Commun: return 'translate-x-[200%]';
-            default: return 'translate-x-0';
-        }
-    };
 
     return (
         <>
@@ -920,15 +791,7 @@ const EditExpenseModal: React.FC<EditExpenseModalProps> = ({ expense, expenses, 
                                             <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-tight">Date de l'opération</span>
                                             <div className="flex items-center gap-1.5 mt-0.5 whitespace-nowrap">
                                                 <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100">
-                                                    {(() => {
-                                                        const d = new Date(date);
-                                                        if (isNaN(d.getTime())) return '';
-                                                        const day = d.getDate().toString().padStart(2, '0');
-                                                        const monthNames = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-                                                        const month = monthNames[d.getMonth()];
-                                                        const year = d.getFullYear();
-                                                        return `${day} ${month} ${year}`;
-                                                    })()}
+                                                    {formatDateFrench(date, { shortMonth: true })}
                                                 </span>
                                                 <span className="text-slate-300 dark:text-slate-600 font-normal">·</span>
                                                 <span className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { User, type Category, type Expense, type CustomCategoryIcon, type Foyer, type FoyerJoinRequest } from '../types';
+import { User, type Category, type Expense, type Foyer, type FoyerJoinRequest } from '../types';
 import { type Profile, type LoginEvent } from '../hooks/useAuth';
 import { approveJoinRequest, rejectJoinRequest } from '../utils/foyerService';
 import ConfirmationModal from './ConfirmationModal';
@@ -173,7 +173,7 @@ const UserManagement: React.FC<{
     loggedInUsername?: string;
     onAddProfile?: (profile: Profile) => boolean;
     onUpdateProfilePassword: (username: string, newPassword: string) => boolean;
-    onUpdateProfileEmail?: (username: string, newEmail: string) => boolean;
+    onUpdateProfileEmail?: (username: string, newEmail: string) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string } | boolean;
     onDeleteProfile?: (username: string) => Promise<boolean> | boolean;
     currentFoyer?: Foyer;
     onDeleteOwnAccount?: (confirmPassword?: string) => Promise<{ success: boolean; error?: string } | boolean>;
@@ -1476,7 +1476,7 @@ interface ManagementTabProps {
     loggedInUser: User;
     onAddProfile: (profile: Profile) => boolean;
     onUpdateProfilePassword: (username: string, newPassword: string) => boolean;
-    onUpdateProfileEmail?: (username: string, newEmail: string) => boolean;
+    onUpdateProfileEmail?: (username: string, newEmail: string) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string } | boolean;
     onDeleteProfile: (username: string) => Promise<boolean> | boolean;
     categories: Category[];
     onAddCategory: (name: string) => boolean;

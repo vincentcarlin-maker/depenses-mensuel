@@ -43,6 +43,7 @@ interface LoginProps {
     email?: string;
   }) => Promise<{ success: boolean; error?: string; foyer?: Foyer }>;
   onCancelOAuthPending?: () => void;
+  onClaimLegacyAccount?: (params: { token: string; email: string; password: string }) => Promise<{ success: boolean; error?: string }>;
 }
 
 export type AuthTab = 'login' | 'create' | 'join';
@@ -56,6 +57,7 @@ export const Login: React.FC<LoginProps> = ({
   onCompleteOAuthRegisterNewFoyer,
   onCompleteOAuthJoinFoyer,
   onCancelOAuthPending,
+  onClaimLegacyAccount,
 }) => {
   const [activeTab, setActiveTab] = useState<AuthTab>('login');
   const [oauthLoadingProvider, setOauthLoadingProvider] = useState<'google' | null>(null);
@@ -159,6 +161,7 @@ export const Login: React.FC<LoginProps> = ({
                   oauthLoadingProvider={oauthLoadingProvider}
                   onSwitchToCreate={() => setActiveTab('create')}
                   onSwitchToJoin={() => setActiveTab('join')}
+                  onClaimLegacyAccount={onClaimLegacyAccount}
                 />
               )}
 

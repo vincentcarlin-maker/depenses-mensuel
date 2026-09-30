@@ -20,7 +20,7 @@ const Logo = () => {
 
 interface HeaderProps {
   onOpenSearch: () => void;
-  loggedInUser: User;
+  loggedInUser: User | string;
   activityItems: Activity[];
   unreadCount: number;
   onMarkAsRead: () => void;

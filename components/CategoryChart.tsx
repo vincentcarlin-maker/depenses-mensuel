@@ -3,19 +3,6 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { type Expense, type Category, type FoyerMember, canonicalCategory, isSameCategory } from '../types';
 import { type Profile } from '../hooks/useAuth';
-import { 
-    MandatoryIcon, 
-    FuelIcon, 
-    HeatingIcon, 
-    GroceriesIcon, 
-    RestaurantIcon, 
-    CarRepairsIcon, 
-    MiscIcon,
-    ClothingIcon,
-    GiftIcon,
-    PalmTreeIcon,
-    PillIcon
-} from './icons/CategoryIcons';
 import ExpenseListItem from './ExpenseListItem';
 import CloseIcon from './icons/CloseIcon';
 import { useCategoryVisuals } from '../hooks/useCategoryVisuals';

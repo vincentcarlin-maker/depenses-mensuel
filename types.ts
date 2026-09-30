@@ -92,7 +92,7 @@ export interface Expense {
   category: Category;
   date: string; // ISO 8601 format (TIMESTAMPTZ)
   user: User | string;
-  created_at: string;
+  created_at?: string;
   user_agent?: string;
   foyer_id?: string;
   subtracted_items?: SubtractedItem[];
@@ -106,7 +106,7 @@ export interface Reminder {
   user: User | string;
   day_of_month: number;
   is_active: boolean;
-  created_at: string;
+  created_at?: string;
   user_agent?: string;
   foyer_id?: string;
 }
@@ -117,7 +117,7 @@ export interface MoneyPotTransaction {
   description: string;
   user_name: string; // Renamed from 'user' to avoid reserved keyword conflicts
   date: string;
-  created_at: string;
+  created_at?: string;
   foyer_id?: string;
 }
 
@@ -139,6 +139,7 @@ export type Activity = {
     expense: Partial<Expense> & { id: string, user: User | string, date: string, foyer_id?: string };
     oldExpense?: Partial<Expense>; // Used to show diff on updates
     timestamp: string;
+    foyer_id?: string;
 };
 
 export type ContactSubject = 'bug' | 'suggestion' | 'question' | 'other';

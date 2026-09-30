@@ -42,7 +42,7 @@ interface SettingsModalProps {
   isAdmin?: boolean;
   onAddProfile: (profile: Profile) => boolean;
   onUpdateProfilePassword: (username: string, newPassword: string) => boolean;
-  onUpdateProfileEmail?: (username: string, newEmail: string) => boolean;
+  onUpdateProfileEmail?: (username: string, newEmail: string) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string } | boolean;
   onDeleteProfile: (username: string) => Promise<boolean> | boolean;
   onToggleBlockProfile?: (username: string) => { success: boolean; message: string };
   isMaintenanceMode?: boolean;
@@ -926,6 +926,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         onDeleteProfile={props.onDeleteProfile}
                         onAddProfile={props.onAddProfile}
                         onUpdateProfilePassword={props.onUpdateProfilePassword}
+                        onUpdateProfileEmail={props.onUpdateProfileEmail}
                         isMaintenanceMode={props.isMaintenanceMode}
                         onToggleMaintenanceMode={props.onToggleMaintenanceMode}
                         onSwitchFoyer={props.onSwitchFoyer}

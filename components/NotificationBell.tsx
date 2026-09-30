@@ -88,7 +88,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
                 applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
             });
             
-            const { error } = await supabase.from('subscriptions').insert({
+            const { error } = await (supabase.from('subscriptions') as any).insert({
                 subscription_data: sub.toJSON(),
             });
 
@@ -125,10 +125,10 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ onSetToast }) => {
             const sub = await reg.pushManager.getSubscription();
             if (sub) {
                 const subJSON = sub.toJSON();
-                const { error } = await supabase
-                    .from('subscriptions')
+                const { error } = await (supabase
+                    .from('subscriptions') as any)
                     .delete()
-                    .eq('subscription_data->>endpoint', subJSON.endpoint);
+                    .eq('subscription_data->>endpoint', subJSON.endpoint || '');
 
                 if (error) {
                     console.error('Erreur lors de la suppression de l\'abonnement:', error);

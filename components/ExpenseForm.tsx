@@ -7,6 +7,7 @@ import ConfirmationModal from './ConfirmationModal';
 import CalendarDaysIcon from './icons/CalendarDaysIcon';
 import ItemDeductionSection from './ItemDeductionSection';
 import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
+import { formatDateTimeLocalForInput, formatDateFrench, isExpenseInMonth, getExpenseYear, getExpenseMonth } from '../utils/dateUtils';
 
 const SUPPLEMENT_STORES = ['Nutripure', 'Nutri&co', 'Greenwhey', 'Prozis', 'Autres'] as const;
 const SUPPLEMENT_TYPES = ['Oméga 3', 'Vitamine C', 'Vitamine D', 'Magnésium', 'Autres'] as const;
@@ -30,22 +31,11 @@ interface ExpenseFormProps {
 }
 
 const toDatetimeLocal = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    return formatDateTimeLocalForInput(date);
 };
 
 const formatOperationDate = (dateString: string) => {
-  const d = new Date(dateString);
-  if (isNaN(d.getTime())) return '';
-  const day = d.getDate().toString().padStart(2, '0');
-  const monthNames = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-  const month = monthNames[d.getMonth()];
-  const year = d.getFullYear();
-  return `${day} ${month} ${year}`;
+  return formatDateFrench(dateString, { shortMonth: true });
 };
 
 const formatOperationTime = (dateString: string) => {
@@ -271,16 +261,14 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   };
 
   const findPossibleDuplicates = (newExpense: Omit<Expense, 'id' | 'created_at'>): Expense[] => {
-    const newDate = new Date(newExpense.date);
-    const newMonth = newDate.getMonth();
-    const newYear = newDate.getFullYear();
+    const newMonth = getExpenseMonth(newExpense.date);
+    const newYear = getExpenseYear(newExpense.date);
 
     const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
     const cleanNewDesc = normalize(newExpense.description);
 
     return expenses.filter(exp => {
-      const expDate = new Date(exp.date);
-      if (expDate.getMonth() !== newMonth || expDate.getFullYear() !== newYear) {
+      if (!isExpenseInMonth(exp.date, newYear, newMonth)) {
         return false;
       }
       if (Math.abs(exp.amount - newExpense.amount) > 0.01) {

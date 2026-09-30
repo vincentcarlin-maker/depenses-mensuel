@@ -1,6 +1,5 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { type Expense, type Reminder, type MoneyPotTransaction } from '../types';
 
 // NOTE: Real-time channel connection errors are logged to the console in App.tsx.
 
@@ -11,22 +10,40 @@ export type Database = {
   public: {
     Tables: {
       expenses: {
-        Row: Expense;
-        Insert: Omit<Expense, 'created_at'>;
-        Update: Partial<Omit<Expense, 'created_at'>>;
+        Row: Record<string, any>;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
+        Relationships: [];
       };
       reminders: {
-        Row: Reminder;
-        Insert: Omit<Reminder, 'created_at'>;
-        Update: Partial<Reminder>;
+        Row: Record<string, any>;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
+        Relationships: [];
       };
       money_pot: {
-        Row: MoneyPotTransaction;
-        Insert: Omit<MoneyPotTransaction, 'created_at'>;
-        Update: Partial<MoneyPotTransaction>;
+        Row: Record<string, any>;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
+        Relationships: [];
       };
-      // ... (autres tables)
+      activities: {
+        Row: Record<string, any>;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
+        Relationships: [];
+      };
+      subscriptions: {
+        Row: Record<string, any>;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
+        Relationships: [];
+      };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 };
 

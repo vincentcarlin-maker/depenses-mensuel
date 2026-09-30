@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { type Expense, User, type Category } from '../types';
+import { type Expense, type Category } from '../types';
 import GroupedExpenseList from './GroupedExpenseList';
 import CloseIcon from './icons/CloseIcon';
 import SearchIcon from './icons/SearchIcon';

@@ -9,7 +9,7 @@ interface MaintenanceOverlayProps {
 
 export const MaintenanceOverlay: React.FC<MaintenanceOverlayProps> = ({ onAdminLogin }) => {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
-  const [username, setUsername] = useState('vincent');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);

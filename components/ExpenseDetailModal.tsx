@@ -6,16 +6,7 @@ import EditIcon from './icons/EditIcon';
 import ScissorsIcon from './icons/ScissorsIcon';
 import { resolveUserTheme } from '../utils/userColors';
 import { 
-    MandatoryIcon, 
-    FuelIcon, 
-    HeatingIcon, 
-    GroceriesIcon, 
-    RestaurantIcon, 
-    CarRepairsIcon, 
-    MiscIcon,
     GiftIcon,
-    ClothingIcon,
-    PalmTreeIcon,
     BirthdayIcon,
     ShieldIcon,
     WifiIcon,
@@ -24,27 +15,9 @@ import {
     CeoIcon,
     TotalEnergiesIcon,
     TrashBinIcon,
-    NetflixIcon,
-    PillIcon
+    NetflixIcon
 } from './icons/CategoryIcons';
 import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
-
-const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>; color: string; textColor: string; bannerBg: string } } = {
-  "Dépenses récurrentes": { icon: MandatoryIcon, color: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300', bannerBg: 'bg-slate-100/90 dark:bg-slate-700/60' },
-  "Dép. recurentes": { icon: MandatoryIcon, color: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300', bannerBg: 'bg-slate-100/90 dark:bg-slate-700/60' },
-  "Dép. récurrentes": { icon: MandatoryIcon, color: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300', bannerBg: 'bg-slate-100/90 dark:bg-slate-700/60' },
-  "Dépenses obligatoires": { icon: MandatoryIcon, color: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300', bannerBg: 'bg-slate-100/90 dark:bg-slate-700/60' },
-  "Carburant": { icon: FuelIcon, color: 'bg-orange-100 dark:bg-orange-500/20', textColor: 'text-orange-600 dark:text-orange-400', bannerBg: 'bg-orange-100/80 dark:bg-orange-950/40' },
-  "Chauffage": { icon: HeatingIcon, color: 'bg-red-100 dark:bg-red-500/20', textColor: 'text-red-600 dark:text-red-400', bannerBg: 'bg-red-100/80 dark:bg-red-950/40' },
-  "Courses": { icon: GroceriesIcon, color: 'bg-green-100 dark:bg-green-500/20', textColor: 'text-green-600 dark:text-green-400', bannerBg: 'bg-green-100/80 dark:bg-green-950/40' },
-  "Restaurant": { icon: RestaurantIcon, color: 'bg-purple-100 dark:bg-purple-500/20', textColor: 'text-purple-600 dark:text-purple-400', bannerBg: 'bg-purple-100/80 dark:bg-purple-950/40' },
-  "Vacances": { icon: PalmTreeIcon, color: 'bg-teal-100 dark:bg-teal-500/20', textColor: 'text-teal-600 dark:text-teal-400', bannerBg: 'bg-teal-100/80 dark:bg-teal-950/40' },
-  "Réparation voitures": { icon: CarRepairsIcon, color: 'bg-yellow-100 dark:bg-yellow-500/20', textColor: 'text-yellow-600 dark:text-yellow-400', bannerBg: 'bg-yellow-100/80 dark:bg-yellow-950/40' },
-  "Vêtements": { icon: ClothingIcon, color: 'bg-indigo-100 dark:bg-indigo-500/20', textColor: 'text-indigo-600 dark:text-indigo-400', bannerBg: 'bg-indigo-100/80 dark:bg-indigo-950/40' },
-  "Cadeau": { icon: GiftIcon, color: 'bg-fuchsia-100 dark:bg-fuchsia-500/20', textColor: 'text-fuchsia-600 dark:text-fuchsia-400', bannerBg: 'bg-fuchsia-100/80 dark:bg-fuchsia-950/40' },
-  "Complément alimentaire": { icon: PillIcon, color: 'bg-emerald-100 dark:bg-emerald-500/20', textColor: 'text-emerald-600 dark:text-emerald-400', bannerBg: 'bg-emerald-100/80 dark:bg-emerald-950/40' },
-  "Divers": { icon: MiscIcon, color: 'bg-cyan-100 dark:bg-cyan-500/20', textColor: 'text-cyan-600 dark:text-cyan-400', bannerBg: 'bg-cyan-100/80 dark:bg-cyan-950/40' },
-};
 
 interface ExpenseDetailModalProps {
   expense: Expense;

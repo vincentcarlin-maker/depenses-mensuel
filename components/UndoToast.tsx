@@ -1,43 +1,39 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { type Expense } from '../types';
 
-interface UndoableAction {
-    type: 'delete' | 'update';
-    expense: Expense;
-    timerId: number;
+export interface UndoableAction {
+  id: string;
+  type: 'delete' | 'update';
+  expense: Expense;
+  originalExpense?: Expense;
+  timerId: any;
+  activityId?: string;
+  createdAt?: number;
 }
 
-interface UndoToastProps {
-  undoableAction: UndoableAction | null;
-  onUndo: () => void;
+export interface UndoToastProps {
+  undoableAction?: UndoableAction | null;
+  undoableActions?: UndoableAction[];
+  onUndo: (actionId?: string) => void;
 }
 
-const UndoToast: React.FC<UndoToastProps> = ({ undoableAction, onUndo }) => {
-  const [isVisible, setIsVisible] = useState(false);
-  
-  useEffect(() => {
-    if (undoableAction) {
-      setIsVisible(true);
-    } else {
-      setIsVisible(false);
-    }
-  }, [undoableAction]);
+const UndoToastItem: React.FC<{ action: UndoableAction; onUndo: (id: string) => void }> = ({ action, onUndo }) => {
+  const desc = action.expense.description ? ` "${action.expense.description}"` : '';
+  const message = action.type === 'delete' ? `Dépense${desc} supprimée.` : `Dépense${desc} mise à jour.`;
 
-  if (!undoableAction) return null;
-
-  const message = undoableAction.type === 'delete' ? 'Dépense supprimée.' : 'Dépense mise à jour.';
-  
   return (
     <div
-      className={`fixed bottom-5 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm p-4 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 transition-all duration-300 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
+      className="pointer-events-auto w-full max-w-sm p-4 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 transition-all duration-300 translate-y-0 opacity-100 relative overflow-hidden"
       role="alert"
       aria-live="polite"
     >
       <div className="flex items-center justify-between gap-4">
-        <div className="text-sm font-medium">{message}</div>
+        <div className="text-sm font-medium truncate" title={action.expense.description}>
+          {message}
+        </div>
         <button
-          onClick={onUndo}
-          className="px-4 py-1.5 text-sm font-semibold text-cyan-600 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-500/20 rounded-lg hover:bg-cyan-200 dark:hover:bg-cyan-500/30 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 whitespace-nowrap"
+          onClick={() => onUndo(action.id)}
+          className="px-4 py-1.5 text-sm font-semibold text-cyan-600 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-500/20 rounded-lg hover:bg-cyan-200 dark:hover:bg-cyan-500/30 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 whitespace-nowrap shrink-0"
         >
           Annuler
         </button>
@@ -48,15 +44,31 @@ const UndoToast: React.FC<UndoToastProps> = ({ undoableAction, onUndo }) => {
           style={{ animationDuration: '7s' }}
         ></div>
       </div>
-       <style>{`
-            @keyframes progress-bar-animation {
-                from { width: 100%; }
-                to { width: 0%; }
-            }
-            .animate-progress-bar {
-                animation: progress-bar-animation linear forwards;
-            }
-        `}</style>
+    </div>
+  );
+};
+
+export const UndoToast: React.FC<UndoToastProps> = ({ undoableAction, undoableActions, onUndo }) => {
+  const actions: UndoableAction[] = undoableActions ?? (undoableAction ? [undoableAction] : []);
+
+  if (actions.length === 0) return null;
+
+  return (
+    <div
+      className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex flex-col-reverse gap-2 w-full max-w-sm px-4 pointer-events-none items-center"
+    >
+      {actions.map(action => (
+        <UndoToastItem key={action.id} action={action} onUndo={(id) => onUndo(id)} />
+      ))}
+      <style>{`
+        @keyframes progress-bar-animation {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+        .animate-progress-bar {
+            animation: progress-bar-animation linear forwards;
+        }
+      `}</style>
     </div>
   );
 };

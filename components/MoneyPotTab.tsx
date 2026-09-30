@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { type MoneyPotTransaction } from '../types';
 import TrashIcon from './icons/TrashIcon';
-import ConfirmationModal from './ConfirmationModal';
 const piggyBankImg = './piggy-bank.png';
 import { useSyncedSettings } from '../hooks/useSyncedSettings';
 
@@ -42,14 +41,14 @@ interface MoneyPotTabProps {
 export const MoneyPotTab: React.FC<MoneyPotTabProps> = ({
   transactions,
   onAddTransaction,
-  onDeleteTransaction,
+  onDeleteTransaction: _onDeleteTransaction,
   currentFoyerId,
   setToastInfo,
 }) => {
   const foyerKey = currentFoyerId || 'default';
 
   // Objectifs d'épargne partagés
-  const [isSavingsGoalsEnabled, setIsSavingsGoalsEnabled] = useSyncedSettings<boolean>(
+  const [isSavingsGoalsEnabled] = useSyncedSettings<boolean>(
     `savings_goals_enabled_${foyerKey}`,
     true
   );

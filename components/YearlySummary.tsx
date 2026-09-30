@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { type Expense, type Category, canonicalCategory, isSameCategory } from '../types';
+import { getExpenseMonth, getExpenseYear } from '../utils/dateUtils';
 import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Line, Area } from 'recharts';
 import { useTheme } from '../hooks/useTheme';
 import CloseIcon from './icons/CloseIcon';
@@ -128,15 +129,15 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
 
     let total = 0;
     const monthsWithData = new Set<number>();
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
+    const currentMonth = getExpenseMonth(new Date());
+    const currentYear = getExpenseYear(new Date());
 
     for (const expense of expenses) {
       const catKey = canonicalCategory(expense.category);
       categoryTotals.set(catKey, (categoryTotals.get(catKey) || 0) + expense.amount);
       total += expense.amount;
       
-      const expenseMonth = new Date(expense.date).getMonth();
+      const expenseMonth = getExpenseMonth(expense.date);
       if (year < currentYear || (year === currentYear && expenseMonth <= currentMonth)) {
         monthsWithData.add(expenseMonth);
       }
@@ -190,12 +191,12 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ expenses, previousYearExp
     }));
 
     for (const expense of filteredCurrentExpenses) {
-      const monthIndex = new Date(expense.date).getMonth();
+      const monthIndex = getExpenseMonth(expense.date);
       data[monthIndex][year] += expense.amount;
     }
 
     for (const expense of filteredPreviousExpenses) {
-      const monthIndex = new Date(expense.date).getMonth();
+      const monthIndex = getExpenseMonth(expense.date);
       data[monthIndex][year - 1] += expense.amount;
     }
     

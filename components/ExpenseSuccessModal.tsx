@@ -1,19 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { type Expense } from '../types';
-import { 
-    MandatoryIcon, 
-    FuelIcon, 
-    HeatingIcon, 
-    GroceriesIcon, 
-    RestaurantIcon, 
-    CarRepairsIcon, 
-    MiscIcon, 
-    GiftIcon, 
-    ClothingIcon, 
-    PalmTreeIcon, 
-    PillIcon 
-} from './icons/CategoryIcons';
+import { MiscIcon } from './icons/CategoryIcons';
 import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
 
 interface ExpenseSuccessModalProps {
@@ -24,29 +12,6 @@ interface ExpenseSuccessModalProps {
   title?: string;
   subtitle?: string;
 }
-
-const CategoryVisuals: { 
-  [key: string]: { 
-    icon: React.FC<{ className?: string }>; 
-    bg: string; 
-    textColor: string; 
-  } 
-} = {
-  "Dépenses récurrentes": { icon: MandatoryIcon, bg: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300' },
-  "Dép. recurentes": { icon: MandatoryIcon, bg: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300' },
-  "Dép. récurrentes": { icon: MandatoryIcon, bg: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300' },
-  "Dépenses obligatoires": { icon: MandatoryIcon, bg: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300' },
-  "Carburant": { icon: FuelIcon, bg: 'bg-orange-100 dark:bg-orange-500/20', textColor: 'text-orange-500 dark:text-orange-400' },
-  "Chauffage": { icon: HeatingIcon, bg: 'bg-red-100 dark:bg-red-500/20', textColor: 'text-red-500 dark:text-red-400' },
-  "Courses": { icon: GroceriesIcon, bg: 'bg-emerald-100 dark:bg-emerald-500/20', textColor: 'text-emerald-500 dark:text-emerald-400' },
-  "Restaurant": { icon: RestaurantIcon, bg: 'bg-purple-100 dark:bg-purple-500/20', textColor: 'text-purple-500 dark:text-purple-400' },
-  "Vacances": { icon: PalmTreeIcon, bg: 'bg-teal-100 dark:bg-teal-500/20', textColor: 'text-teal-500 dark:text-teal-400' },
-  "Réparation voitures": { icon: CarRepairsIcon, bg: 'bg-yellow-100 dark:bg-yellow-500/20', textColor: 'text-yellow-600 dark:text-yellow-400' },
-  "Vêtements": { icon: ClothingIcon, bg: 'bg-indigo-100 dark:bg-indigo-500/20', textColor: 'text-indigo-500 dark:text-indigo-400' },
-  "Cadeau": { icon: GiftIcon, bg: 'bg-fuchsia-100 dark:bg-fuchsia-500/20', textColor: 'text-fuchsia-500 dark:text-fuchsia-400' },
-  "Complément alimentaire": { icon: PillIcon, bg: 'bg-emerald-100 dark:bg-emerald-500/20', textColor: 'text-emerald-500 dark:text-emerald-400' },
-  "Divers": { icon: MiscIcon, bg: 'bg-cyan-100 dark:bg-cyan-500/20', textColor: 'text-cyan-500 dark:text-cyan-400' },
-};
 
 export const ExpenseSuccessModal: React.FC<ExpenseSuccessModalProps> = ({
   isOpen,

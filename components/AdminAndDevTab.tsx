@@ -69,59 +69,7 @@ import {
   SchoolSuppliesIcon,
   DonationCharityIcon
 } from './icons/CategoryIcons';
-import ChevronRightIcon from './icons/ChevronRightIcon';
 import ArrowLeftIcon from './icons/ArrowLeftIcon';
-
-// --- Reusable Settings-Style Menu Row Component ---
-const AdminMenuItemRow: React.FC<{
-  iconBg: string;
-  iconColor: string;
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  value?: string | React.ReactNode;
-  titleColor?: string;
-  badge?: string;
-  badgeColor?: string;
-  onClick: () => void;
-}> = ({ iconBg, iconColor, icon, title, description, value, titleColor, badge, badgeColor, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="w-full flex items-center justify-between p-3.5 sm:p-4.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60 text-left focus:outline-none focus:bg-slate-50 dark:focus:bg-slate-800/60 group cursor-pointer"
-  >
-    <div className="flex items-center gap-3 min-w-0 pr-2">
-      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 ${iconBg} ${iconColor} transition-transform group-hover:scale-105`}>
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <p className={`font-bold text-sm sm:text-base leading-snug break-words ${titleColor || 'text-slate-900 dark:text-slate-100'}`}>
-          {title}
-        </p>
-        <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 font-medium leading-tight mt-0.5 line-clamp-2">
-          {description}
-        </p>
-      </div>
-    </div>
-    <div className="flex items-center gap-2 shrink-0">
-      {badge && (
-        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${badgeColor || 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'}`}>
-          {badge}
-        </span>
-      )}
-      {value && typeof value === 'string' ? (
-        <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">
-          {value}
-        </span>
-      ) : (
-        value
-      )}
-      <div className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
-        <ChevronRightIcon className="w-5 h-5" />
-      </div>
-    </div>
-  </button>
-);
 
 // --- Category Icon Management Section Component ---
 const CategoryIconManagementSection: React.FC<{
@@ -666,6 +614,7 @@ interface AdminAndDevTabProps {
   onDeleteProfile?: (username: string) => Promise<boolean> | boolean;
   onAddProfile?: (profile: Profile) => boolean;
   onUpdateProfilePassword?: (username: string, newPassword: string) => boolean;
+  onUpdateProfileEmail?: (username: string, newEmail: string) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string } | boolean;
   onSwitchFoyer?: (foyerId: string) => void;
   isMaintenanceMode?: boolean;
   onToggleMaintenanceMode?: (newState?: boolean) => void;
@@ -688,6 +637,7 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
   onDeleteProfile: _onDeleteProfile,
   onAddProfile: _onAddProfile,
   onUpdateProfilePassword,
+  onUpdateProfileEmail,
   onSwitchFoyer,
   isMaintenanceMode = false,
   onToggleMaintenanceMode,
@@ -705,6 +655,8 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
   // User Management
   const [editingPasswordUser, setEditingPasswordUser] = useState<string | null>(null);
   const [editPasswordValue, setEditPasswordValue] = useState('');
+  const [editingEmailUser, setEditingEmailUser] = useState<string | null>(null);
+  const [editEmailValue, setEditEmailValue] = useState('');
   // Connection & latency
   const [dbStatus, setDbStatus] = useState<'connected' | 'checking' | 'error'>('connected');
   const [latencyMs, setLatencyMs] = useState<number | null>(84);
@@ -1092,6 +1044,37 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
         setEditPasswordValue('');
       } else {
         setToastInfo({ message: 'Erreur lors de la mise à jour du mot de passe.', type: 'error' });
+      }
+    }
+  };
+
+  const handleUpdateEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEmailUser) return;
+    const cleanEmail = editEmailValue.trim().toLowerCase();
+
+    if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setToastInfo({ message: "Format d'adresse email invalide.", type: 'error' });
+      return;
+    }
+
+    if (onUpdateProfileEmail) {
+      try {
+        const res = await onUpdateProfileEmail(editingEmailUser, cleanEmail);
+        if (typeof res === 'object' && res && res.success === false) {
+          setToastInfo({ message: res.error || "Erreur lors de la mise à jour de l'adresse email.", type: 'error' });
+          return;
+        }
+        setToastInfo({
+          message: cleanEmail
+            ? `Adresse email mise à jour pour « ${editingEmailUser} » (${cleanEmail}).`
+            : `Adresse email supprimée pour « ${editingEmailUser} ».`,
+          type: 'info'
+        });
+        setEditingEmailUser(null);
+        setEditEmailValue('');
+      } catch (err: any) {
+        setToastInfo({ message: err?.message || "Erreur lors de la mise à jour de l'email.", type: 'error' });
       }
     }
   };
@@ -2426,19 +2409,32 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
                         </div>
                       </div>
 
-                      {/* User actions: password modification & account deletion */}
-                      <div className="flex items-center gap-2 shrink-0">
+                      {/* User actions: password modification, email assignment & account deletion */}
+                      <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingEmailUser(p.username);
+                            setEditEmailValue(p.email || '');
+                          }}
+                          className="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 border border-indigo-200/80 dark:border-indigo-800/60 text-indigo-700 dark:text-indigo-300 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                          title={p.email ? "Modifier l'adresse email associée" : "Ajouter une adresse email"}
+                        >
+                          <span>✉️</span>
+                          <span>{p.email ? "Modifier email" : "Ajouter email"}</span>
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => {
                             setEditingPasswordUser(p.username);
                             setEditPasswordValue('');
                           }}
-                          className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                          className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
                           title="Modifier le mot de passe"
                         >
                           <span>🔑</span>
-                          <span>Modifier mot de passe</span>
+                          <span>Mot de passe</span>
                         </button>
 
                         {!isVincent && (
@@ -2456,7 +2452,7 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
                                 }
                               }
                             }}
-                            className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 dark:hover:bg-rose-900/60 border border-rose-100/60 dark:border-rose-800/40 text-rose-600 dark:text-rose-300 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                            className="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 active:bg-rose-200 dark:bg-rose-950/50 dark:hover:bg-rose-900/60 border border-rose-100/60 dark:border-rose-800/40 text-rose-600 dark:text-rose-300 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
                             title="Supprimer définitivement ce compte"
                           >
                             <span>🗑️</span>
@@ -3309,8 +3305,60 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
       )}
 
       {/* ========================================================= */}
-      {/* USER MANAGEMENT MODALS (EDIT PASSWORD)                    */}
+      {/* USER MANAGEMENT MODALS (EDIT PASSWORD & EDIT EMAIL)        */}
       {/* ========================================================= */}
+      {editingEmailUser && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[999] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-6 w-full max-w-sm space-y-4 border border-slate-100 dark:border-slate-700">
+            <div className="space-y-1">
+              <h4 className="font-extrabold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                <span>✉️</span>
+                <span>{editEmailValue ? "Modifier l'adresse email" : "Ajouter une adresse email"}</span>
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Pour le compte « <span className="font-bold text-slate-700 dark:text-slate-200">{editingEmailUser}</span> ».
+              </p>
+            </div>
+            <form onSubmit={handleUpdateEmailSubmit} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Adresse email
+                </label>
+                <input
+                  type="email"
+                  placeholder="ex: sophie@gmail.com"
+                  value={editEmailValue}
+                  onChange={e => setEditEmailValue(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  autoFocus
+                />
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+                  Permet à l'utilisateur de se connecter avec son email ou son identifiant.
+                </p>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingEmailUser(null);
+                    setEditEmailValue('');
+                  }}
+                  className="px-4 py-2.5 rounded-xl font-bold text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors cursor-pointer"
+                >
+                  Enregistrer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {editingPasswordUser && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[999] flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-6 w-full max-w-sm space-y-4 border border-slate-100 dark:border-slate-700">

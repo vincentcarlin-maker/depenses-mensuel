@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase/client';
-import { type Expense, User, type Activity, type MoneyPotTransaction, type Foyer } from './types';
+import { type Expense, User, type Activity, type MoneyPotTransaction, type Foyer, type Reminder } from './types';
 import Header from './components/Header';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseSummary from './components/ExpenseSummary';
@@ -28,6 +28,13 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { useSyncedSettings } from './hooks/useSyncedSettings';
 import UndoToast from './components/UndoToast';
 import { DEFAULT_CATEGORIES, isSameCategory } from './types';
+import {
+  getMoneyPotImpactForAdd,
+  getMoneyPotImpactForDelete,
+  getMoneyPotImpactForUpdate,
+  getMoneyPotImpactForUndoDelete,
+  getMoneyPotImpactForUndoUpdate,
+} from './utils/moneyPotUtils';
 import GlobalSearchModal from './components/GlobalSearchModal';
 import FunnelIcon from './components/icons/FunnelIcon';
 import MoneyPotTab from './components/MoneyPotTab';
@@ -39,12 +46,14 @@ import { notifySubscriptionsDirectly } from './webpush-client';
 import { DEFAULT_FOYER_ID, DEFAULT_FOYER } from './utils/foyerService';
 import { resolveUserTheme, getCustomUserColor } from './utils/userColors';
 
-type UndoableAction = {
+export type UndoableAction = {
+    id: string;
     type: 'delete' | 'update';
     expense: Expense; // For delete, this is the one deleted. For update, this is the NEW state.
     originalExpense?: Expense; // For update, this is the OLD state.
-    timerId: number;
+    timerId: any;
     activityId?: string; // ID of the activity log created by this action, to be deleted on undo
+    createdAt?: number;
 };
 
 export type ModificationType = 'date' | 'amount' | 'other';
@@ -69,7 +78,7 @@ const MainApp: React.FC<{
     profiles: Profile[],
     onAddProfile: (profile: Profile) => boolean,
     onUpdateProfilePassword: (username: string, newPassword: string) => boolean,
-    onUpdateProfileEmail?: (username: string, newEmail: string) => boolean,
+    onUpdateProfileEmail?: (username: string, newEmail: string) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string } | boolean,
     onDeleteProfile: (username: string) => Promise<boolean> | boolean,
     onToggleBlockProfile: (username: string) => { success: boolean; message: string },
     isMaintenanceMode: boolean,
@@ -107,7 +116,7 @@ const MainApp: React.FC<{
   const { isMonthlyExpenseBold } = useTheme();
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [reminders, setReminders] = useState<any[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
   // Persistent Money Pot storage key per foyer
   const moneyPotKey = activeFoyerId === DEFAULT_FOYER_ID ? 'moneyPotTransactions' : `moneyPotTransactions_${activeFoyerId}`;
   const [moneyPotTransactions, setMoneyPotTransactions] = useSyncedSettings<MoneyPotTransaction[]>(moneyPotKey, []);
@@ -124,7 +133,7 @@ const MainApp: React.FC<{
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filterUser, setFilterUser] = useState<User | 'All'>('All');
-  const [filterCategory, setFilterCategory] = useState<any | 'All'>('All');
+  const [filterCategory, setFilterCategory] = useState<string | 'All'>('All');
 
   const [toastInfo, setToastInfo] = useState<{ message: string; type: 'info' | 'error' | 'success' | 'warning' } | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -157,10 +166,12 @@ const MainApp: React.FC<{
     }
   }, [formInitialData, activeTab]);
   const [successExpense, setSuccessExpense] = useState<Expense | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [highlightedExpenseIds, setHighlightedExpenseIds] = useState<Set<string>>(new Set());
   const [realtimeStatus, setRealtimeStatus] = useState<'SUBSCRIBED' | 'TIMED_OUT' | 'CHANNEL_ERROR' | 'CONNECTING'>('CONNECTING');
-  const [undoableAction, setUndoableAction] = useState<UndoableAction | null>(null);
+  const [undoableActions, setUndoableActions] = useState<UndoableAction[]>([]);
+  const undoableActionsRef = useRef<UndoableAction[]>([]);
+  const pendingExpenseIdDeletionsRef = useRef(new Set<string>());
+  const pendingActionIdsRef = useRef(new Set<string>());
   const recentlyAddedIds = useRef(new Set<string>());
   const recentlyUpdatedIds = useRef(new Set<string>());
   const recentlyDeletedIds = useRef(new Set<string>());
@@ -188,7 +199,6 @@ const MainApp: React.FC<{
         if (!filtered.some(p => p.username?.toLowerCase() === member.username?.toLowerCase())) {
           filtered.push({
             username: member.username,
-            password: '',
             user: member.name || member.username,
             foyer_id: activeFoyerId,
             color: member.color,
@@ -275,7 +285,7 @@ const MainApp: React.FC<{
   }, [activeFoyerId]);
 
   // Presence state
-  const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<(User | string)[]>([]);
 
   // Persistent Activity Log states
   const [lastBellCheck, setLastBellCheck] = useLocalStorage('lastBellCheck', new Date().toISOString());
@@ -300,7 +310,7 @@ const MainApp: React.FC<{
     ? ['Électricité', 'Gaz', 'Bois / Pellets', 'Fioul']
     : [];
 
-  const [categories, setCategories] = useSyncedSettings<any[]>(categoriesKey, defaultCategories);
+  const [categories, setCategories] = useSyncedSettings<string[]>(categoriesKey, defaultCategories);
   const [groceryStores, setGroceryStores] = useSyncedSettings<string[]>(storesKey, defaultStores);
   const [cars, setCars] = useSyncedSettings<string[]>(carsKey, defaultCars);
   const [heatingTypes, setHeatingTypes] = useSyncedSettings<string[]>(heatingKey, defaultHeating);
@@ -870,7 +880,7 @@ const MainApp: React.FC<{
             }
         }
       })
-      .subscribe((status, err) => {
+      .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
             setRealtimeStatus('SUBSCRIBED');
             syncData();
@@ -1068,16 +1078,24 @@ const MainApp: React.FC<{
     recentlyAddedIds.current.add(newId);
     setTimeout(() => recentlyAddedIds.current.delete(newId), 5000);
 
-    const expenseData: Expense = { ...expense, id: newId, foyer_id: activeFoyerId };
-    const optimisticExpense: Expense = { ...expenseData, created_at: new Date().toISOString() };
+    const expenseData: Expense = {
+      ...expense,
+      id: newId,
+      foyer_id: activeFoyerId,
+      created_at: new Date().toISOString()
+    };
+    const optimisticExpense: Expense = expenseData;
     setExpenses(prev => [optimisticExpense, ...prev]);
     highlightExpense(newId);
 
-    if (expense.user === User.Commun) {
-        const withdrawalAmount = -Math.abs(expense.amount);
+    const potImpact = getMoneyPotImpactForAdd(expense);
+    if (potImpact !== null) {
+        const description = expense.amount < 0
+            ? `Rentrée / Remboursement : ${expense.description}`
+            : `Dépense : ${expense.description}`;
         addMoneyPotTransaction({
-            amount: withdrawalAmount,
-            description: `Dépense : ${expense.description}`,
+            amount: potImpact,
+            description,
             user_name: 'Commun',
             date: expenseData.date
         });
@@ -1096,10 +1114,11 @@ const MainApp: React.FC<{
       setToastInfo({ message: "Erreur lors de l'ajout de la dépense.", type: 'error' });
       setExpenses(prev => prev.filter(e => e.id !== newId));
     } else {
+      const createdExpense: Expense = (data as Expense) || optimisticExpense;
       // Notification Push unifiée et hautement configurée
       dispatchPushNotification({
           type: 'add',
-          expense: data
+          expense: createdExpense
       });
       
       setFormInitialData(null);
@@ -1118,14 +1137,24 @@ const MainApp: React.FC<{
           : !isSophieInMainFoyer;
 
       if (shouldShowConfirmation) {
-          setSuccessExpense(data as Expense);
+          setSuccessExpense(createdExpense);
       }
-      broadcastChange('expenses', 'INSERT', data, user);
-      await logActivity({ type: 'add', expense: data as Expense, performedBy: user });
+      broadcastChange('expenses', 'INSERT', createdExpense, user);
+      await logActivity({ type: 'add', expense: createdExpense, performedBy: user });
     }
   };
   
-  const _performDelete = async (id: string) => {
+  const _performDelete = async (id: string, actionId: string) => {
+      // Si l'action a été annulée ou déjà exécutée, ne rien faire
+      if (!pendingActionIdsRef.current.has(actionId)) {
+        return;
+      }
+      pendingActionIdsRef.current.delete(actionId);
+      pendingExpenseIdDeletionsRef.current.delete(id);
+
+      undoableActionsRef.current = undoableActionsRef.current.filter(a => a.id !== actionId);
+      setUndoableActions(prev => prev.filter(a => a.id !== actionId));
+
       recentlyDeletedIds.current.add(id);
       setTimeout(() => recentlyDeletedIds.current.delete(id), 5000);
       const { error } = await supabase.from('expenses').delete().eq('id', id);
@@ -1138,7 +1167,14 @@ const MainApp: React.FC<{
       }
   };
 
-  const _performUpdate = async (expenseToUpdate: Expense) => {
+  const _performUpdate = async (expenseToUpdate: Expense, actionId: string) => {
+      if (!pendingActionIdsRef.current.has(actionId)) {
+          return;
+      }
+      pendingActionIdsRef.current.delete(actionId);
+      undoableActionsRef.current = undoableActionsRef.current.filter(a => a.id !== actionId);
+      setUndoableActions(prev => prev.filter(a => a.id !== actionId));
+
       recentlyUpdatedIds.current.add(expenseToUpdate.id);
       setTimeout(() => recentlyUpdatedIds.current.delete(expenseToUpdate.id), 5000);
       
@@ -1155,23 +1191,36 @@ const MainApp: React.FC<{
   };
 
   const deleteExpense = async (id: string) => {
+    // 7. Empêcher les doubles clics et les doubles appels
+    if (pendingExpenseIdDeletionsRef.current.has(id) || recentlyDeletedIds.current.has(id)) {
+      return;
+    }
     const expenseToDelete = expenses.find(e => e.id === id);
     if (!expenseToDelete) return;
 
-    if (undoableAction?.timerId) clearTimeout(undoableAction.timerId);
+    // Verrouillage immédiat pour prévenir les doubles clics
+    pendingExpenseIdDeletionsRef.current.add(id);
+
+    const actionId = crypto.randomUUID();
+    pendingActionIdsRef.current.add(actionId);
+
+    // Retrait optimiste de la liste locale
+    setExpenses(prev => prev.filter(e => e.id !== id));
 
     const activityId = await logActivity({ type: 'delete', expense: expenseToDelete, performedBy: user });
 
-    if (expenseToDelete.user === User.Commun) {
-         addMoneyPotTransaction({
-            amount: Math.abs(expenseToDelete.amount),
-            description: `Annulation : ${expenseToDelete.description}`,
+    const potImpact = getMoneyPotImpactForDelete(expenseToDelete);
+    if (potImpact !== null) {
+        const description = expenseToDelete.amount < 0
+            ? `Annulation rentrée : ${expenseToDelete.description}`
+            : `Annulation dépense : ${expenseToDelete.description}`;
+        addMoneyPotTransaction({
+            amount: potImpact,
+            description,
             user_name: 'Commun',
             date: new Date().toISOString()
         });
     }
-
-    setExpenses(prev => prev.filter(e => e.id !== id));
 
     // Envoyer une notification push pour alerter de la suppression
     dispatchPushNotification({
@@ -1180,18 +1229,28 @@ const MainApp: React.FC<{
     });
 
     const timerId = window.setTimeout(() => {
-        _performDelete(id);
-        setUndoableAction(null);
+        _performDelete(id, actionId);
     }, 7000);
 
-    setUndoableAction({ type: 'delete', expense: expenseToDelete, timerId, activityId: activityId || undefined });
+    const newAction: UndoableAction = {
+        id: actionId,
+        type: 'delete',
+        expense: expenseToDelete,
+        timerId,
+        activityId: activityId || undefined,
+        createdAt: Date.now()
+    };
+
+    undoableActionsRef.current.push(newAction);
+    setUndoableActions(prev => [...prev, newAction]);
   };
   
   const updateExpense = async (updatedExpense: Expense) => {
     const originalExpense = expenses.find(e => e.id === updatedExpense.id);
     if (!originalExpense) return;
 
-    if (undoableAction?.timerId) clearTimeout(undoableAction.timerId);
+    const actionId = crypto.randomUUID();
+    pendingActionIdsRef.current.add(actionId);
 
     const activityId = await logActivity({ 
         type: 'update', 
@@ -1200,30 +1259,24 @@ const MainApp: React.FC<{
         performedBy: user 
     });
 
-    if (originalExpense.user !== User.Commun && updatedExpense.user === User.Commun) {
-            addMoneyPotTransaction({
-            amount: -Math.abs(updatedExpense.amount),
-            description: `Dépense (modif) : ${updatedExpense.description}`,
-            user_name: 'Commun',
-            date: new Date().toISOString()
-            });
-    }
-    else if (originalExpense.user === User.Commun && updatedExpense.user !== User.Commun) {
-            addMoneyPotTransaction({
-            amount: Math.abs(originalExpense.amount),
-            description: `Annulation (modif) : ${originalExpense.description}`,
-            user_name: 'Commun',
-            date: new Date().toISOString()
-            });
-    }
-    else if (originalExpense.user === User.Commun && updatedExpense.user === User.Commun && Math.abs(originalExpense.amount - updatedExpense.amount) > 0.01) {
-        const diff = originalExpense.amount - updatedExpense.amount;
+    const potImpact = getMoneyPotImpactForUpdate(originalExpense, updatedExpense);
+    if (potImpact !== null) {
+        let desc = `Ajustement : ${updatedExpense.description}`;
+        if (originalExpense.user !== User.Commun && updatedExpense.user === User.Commun) {
+            desc = updatedExpense.amount < 0
+                ? `Rentrée (modif) : ${updatedExpense.description}`
+                : `Dépense (modif) : ${updatedExpense.description}`;
+        } else if (originalExpense.user === User.Commun && updatedExpense.user !== User.Commun) {
+            desc = originalExpense.amount < 0
+                ? `Annulation rentrée (modif) : ${originalExpense.description}`
+                : `Annulation dépense (modif) : ${originalExpense.description}`;
+        }
         addMoneyPotTransaction({
-            amount: diff,
-            description: `Ajustement : ${updatedExpense.description}`,
+            amount: potImpact,
+            description: desc,
             user_name: 'Commun',
             date: new Date().toISOString()
-            });
+        });
     }
 
     setExpenses(prev => prev.map(e => e.id === updatedExpense.id ? updatedExpense : e));
@@ -1237,17 +1290,32 @@ const MainApp: React.FC<{
     });
 
     const timerId = window.setTimeout(() => {
-        _performUpdate(updatedExpense);
-        setUndoableAction(null);
+        _performUpdate(updatedExpense, actionId);
     }, 7000);
 
-    setUndoableAction({ type: 'update', expense: updatedExpense, originalExpense, timerId, activityId: activityId || undefined });
+    const newAction: UndoableAction = {
+        id: actionId,
+        type: 'update',
+        expense: updatedExpense,
+        originalExpense,
+        timerId,
+        activityId: activityId || undefined,
+        createdAt: Date.now()
+    };
+
+    undoableActionsRef.current.push(newAction);
+    setUndoableActions(prev => [...prev, newAction]);
   };
 
-  const addReminder = async (reminder: Omit<any, 'id' | 'created_at'>) => {
+  const addReminder = async (reminder: Omit<Reminder, 'id' | 'created_at'>) => {
     const newId = crypto.randomUUID();
-    const reminderData = { ...reminder, id: newId, foyer_id: activeFoyerId };
-    const optimisticReminder: any = { ...reminderData, created_at: new Date().toISOString() };
+    const reminderData: Reminder = {
+      ...reminder,
+      id: newId,
+      foyer_id: activeFoyerId,
+      created_at: new Date().toISOString()
+    };
+    const optimisticReminder: Reminder = reminderData;
     setReminders(prev => [...prev, optimisticReminder].sort((a,b) => a.day_of_month - b.day_of_month));
 
     let { data, error } = await supabase.from('reminders').insert(reminderData).select().single();
@@ -1267,7 +1335,7 @@ const MainApp: React.FC<{
     }
   };
 
-  const updateReminder = async (updatedReminder: any) => {
+  const updateReminder = async (updatedReminder: Reminder) => {
     const originalReminder = reminders.find(r => r.id === updatedReminder.id);
     if (!originalReminder) return;
 
@@ -1410,17 +1478,8 @@ const MainApp: React.FC<{
 
   const currentMonthName = useMemo(() => currentDate.toLocaleString('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' }), [currentDate]);
   const monthInputValue = useMemo(() => `${currentDate.getUTCFullYear()}-${(currentDate.getUTCMonth() + 1).toString().padStart(2, '0')}`, [currentDate]);
-
-  const handleRefresh = async () => {
-    if (isRefreshing) return;
-    setIsRefreshing(true);
-    setToastInfo({ message: 'Synchronisation en cours...', type: 'info' });
-    await syncData();
-    setToastInfo({ message: 'Données mises à jour !', type: 'info' });
-    setIsRefreshing(false);
-  };
   
-  const handlePayReminder = async (reminder: any) => {
+  const handlePayReminder = async (reminder: Reminder) => {
     try {
       await addExpense({
         description: reminder.description,
@@ -1443,24 +1502,55 @@ const MainApp: React.FC<{
     if (error) setToastInfo({ message: "Erreur lors de la suppression de l'activité.", type: 'error' });
   }, []);
 
-  const handleUndo = useCallback(async () => {
-    if (!undoableAction) return;
-    clearTimeout(undoableAction.timerId);
+  const handleUndo = useCallback(async (actionId?: string) => {
+    const actions = undoableActionsRef.current;
+    if (actions.length === 0) return;
 
-    if (undoableAction.type === 'delete') {
-        if (undoableAction.activityId) await supabase.from('activities').delete().eq('id', undoableAction.activityId);
-        setExpenses(prev => [...prev, undoableAction.expense].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-        highlightExpense(undoableAction.expense.id);
-        if (undoableAction.expense.user === User.Commun) {
-            addMoneyPotTransaction({ amount: -Math.abs(undoableAction.expense.amount), description: `Annulation suppression : ${undoableAction.expense.description}`, user_name: 'Commun', date: new Date().toISOString() });
+    const targetAction = actionId
+      ? actions.find(a => a.id === actionId)
+      : actions[actions.length - 1];
+
+    if (!targetAction) return;
+
+    // Retirer l'action de la liste et de la référence
+    undoableActionsRef.current = undoableActionsRef.current.filter(a => a.id !== targetAction.id);
+    setUndoableActions(prev => prev.filter(a => a.id !== targetAction.id));
+
+    // Annuler immédiatement le timer d'enregistrement en base
+    clearTimeout(targetAction.timerId);
+    pendingActionIdsRef.current.delete(targetAction.id);
+
+    if (targetAction.type === 'delete') {
+        // Libérer le verrou d'identifiant
+        pendingExpenseIdDeletionsRef.current.delete(targetAction.expense.id);
+
+        if (targetAction.activityId) await supabase.from('activities').delete().eq('id', targetAction.activityId);
+        setExpenses(prev => [...prev, targetAction!.expense].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        highlightExpense(targetAction.expense.id);
+        const potImpact = getMoneyPotImpactForUndoDelete(targetAction.expense);
+        if (potImpact !== null) {
+            addMoneyPotTransaction({
+                amount: potImpact,
+                description: `Annulation suppression : ${targetAction.expense.description}`,
+                user_name: 'Commun',
+                date: new Date().toISOString()
+            });
         }
-    } else if (undoableAction.type === 'update' && undoableAction.originalExpense) {
-        if (undoableAction.activityId) await supabase.from('activities').delete().eq('id', undoableAction.activityId);
-        setExpenses(prev => prev.map(e => e.id === undoableAction.originalExpense!.id ? undoableAction.originalExpense! : e));
-        highlightExpense(undoableAction.originalExpense.id);
+    } else if (targetAction.type === 'update' && targetAction.originalExpense) {
+        if (targetAction.activityId) await supabase.from('activities').delete().eq('id', targetAction.activityId);
+        setExpenses(prev => prev.map(e => e.id === targetAction!.originalExpense!.id ? targetAction!.originalExpense! : e));
+        highlightExpense(targetAction.originalExpense.id);
+        const potImpact = getMoneyPotImpactForUndoUpdate(targetAction.originalExpense, targetAction.expense);
+        if (potImpact !== null) {
+            addMoneyPotTransaction({
+                amount: potImpact,
+                description: `Annulation modification : ${targetAction.originalExpense.description}`,
+                user_name: 'Commun',
+                date: new Date().toISOString()
+            });
+        }
     }
-    setUndoableAction(null);
-  }, [undoableAction, highlightExpense]);
+  }, [highlightExpense, addMoneyPotTransaction]);
 
   const addCategory = (name: string): boolean => {
     const trimmedName = name.trim();
@@ -1574,7 +1664,7 @@ const MainApp: React.FC<{
       )}
       <Header 
         onOpenSearch={() => setIsSearchOpen(true)} 
-          loggedInUser={user} 
+          loggedInUser={user as User} 
           activityItems={activityItemsForHeader} 
           unreadCount={unreadCount} 
           onMarkAsRead={markActivitiesAsRead} 
@@ -1638,7 +1728,7 @@ const MainApp: React.FC<{
                     onUpdateReminder={updateReminder}
                     currentMonth={currentMonth} 
                     currentYear={currentYear} 
-                    loggedInUser={user} 
+                    loggedInUser={user as User} 
                   />
                   <BudgetAlerts monthlyExpenses={filteredExpenses} currentFoyerId={currentFoyer?.id} onOpenBudgets={() => { setSettingsInitialView('budgets'); setIsSettingsOpen(true); }} />
                 </>
@@ -1997,7 +2087,7 @@ const MainApp: React.FC<{
         />
       )}
       {toastInfo && (<Toast message={toastInfo.message} type={toastInfo.type} onClose={() => setToastInfo(null)} />)}
-      <UndoToast undoableAction={undoableAction} onUndo={handleUndo} />
+      <UndoToast undoableActions={undoableActions} onUndo={handleUndo} />
       <GlobalSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} allExpenses={expenses} onEditExpense={setExpenseToView} highlightedIds={highlightedExpenseIds} modifiedInfo={modifiedExpenseInfo} categories={categories} />
       <SettingsModal 
         isOpen={isSettingsOpen} 

@@ -11,7 +11,7 @@ interface ReminderAlertsProps {
   onUpdateReminder?: (reminder: Reminder) => Promise<void> | void;
   currentYear: number;
   currentMonth: number;
-  loggedInUser: User;
+  loggedInUser: User | string;
   onOpenReminders?: () => void;
 }
 

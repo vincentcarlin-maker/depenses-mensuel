@@ -87,24 +87,15 @@ export async function saveFoyerToCloudAndLocal(foyer: Foyer): Promise<boolean> {
   local[preparedFoyer.id] = preparedFoyer;
   saveLocalFoyers(local);
 
-  // Sync to Supabase push_subscriptions (acts as durable JSON registry)
   try {
-    // Save by foyer_id
-    await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `foyer_id_${preparedFoyer.id}`);
-    await (supabase.from('push_subscriptions') as any).insert({
-      user_id: `foyer_id_${preparedFoyer.id}`,
-      subscription: preparedFoyer
+    // 1. Sync to public.foyers table
+    await (supabase.from('foyers') as any).upsert({
+      id: preparedFoyer.id,
+      name: preparedFoyer.name,
+      code: preparedFoyer.code
     });
 
-    // Save by invite code (normalized uppercase)
-    const normalizedCode = preparedFoyer.code.toUpperCase().trim();
-    await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `foyer_reg_${normalizedCode}`);
-    await (supabase.from('push_subscriptions') as any).insert({
-      user_id: `foyer_reg_${normalizedCode}`,
-      subscription: preparedFoyer
-    });
-
-    // Real-time broadcast
+    // 2. Real-time broadcast
     const channel = supabase.channel('foyer_sync_channel');
     channel.send({
       type: 'broadcast',
@@ -114,25 +105,25 @@ export async function saveFoyerToCloudAndLocal(foyer: Foyer): Promise<boolean> {
 
     return true;
   } catch (e) {
-    console.warn('Could not sync foyer to cloud:', e);
+    console.warn('Could not sync foyer to cloud tables:', e);
     return true; // Still saved locally
   }
 }
 
-// Fetch Foyer by ID (Cloud + Local fallback)
+// Fetch Foyer by ID (Cloud tables + Local cache + Legacy fallback)
 export async function fetchFoyerById(foyerId: string): Promise<Foyer | null> {
   // Check local cache first (allows persistence of custom colors and settings even for default foyer)
   const local = getLocalFoyers();
   if (local[foyerId]) {
-    // Also re-check cloud asynchronously
-    (supabase.from('push_subscriptions') as any)
-      .select('subscription')
-      .eq('user_id', `foyer_id_${foyerId}`)
+    // Re-check public.foyers asynchronously
+    (supabase.from('foyers') as any)
+      .select('id, name, code, created_at')
+      .eq('id', foyerId)
       .maybeSingle()
       .then(({ data }: any) => {
-        if (data?.subscription) {
-          const cloudFoyer = applyCustomColorsToFoyer(data.subscription as Foyer);
-          local[foyerId] = cloudFoyer;
+        if (data) {
+          const merged = { ...local[foyerId], name: data.name, code: data.code };
+          local[foyerId] = applyCustomColorsToFoyer(merged);
           saveLocalFoyers(local);
         }
       })
@@ -145,16 +136,36 @@ export async function fetchFoyerById(foyerId: string): Promise<Foyer | null> {
   }
 
   try {
+    // 1. Try public.foyers table first
+    const { data: foyerData, error: foyerErr } = await (supabase.from('foyers') as any)
+      .select('id, name, code, created_at')
+      .eq('id', foyerId)
+      .maybeSingle();
+
+    if (!foyerErr && foyerData) {
+      const cloudFoyer: Foyer = {
+        id: foyerData.id,
+        name: foyerData.name,
+        code: foyerData.code,
+        created_at: foyerData.created_at || new Date().toISOString(),
+        members: []
+      };
+      local[foyerId] = cloudFoyer;
+      saveLocalFoyers(local);
+      return cloudFoyer;
+    }
+
+    // 2. Legacy fallback from push_subscriptions (during migration)
     const { data, error } = await (supabase.from('push_subscriptions') as any)
       .select('subscription')
       .eq('user_id', `foyer_id_${foyerId}`)
       .maybeSingle();
 
     if (!error && data?.subscription) {
-      const cloudFoyer = applyCustomColorsToFoyer(data.subscription as Foyer);
-      local[foyerId] = cloudFoyer;
+      const legacyFoyer = applyCustomColorsToFoyer(data.subscription as Foyer);
+      local[foyerId] = legacyFoyer;
       saveLocalFoyers(local);
-      return cloudFoyer;
+      return legacyFoyer;
     }
   } catch (e) {
     console.error('Error fetching foyer from cloud:', e);
@@ -179,6 +190,26 @@ export async function fetchFoyerByCode(code: string): Promise<Foyer | null> {
   }
 
   try {
+    // 1. Try public.foyers table
+    const { data: foyerData, error: foyerErr } = await (supabase.from('foyers') as any)
+      .select('id, name, code, created_at')
+      .ilike('code', normalizedCode)
+      .maybeSingle();
+
+    if (!foyerErr && foyerData) {
+      const foundFoyer: Foyer = {
+        id: foyerData.id,
+        name: foyerData.name,
+        code: foyerData.code,
+        created_at: foyerData.created_at || new Date().toISOString(),
+        members: []
+      };
+      local[foundFoyer.id] = foundFoyer;
+      saveLocalFoyers(local);
+      return foundFoyer;
+    }
+
+    // 2. Legacy fallback from push_subscriptions
     const { data, error } = await (supabase.from('push_subscriptions') as any)
       .select('subscription')
       .eq('user_id', `foyer_reg_${normalizedCode}`)
@@ -360,7 +391,6 @@ export async function requestJoinFoyer(
   applicant: { 
     name: string; 
     username: string; 
-    password?: string; 
     color?: string; 
     email?: string;
     provider?: 'google' | 'apple';
@@ -410,7 +440,6 @@ export async function requestJoinFoyer(
       foyer_id: foyer.id,
       name: applicant.name.trim(),
       username: normalizedUsername,
-      password: applicant.password,
       email: applicant.email?.trim() || undefined,
       color: applicant.color || '#ec4899',
       provider: applicant.provider,
@@ -537,61 +566,14 @@ export async function approveJoinRequest(
 
     await saveFoyerToCloudAndLocal(updatedFoyer);
 
-    // Create the profile in push_subscriptions and profiles store so the applicant can log in
-    const newProfile = {
-      username: normalizedUsername,
-      password: req.password || (req.oauth_id ? `oauth_${req.oauth_id}` : '123456'),
-      user: req.name.trim(),
-      foyer_id: foyer.id,
-      foyer_name: foyer.name,
-      foyer_code: foyer.code,
-      color: req.color || '#ec4899',
-      email: req.email,
-      provider: req.provider
-    };
-
+    // Sync member in public.foyer_members table if available
     try {
-      await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_${normalizedUsername}`);
-      await (supabase.from('push_subscriptions') as any).insert({
-        user_id: `profile_${normalizedUsername}`,
-        subscription: newProfile
+      await (supabase.from('foyer_members') as any).upsert({
+        foyer_id: foyer.id,
+        role: 'member'
       });
-
-      if (req.email) {
-        await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_email_${req.email.toLowerCase().trim()}`);
-        await (supabase.from('push_subscriptions') as any).insert({
-          user_id: `profile_email_${req.email.toLowerCase().trim()}`,
-          subscription: newProfile
-        });
-      }
-
-      if (req.oauth_id) {
-        await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `profile_oauth_${req.oauth_id}`);
-        await (supabase.from('push_subscriptions') as any).insert({
-          user_id: `profile_oauth_${req.oauth_id}`,
-          subscription: newProfile
-        });
-      }
-
-      // Add to app_user_profiles_v2
-      const { data: globalData } = await (supabase.from('push_subscriptions') as any)
-        .select('subscription')
-        .eq('user_id', 'app_user_profiles_v2')
-        .maybeSingle();
-
-      const existingProfiles = (globalData?.subscription?.profiles && Array.isArray(globalData.subscription.profiles))
-        ? globalData.subscription.profiles.filter((p: any) => p.username !== normalizedUsername)
-        : [];
-      
-      existingProfiles.push(newProfile);
-
-      await (supabase.from('push_subscriptions') as any).delete().eq('user_id', 'app_user_profiles_v2');
-      await (supabase.from('push_subscriptions') as any).insert({
-        user_id: 'app_user_profiles_v2',
-        subscription: { profiles: existingProfiles }
-      });
-    } catch (err) {
-      console.warn('Could not auto-create profile row in push_subscriptions:', err);
+    } catch {
+      // Table may not be deployed yet
     }
 
     // Broadcast approval event in real-time

@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useSyncedSettings } from './useSyncedSettings';
 import { type Category, type Expense, canonicalCategory } from '../types';
+import { isExpenseInMonth } from '../utils/dateUtils';
 
 export interface CategoryBudgetInfo {
   category: Category;
@@ -58,10 +59,7 @@ export function useCategoryBudgets(foyerId?: string) {
     month: number
   ): CategoryBudgetInfo[] => {
     // Filter expenses for specified month & year
-    const monthExpenses = expenses.filter(e => {
-      const d = new Date(e.date);
-      return d.getUTCFullYear() === year && d.getUTCMonth() === month;
-    });
+    const monthExpenses = expenses.filter(e => isExpenseInMonth(e.date, year, month));
 
     // Sum expenses per category
     const spentMap = new Map<string, number>();

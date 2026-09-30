@@ -1,6 +1,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { type Expense, User, type FoyerMember } from '../types';
+import { isExpenseInMonth, isExpenseBeforeMonth } from '../utils/dateUtils';
 import ExpenseList from './ExpenseList';
 import CloseIcon from './icons/CloseIcon';
 import ChevronRightIcon from './icons/ChevronRightIcon';
@@ -45,19 +46,14 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
     memberStats,
     totalExpenses
   } = useMemo(() => {
-    const firstDayOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1));
-    
     // Expenses for current month
-    const currentMonthExpenses = allExpenses.filter(expense => {
-      const expenseDate = new Date(expense.date);
-      return expenseDate.getUTCFullYear() === currentYear && expenseDate.getUTCMonth() === currentMonth;
-    });
+    const currentMonthExpenses = allExpenses.filter(expense => isExpenseInMonth(expense.date, currentYear, currentMonth));
 
     const communTotalMonth = currentMonthExpenses
         .filter(e => e.user === User.Commun)
         .reduce((sum, e) => sum + e.amount, 0);
 
-    const historicExpenses = allExpenses.filter(exp => new Date(exp.date) < firstDayOfMonth);
+    const historicExpenses = allExpenses.filter(exp => isExpenseBeforeMonth(exp.date, currentYear, currentMonth));
 
     const memberStats = members.map(m => {
       const monthExp = currentMonthExpenses.filter(e => e.user === m.name);

@@ -26,100 +26,131 @@ const SupabaseInstructionsModal: React.FC<SupabaseInstructionsModalProps> = ({ i
 
   if (!isOpen) return null;
 
-  const sqlScript = `-- 1. Créer la table pour l'historique des connexions
-CREATE TABLE IF NOT EXISTS public.login_logs (
-  id uuid default gen_random_uuid() primary key,
-  user_name text not null,
-  timestamp timestamptz default now()
+  const sqlScript = `-- 1. Tables d'infrastructure, foyers et profils liés à Supabase Auth
+CREATE TABLE IF NOT EXISTS public.foyers (
+  id text PRIMARY KEY,
+  name text NOT NULL,
+  code text UNIQUE NOT NULL,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
 );
 
--- 2. Créer la table pour la cagnotte (argent commun)
-CREATE TABLE IF NOT EXISTS public.money_pot (
-  id uuid default gen_random_uuid() primary key,
-  amount float not null,
-  description text not null,
-  user_name text not null,
-  date timestamptz default now(),
-  created_at timestamptz default now()
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  username text UNIQUE NOT NULL,
+  display_name text NOT NULL,
+  email text,
+  color text DEFAULT '#0ea5e9',
+  avatar_url text,
+  is_superadmin boolean DEFAULT false NOT NULL,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  updated_at timestamptz DEFAULT now() NOT NULL
 );
 
--- 3. MIGRATION : Si la table 'money_pot' existe déjà avec la colonne 'user', on la renomme
-DO $migration_user_to_username$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='money_pot' AND column_name='user') THEN
-    ALTER TABLE public.money_pot RENAME COLUMN "user" TO user_name;
-  END IF;
-END $migration_user_to_username$;
-
--- 4. AJOUT : Ajoute la colonne pour les articles déduits des courses
-DO $migration_add_subtracted_items$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='expenses' AND column_name='subtracted_items') THEN
-    ALTER TABLE public.expenses ADD COLUMN subtracted_items jsonb;
-  END IF;
-END $migration_add_subtracted_items$;
-
--- 5. NOUVEAU : Créer la table pour l'historique des modifications (activités)
--- On inclut explicitement 'performedBy' pour tracer qui a fait l'action.
-CREATE TABLE IF NOT EXISTS public.activities (
-  id uuid default gen_random_uuid() primary key,
-  type text not null,
-  expense jsonb not null,
-  "oldExpense" jsonb,
-  "performedBy" text, -- Nouveau champ pour l'auteur (Sophie ou Vincent)
-  "timestamp" timestamptz default now() not null
+CREATE TABLE IF NOT EXISTS public.foyer_members (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  foyer_id text NOT NULL REFERENCES public.foyers(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role text NOT NULL DEFAULT 'member' CHECK (role IN ('admin', 'member')),
+  joined_at timestamptz DEFAULT now() NOT NULL,
+  UNIQUE (foyer_id, user_id)
 );
 
--- MIGRATION : Ajouter performedBy si la table existe déjà sans lui
-DO $migration_add_performed_by$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='activities' AND column_name='performedBy') THEN
-    ALTER TABLE public.activities ADD COLUMN "performedBy" text;
-  END IF;
-END $migration_add_performed_by$;
-
--- 6. Créer la table pour les paramètres globaux (Mode maintenance, profils, etc.)
-CREATE TABLE IF NOT EXISTS public.app_settings (
-  key text primary key,
-  value text not null,
-  updated_at timestamptz default now()
+CREATE TABLE IF NOT EXISTS public.legacy_account_activations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  legacy_username text NOT NULL UNIQUE,
+  display_name text NOT NULL,
+  foyer_id text NOT NULL REFERENCES public.foyers(id) ON DELETE CASCADE,
+  registered_email text,
+  initial_role text NOT NULL DEFAULT 'member' CHECK (initial_role IN ('admin', 'member')),
+  activation_token text NOT NULL UNIQUE,
+  claimed_by_user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  claimed_at timestamptz,
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'activated', 'revoked')),
+  created_at timestamptz DEFAULT now() NOT NULL
 );
 
--- 7. Activer la sécurité (RLS)
-alter table public.expenses enable row level security;
-alter table public.reminders enable row level security;
-alter table public.login_logs enable row level security;
-alter table public.money_pot enable row level security;
-alter table public.activities enable row level security;
-alter table public.app_settings enable row level security;
-
--- 8. Créer les règles d'accès public (Anonyme)
-DROP POLICY IF EXISTS "Allow all access" ON public.expenses;
-DROP POLICY IF EXISTS "Allow all access" ON public.reminders;
-DROP POLICY IF EXISTS "Allow all access" ON public.login_logs;
-DROP POLICY IF EXISTS "Allow all access" ON public.money_pot;
-DROP POLICY IF EXISTS "Allow all access" ON public.activities;
-DROP POLICY IF EXISTS "Allow all access" ON public.app_settings;
-
-CREATE POLICY "Allow all access" ON public.expenses FOR ALL TO anon, authenticated, public USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access" ON public.reminders FOR ALL TO anon, authenticated, public USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access" ON public.login_logs FOR ALL TO anon, authenticated, public USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access" ON public.money_pot FOR ALL TO anon, authenticated, public USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access" ON public.activities FOR ALL TO anon, authenticated, public USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access" ON public.app_settings FOR ALL TO anon, authenticated, public USING (true) WITH CHECK (true);
-
--- 9. MULTI-UTILISATEURS & ISOLATION DES FOYERS (App Store / Déploiement)
--- Ajoute la colonne 'foyer_id' pour séparer les données de chaque foyer/couple
+-- 2. Sécurisation et non-nullabilité de foyer_id sur les tables métiers
 ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS foyer_id text DEFAULT 'foyer_vincent_sophie';
 ALTER TABLE public.reminders ADD COLUMN IF NOT EXISTS foyer_id text DEFAULT 'foyer_vincent_sophie';
 ALTER TABLE public.money_pot ADD COLUMN IF NOT EXISTS foyer_id text DEFAULT 'foyer_vincent_sophie';
 ALTER TABLE public.activities ADD COLUMN IF NOT EXISTS foyer_id text DEFAULT 'foyer_vincent_sophie';
 
--- Rétro-compatibilité : Associer l'historique existant au foyer de Vincent & Sophie
 UPDATE public.expenses SET foyer_id = 'foyer_vincent_sophie' WHERE foyer_id IS NULL;
 UPDATE public.reminders SET foyer_id = 'foyer_vincent_sophie' WHERE foyer_id IS NULL;
 UPDATE public.money_pot SET foyer_id = 'foyer_vincent_sophie' WHERE foyer_id IS NULL;
-UPDATE public.activities SET foyer_id = 'foyer_vincent_sophie' WHERE foyer_id IS NULL;`;
+UPDATE public.activities SET foyer_id = 'foyer_vincent_sophie' WHERE foyer_id IS NULL;
+
+ALTER TABLE public.expenses ALTER COLUMN foyer_id SET NOT NULL;
+ALTER TABLE public.reminders ALTER COLUMN foyer_id SET NOT NULL;
+ALTER TABLE public.money_pot ALTER COLUMN foyer_id SET NOT NULL;
+ALTER TABLE public.activities ALTER COLUMN foyer_id SET NOT NULL;
+
+-- 3. Fonctions d'isolation de foyer et contrôle de rôle
+CREATE OR REPLACE FUNCTION public.is_foyer_member(p_foyer_id text)
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.foyer_members
+    WHERE foyer_id = p_foyer_id AND user_id = auth.uid()
+  );
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+CREATE OR REPLACE FUNCTION public.is_foyer_admin(p_foyer_id text)
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.foyer_members
+    WHERE foyer_id = p_foyer_id AND user_id = auth.uid() AND role = 'admin'
+  );
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+CREATE OR REPLACE FUNCTION public.is_superadmin()
+RETURNS boolean AS $$
+  SELECT COALESCE((SELECT is_superadmin FROM public.profiles WHERE id = auth.uid()), false);
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- 4. Activation RLS et abrogation définitive des anciennes règles 'Allow all access'
+ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.reminders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.money_pot ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.foyers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.foyer_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow all access" ON public.expenses;
+DROP POLICY IF EXISTS "Allow all access" ON public.reminders;
+DROP POLICY IF EXISTS "Allow all access" ON public.money_pot;
+DROP POLICY IF EXISTS "Allow all access" ON public.activities;
+DROP POLICY IF EXISTS "Allow all access" ON public.push_subscriptions;
+
+CREATE POLICY "expenses_foyer_isolation" ON public.expenses
+FOR ALL TO authenticated
+USING (public.is_foyer_member(foyer_id) OR public.is_superadmin())
+WITH CHECK (public.is_foyer_member(foyer_id));
+
+CREATE POLICY "reminders_foyer_isolation" ON public.reminders
+FOR ALL TO authenticated
+USING (public.is_foyer_member(foyer_id) OR public.is_superadmin())
+WITH CHECK (public.is_foyer_member(foyer_id));
+
+CREATE POLICY "money_pot_foyer_isolation" ON public.money_pot
+FOR ALL TO authenticated
+USING (public.is_foyer_member(foyer_id) OR public.is_superadmin())
+WITH CHECK (public.is_foyer_member(foyer_id));
+
+CREATE POLICY "activities_foyer_isolation" ON public.activities
+FOR ALL TO authenticated
+USING (public.is_foyer_member(foyer_id) OR public.is_superadmin())
+WITH CHECK (public.is_foyer_member(foyer_id));
+
+CREATE POLICY "foyers_member_access" ON public.foyers
+FOR SELECT TO authenticated
+USING (public.is_foyer_member(id) OR public.is_superadmin());
+
+CREATE POLICY "push_subs_authenticated" ON public.push_subscriptions
+FOR ALL TO authenticated
+USING (true) WITH CHECK (true);`;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center" aria-modal="true" role="dialog">

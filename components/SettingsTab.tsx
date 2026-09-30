@@ -44,7 +44,7 @@ interface SettingsTabProps {
   isAdmin?: boolean;
   onAddProfile: (profile: Profile) => boolean;
   onUpdateProfilePassword: (username: string, newPassword: string) => boolean;
-  onUpdateProfileEmail?: (username: string, newEmail: string) => boolean;
+  onUpdateProfileEmail?: (username: string, newEmail: string) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string } | boolean;
   onDeleteProfile: (username: string) => Promise<boolean> | boolean;
   onToggleBlockProfile?: (username: string) => { success: boolean; message: string };
   isMaintenanceMode?: boolean;
@@ -166,7 +166,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
 
   const foyerTitle = props.currentFoyer?.name || 'Mon Foyer';
 
-  const { isBudgetEnabled, isBudgetAlertsEnabled, setIsBudgetAlertsEnabled } = useCategoryBudgets(props.currentFoyer?.id);
+  const { isBudgetEnabled, isBudgetAlertsEnabled } = useCategoryBudgets(props.currentFoyer?.id);
 
   const viewTitles: Record<string, string> = {
     main: 'Réglages',
@@ -950,6 +950,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             onDeleteProfile={props.onDeleteProfile}
             onAddProfile={props.onAddProfile}
             onUpdateProfilePassword={props.onUpdateProfilePassword}
+            onUpdateProfileEmail={props.onUpdateProfileEmail}
             isMaintenanceMode={props.isMaintenanceMode}
             onToggleMaintenanceMode={props.onToggleMaintenanceMode}
             onSwitchFoyer={props.onSwitchFoyer}

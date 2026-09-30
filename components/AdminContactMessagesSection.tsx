@@ -2,9 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { ContactMessage, ContactSubject } from '../types';
 import { getContactSubjectBadge } from '../utils/contactService';
 
-const mailbox3DImg = '/contact-mailbox-3d.jpg';
-const chatHeart3DImg = '/contact-chat-heart-3d.jpg';
-
 interface AdminContactMessagesSectionProps {
   messages: ContactMessage[];
   onSendReply: (messageId: string, replyText: string, asAdmin?: boolean) => Promise<{ success: boolean; error?: string }>;

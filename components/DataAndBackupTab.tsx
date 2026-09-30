@@ -3,6 +3,8 @@ import { Expense, Reminder, MoneyPotTransaction, Category, User, Foyer } from '.
 import { supabase } from '../supabase/client';
 import { DEFAULT_FOYER_ID } from '../utils/foyerService';
 import ConfirmationModal from './ConfirmationModal';
+import { parseAndValidateImportPayload, type ValidatedImportPayload } from '../utils/jsonImportValidator';
+import { parseAndValidateCsv, type ValidatedCsvPayload } from '../utils/csvImportValidator';
 
 interface DataAndBackupTabProps {
   expenses: Expense[];
@@ -62,7 +64,10 @@ export const DataAndBackupTab: React.FC<DataAndBackupTabProps> = ({
     expensesCount: number;
     remindersCount: number;
     moneyPotCount: number;
-    parsedPayload: any;
+    ignoredCount: number;
+    isJson: boolean;
+    validatedPayload?: ValidatedImportPayload;
+    validatedCsvPayload?: ValidatedCsvPayload;
   } | null>(null);
   const [importMode, setImportMode] = useState<'merge' | 'replace'>('merge');
   const [isImporting, setIsImporting] = useState(false);
@@ -456,6 +461,7 @@ export const DataAndBackupTab: React.FC<DataAndBackupTabProps> = ({
   const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const activeFoyerId = currentFoyer?.id || DEFAULT_FOYER_ID;
 
     const reader = new FileReader();
     reader.onload = event => {
@@ -463,39 +469,58 @@ export const DataAndBackupTab: React.FC<DataAndBackupTabProps> = ({
         const text = event.target?.result as string;
         if (file.name.endsWith('.json')) {
           const parsed = JSON.parse(text);
-          const exps = Array.isArray(parsed) ? parsed : parsed.data?.expenses || parsed.expenses || [];
-          const rems = Array.isArray(parsed) ? [] : parsed.data?.reminders || parsed.reminders || [];
-          const pots = Array.isArray(parsed) ? [] : parsed.data?.moneyPotTransactions || parsed.moneyPotTransactions || [];
+          const validated = parseAndValidateImportPayload(parsed, activeFoyerId);
+
+          if (validated.validExpenses.length === 0 && validated.validReminders.length === 0 && validated.validMoneyPot.length === 0) {
+            setToastInfo({ message: 'Aucune donnée valide trouvée dans le fichier JSON.', type: 'error' });
+            return;
+          }
 
           setImportDataPreview({
             fileName: file.name,
-            expensesCount: exps.length,
-            remindersCount: rems.length,
-            moneyPotCount: pots.length,
-            parsedPayload: { expenses: exps, reminders: rems, moneyPotTransactions: pots, raw: parsed },
+            expensesCount: validated.validExpenses.length,
+            remindersCount: validated.validReminders.length,
+            moneyPotCount: validated.validMoneyPot.length,
+            ignoredCount: validated.totalIgnoredCount,
+            isJson: true,
+            validatedPayload: validated,
           });
         } else if (file.name.endsWith('.csv')) {
-          // Parse basic CSV
-          const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
-          if (lines.length <= 1) {
+          const validatedCsv = parseAndValidateCsv(text, activeFoyerId, {
+            fallbackUser: currentFoyer?.members?.[0]?.name || User.Sophie,
+          });
+
+          if (validatedCsv.validExpenses.length === 0 && validatedCsv.rejections.length === 0) {
             setToastInfo({ message: 'Le fichier CSV sélectionné est vide.', type: 'error' });
             return;
           }
-          // Estimate expenses from lines
-          const dataRowsCount = lines.length - 1;
+
+          if (validatedCsv.validExpenses.length === 0 && validatedCsv.rejections.length > 0) {
+            const rejectionsDetails = Object.entries(validatedCsv.rejectionSummary)
+              .map(([reason, count]) => `${count} ${reason.toLowerCase()}`)
+              .join(', ');
+            setToastInfo({
+              message: `Aucune ligne valide dans le CSV (${validatedCsv.rejections.length} rejetée(s) : ${rejectionsDetails}).`,
+              type: 'error',
+            });
+            return;
+          }
+
           setImportDataPreview({
             fileName: file.name,
-            expensesCount: dataRowsCount,
+            expensesCount: validatedCsv.validExpenses.length,
             remindersCount: 0,
             moneyPotCount: 0,
-            parsedPayload: { csvLines: lines },
+            ignoredCount: validatedCsv.rejections.length,
+            isJson: false,
+            validatedCsvPayload: validatedCsv,
           });
         } else {
           setToastInfo({ message: 'Format de fichier non pris en charge. Utilisez .json ou .csv', type: 'error' });
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Import parse error:', err);
-        setToastInfo({ message: 'Erreur lors de la lecture du fichier de sauvegarde.', type: 'error' });
+        setToastInfo({ message: `Erreur lors de la lecture du fichier : ${err.message || 'Fichier invalide'}`, type: 'error' });
       }
     };
     reader.readAsText(file);
@@ -507,57 +532,172 @@ export const DataAndBackupTab: React.FC<DataAndBackupTabProps> = ({
     const activeFoyerId = currentFoyer?.id || DEFAULT_FOYER_ID;
 
     try {
-      const { parsedPayload } = importDataPreview;
+      if (importDataPreview.isJson && importDataPreview.validatedPayload) {
+        const { validExpenses, validReminders, validMoneyPot, totalIgnoredCount } = importDataPreview.validatedPayload;
 
-      if (parsedPayload.expenses && Array.isArray(parsedPayload.expenses)) {
-        const validExpenses = parsedPayload.expenses.filter((e: any) => e.amount && e.date);
-
+        // 8. Respecter le mode choisi : 'replace' supprime uniquement les données du foyer actif
         if (importMode === 'replace') {
-          // Delete only current foyer's expenses
-          if (activeFoyerId === DEFAULT_FOYER_ID) {
-            await supabase.from('expenses').delete().or(`foyer_id.eq.${DEFAULT_FOYER_ID},foyer_id.is.null`);
-          } else {
-            await supabase.from('expenses').delete().eq('foyer_id', activeFoyerId);
+          // Dépenses
+          let qExp = supabase.from('expenses').delete();
+          qExp = activeFoyerId === DEFAULT_FOYER_ID
+            ? qExp.or(`foyer_id.eq.${DEFAULT_FOYER_ID},foyer_id.is.null`)
+            : qExp.eq('foyer_id', activeFoyerId);
+          const { error: delExpErr } = await qExp;
+          if (delExpErr) {
+            throw new Error(`Échec de suppression des dépenses : ${delExpErr.message}`);
+          }
+
+          // Rappels
+          let qRem = supabase.from('reminders').delete();
+          qRem = activeFoyerId === DEFAULT_FOYER_ID
+            ? qRem.or(`foyer_id.eq.${DEFAULT_FOYER_ID},foyer_id.is.null`)
+            : qRem.eq('foyer_id', activeFoyerId);
+          const { error: delRemErr } = await qRem;
+          if (delRemErr) {
+            throw new Error(`Échec de suppression des rappels : ${delRemErr.message}`);
+          }
+
+          // Cagnotte
+          let qPot = supabase.from('money_pot').delete();
+          qPot = activeFoyerId === DEFAULT_FOYER_ID
+            ? qPot.or(`foyer_id.eq.${DEFAULT_FOYER_ID},foyer_id.is.null`)
+            : qPot.eq('foyer_id', activeFoyerId);
+          const { error: delPotErr } = await qPot;
+          if (delPotErr && delPotErr.code !== '42P01') {
+            console.warn("Avertissement suppression cagnotte :", delPotErr.message);
           }
         }
 
+        // 9. Importer les dépenses par lots de 50
         if (validExpenses.length > 0) {
-          // Clean ID or let Supabase assign, tag with active foyer
-          const cleanExpenses = validExpenses.map((e: any) => ({
-            id: e.id || crypto.randomUUID(),
-            description: e.description || 'Dépense importée',
-            amount: Number(e.amount),
-            category: e.category || 'Divers',
-            date: e.date,
-            user: e.user || User.Sophie,
-            created_at: e.created_at || new Date().toISOString(),
-            foyer_id: activeFoyerId,
-          }));
-
-          // Batch insert by chunks of 50 (with graceful fallback if foyer_id column doesn't exist yet)
-          for (let i = 0; i < cleanExpenses.length; i += 50) {
-            const chunk = cleanExpenses.slice(i, i + 50);
-            const { error: upsertErr } = await supabase.from('expenses').upsert(chunk, { onConflict: 'id' });
+          for (let i = 0; i < validExpenses.length; i += 50) {
+            const chunk = validExpenses.slice(i, i + 50);
+            let { error: upsertErr } = await supabase.from('expenses').upsert(chunk, { onConflict: 'id' });
             if (upsertErr && (upsertErr.code === 'PGRST204' || upsertErr.message?.includes('foyer_id'))) {
               const fallbackChunk = chunk.map((item: any) => {
                 const { foyer_id: _, ...rest } = item;
                 return rest;
               });
-              await supabase.from('expenses').upsert(fallbackChunk, { onConflict: 'id' });
+              const res = await supabase.from('expenses').upsert(fallbackChunk, { onConflict: 'id' });
+              upsertErr = res.error;
+            }
+            if (upsertErr) {
+              throw new Error(`Erreur lors de l'enregistrement des dépenses (lot ${Math.floor(i / 50) + 1}) : ${upsertErr.message}`);
             }
           }
         }
+
+        // 9. Importer les rappels par lots de 50
+        if (validReminders.length > 0) {
+          for (let i = 0; i < validReminders.length; i += 50) {
+            const chunk = validReminders.slice(i, i + 50);
+            let { error: upsertErr } = await supabase.from('reminders').upsert(chunk, { onConflict: 'id' });
+            if (upsertErr && (upsertErr.code === 'PGRST204' || upsertErr.message?.includes('foyer_id'))) {
+              const fallbackChunk = chunk.map((item: any) => {
+                const { foyer_id: _, ...rest } = item;
+                return rest;
+              });
+              const res = await supabase.from('reminders').upsert(fallbackChunk, { onConflict: 'id' });
+              upsertErr = res.error;
+            }
+            if (upsertErr) {
+              throw new Error(`Erreur lors de l'enregistrement des rappels (lot ${Math.floor(i / 50) + 1}) : ${upsertErr.message}`);
+            }
+          }
+        }
+
+        // 9. Importer les transactions de cagnotte par lots de 50
+        if (validMoneyPot.length > 0) {
+          for (let i = 0; i < validMoneyPot.length; i += 50) {
+            const chunk = validMoneyPot.slice(i, i + 50);
+            let { error: upsertErr } = await supabase.from('money_pot').upsert(chunk, { onConflict: 'id' });
+            if (upsertErr && (upsertErr.code === 'PGRST204' || upsertErr.message?.includes('foyer_id'))) {
+              const fallbackChunk = chunk.map((item: any) => {
+                const { foyer_id: _, ...rest } = item;
+                return rest;
+              });
+              const res = await supabase.from('money_pot').upsert(fallbackChunk, { onConflict: 'id' });
+              upsertErr = res.error;
+            }
+            if (upsertErr) {
+              throw new Error(`Erreur lors de l'enregistrement de la cagnotte (lot ${Math.floor(i / 50) + 1}) : ${upsertErr.message}`);
+            }
+          }
+        }
+
+        // 11. Bilan exact
+        const parts: string[] = [];
+        if (validExpenses.length > 0) {
+          parts.push(`${validExpenses.length} dépense${validExpenses.length > 1 ? 's' : ''}`);
+        }
+        if (validReminders.length > 0) {
+          parts.push(`${validReminders.length} rappel${validReminders.length > 1 ? 's' : ''}`);
+        }
+        if (validMoneyPot.length > 0) {
+          parts.push(`${validMoneyPot.length} mouvement${validMoneyPot.length > 1 ? 's' : ''} cagnotte`);
+        }
+        const ignoredStr = totalIgnoredCount > 0 ? ` (${totalIgnoredCount} élément${totalIgnoredCount > 1 ? 's' : ''} ignoré${totalIgnoredCount > 1 ? 's' : ''})` : '';
+
+        setToastInfo({
+          message: `Importation réussie : ${parts.join(', ')} importé${parts.length > 1 ? 's' : ''}${ignoredStr}.`,
+          type: 'info',
+        });
+      } else if (!importDataPreview.isJson && importDataPreview.validatedCsvPayload) {
+        const { validExpenses, rejections, totalRowsRead, rejectionSummary } = importDataPreview.validatedCsvPayload;
+
+        // 9. Respecter les modes 'merge' et 'replace'
+        if (importMode === 'replace') {
+          let qExp = supabase.from('expenses').delete();
+          qExp = activeFoyerId === DEFAULT_FOYER_ID
+            ? qExp.or(`foyer_id.eq.${DEFAULT_FOYER_ID},foyer_id.is.null`)
+            : qExp.eq('foyer_id', activeFoyerId);
+          const { error: delExpErr } = await qExp;
+          if (delExpErr) {
+            throw new Error(`Échec de suppression des dépenses existantes : ${delExpErr.message}`);
+          }
+        }
+
+        // 10. Importer par lots de 50
+        for (let i = 0; i < validExpenses.length; i += 50) {
+          const chunk = validExpenses.slice(i, i + 50);
+          let { error: upsertErr } = await supabase.from('expenses').upsert(chunk, { onConflict: 'id' });
+          if (upsertErr && (upsertErr.code === 'PGRST204' || upsertErr.message?.includes('foyer_id'))) {
+            const fallbackChunk = chunk.map((item: any) => {
+              const { foyer_id: _, ...rest } = item;
+              return rest;
+            });
+            const res = await supabase.from('expenses').upsert(fallbackChunk, { onConflict: 'id' });
+            upsertErr = res.error;
+          }
+          if (upsertErr) {
+            // 11. Arrêter l'import si Supabase renvoie une erreur
+            throw new Error(`Erreur lors de l'enregistrement des dépenses CSV (lot ${Math.floor(i / 50) + 1}) : ${upsertErr.message}`);
+          }
+        }
+
+        // 12. Afficher un bilan exact
+        const rejectionsDetails = Object.entries(rejectionSummary)
+          .map(([reason, count]) => `${count} ${reason.toLowerCase()}`)
+          .join(', ');
+        const rejectedNote = rejections.length > 0
+          ? ` (${rejections.length} ignorée${rejections.length > 1 ? 's' : ''}${rejectionsDetails ? ' : ' + rejectionsDetails : ''})`
+          : '';
+
+        setToastInfo({
+          message: `Importation CSV réussie : ${validExpenses.length}/${totalRowsRead} ligne${totalRowsRead > 1 ? 's' : ''} importée${validExpenses.length > 1 ? 's' : ''}${rejectedNote}.`,
+          type: 'info',
+        });
       }
 
-      setToastInfo({
-        message: `Importation réussie (${importDataPreview.expensesCount} dépenses traitées) !`,
-        type: 'info',
-      });
       setImportDataPreview(null);
       if (onSyncData) await onSyncData();
     } catch (err: any) {
       console.error('Import execution error:', err);
-      setToastInfo({ message: "Erreur lors de l'application de l'importation.", type: 'error' });
+      // 12. Ne jamais afficher “Importation réussie” si une écriture a échoué
+      setToastInfo({
+        message: `Échec de l'importation : ${err.message || "Une erreur est survenue lors de l'écriture en base."}`,
+        type: 'error',
+      });
     } finally {
       setIsImporting(false);
     }
@@ -1240,21 +1380,39 @@ export const DataAndBackupTab: React.FC<DataAndBackupTabProps> = ({
 
             <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-700/60 space-y-2 text-xs">
               <div className="flex justify-between font-medium text-slate-700 dark:text-slate-200">
-                <span>Dépenses détectées :</span>
-                <span className="font-bold">{importDataPreview.expensesCount}</span>
+                <span>Dépenses valides à importer :</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">{importDataPreview.expensesCount}</span>
               </div>
-              {importDataPreview.remindersCount > 0 && (
+              {importDataPreview.isJson && importDataPreview.remindersCount > 0 && (
                 <div className="flex justify-between font-medium text-slate-700 dark:text-slate-200">
                   <span>Rappels détectés :</span>
                   <span className="font-bold">{importDataPreview.remindersCount}</span>
                 </div>
               )}
-              {importDataPreview.moneyPotCount > 0 && (
+              {importDataPreview.isJson && importDataPreview.moneyPotCount > 0 && (
                 <div className="flex justify-between font-medium text-slate-700 dark:text-slate-200">
                   <span>Mouvements cagnotte :</span>
                   <span className="font-bold">{importDataPreview.moneyPotCount}</span>
                 </div>
               )}
+              {importDataPreview.ignoredCount > 0 && (
+                <div className="flex justify-between font-medium text-amber-600 dark:text-amber-400">
+                  <span>Lignes ignorées / invalides :</span>
+                  <span className="font-bold">{importDataPreview.ignoredCount}</span>
+                </div>
+              )}
+              {!importDataPreview.isJson && importDataPreview.validatedCsvPayload && (
+                <div className="flex justify-between font-medium text-slate-500 dark:text-slate-400">
+                  <span>Séparateur détecté :</span>
+                  <span className="font-mono font-bold text-slate-700 dark:text-slate-200">
+                    {importDataPreview.validatedCsvPayload.detectedDelimiter === ';' ? 'Point-virgule (;)' : 'Virgule (,)'}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between font-medium text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200/60 dark:border-slate-600/60">
+                <span>Foyer de destination :</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{currentFoyer?.name || 'Foyer principal'}</span>
+              </div>
             </div>
 
             {/* Mode selector */}
