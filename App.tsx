@@ -28,6 +28,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { useSyncedSettings } from './hooks/useSyncedSettings';
 import UndoToast from './components/UndoToast';
 import { DEFAULT_CATEGORIES, isSameCategory } from './types';
+import { isExpenseInMonth, isExpenseInYear } from './utils/dateUtils';
 import {
   getMoneyPotImpactForAdd,
   getMoneyPotImpactForDelete,
@@ -1370,36 +1371,33 @@ const MainApp: React.FC<{
   };
 
   const { filteredExpenses, sophieTotalMonth, vincentTotalMonth } = useMemo(() => {
-    const filtered = expenses.filter(expense => {
-      const expenseDate = new Date(expense.date);
-      return expenseDate.getUTCFullYear() === currentYear && expenseDate.getUTCMonth() === currentMonth;
-    });
+    const filtered = expenses.filter(expense => isExpenseInMonth(expense.date, currentYear, currentMonth));
 
-    const sophieTotal = filtered.filter(e => e.user === User.Sophie).reduce((sum, e) => sum + e.amount, 0);
-    const vincentTotal = filtered.filter(e => e.user === User.Vincent).reduce((sum, e) => sum + e.amount, 0);
+    const isUserMatch = (eUser: string | User, target: string) => {
+      const u = String(eUser || '').toLowerCase().trim();
+      const t = target.toLowerCase().trim();
+      return u === t || (t === 'sophie' && (u === 'sophie' || u === 'user.sophie')) || (t === 'vincent' && (u === 'vincent' || u === 'user.vincent'));
+    };
+
+    const sophieTotal = filtered.filter(e => isUserMatch(e.user, 'sophie')).reduce((sum, e) => sum + e.amount, 0);
+    const vincentTotal = filtered.filter(e => isUserMatch(e.user, 'vincent')).reduce((sum, e) => sum + e.amount, 0);
 
     return { filteredExpenses: filtered, sophieTotalMonth: sophieTotal, vincentTotalMonth: vincentTotal };
   }, [expenses, currentMonth, currentYear]);
 
   const previousMonthExpenses = useMemo(() => {
-    const prevMonthDate = new Date(currentDate);
-    prevMonthDate.setUTCMonth(prevMonthDate.getUTCMonth() - 1);
-    const prevMonth = prevMonthDate.getUTCMonth();
-    const prevYear = prevMonthDate.getUTCFullYear();
+    const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
     
     return expenses.filter(expense => {
-      const expenseDate = new Date(expense.date);
-      if (expenseDate.getUTCFullYear() === 2025 && expenseDate.getUTCMonth() === 9) return false;
-      return expenseDate.getUTCFullYear() === prevYear && expenseDate.getUTCMonth() === prevMonth;
+      if (isExpenseInYear(expense.date, 2025) && isExpenseInMonth(expense.date, 2025, 9)) return false;
+      return isExpenseInMonth(expense.date, prevYear, prevMonth);
     });
-  }, [expenses, currentDate]);
+  }, [expenses, currentMonth, currentYear]);
 
   const previousYearMonthExpenses = useMemo(() => {
     const prevYear = currentYear - 1;
-    return expenses.filter(expense => {
-      const expenseDate = new Date(expense.date);
-      return expenseDate.getUTCFullYear() === prevYear && expenseDate.getUTCMonth() === currentMonth;
-    });
+    return expenses.filter(expense => isExpenseInMonth(expense.date, prevYear, currentMonth));
   }, [expenses, currentYear, currentMonth]);
 
   const last3MonthsExpenses = useMemo(() => {
@@ -1417,27 +1415,27 @@ const MainApp: React.FC<{
 
   const analysisExpenses = useMemo(() => {
      return filteredExpenses.filter(expense => {
-        const d = new Date(expense.date);
-        return !(d.getUTCFullYear() === 2025 && d.getUTCMonth() === 9);
+        return !(isExpenseInYear(expense.date, 2025) && isExpenseInMonth(expense.date, 2025, 9));
      });
   }, [filteredExpenses]);
 
   const yearlyFilteredExpenses = useMemo(() => {
     return expenses.filter(expense => {
-        const d = new Date(expense.date);
-        if (d.getUTCFullYear() === 2025 && d.getUTCMonth() === 9) return false;
-        return d.getUTCFullYear() === currentYear;
+        if (isExpenseInYear(expense.date, 2025) && isExpenseInMonth(expense.date, 2025, 9)) return false;
+        return isExpenseInYear(expense.date, currentYear);
     });
   }, [expenses, currentYear]);
 
   const previousYearFilteredExpenses = useMemo(() => {
-    return expenses.filter(expense => new Date(expense.date).getUTCFullYear() === currentYear - 1);
+    return expenses.filter(expense => isExpenseInYear(expense.date, currentYear - 1));
   }, [expenses, currentYear]);
   
   const searchedExpenses = useMemo(() => {
     return filteredExpenses.filter(e => {
         const matchesSearch = !searchTerm || e.description.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesUser = filterUser === 'All' || e.user === filterUser;
+        const eUserNorm = String(e.user || '').toLowerCase().trim();
+        const fUserNorm = String(filterUser || '').toLowerCase().trim();
+        const matchesUser = filterUser === 'All' || eUserNorm === fUserNorm || (fUserNorm === 'sophie' && (eUserNorm === 'sophie' || eUserNorm === 'user.sophie')) || (fUserNorm === 'vincent' && (eUserNorm === 'vincent' || eUserNorm === 'user.vincent'));
         const matchesCategory = filterCategory === 'All' || isSameCategory(e.category, filterCategory);
         return matchesSearch && matchesUser && matchesCategory;
     });

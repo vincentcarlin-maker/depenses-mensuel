@@ -49,16 +49,37 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
     // Expenses for current month
     const currentMonthExpenses = allExpenses.filter(expense => isExpenseInMonth(expense.date, currentYear, currentMonth));
 
+    const isMemberMatch = (expenseUser: string | User, member: { id?: string; name: string; username?: string }) => {
+      const eNorm = String(expenseUser || '').toLowerCase().trim();
+      const mNameNorm = String(member?.name || '').toLowerCase().trim();
+      const mUserNorm = String(member?.username || '').toLowerCase().trim();
+      const mIdNorm = String(member?.id || '').toLowerCase().trim();
+      return (
+        Boolean(eNorm) && (
+          eNorm === mNameNorm || 
+          (Boolean(mUserNorm) && eNorm === mUserNorm) || 
+          (Boolean(mIdNorm) && eNorm === mIdNorm) ||
+          (mNameNorm === 'sophie' && (eNorm === 'sophie' || eNorm === 'user.sophie')) ||
+          (mNameNorm === 'vincent' && (eNorm === 'vincent' || eNorm === 'user.vincent'))
+        )
+      );
+    };
+
+    const isCommunMatch = (expenseUser: string | User) => {
+      const eNorm = String(expenseUser || '').toLowerCase().trim();
+      return eNorm === 'commun' || eNorm === 'user.commun' || eNorm === 'cagnotte' || eNorm === 'cagnotte commune';
+    };
+
     const communTotalMonth = currentMonthExpenses
-        .filter(e => e.user === User.Commun)
+        .filter(e => isCommunMatch(e.user))
         .reduce((sum, e) => sum + e.amount, 0);
 
     const historicExpenses = allExpenses.filter(exp => isExpenseBeforeMonth(exp.date, currentYear, currentMonth));
 
     const memberStats = members.map(m => {
-      const monthExp = currentMonthExpenses.filter(e => e.user === m.name);
+      const monthExp = currentMonthExpenses.filter(e => isMemberMatch(e.user, m));
       const monthTotal = monthExp.reduce((sum, e) => sum + e.amount, 0);
-      const histTotal = historicExpenses.filter(e => e.user === m.name).reduce((sum, e) => sum + e.amount, 0);
+      const histTotal = historicExpenses.filter(e => isMemberMatch(e.user, m)).reduce((sum, e) => sum + e.amount, 0);
       return {
         member: m,
         expenses: monthExp,
@@ -74,8 +95,8 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
     if (isSingleMember) {
       const aHist = memberStats[0]?.histTotal || 0;
       const formattedTotalMonth = totalExpenses.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
-      const currentUserName = String(loggedInUser || '');
-      const isUserMemberA = !currentUserName || currentUserName === memberA.name;
+      const currentUserName = String(loggedInUser || '').toLowerCase().trim();
+      const isUserMemberA = !currentUserName || currentUserName === memberA.name.toLowerCase() || ('username' in memberA && currentUserName === ((memberA as any).username || '').toLowerCase());
 
       let message: string;
       if (totalExpenses === 0) {
@@ -104,10 +125,10 @@ const ExpenseSummary: React.FC<BalanceReportProps> = ({ allExpenses, currentYear
 
     // --- CASE 2: FOYER À 2 PERSONNES (EQUILIBRAGE DUO) ---
     const actualMemberB = memberB || { name: 'Partenaire' };
-    const aHist = memberStats.find(ms => ms.member.name === memberA.name)?.histTotal || 0;
-    const bHist = memberStats.find(ms => ms.member.name === actualMemberB.name)?.histTotal || 0;
-    const aMonth = memberStats.find(ms => ms.member.name === memberA.name)?.monthTotal || 0;
-    const bMonth = memberStats.find(ms => ms.member.name === actualMemberB.name)?.monthTotal || 0;
+    const aHist = memberStats.find(ms => isMemberMatch(ms.member.name, memberA))?.histTotal || 0;
+    const bHist = memberStats.find(ms => isMemberMatch(ms.member.name, actualMemberB))?.histTotal || 0;
+    const aMonth = memberStats.find(ms => isMemberMatch(ms.member.name, memberA))?.monthTotal || 0;
+    const bMonth = memberStats.find(ms => isMemberMatch(ms.member.name, actualMemberB))?.monthTotal || 0;
 
     const historicDifference = aHist - bHist;
     const currentMonthDifference = aMonth - bMonth;
