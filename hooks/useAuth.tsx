@@ -23,6 +23,42 @@ import {
 } from '../utils/foyerService';
 
 const PROFILES_KEY = 'expense-app-profiles-v3';
+const ACTIVE_SESSION_KEY = 'duobudget_active_session_v4';
+
+export interface StoredActiveSession {
+    user: User | string;
+    username: string;
+    profile: Profile;
+    foyerId?: string;
+    isAdmin: boolean;
+    savedAt: number;
+}
+
+const getStoredActiveSession = (): StoredActiveSession | null => {
+    try {
+        const raw = localStorage.getItem(ACTIVE_SESSION_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.username && parsed.user) {
+            return parsed;
+        }
+        return null;
+    } catch {
+        return null;
+    }
+};
+
+const saveStoredActiveSession = (sessionData: StoredActiveSession | null) => {
+    try {
+        if (sessionData) {
+            localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(sessionData));
+        } else {
+            localStorage.removeItem(ACTIVE_SESSION_KEY);
+        }
+    } catch (e) {
+        console.warn('Could not persist active session:', e);
+    }
+};
 
 export interface PendingOAuthUser {
     authUser: any;
@@ -138,12 +174,14 @@ const deduplicateProfiles = (profilesList: Profile[]): Profile[] => {
 };
 
 export const useAuth = () => {
-    const [user, setUser] = useState<User | string | null>(null);
-    const [username, setUsername] = useState<string | null>(null);
-    const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(null);
+    const initialSession = useMemo(() => getStoredActiveSession(), []);
+
+    const [user, setUser] = useState<User | string | null>(() => initialSession?.user || null);
+    const [username, setUsername] = useState<string | null>(() => initialSession?.username || null);
+    const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(() => initialSession?.profile || null);
     const [currentFoyer, setCurrentFoyer] = useState<Foyer>(() => applyCustomColorsToFoyer(DEFAULT_FOYER));
-    const [isAdmin, setIsAdmin] = useState<boolean>(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isAdmin, setIsAdmin] = useState<boolean>(() => Boolean(initialSession?.isAdmin || initialSession?.username?.toLowerCase() === 'vincent'));
+    const [isLoading, setIsLoading] = useState(() => !initialSession);
     const [profiles, setProfiles] = useLocalStorage<Profile[]>(PROFILES_KEY, INITIAL_PROFILES);
     const [loginHistory, setLoginHistory] = useState<LoginEvent[]>([]);
     const [pendingOAuthUser, setPendingOAuthUser] = useState<PendingOAuthUser | null>(null);
@@ -353,16 +391,26 @@ export const useAuth = () => {
             } catch {}
 
             const loadedFoyer = await fetchFoyerById(targetFoyerId);
+            const isVincent = Boolean(profile.is_superadmin) || profile.username.toLowerCase() === 'vincent';
 
             setCurrentUserProfile(profile);
             setUser(profile.user);
             setUsername(profile.username);
-            setIsAdmin(Boolean(profile.is_superadmin));
+            setIsAdmin(isVincent);
 
             if (loadedFoyer) {
                 setCurrentFoyer(loadedFoyer);
                 setStoredActiveFoyerId(loadedFoyer.id);
             }
+
+            saveStoredActiveSession({
+                user: profile.user,
+                username: profile.username,
+                profile,
+                foyerId: targetFoyerId,
+                isAdmin: isVincent,
+                savedAt: Date.now()
+            });
 
             logVisit(profile.user);
         } catch (err) {
@@ -409,6 +457,7 @@ export const useAuth = () => {
 
     // Logout
     const logout = useCallback(async () => {
+        saveStoredActiveSession(null);
         try {
             await supabase.auth.signOut();
         } catch {
@@ -522,10 +571,19 @@ export const useAuth = () => {
             // Attempt 3: Graceful local fallback if network / Supabase is unavailable
             const matchingProfile = profiles.find(p => p.username.toLowerCase() === normUser);
             if (matchingProfile) {
+                const isVincent = matchingProfile.username.toLowerCase() === 'vincent';
                 setUser(matchingProfile.user);
                 setUsername(matchingProfile.username);
                 setCurrentUserProfile(matchingProfile);
-                setIsAdmin(matchingProfile.username.toLowerCase() === 'vincent');
+                setIsAdmin(isVincent);
+                saveStoredActiveSession({
+                    user: matchingProfile.user,
+                    username: matchingProfile.username,
+                    profile: matchingProfile,
+                    foyerId: currentFoyer?.id || DEFAULT_FOYER_ID,
+                    isAdmin: isVincent,
+                    savedAt: Date.now()
+                });
                 return { success: true, foyer: currentFoyer };
             }
         }
