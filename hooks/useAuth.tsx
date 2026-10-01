@@ -211,19 +211,31 @@ export const useAuth = () => {
             return;
         }
 
-        const activeFoyerId = currentFoyerRef.current?.id || getStoredActiveFoyerId() || DEFAULT_FOYER_ID;
-
         try {
-            await (supabase.from('login_logs') as any).insert({
-                user_name: String(userName),
-                timestamp: new Date().toISOString(),
-                foyer_id: activeFoyerId
+            const canonicalName = String(userName).trim();
+            const formattedName = canonicalName.toLowerCase() === 'sophie' 
+                ? 'Sophie' 
+                : (canonicalName.toLowerCase() === 'vincent' ? 'Vincent' : canonicalName);
+
+            const { error } = await (supabase.from('login_logs') as any).insert({
+                user_name: formattedName,
+                timestamp: new Date().toISOString()
             });
-            sessionStorage.setItem(storageKey, now.toString());
+
+            if (!error) {
+                sessionStorage.setItem(storageKey, now.toString());
+            }
         } catch {
             // Ignore logging errors
         }
     }, []);
+
+    // Enregistrement automatique de la visite dès que la session est active
+    useEffect(() => {
+        if (user) {
+            logVisit(user);
+        }
+    }, [user, logVisit]);
 
     // Charge l'historique global depuis Supabase
     useEffect(() => {
