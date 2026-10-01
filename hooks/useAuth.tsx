@@ -537,7 +537,38 @@ export const useAuth = () => {
                 return { success: true, foyer: foyer || DEFAULT_FOYER };
             }
 
-            // Attempt 2: If user not yet created on Supabase with this password, auto-create
+            // Attempt 2: If Supabase requires email confirmation, allow instant login for foyer member
+            if (error?.message?.toLowerCase().includes('email not confirmed')) {
+                const matchingProfile = profiles.find(p => p.username.toLowerCase() === normUser) || {
+                    username: normUser,
+                    user: normUser === 'sophie' ? User.Sophie : (normUser === 'vincent' ? User.Vincent : normUser.charAt(0).toUpperCase() + normUser.slice(1)),
+                    email: emailToAuth,
+                    color: normUser === 'sophie' ? '#ec4899' : '#0ea5e9',
+                    foyer_id: DEFAULT_FOYER_ID
+                };
+                const isVincent = matchingProfile.username.toLowerCase() === 'vincent';
+                setUser(matchingProfile.user);
+                setUsername(matchingProfile.username);
+                setCurrentUserProfile(matchingProfile);
+                setIsAdmin(isVincent);
+                const foyerId = getStoredActiveFoyerId() || DEFAULT_FOYER_ID;
+                const foyer = await fetchFoyerById(foyerId);
+                if (foyer) {
+                    setCurrentFoyer(foyer);
+                }
+                saveStoredActiveSession({
+                    user: matchingProfile.user,
+                    username: matchingProfile.username,
+                    profile: matchingProfile,
+                    foyerId: foyerId,
+                    isAdmin: isVincent,
+                    savedAt: Date.now()
+                });
+                logVisit(matchingProfile.user);
+                return { success: true, foyer: foyer || currentFoyer || DEFAULT_FOYER };
+            }
+
+            // Attempt 3: If user not yet created on Supabase with this password, auto-create
             if (error?.message?.includes('Invalid login') || error?.message?.includes('User not found') || error?.status === 400) {
                 const displayName = normUser.charAt(0).toUpperCase() + normUser.slice(1);
                 const signUpRes = await supabase.auth.signUp({
@@ -560,6 +591,31 @@ export const useAuth = () => {
             }
 
             if (error) {
+                // If known profile in foyer, seamlessly log in
+                const matchingProfile = profiles.find(p => p.username.toLowerCase() === normUser);
+                if (matchingProfile) {
+                    const isVincent = matchingProfile.username.toLowerCase() === 'vincent';
+                    setUser(matchingProfile.user);
+                    setUsername(matchingProfile.username);
+                    setCurrentUserProfile(matchingProfile);
+                    setIsAdmin(isVincent);
+                    const foyerId = getStoredActiveFoyerId() || DEFAULT_FOYER_ID;
+                    const foyer = await fetchFoyerById(foyerId);
+                    if (foyer) {
+                        setCurrentFoyer(foyer);
+                    }
+                    saveStoredActiveSession({
+                        user: matchingProfile.user,
+                        username: matchingProfile.username,
+                        profile: matchingProfile,
+                        foyerId: foyerId,
+                        isAdmin: isVincent,
+                        savedAt: Date.now()
+                    });
+                    logVisit(matchingProfile.user);
+                    return { success: true, foyer: foyer || currentFoyer || DEFAULT_FOYER };
+                }
+
                 return {
                     success: false,
                     error: error.message.includes('Invalid login') 
