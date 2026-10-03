@@ -1731,7 +1731,7 @@ const MainApp: React.FC<{
                   <BudgetAlerts monthlyExpenses={filteredExpenses} currentFoyerId={currentFoyer?.id} onOpenBudgets={() => { setSettingsInitialView('budgets'); setIsSettingsOpen(true); }} />
                 </>
               )}
-              <NotificationReminderAlert onOpenSettings={() => { setSettingsInitialView('notifications'); setIsSettingsOpen(true); }} />
+              <NotificationReminderAlert loggedInUser={user as User} onOpenSettings={() => { setSettingsInitialView('notifications'); setIsSettingsOpen(true); }} />
             </>
           )}
           <div className="animate-fade-in">

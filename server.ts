@@ -258,12 +258,6 @@ async function startServer() {
                 if (subObjEmail && senderKeys.has(subObjEmail)) {
                     return false;
                 }
-                if (expense?.user) {
-                    const expenseUserNorm = String(expense.user).toLowerCase().trim();
-                    if (expenseUserNorm && (subUserId === expenseUserNorm || subObjUser === expenseUserNorm)) {
-                        return false;
-                    }
-                }
 
                 // 3. Ne notifier QUE les membres du foyer cible
                 const subFoyerId = subObj.foyer_id || (subUserId === 'vincent' || subUserId === 'sophie' || subUserId === 'commun' ? 'foyer_vincent_sophie' : undefined);
@@ -324,11 +318,20 @@ async function startServer() {
                         return;
                     }
 
-                    // D. Filtrer les dépenses par auteur
+                    // D. Filtrer les dépenses par auteur (insensible à la casse)
                     if (expense && (type === 'add' || type === 'update' || type === 'delete')) {
-                        if (prefs.authors && Array.isArray(prefs.authors)) {
-                            if (!prefs.authors.includes(expense.user)) {
-                                console.log(`Notification ignorée pour ${s.user_id} : auteur ${expense.user} filtré.`);
+                        if (prefs.authors && Array.isArray(prefs.authors) && prefs.authors.length > 0) {
+                            const expUserNorm = String(expense.user || '').toLowerCase().trim();
+                            const authorNorm = String(author || '').toLowerCase().trim();
+                            const matchesAuthor = prefs.authors.some((a: string) => {
+                                const aNorm = String(a).toLowerCase().trim();
+                                return aNorm === expUserNorm || aNorm === authorNorm ||
+                                    (aNorm === 'sophie' && (expUserNorm === 'sophie' || authorNorm === 'sophie')) ||
+                                    (aNorm === 'vincent' && (expUserNorm === 'vincent' || authorNorm === 'vincent')) ||
+                                    (aNorm === 'commun' && (expUserNorm === 'commun' || authorNorm === 'commun'));
+                            });
+                            if (!matchesAuthor) {
+                                console.log(`Notification ignorée pour ${s.user_id} : auteur filtré.`);
                                 return;
                             }
                         }
@@ -344,10 +347,15 @@ async function startServer() {
                         }
                     }
 
-                    // F. Filtrer par catégories
+                    // F. Filtrer par catégories (insensible à la casse et aux accents)
                     if (expense && (type === 'add' || type === 'update')) {
-                        if (prefs.categories && Array.isArray(prefs.categories)) {
-                            if (!prefs.categories.includes(expense.category)) {
+                        if (prefs.categories && Array.isArray(prefs.categories) && prefs.categories.length > 0) {
+                            const cleanExpCat = String(expense.category || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                            const matchesCat = prefs.categories.some((c: string) => {
+                                const cleanC = String(c).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                                return cleanC === cleanExpCat || cleanC.includes(cleanExpCat) || cleanExpCat.includes(cleanC);
+                            });
+                            if (!matchesCat) {
                                 console.log(`Notification ignorée pour ${s.user_id} : catégorie ${expense.category} filtrée.`);
                                 return;
                             }

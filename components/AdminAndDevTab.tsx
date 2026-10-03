@@ -909,6 +909,15 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
   const handleSendTestPush = async () => {
     setIsSendingPushTest(true);
     try {
+      // Déclencher un envoi Web Push réel via le serveur vers tous les abonnés
+      try {
+        await fetch('/api/test-notification', { method: 'POST' });
+      } catch {
+        try {
+          await supabase.functions.invoke('send-notification', { body: { isTest: true } });
+        } catch {}
+      }
+
       if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
         if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
           navigator.serviceWorker.controller.postMessage({
@@ -917,19 +926,18 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
             body: 'Le service de notifications Push fonctionne parfaitement sur votre appareil.',
           });
         } else {
-          new Notification('🔔 DuoBudget — Test Admin Vincent', {
-            body: 'Notification de test reçue avec succès.',
-            icon: '/icon.png',
-          });
+          try {
+            new Notification('🔔 DuoBudget — Test Admin Vincent', {
+              body: 'Notification de test reçue avec succès.',
+              icon: '/icon-192x192.png',
+            });
+          } catch {}
         }
-        setToastInfo({ message: 'Notification de test envoyée avec succès sur votre appareil !', type: 'info' });
+        setToastInfo({ message: 'Notification de test envoyée avec succès sur vos appareils !', type: 'info' });
       } else if (typeof Notification !== 'undefined' && Notification.permission !== 'denied') {
         const perm = await Notification.requestPermission();
         setPushPermission(perm);
         if (perm === 'granted') {
-          new Notification('🔔 DuoBudget — Notifications activées', {
-            body: 'Vous recevrez désormais les alertes DuoBudget.',
-          });
           setToastInfo({ message: 'Permission accordée ! Notification envoyée.', type: 'info' });
         } else {
           setToastInfo({ message: 'Permission refusée par le navigateur.', type: 'error' });

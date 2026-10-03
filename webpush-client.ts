@@ -187,12 +187,6 @@ export async function notifySubscriptionsDirectly(
       if (subObjEmail && senderKeys.has(subObjEmail)) {
         return false;
       }
-      if (expense?.user) {
-        const expenseUserNorm = String(expense.user).toLowerCase().trim();
-        if (expenseUserNorm && (subUserId === expenseUserNorm || subObjUser === expenseUserNorm)) {
-          return false;
-        }
-      }
 
       const subFoyerId = subObj.foyer_id || (subUserId === 'vincent' || subUserId === 'sophie' || subUserId === 'commun' ? 'foyer_vincent_sophie' : undefined);
       if (targetFoyerId === 'foyer_vincent_sophie') {
@@ -259,10 +253,19 @@ export async function notifySubscriptionsDirectly(
             continue;
           }
 
-          // D. Author filter (only for expenses)
+          // D. Author filter (case-insensitive)
           if (expense && (type === 'add' || type === 'update' || type === 'delete')) {
-            if (prefs.authors && Array.isArray(prefs.authors)) {
-              if (!prefs.authors.includes(expense.user)) {
+            if (prefs.authors && Array.isArray(prefs.authors) && prefs.authors.length > 0) {
+              const expUserNorm = String(expense.user || '').toLowerCase().trim();
+              const authorNorm = String(performedBy || currentUser || '').toLowerCase().trim();
+              const matchesAuthor = prefs.authors.some((a: string) => {
+                const aNorm = String(a).toLowerCase().trim();
+                return aNorm === expUserNorm || aNorm === authorNorm ||
+                  (aNorm === 'sophie' && (expUserNorm === 'sophie' || authorNorm === 'sophie')) ||
+                  (aNorm === 'vincent' && (expUserNorm === 'vincent' || authorNorm === 'vincent')) ||
+                  (aNorm === 'commun' && (expUserNorm === 'commun' || authorNorm === 'commun'));
+              });
+              if (!matchesAuthor) {
                 console.log(`Direct push filtered for user ${subItem.user_id} based on author preference.`);
                 continue;
               }
@@ -279,10 +282,15 @@ export async function notifySubscriptionsDirectly(
             }
           }
 
-          // F. Category/motive filters
+          // F. Category/motive filters (case & accent insensitive)
           if (expense && (type === 'add' || type === 'update')) {
-            if (prefs.categories && Array.isArray(prefs.categories)) {
-              if (!prefs.categories.includes(expense.category)) {
+            if (prefs.categories && Array.isArray(prefs.categories) && prefs.categories.length > 0) {
+              const cleanExpCat = String(expense.category || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+              const matchesCat = prefs.categories.some((c: string) => {
+                const cleanC = String(c).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                return cleanC === cleanExpCat || cleanC.includes(cleanExpCat) || cleanExpCat.includes(cleanC);
+              });
+              if (!matchesCat) {
                 console.log(`Direct push filtered for user ${subItem.user_id} because ${expense.category} is deselected.`);
                 continue;
               }

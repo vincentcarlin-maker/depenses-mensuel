@@ -479,22 +479,38 @@ const NotificationsTab: React.FC<NotificationsTabProps> = ({ loggedInUser, curre
 
     const sendTestNotification = async () => {
         setTestAlertSent(true);
-        setTimeout(() => setTestAlertSent(false), 3000);
+        setTimeout(() => setTestAlertSent(false), 3500);
 
         if (permission === 'granted') {
+            // 1. Déclencher un envoi Web Push réel depuis le serveur
+            try {
+                await fetch('/api/test-notification', { method: 'POST' });
+            } catch {
+                try {
+                    await supabase.functions.invoke('send-notification', { body: { isTest: true } });
+                } catch (e) {
+                    console.warn("Échec test push serveur distant:", e);
+                }
+            }
+
+            // 2. Affichage local immédiat avec l'icône réelle
             try {
                 const registration = await navigator.serviceWorker.ready;
                 registration.showNotification("Notification DuoBudget", {
                     body: "Les notifications push fonctionnent parfaitement !",
-                    icon: "/logo.svg",
-                    badge: "/logo.svg",
+                    icon: "/icon-192x192.png",
+                    badge: "/icon-192x192.png",
                     vibrate: [200, 100, 200]
                 } as any);
             } catch {
-                new Notification("Notification DuoBudget", {
-                    body: "Les notifications push fonctionnent parfaitement !",
-                    icon: "/logo.svg"
-                });
+                try {
+                    new Notification("Notification DuoBudget", {
+                        body: "Les notifications push fonctionnent parfaitement !",
+                        icon: "/icon-192x192.png"
+                    });
+                } catch {
+                    // ignore
+                }
             }
         } else {
             alert("Veuillez d'abord activer les notifications pour recevoir une alerte test.");
