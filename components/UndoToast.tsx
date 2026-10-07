@@ -55,7 +55,7 @@ export const UndoToast: React.FC<UndoToastProps> = ({ undoableAction, undoableAc
 
   return (
     <div
-      className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex flex-col-reverse gap-2 w-full max-w-sm px-4 pointer-events-none items-center"
+      className="fixed bottom-24 sm:bottom-28 left-1/2 -translate-x-1/2 z-50 flex flex-col-reverse gap-2 w-full max-w-sm px-4 pointer-events-none items-center"
     >
       {actions.map(action => (
         <UndoToastItem key={action.id} action={action} onUndo={(id) => onUndo(id)} />

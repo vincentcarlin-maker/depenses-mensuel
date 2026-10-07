@@ -33,7 +33,7 @@ const Toast: React.FC<ToastProps> = ({ message, onClose, duration = 5000, type =
 
   return (
     <div
-      className="fixed bottom-5 right-5 z-50 flex items-center w-full max-w-xs p-4 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 animate-slide-in-up"
+      className="fixed bottom-24 sm:bottom-28 right-5 z-50 flex items-center w-full max-w-xs p-4 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 animate-slide-in-up"
       role="alert"
     >
       <div className={iconContainerClass}>
