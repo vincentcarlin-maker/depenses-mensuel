@@ -30,9 +30,9 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
   ];
 
   return (
-    <div className="fixed bottom-3 sm:bottom-5 left-0 right-0 z-40 px-3 sm:px-6 pointer-events-none pb-[env(safe-area-inset-bottom)] transition-all duration-300">
+    <div className="fixed bottom-6 sm:bottom-8 left-0 right-0 z-40 px-3.5 sm:px-6 pointer-events-none pb-[env(safe-area-inset-bottom)] transition-all duration-300">
       <nav 
-        className="pointer-events-auto max-w-md sm:max-w-lg mx-auto bg-white/92 dark:bg-slate-900/92 backdrop-blur-xl border border-slate-200/90 dark:border-slate-800/90 rounded-full p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.06)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.6)]"
+        className="pointer-events-auto max-w-md sm:max-w-lg mx-auto bg-white/92 dark:bg-slate-900/92 backdrop-blur-xl border border-slate-200/90 dark:border-slate-800/90 rounded-full p-1.5 shadow-[0_14px_40px_rgba(0,0,0,0.14),0_4px_12px_rgba(0,0,0,0.08)] dark:shadow-[0_14px_40px_rgba(0,0,0,0.65)]"
         aria-label="Navigation principale"
       >
         <div className="flex items-center justify-around gap-0.5 sm:gap-1">

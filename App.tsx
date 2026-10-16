@@ -1674,7 +1674,7 @@ const MainApp: React.FC<{
           onOpenJoinRequests={handleOpenJoinRequests}
           onExpenseClick={handleExpenseClickFromHeader}
         />
-        <main className="container mx-auto p-4 md:p-8 pb-32">
+        <main className="container mx-auto p-4 md:p-8 pb-36 sm:pb-40">
           {activeTab !== 'settings' && (
             <>
               <div className="flex justify-between items-center max-w-md mx-auto mb-6 px-2 animate-fade-in-up">

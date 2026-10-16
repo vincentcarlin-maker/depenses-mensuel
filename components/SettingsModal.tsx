@@ -277,7 +277,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
         </header>
 
         {/* Scrollable Content */}
-        <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 max-w-2xl mx-auto w-full pb-32">
+        <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 max-w-2xl mx-auto w-full pb-36 sm:pb-40">
             {activeView === 'main' && (
               <div className="space-y-6 animate-fade-in">
                 {/* Title & Subtitle */}

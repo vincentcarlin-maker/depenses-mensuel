@@ -11,7 +11,7 @@ const OfflineIndicator: React.FC = () => {
 
   return (
     <div
-      className="fixed bottom-24 sm:bottom-28 left-1/2 -translate-x-1/2 z-50 flex items-center w-full max-w-xs p-4 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 animate-fade-in-up"
+      className="fixed bottom-28 sm:bottom-32 left-1/2 -translate-x-1/2 z-50 flex items-center w-full max-w-xs p-4 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 animate-fade-in-up"
       role="status"
       aria-live="polite"
     >
