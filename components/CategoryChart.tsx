@@ -61,7 +61,7 @@ interface CategoryTotalsProps {
   profiles?: Profile[];
 }
 
-const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonthExpenses, last3MonthsExpenses, onExpenseClick, foyerMembers, profiles }) => {
+const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonthExpenses, onExpenseClick, foyerMembers, profiles }) => {
   const { getVisual } = useCategoryVisuals();
   const { isBudgetEnabled, categoryBudgets } = useCategoryBudgets();
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -128,24 +128,28 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
       totals.set(catKey, (totals.get(catKey) || 0) + expense.amount);
     }
 
-    const categoryAverages = new Map<Category, number>();
-    const categoryTotalsLast3Months = new Map<Category, number>();
-    
-    last3MonthsExpenses.forEach(e => {
+    const previousTotals = new Map<Category, number>();
+    previousMonthExpenses.forEach(e => {
       const catKey = canonicalCategory(e.category);
-      categoryTotalsLast3Months.set(catKey, (categoryTotalsLast3Months.get(catKey) || 0) + e.amount);
-    });
-
-    categoryTotalsLast3Months.forEach((total, cat) => {
-      categoryAverages.set(cat, total / 3);
+      previousTotals.set(catKey, (previousTotals.get(catKey) || 0) + e.amount);
     });
 
     const data = Array.from(totals.entries())
-      .map(([name, value]) => ({
-        name,
-        value,
-        average: categoryAverages.get(name) || 0,
-      }))
+      .map(([name, value]) => {
+        const previousAmount = previousTotals.get(name) || 0;
+        const diff = value - previousAmount;
+        const percentChange = previousAmount > 0.001
+          ? ((value - previousAmount) / previousAmount) * 100
+          : (value > 0.001 ? 100 : 0);
+
+        return {
+          name,
+          value,
+          previousAmount,
+          diff,
+          percentChange,
+        };
+      })
       .filter(d => d.value > 0)
       .sort((a,b) => b.value - a.value); 
 
@@ -163,7 +167,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
     const generatedTicks = [0, Math.round(step), Math.round(step * 2), calculatedNiceMax];
 
     return { chartData: data, niceMax: calculatedNiceMax, ticks: generatedTicks };
-  }, [expenses, last3MonthsExpenses]);
+  }, [expenses, previousMonthExpenses]);
 
   const filteredCategoryExpenses = useMemo(() => {
     if (!selectedCategory) return [];
@@ -394,7 +398,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
             </h2>
           </div>
           <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-            TENDANCE (Y/Y)
+            VS MOIS PRÉCÉDENT (M-1)
           </span>
         </div>
 
@@ -418,9 +422,36 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
                     <p className="font-extrabold text-slate-900 dark:text-slate-100 text-xs sm:text-base line-clamp-1" title={getCategoryDisplayName(entry.name)}>
                       {getCategoryDisplayName(entry.name)}
                     </p>
-                    <p className="text-[10.5px] sm:text-xs font-medium text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">
-                      Moyenne 3 mois : {entry.average.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                    </p>
+                    <div className="flex items-center gap-1.5 flex-wrap text-[10.5px] sm:text-xs mt-0.5 leading-tight">
+                      <span className="font-medium text-slate-500 dark:text-slate-400">
+                        Mois précédent : {entry.previousAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                      </span>
+                      {entry.diff > 0.001 ? (
+                        <span 
+                          className="inline-flex items-center gap-0.5 font-bold text-rose-600 dark:text-rose-400" 
+                          title={`En hausse de ${entry.diff.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} par rapport au mois précédent`}
+                        >
+                          <svg className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" />
+                          </svg>
+                          <span>{entry.previousAmount > 0.001 ? `+${Math.round(entry.percentChange)}%` : '+100%'}</span>
+                        </span>
+                      ) : entry.diff < -0.001 ? (
+                        <span 
+                          className="inline-flex items-center gap-0.5 font-bold text-emerald-600 dark:text-emerald-400" 
+                          title={`En baisse de ${Math.abs(entry.diff).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} par rapport au mois précédent`}
+                        >
+                          <svg className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 4.5l15 15m0 0V8.25m0 11.25H8.25" />
+                          </svg>
+                          <span>{entry.previousAmount > 0.001 ? `${Math.round(entry.percentChange)}%` : ''}</span>
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 dark:text-slate-500 font-medium text-[10px]">
+                          (= stable)
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -495,13 +526,42 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
               </div>
             </div>
             
-            <div className="p-5 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/30">
+            <div className="p-5 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/30 space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-bold text-slate-600 dark:text-slate-300">Total de la catégorie</span>
                 <span className="font-extrabold text-slate-900 dark:text-slate-100 text-xl">
                   {filteredCategoryExpenses.reduce((acc, curr) => acc + curr.amount, 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                 </span>
               </div>
+              {(() => {
+                const prevCatTotal = previousMonthExpenses
+                  .filter(e => isSameCategory(e.category, selectedCategory))
+                  .reduce((sum, e) => sum + e.amount, 0);
+                const currentCatTotal = filteredCategoryExpenses.reduce((acc, curr) => acc + curr.amount, 0);
+                const diff = currentCatTotal - prevCatTotal;
+                return (
+                  <div className="flex justify-between items-center text-xs text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
+                    <span>Mois précédent : <strong className="text-slate-700 dark:text-slate-200">{prevCatTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</strong></span>
+                    {diff > 0.001 ? (
+                      <span className="font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                        <svg className="w-3.5 h-3.5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" />
+                        </svg>
+                        +{diff.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} (hausse)
+                      </span>
+                    ) : diff < -0.001 ? (
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                        <svg className="w-3.5 h-3.5 stroke-[2.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 4.5l15 15m0 0V8.25m0 11.25H8.25" />
+                        </svg>
+                        -{Math.abs(diff).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} (baisse)
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 font-medium">(= stable)</span>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>,
