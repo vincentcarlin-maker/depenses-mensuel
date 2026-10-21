@@ -11,7 +11,7 @@ interface ReminderAlertsProps {
   onUpdateReminder?: (reminder: Reminder) => Promise<void> | void;
   currentYear: number;
   currentMonth: number;
-  loggedInUser: User | string;
+  loggedInUser?: User | string;
   onOpenReminders?: () => void;
   foyerMembers?: FoyerMember[];
 }
@@ -23,13 +23,10 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
   onUpdateReminder,
   currentYear, 
   currentMonth, 
-  loggedInUser,
   onOpenReminders,
   foyerMembers
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [filterMode, setFilterMode] = useState<'all' | 'mine'>('mine');
-  const [showPaidDetails, setShowPaidDetails] = useState(false);
   const [payingId, setPayingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingAmount, setEditingAmount] = useState<string>('');
@@ -39,7 +36,7 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
   const viewedMonthDate = new Date(Date.UTC(currentYear, currentMonth));
   const reminderStartDate = new Date('2025-11-01T00:00:00Z');
 
-  // Reminders feature starts from November 2025
+  // La fonctionnalité des rappels commence en novembre 2025
   if (viewedMonthDate < reminderStartDate) {
     return null;
   }
@@ -53,14 +50,12 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
   const isFutureMonth = currentYear > realCurrentYear || (currentYear === realCurrentYear && currentMonth > realCurrentMonth);
   const isCurrentMonth = currentYear === realCurrentYear && currentMonth === realCurrentMonth;
 
-  // Never show reminders for a future month
+  // Jamais de rappels pour un mois futur (la date n'est pas encore dépassée)
   if (isFutureMonth) {
     return null;
   }
 
-  const normLoggedIn = String(loggedInUser || '').toLowerCase().trim();
-
-  // Helper: check if a reminder is already paid in monthlyExpenses
+  // Vérifie si une dépense correspondante a déjà été ajoutée pour ce rappel
   const isReminderPaid = (reminder: Reminder) => {
     const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, ' ').trim().replace(/\s+/g, ' ');
     const remDesc = normalize(reminder.description || '');
@@ -69,11 +64,11 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
     return monthlyExpenses.some(expense => {
       const expDesc = normalize(expense.description || '');
       
-      // 1. Match description
+      // 1. Correspondance par description
       const descMatch = (expDesc.length > 0 && remDesc.length > 0 && (expDesc.includes(remDesc) || remDesc.includes(expDesc)));
       if (descMatch) return true;
 
-      // 2. Match exact category if generic reminder description or matching amount
+      // 2. Correspondance exacte par catégorie si description générique ou montant identique
       const categoryMatch = expense.category === reminder.category;
       if (categoryMatch && (remDesc === remCat || Math.abs(expense.amount - reminder.amount) < 0.01)) {
         return true;
@@ -83,52 +78,39 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
     });
   };
 
-  // Helper: check if a reminder matches current user
-  const matchesUser = (reminderUser?: string | null) => {
-    if (!reminderUser) return true;
-    const norm = String(reminderUser).toLowerCase().trim();
-    if (norm === 'commun' || norm === 'tous' || norm === '') return true;
-    return norm === normLoggedIn;
-  };
-
-  const activeReminders = useMemo(() => {
-    return reminders.filter(r => r && typeof r.amount === 'number' && typeof r.description === 'string' && r.is_active);
-  }, [reminders]);
-
-  const { allPending, myPending, paidList } = useMemo(() => {
-    const pendingAll: Reminder[] = [];
-    const pendingMine: Reminder[] = [];
-    const paid: Reminder[] = [];
-
-    activeReminders.forEach(r => {
-      const paidBool = isReminderPaid(r);
-      if (paidBool) {
-        paid.push(r);
-      } else {
-        pendingAll.push(r);
-        if (matchesUser(r.user)) {
-          pendingMine.push(r);
+  // Filtrer uniquement les rappels :
+  // 1. Actifs et valides
+  // 2. Qui n'ont PAS encore été ajoutés (!isReminderPaid)
+  // 3. Dont la date EST DÉPASSÉE (jour du mois <= jour actuel si mois en cours, ou tout le mois si mois passé)
+  const pendingReminders = useMemo(() => {
+    return reminders
+      .filter(reminder => {
+        if (!reminder || typeof reminder.amount !== 'number' || typeof reminder.description !== 'string' || !reminder.is_active) {
+          return false;
         }
-      }
-    });
 
-    // Sort by day of month ascending
-    pendingAll.sort((a, b) => a.day_of_month - b.day_of_month);
-    pendingMine.sort((a, b) => a.day_of_month - b.day_of_month);
-    paid.sort((a, b) => a.day_of_month - b.day_of_month);
+        // Vérifier si la date est dépassée
+        const isDatePassed = isPastMonth || (isCurrentMonth && reminder.day_of_month <= realCurrentDay);
+        if (!isDatePassed) {
+          return false;
+        }
 
-    return { allPending: pendingAll, myPending: pendingMine, paidList: paid };
-  }, [activeReminders, monthlyExpenses, normLoggedIn]);
+        // Vérifier si le rappel n'a pas encore été ajouté
+        if (isReminderPaid(reminder)) {
+          return false;
+        }
 
-  // If there are no pending reminders at all (neither mine nor household)
-  if (allPending.length === 0) {
+        return true;
+      })
+      .sort((a, b) => a.day_of_month - b.day_of_month);
+  }, [reminders, monthlyExpenses, isPastMonth, isCurrentMonth, realCurrentDay]);
+
+  // Si aucun rappel n'est en attente dont la date est dépassée, ne rien afficher
+  if (pendingReminders.length === 0) {
     return null;
   }
 
-  // If the user has 0 personal pending reminders but household has some, default filter to 'all'
-  const effectiveFilter = (filterMode === 'mine' && myPending.length === 0) ? 'all' : filterMode;
-  const displayedReminders = effectiveFilter === 'mine' ? myPending : allPending;
-  const totalAmount = displayedReminders.reduce((sum, item) => sum + item.amount, 0);
+  const totalAmount = pendingReminders.reduce((sum, item) => sum + item.amount, 0);
 
   const handleStartEdit = (e: React.MouseEvent, reminder: Reminder) => {
     e.stopPropagation();
@@ -172,7 +154,7 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
     e.stopPropagation();
     let reminderToPay = reminder;
 
-    // If currently editing this reminder, commit the amount first
+    // Si le montant était en cours de modification, l'enregistrer d'abord
     if (editingId === reminder.id) {
       const cleanStr = editingAmount.replace(',', '.').trim();
       const parsed = parseFloat(cleanStr);
@@ -198,13 +180,13 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
 
   return (
     <div className="bg-gradient-to-r from-orange-50 via-orange-50/90 to-amber-50 dark:from-orange-950/40 dark:via-orange-950/30 dark:to-amber-950/30 border border-orange-200 dark:border-orange-900/60 rounded-2xl shadow-xs mb-6 overflow-hidden transition-all duration-300 animate-fade-in">
-      {/* Primary Collapsible Header / Bandeau */}
+      {/* Bandeau principal cliquable pour déplier/replier */}
       <div 
         onClick={() => setIsExpanded(!isExpanded)}
         className="p-3.5 sm:p-4 flex items-center justify-between gap-3 cursor-pointer select-none hover:bg-orange-100/40 dark:hover:bg-orange-900/20 transition-colors"
       >
         <div className="flex items-center gap-3 min-w-0">
-          {/* Orange Notification Badge Icon */}
+          {/* Icône cloche orange animée */}
           <div className="p-2 bg-orange-500 text-white rounded-xl shrink-0 shadow-xs animate-pulse">
             <svg className="w-5 h-5 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
@@ -217,56 +199,31 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
                 Rappels de dépenses
               </h4>
 
-              {/* Number of Alerts Badge in Orange */}
+              {/* Badge compteur */}
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black bg-orange-600 text-white shadow-2xs">
-                {displayedReminders.length} {displayedReminders.length === 1 ? 'rappel' : 'rappels'}
+                {pendingReminders.length} {pendingReminders.length === 1 ? 'rappel' : 'rappels'}
               </span>
 
-              {/* Total Pending Tag */}
+              {/* Montant total en attente */}
               <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-md text-xs font-extrabold text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-900/60 border border-orange-200/80 dark:border-orange-800">
                 {totalAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
               </span>
             </div>
 
             <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
-              {isExpanded ? 'Cliquez pour réduire' : 'Cliquez pour afficher le détail des rappels en attente'}
+              {isExpanded ? 'Cliquez pour réduire' : 'Cliquez pour afficher les rappels en attente dont la date est dépassée'}
             </p>
           </div>
         </div>
 
-        {/* Right Controls: Filter tabs & toggle */}
-        <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-          {/* Filter Pills if multiple household reminders exist */}
-          {allPending.length > 0 && myPending.length > 0 && allPending.length !== myPending.length && (
-            <div className="hidden xs:flex items-center p-0.5 rounded-lg bg-orange-100/80 dark:bg-orange-950/60 border border-orange-200/80 dark:border-orange-900/50">
-              <button
-                type="button"
-                onClick={() => setFilterMode('mine')}
-                className={`px-2 py-0.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
-                  effectiveFilter === 'mine'
-                    ? 'bg-white dark:bg-slate-800 text-orange-700 dark:text-orange-300 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                }`}
-              >
-                Mes rappels ({myPending.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterMode('all')}
-                className={`px-2 py-0.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
-                  effectiveFilter === 'all'
-                    ? 'bg-white dark:bg-slate-800 text-orange-700 dark:text-orange-300 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                }`}
-              >
-                Tous ({allPending.length})
-              </button>
-            </div>
-          )}
-
+        {/* Bouton flèche droite */}
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
             className="p-1.5 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-orange-200/80 dark:border-orange-800 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-slate-700 transition-transform duration-200 cursor-pointer"
             aria-label={isExpanded ? 'Réduire' : 'Déplier'}
           >
@@ -283,46 +240,15 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
         </div>
       </div>
 
-      {/* Expanded Details Section */}
+      {/* Liste détaillée des rappels non ajoutés dont la date est dépassée */}
       {isExpanded && (
         <div className="border-t border-orange-200/60 dark:border-orange-900/60 px-3.5 py-2.5 sm:px-4 sm:py-3 bg-white/50 dark:bg-slate-900/40 space-y-3 animate-fade-in">
-          {/* Mobile Filter Pills */}
-          {allPending.length > 0 && myPending.length > 0 && allPending.length !== myPending.length && (
-            <div className="flex xs:hidden items-center justify-center p-0.5 rounded-lg bg-orange-100/80 dark:bg-orange-950/60 border border-orange-200/80 dark:border-orange-900/50">
-              <button
-                type="button"
-                onClick={() => setFilterMode('mine')}
-                className={`flex-1 py-1 text-xs font-bold rounded-md transition-all cursor-pointer text-center ${
-                  effectiveFilter === 'mine'
-                    ? 'bg-white dark:bg-slate-800 text-orange-700 dark:text-orange-300 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400'
-                }`}
-              >
-                Mes rappels ({myPending.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterMode('all')}
-                className={`flex-1 py-1 text-xs font-bold rounded-md transition-all cursor-pointer text-center ${
-                  effectiveFilter === 'all'
-                    ? 'bg-white dark:bg-slate-800 text-orange-700 dark:text-orange-300 shadow-2xs'
-                    : 'text-slate-600 dark:text-slate-400'
-                }`}
-              >
-                Tous ({allPending.length})
-              </button>
-            </div>
-          )}
-
           <div className="divide-y divide-orange-200/50 dark:divide-orange-900/30">
-            {displayedReminders.map(reminder => {
+            {pendingReminders.map(reminder => {
               const visual = getReminderVisual(reminder, getVisual);
               const VisualIcon = visual?.icon;
               const isEditing = editingId === reminder.id;
               const userTheme = resolveUserTheme(reminder.user, foyerMembers);
-
-              // Date status label
-              const isPastDay = isPastMonth || (isCurrentMonth && reminder.day_of_month <= realCurrentDay);
 
               return (
                 <div 
@@ -341,34 +267,23 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
                           {reminder.description}
                         </span>
 
-                        {/* User badge */}
+                        {/* Badge utilisateur (Sophie / Vincent) */}
                         {reminder.user && (
                           <span className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold shrink-0 ${userTheme.badgeClass}`}>
                             <span>{reminder.user}</span>
                           </span>
                         )}
 
-                        {/* Date badge */}
-                        {isCurrentMonth && (
-                          <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-md shrink-0 ${
-                            isPastDay 
-                              ? 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300' 
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
-                          }`}>
-                            {isPastDay ? `Le ${reminder.day_of_month}` : `Prévu le ${reminder.day_of_month}`}
-                          </span>
-                        )}
-                        {isPastMonth && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 shrink-0">
-                            En retard ({reminder.day_of_month})
-                          </span>
-                        )}
+                        {/* Badge jour dépassé */}
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 shrink-0">
+                          Le {reminder.day_of_month}
+                        </span>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    {/* Amount with Click-to-Edit */}
+                    {/* Montant avec modification au clic */}
                     {isEditing ? (
                       <div 
                         onClick={(e) => e.stopPropagation()}
@@ -445,7 +360,7 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
                       </button>
                     )}
 
-                    {/* Action Button: Ajouter */}
+                    {/* Bouton Ajouter pour créer la dépense */}
                     <button 
                       onClick={(e) => handlePayClick(e, reminder)}
                       disabled={payingId === reminder.id}
@@ -472,10 +387,10 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
             })}
           </div>
 
-          {/* Footer of details: Total & Management link */}
+          {/* Pied de liste : Total et accès rapide à la gestion des rappels */}
           <div className="pt-2 border-t border-orange-200/50 dark:border-orange-900/30 flex flex-wrap items-center justify-between gap-2">
             <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Total en attente : <strong className="font-extrabold text-orange-700 dark:text-orange-300">{totalAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</strong>
+              Total à ajouter : <strong className="font-extrabold text-orange-700 dark:text-orange-300">{totalAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</strong>
             </span>
 
             {onOpenReminders && (
@@ -491,46 +406,6 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
               </button>
             )}
           </div>
-
-          {/* Already settled reminders for this month */}
-          {paidList.length > 0 && (
-            <div className="pt-1.5 border-t border-orange-100 dark:border-orange-900/20">
-              <button
-                type="button"
-                onClick={() => setShowPaidDetails(!showPaidDetails)}
-                className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 flex items-center gap-1.5 cursor-pointer"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                <span>
-                  {paidList.length} rappel{paidList.length > 1 ? 's' : ''} déjà réglé{paidList.length > 1 ? 's' : ''} ce mois-ci
-                </span>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                  ({showPaidDetails ? 'masquer' : 'afficher'})
-                </span>
-              </button>
-
-              {showPaidDetails && (
-                <div className="mt-1.5 pl-5 space-y-1">
-                  {paidList.map(r => (
-                    <div key={r.id} className="text-xs text-slate-600 dark:text-slate-400 flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <span className="text-emerald-500 font-bold">✓</span>
-                        <span className="line-through opacity-75">{r.description}</span>
-                        {r.user && (
-                          <span className="text-[10px] text-slate-400">({r.user})</span>
-                        )}
-                      </span>
-                      <span className="font-semibold text-slate-500 dark:text-slate-400">
-                        {r.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       )}
     </div>
