@@ -1727,6 +1727,8 @@ const MainApp: React.FC<{
                     currentMonth={currentMonth} 
                     currentYear={currentYear} 
                     loggedInUser={user as User} 
+                    onOpenReminders={() => { setSettingsInitialView('reminders'); setIsSettingsOpen(true); }}
+                    foyerMembers={currentFoyer?.members}
                   />
                   <BudgetAlerts monthlyExpenses={filteredExpenses} currentFoyerId={currentFoyer?.id} onOpenBudgets={() => { setSettingsInitialView('budgets'); setIsSettingsOpen(true); }} />
                 </>

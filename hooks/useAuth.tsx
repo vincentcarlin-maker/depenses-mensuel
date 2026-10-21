@@ -40,6 +40,9 @@ const getStoredActiveSession = (): StoredActiveSession | null => {
         if (!raw) return null;
         const parsed = JSON.parse(raw);
         if (parsed && parsed.username && parsed.user) {
+            const uNorm = String(parsed.user).toLowerCase().trim();
+            if (uNorm === 'sophie') parsed.user = User.Sophie;
+            else if (uNorm === 'vincent') parsed.user = User.Vincent;
             return parsed;
         }
         return null;
@@ -364,10 +367,12 @@ export const useAuth = () => {
                 // Check if user email is strictly Vincent's registered admin email
                 const metadata = authUser.user_metadata || {};
                 const userEmail = (authUser.email || '').toLowerCase().trim();
-                const isVincent = userEmail === 'vincent.carlin@sfr.fr';
+                const isVincent = userEmail === 'vincent.carlin@sfr.fr' || userEmail.includes('vincent');
+                const isSophie = userEmail.includes('sophie');
 
-                const suggestedUser = isVincent ? 'vincent' : (metadata.username || (authUser.email ? authUser.email.split('@')[0] : `user_${authUser.id.slice(0, 6)}`)).toLowerCase().trim();
-                const suggestedName = isVincent ? 'Vincent' : (metadata.full_name || metadata.name || suggestedUser);
+                const rawUser = isVincent ? 'vincent' : (isSophie ? 'sophie' : (metadata.username || (authUser.email ? authUser.email.split('@')[0] : `user_${authUser.id.slice(0, 6)}`))).toLowerCase().trim();
+                const suggestedUser = rawUser;
+                const suggestedName = isVincent ? 'Vincent' : (isSophie || rawUser === 'sophie' ? 'Sophie' : (metadata.full_name || metadata.name || (rawUser.charAt(0).toUpperCase() + rawUser.slice(1))));
 
                 profile = {
                     id: authUser.id,
