@@ -753,26 +753,22 @@ export const CategoryVisualsProvider: React.FC<{ children: React.ReactNode; foye
   return React.createElement(CategoryVisualsContext.Provider, { value }, children);
 };
 
-export function useCategoryVisuals() {
+export function useCategoryVisuals(): CategoryVisualsContextType {
   const context = useContext(CategoryVisualsContext);
-  if (!context) {
-    // Fallback if not wrapped in provider (for safety)
-    const { customIcons, addCustomIcon, deleteCustomIcon, saveCategoryIconMapping } = useCustomCategoryIcons();
-    const { rules, addRule, deleteRule, updateRule } = useKeywordRules();
-    const getVisual = React.useCallback((categoryName: string, description?: string): CategoryVisual => {
-      return resolveCategoryVisual(categoryName, customIcons, description, rules);
-    }, [customIcons, rules]);
-    return {
-      getVisual,
-      customIcons,
-      rules,
-      addRule,
-      deleteRule,
-      updateRule,
-      addCustomIcon,
-      deleteCustomIcon,
-      saveCategoryIconMapping
-    };
-  }
-  return context;
+  if (context) return context;
+
+  // Safe static fallback without conditional hooks
+  return {
+    getVisual: (categoryName: string, description?: string): CategoryVisual => {
+      return resolveCategoryVisual(categoryName, [], description, []);
+    },
+    customIcons: [],
+    rules: [],
+    addRule: () => false,
+    deleteRule: () => {},
+    updateRule: () => false,
+    addCustomIcon: () => ({ id: '', name: '', category: '', type: 'svg', createdAt: new Date().toISOString() }),
+    deleteCustomIcon: () => {},
+    saveCategoryIconMapping: () => {}
+  };
 }

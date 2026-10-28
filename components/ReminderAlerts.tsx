@@ -35,11 +35,7 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
 
   const viewedMonthDate = new Date(Date.UTC(currentYear, currentMonth));
   const reminderStartDate = new Date('2025-11-01T00:00:00Z');
-
-  // La fonctionnalité des rappels commence en novembre 2025
-  if (viewedMonthDate < reminderStartDate) {
-    return null;
-  }
+  const isStarted = viewedMonthDate >= reminderStartDate;
 
   const now = new Date();
   const realCurrentYear = now.getUTCFullYear();
@@ -49,11 +45,6 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
   const isPastMonth = currentYear < realCurrentYear || (currentYear === realCurrentYear && currentMonth < realCurrentMonth);
   const isFutureMonth = currentYear > realCurrentYear || (currentYear === realCurrentYear && currentMonth > realCurrentMonth);
   const isCurrentMonth = currentYear === realCurrentYear && currentMonth === realCurrentMonth;
-
-  // Jamais de rappels pour un mois futur (la date n'est pas encore dépassée)
-  if (isFutureMonth) {
-    return null;
-  }
 
   // Vérifie si une dépense correspondante a déjà été ajoutée pour ce rappel
   const isReminderPaid = (reminder: Reminder) => {
@@ -83,6 +74,11 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
   // 2. Qui n'ont PAS encore été ajoutés (!isReminderPaid)
   // 3. Dont la date EST DÉPASSÉE (jour du mois <= jour actuel si mois en cours, ou tout le mois si mois passé)
   const pendingReminders = useMemo(() => {
+    // Si la fonctionnalité n'a pas encore débuté ou si mois futur : aucun rappel
+    if (!isStarted || isFutureMonth) {
+      return [];
+    }
+
     return reminders
       .filter(reminder => {
         if (!reminder || typeof reminder.amount !== 'number' || typeof reminder.description !== 'string' || !reminder.is_active) {
@@ -103,7 +99,7 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
         return true;
       })
       .sort((a, b) => a.day_of_month - b.day_of_month);
-  }, [reminders, monthlyExpenses, isPastMonth, isCurrentMonth, realCurrentDay]);
+  }, [reminders, monthlyExpenses, isStarted, isFutureMonth, isPastMonth, isCurrentMonth, realCurrentDay]);
 
   // Si aucun rappel n'est en attente dont la date est dépassée, ne rien afficher
   if (pendingReminders.length === 0) {

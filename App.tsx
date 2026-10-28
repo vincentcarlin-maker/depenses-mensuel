@@ -28,7 +28,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { useSyncedSettings } from './hooks/useSyncedSettings';
 import UndoToast from './components/UndoToast';
 import { DEFAULT_CATEGORIES, isSameCategory } from './types';
-import { isExpenseInMonth, isExpenseInYear } from './utils/dateUtils';
+import { isExpenseInMonth, isExpenseInYear, MONTH_NAMES_FR } from './utils/dateUtils';
 import {
   getMoneyPotImpactForAdd,
   getMoneyPotImpactForDelete,
@@ -324,16 +324,18 @@ const MainApp: React.FC<{
   const availableMonths = useMemo(() => {
     const options = [];
     const startYear = 2023;
-    const endYear = new Date().getFullYear() + 1;
+    const currentActualYear = new Date().getFullYear();
+    const endYear = Math.max(currentActualYear + 2, currentYear + 1);
     for (let y = endYear; y >= startYear; y--) {
-      for (let m = 11; m >= 0; m--) {
-        const date = new Date(Date.UTC(y, m, 1));
-        const label = date.toLocaleString('fr-FR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
+      const minMonth = (y === 2023) ? 9 : 0;
+      for (let m = 11; m >= minMonth; m--) {
+        const monthName = MONTH_NAMES_FR[m] || '';
+        const label = `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${y}`;
         options.push({ value: `${y}-${m}`, label, year: y, month: m });
       }
     }
     return options;
-  }, []);
+  }, [currentYear]);
 
   const availableYears = useMemo(() => {
     const years = [];
@@ -347,7 +349,11 @@ const MainApp: React.FC<{
   }, [currentYear]);
 
   const handlePrevMonth = () => {
-    setCurrentDate(prev => new Date(Date.UTC(prev.getUTCFullYear(), prev.getUTCMonth() - 1, 1)));
+    setCurrentDate(prev => {
+      const nextDate = new Date(Date.UTC(prev.getUTCFullYear(), prev.getUTCMonth() - 1, 1));
+      const limit = new Date('2023-10-01T00:00:00Z');
+      return nextDate < limit ? limit : nextDate;
+    });
   };
 
   const handleNextMonth = () => {
@@ -1443,39 +1449,39 @@ const MainApp: React.FC<{
 
   const handleDateNavigation = (direction: 'next' | 'prev') => {
       setCurrentDate(prevDate => {
-          const newDate = new Date(prevDate);
-          if (activeTab === 'yearly') newDate.setUTCFullYear(newDate.getUTCFullYear() + (direction === 'next' ? 1 : -1));
-          else newDate.setUTCMonth(newDate.getUTCMonth() + (direction === 'next' ? 1 : -1));
-          
+          const delta = direction === 'next' ? 1 : -1;
+          let newYear = prevDate.getUTCFullYear();
+          let newMonth = prevDate.getUTCMonth();
+          if (activeTab === 'yearly') {
+              newYear += delta;
+          } else {
+              newMonth += delta;
+          }
+          const newDate = new Date(Date.UTC(newYear, newMonth, 1));
           const limit = new Date('2023-10-01T00:00:00Z');
           return newDate < limit ? prevDate : newDate;
       });
   };
   
-  const handleDateSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.value) return;
-        const limit = new Date('2023-10-01T00:00:00Z');
-        if (activeTab === 'yearly') {
-            const year = parseInt(e.target.value, 10);
-            const newDate = new Date(currentDate);
-            newDate.setUTCFullYear(year);
-            setCurrentDate(newDate < limit ? limit : newDate);
-        } else {
-            const [year, month] = e.target.value.split('-').map(Number);
-            const newDate = new Date(Date.UTC(year, month - 1, 1));
-            setCurrentDate(newDate < limit ? limit : newDate);
-        }
-  };
-
   const isPrevDisabled = useMemo(() => {
-      const newDate = new Date(currentDate);
-      if (activeTab === 'yearly') newDate.setUTCFullYear(newDate.getUTCFullYear() - 1);
-      else newDate.setUTCMonth(newDate.getUTCMonth() - 1);
+      const delta = -1;
+      let newYear = currentDate.getUTCFullYear();
+      let newMonth = currentDate.getUTCMonth();
+      if (activeTab === 'yearly') {
+          newYear += delta;
+      } else {
+          newMonth += delta;
+      }
+      const newDate = new Date(Date.UTC(newYear, newMonth, 1));
       return newDate < new Date('2023-10-01T00:00:00Z');
   }, [currentDate, activeTab]);
 
-  const currentMonthName = useMemo(() => currentDate.toLocaleString('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' }), [currentDate]);
-  const monthInputValue = useMemo(() => `${currentDate.getUTCFullYear()}-${(currentDate.getUTCMonth() + 1).toString().padStart(2, '0')}`, [currentDate]);
+  const currentMonthName = useMemo(() => {
+    const m = currentDate.getUTCMonth();
+    const y = currentDate.getUTCFullYear();
+    const monthName = MONTH_NAMES_FR[m] || '';
+    return `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${y}`;
+  }, [currentDate]);
   
   const handlePayReminder = async (reminder: Reminder) => {
     try {
@@ -1708,7 +1714,18 @@ const MainApp: React.FC<{
                         ))}
                       </select>
                     ) : (
-                      <input type="month" value={monthInputValue} min="2023-10" onChange={handleDateSelect} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" ref={(input) => { if (input) input.onclick = () => { try { input.showPicker(); } catch (err) {} } }} />
+                      <select
+                        value={`${currentYear}-${currentMonth}`}
+                        onChange={handleMonthChange}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10 font-bold"
+                        aria-label="Sélectionner le mois"
+                      >
+                        {availableMonths.map((opt) => (
+                          <option key={opt.value} value={opt.value} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold">
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
                     )}
                 </div>
                 <button onClick={() => handleDateNavigation('next')} className="w-10 h-10 rounded-full bg-slate-100/90 dark:bg-slate-800/90 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shadow-sm">

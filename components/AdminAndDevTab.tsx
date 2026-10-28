@@ -1102,21 +1102,6 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
     }
   };
 
-  // If not Vincent, display access denied
-  if (!isAuthorized) {
-    return (
-      <div className="bg-white dark:bg-slate-800 rounded-[26px] p-6 text-center space-y-3 border border-slate-100 dark:border-slate-700/60 shadow-xs">
-        <div className="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto text-xl">
-          🔒
-        </div>
-        <h3 className="font-extrabold text-slate-900 dark:text-white text-lg">Accès restreint</h3>
-        <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md mx-auto">
-          Cet espace technique et d'administration est réservé exclusivement au compte de Vincent.
-        </p>
-      </div>
-    );
-  }
-
   // Filter profiles for user management search, ensuring strict deduplication by email and username
   const uniqueProfilesList = React.useMemo(() => {
     const map = new Map<string, Profile>();
@@ -1137,6 +1122,21 @@ export const AdminAndDevTab: React.FC<AdminAndDevTabProps> = ({
     }
     return Array.from(map.values());
   }, [profiles]);
+
+  // If not Vincent, display access denied
+  if (!isAuthorized) {
+    return (
+      <div className="bg-white dark:bg-slate-800 rounded-[26px] p-6 text-center space-y-3 border border-slate-100 dark:border-slate-700/60 shadow-xs">
+        <div className="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto text-xl">
+          🔒
+        </div>
+        <h3 className="font-extrabold text-slate-900 dark:text-white text-lg">Accès restreint</h3>
+        <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md mx-auto">
+          Cet espace technique et d'administration est réservé exclusivement au compte de Vincent.
+        </p>
+      </div>
+    );
+  }
 
   const filteredProfiles = uniqueProfilesList.filter(p => {
     if (!userSearchTerm.trim()) return true;
