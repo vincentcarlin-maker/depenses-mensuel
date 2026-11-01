@@ -166,7 +166,7 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-sm shadow-sm sticky top-0 z-20">
-      <div className="container mx-auto px-4 py-4 md:px-8 flex items-center justify-between">
+      <div className="container mx-auto px-3 py-4 sm:px-4 md:px-8 flex items-center justify-between">
         <div className="flex items-center">
           <Logo />
           <div className="ml-2">

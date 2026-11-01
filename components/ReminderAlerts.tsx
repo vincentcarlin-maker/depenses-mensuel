@@ -23,6 +23,7 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
   onUpdateReminder,
   currentYear, 
   currentMonth, 
+  loggedInUser,
   onOpenReminders,
   foyerMembers
 }) => {
@@ -46,13 +47,41 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
   const isFutureMonth = currentYear > realCurrentYear || (currentYear === realCurrentYear && currentMonth > realCurrentMonth);
   const isCurrentMonth = currentYear === realCurrentYear && currentMonth === realCurrentMonth;
 
+  // Vérifie si le rappel appartient à l'utilisateur connecté ou au pot commun
+  const isReminderForUser = (reminderUser: User | string | undefined, loggedUser: User | string | undefined) => {
+    if (!reminderUser) return true;
+    const rNorm = String(reminderUser).toLowerCase().trim();
+    // Les rappels communs ou de cagnotte sont visibles pour tous les membres du foyer
+    if (rNorm === 'commun' || rNorm === 'cagnotte' || rNorm === 'user.commun' || reminderUser === User.Commun) {
+      return true;
+    }
+    if (!loggedUser) return true;
+    const lNorm = String(loggedUser).toLowerCase().trim();
+    
+    if (rNorm === lNorm) return true;
+    if ((lNorm === 'sophie' || lNorm === 'user.sophie') && (rNorm === 'sophie' || rNorm === 'user.sophie')) return true;
+    if ((lNorm === 'vincent' || lNorm === 'user.vincent') && (rNorm === 'vincent' || rNorm === 'user.vincent')) return true;
+    return false;
+  };
+
   // Vérifie si une dépense correspondante a déjà été ajoutée pour ce rappel
   const isReminderPaid = (reminder: Reminder) => {
     const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, ' ').trim().replace(/\s+/g, ' ');
     const remDesc = normalize(reminder.description || '');
     const remCat = normalize(reminder.category || '');
+    const remUserNorm = String(reminder.user || '').toLowerCase().trim();
 
     return monthlyExpenses.some(expense => {
+      // Si le rappel est nominatif (ni commun ni cagnotte), vérifier que la dépense est du même utilisateur ou commune
+      if (remUserNorm && remUserNorm !== 'commun' && remUserNorm !== 'cagnotte' && remUserNorm !== 'user.commun') {
+        const expUserNorm = String(expense.user || '').toLowerCase().trim();
+        const matchesUser = expUserNorm === remUserNorm ||
+          ((remUserNorm === 'sophie' || remUserNorm === 'user.sophie') && (expUserNorm === 'sophie' || expUserNorm === 'user.sophie')) ||
+          ((remUserNorm === 'vincent' || remUserNorm === 'user.vincent') && (expUserNorm === 'vincent' || expUserNorm === 'user.vincent')) ||
+          expUserNorm === 'commun' || expUserNorm === 'cagnotte';
+        if (!matchesUser) return false;
+      }
+
       const expDesc = normalize(expense.description || '');
       
       // 1. Correspondance par description
@@ -71,8 +100,9 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
 
   // Filtrer uniquement les rappels :
   // 1. Actifs et valides
-  // 2. Qui n'ont PAS encore été ajoutés (!isReminderPaid)
-  // 3. Dont la date EST DÉPASSÉE (jour du mois <= jour actuel si mois en cours, ou tout le mois si mois passé)
+  // 2. Qui concernent le membre connecté (ou le foyer commun)
+  // 3. Qui n'ont PAS encore été ajoutés (!isReminderPaid)
+  // 4. Dont la date EST DÉPASSÉE (jour du mois <= jour actuel si mois en cours, ou tout le mois si mois passé)
   const pendingReminders = useMemo(() => {
     // Si la fonctionnalité n'a pas encore débuté ou si mois futur : aucun rappel
     if (!isStarted || isFutureMonth) {
@@ -82,6 +112,11 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
     return reminders
       .filter(reminder => {
         if (!reminder || typeof reminder.amount !== 'number' || typeof reminder.description !== 'string' || !reminder.is_active) {
+          return false;
+        }
+
+        // Filtre utilisateur : afficher uniquement les rappels du membre connecté ou communs
+        if (!isReminderForUser(reminder.user, loggedInUser)) {
           return false;
         }
 
@@ -99,7 +134,7 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
         return true;
       })
       .sort((a, b) => a.day_of_month - b.day_of_month);
-  }, [reminders, monthlyExpenses, isStarted, isFutureMonth, isPastMonth, isCurrentMonth, realCurrentDay]);
+  }, [reminders, monthlyExpenses, isStarted, isFutureMonth, isPastMonth, isCurrentMonth, realCurrentDay, loggedInUser]);
 
   // Si aucun rappel n'est en attente dont la date est dépassée, ne rien afficher
   if (pendingReminders.length === 0) {

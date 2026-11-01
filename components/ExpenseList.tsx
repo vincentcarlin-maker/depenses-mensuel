@@ -24,7 +24,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onExpenseClick, hig
   }
 
   return (
-    <div className="space-y-3.5 max-h-[600px] overflow-y-auto pr-1">
+    <div className="space-y-2 sm:space-y-3 max-h-[600px] overflow-y-auto pr-0.5 sm:pr-1">
       {expenses
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         .map((expense) => (

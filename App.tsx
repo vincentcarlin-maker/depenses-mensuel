@@ -1680,7 +1680,7 @@ const MainApp: React.FC<{
           onOpenJoinRequests={handleOpenJoinRequests}
           onExpenseClick={handleExpenseClickFromHeader}
         />
-        <main className="container mx-auto p-4 md:p-8 pb-36 sm:pb-40">
+        <main className="container mx-auto px-2.5 py-4 sm:px-4 md:p-8 pb-36 sm:pb-40">
           {activeTab !== 'settings' && (
             <>
               <div className="flex justify-between items-center max-w-md mx-auto mb-6 px-2 animate-fade-in-up">
@@ -1788,7 +1788,7 @@ const MainApp: React.FC<{
                   />
                 </div>
                 <div className="space-y-8">
-                  <div className="bg-white dark:bg-slate-800 p-5 sm:p-7 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700/80 space-y-5">
+                  <div className="bg-white dark:bg-slate-800 px-2.5 py-4 sm:px-6 sm:py-6 md:p-7 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700/80 space-y-4 sm:space-y-5">
                     {/* Header with Title and Month badge */}
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <div>
