@@ -974,59 +974,74 @@ export const RetirementIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) =
   </svg>
 );
 
-// === ENSEIGNES DE MAGASINS & SUPERMARCHÉS (VRAIS LOGOS OFFICIELS RÉCUPÉRÉS) ===
+// === ENSEIGNES DE MAGASINS & SUPERMARCHÉS (VRAIS LOGOS OFFICIELS PNG) ===
 
 export const LeclercIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full`}>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white`}>
     <img
-      src="/brand-logos/leclerc.svg"
+      src="/brand-logos/leclerc.png"
       alt="E.Leclerc"
       className="w-full h-full object-contain"
       loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/e.leclerc";
+      }}
     />
   </div>
 );
 
 export const CarrefourIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/carrefour.svg"
+      src="/brand-logos/carrefour.png"
       alt="Carrefour"
       className="w-full h-full object-contain"
       loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/carrefour.fr";
+      }}
     />
   </div>
 );
 
 export const IntermarcheIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/intermarche.svg"
+      src="/brand-logos/intermarche.png"
       alt="Intermarché"
       className="w-full h-full object-contain"
       loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/intermarche.com";
+      }}
     />
   </div>
 );
 
 export const LidlIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full`}>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white`}>
     <img
-      src="/brand-logos/lidl.svg"
+      src="/brand-logos/lidl.png"
       alt="Lidl"
       className="w-full h-full object-contain"
       loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/lidl.fr";
+      }}
     />
   </div>
 );
 
 export const AuchanIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/auchan.svg"
+      src="/brand-logos/auchan.png"
       alt="Auchan"
       className="w-full h-full object-contain"
       loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/auchan.fr";
+      }}
     />
   </div>
 );
@@ -1034,32 +1049,41 @@ export const AuchanIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const AldiIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/aldi.svg"
+      src="/brand-logos/aldi.png"
       alt="Aldi"
       className="w-full h-full object-contain"
       loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/aldi.fr";
+      }}
     />
   </div>
 );
 
 export const SuperUIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/superu.svg"
+      src="/brand-logos/superu.png"
       alt="Super U"
       className="w-full h-full object-contain"
       loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/magasins-u.com";
+      }}
     />
   </div>
 );
 
 export const MonoprixIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/monoprix.svg"
+      src="/brand-logos/monoprix.png"
       alt="Monoprix"
       className="w-full h-full object-contain"
       loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://www.google.com/s2/favicons?domain=monoprix.fr&sz=128";
+      }}
     />
   </div>
 );
@@ -1067,10 +1091,13 @@ export const MonoprixIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => 
 export const PicardIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/picard.svg"
+      src="/brand-logos/picard.png"
       alt="Picard"
       className="w-full h-full object-contain"
       loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/picard.fr";
+      }}
     />
   </div>
 );
@@ -1078,32 +1105,41 @@ export const PicardIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const GrandFraisIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/grandfrais.svg"
+      src="/brand-logos/grandfrais.png"
       alt="Grand Frais"
       className="w-full h-full object-contain"
       loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/grandfrais.com";
+      }}
     />
   </div>
 );
 
 export const BiocoopIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/biocoop.svg"
+      src="/brand-logos/biocoop.png"
       alt="Biocoop"
       className="w-full h-full object-contain"
       loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://www.google.com/s2/favicons?domain=biocoop.fr&sz=128";
+      }}
     />
   </div>
 );
 
 export const ActionStoreIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/action.svg"
+      src="/brand-logos/action.png"
       alt="Action"
       className="w-full h-full object-contain"
       loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/action.com";
+      }}
     />
   </div>
 );
@@ -1128,59 +1164,74 @@ export const BoucherieBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" 
   </svg>
 );
 
-// === ENSEIGNES DE RESTAURANTS & RESTAURATION (VRAIS LOGOS OFFICIELS RÉCUPÉRÉS) ===
+// === ENSEIGNES DE RESTAURANTS & RESTAURATION (VRAIS LOGOS OFFICIELS PNG) ===
 
 export const McDonaldsIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#264f36] p-1.5 shadow-2xs`}>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#264f36] p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/mcdonalds.svg"
+      src="/brand-logos/mcdonalds.png"
       alt="McDonald's"
       className="w-full h-full object-contain"
       loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/mcdonalds.fr";
+      }}
     />
   </div>
 );
 
 export const BurgerKingIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/burgerking.svg"
+      src="/brand-logos/burgerking.png"
       alt="Burger King"
       className="w-full h-full object-contain"
       loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/burgerking.fr";
+      }}
     />
   </div>
 );
 
 export const KfcIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/kfc.svg"
+      src="/brand-logos/kfc.png"
       alt="KFC"
       className="w-full h-full object-contain"
       loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/kfc.fr";
+      }}
     />
   </div>
 );
 
 export const SubwayIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#008938] p-1 shadow-2xs`}>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#008938] p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/subway.svg"
+      src="/brand-logos/subway.png"
       alt="Subway"
       className="w-full h-full object-contain"
       loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/subway.com";
+      }}
     />
   </div>
 );
 
 export const DominosPizzaIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/dominos.svg"
+      src="/brand-logos/dominos.png"
       alt="Domino's Pizza"
       className="w-full h-full object-contain"
       loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/dominos.fr";
+      }}
     />
   </div>
 );
