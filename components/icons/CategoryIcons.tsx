@@ -974,5 +974,309 @@ export const RetirementIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) =
   </svg>
 );
 
+// === ENSEIGNES DE MAGASINS & SUPERMARCHÉS (VRAIS LOGOS OFFICIELS RÉCUPÉRÉS) ===
+
+export const LeclercIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full`}>
+    <img
+      src="/brand-logos/leclerc.svg"
+      alt="E.Leclerc"
+      className="w-full h-full object-contain"
+      loading="lazy"
+    />
+  </div>
+);
+
+export const CarrefourIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+    <img
+      src="/brand-logos/carrefour.svg"
+      alt="Carrefour"
+      className="w-full h-full object-contain"
+      loading="lazy"
+    />
+  </div>
+);
+
+export const IntermarcheIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+    <img
+      src="/brand-logos/intermarche.svg"
+      alt="Intermarché"
+      className="w-full h-full object-contain"
+      loading="lazy"
+    />
+  </div>
+);
+
+export const LidlIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full`}>
+    <img
+      src="/brand-logos/lidl.svg"
+      alt="Lidl"
+      className="w-full h-full object-contain"
+      loading="lazy"
+    />
+  </div>
+);
+
+export const AuchanIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+    <img
+      src="/brand-logos/auchan.svg"
+      alt="Auchan"
+      className="w-full h-full object-contain"
+      loading="lazy"
+    />
+  </div>
+);
+
+export const AldiIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
+    <img
+      src="/brand-logos/aldi.svg"
+      alt="Aldi"
+      className="w-full h-full object-contain"
+      loading="lazy"
+    />
+  </div>
+);
+
+export const SuperUIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+    <img
+      src="/brand-logos/superu.svg"
+      alt="Super U"
+      className="w-full h-full object-contain"
+      loading="lazy"
+    />
+  </div>
+);
+
+export const MonoprixIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+    <img
+      src="/brand-logos/monoprix.svg"
+      alt="Monoprix"
+      className="w-full h-full object-contain"
+      loading="lazy"
+    />
+  </div>
+);
+
+export const PicardIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
+    <img
+      src="/brand-logos/picard.svg"
+      alt="Picard"
+      className="w-full h-full object-contain"
+      loading="lazy"
+    />
+  </div>
+);
+
+export const GrandFraisIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
+    <img
+      src="/brand-logos/grandfrais.svg"
+      alt="Grand Frais"
+      className="w-full h-full object-contain"
+      loading="lazy"
+    />
+  </div>
+);
+
+export const BiocoopIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+    <img
+      src="/brand-logos/biocoop.svg"
+      alt="Biocoop"
+      className="w-full h-full object-contain"
+      loading="lazy"
+    />
+  </div>
+);
+
+export const ActionStoreIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+    <img
+      src="/brand-logos/action.svg"
+      alt="Action"
+      className="w-full h-full object-contain"
+      loading="lazy"
+    />
+  </div>
+);
+
+export const BoulangerieBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <circle cx="32" cy="32" r="30" fill="#b45309"/>
+    <g transform="translate(14, 14)" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 4 V32 M18 8 L14 5 M18 8 L22 5 M18 14 L12 11 M18 14 L24 11 M18 20 L13 18 M18 20 L23 18" stroke="#fef08a" strokeWidth="2.5"/>
+      <path d="M6 26 C4 18 10 12 18 12 C26 12 32 18 30 26 C27 30 22 30 18 26 C14 30 9 30 6 26 Z" fill="#f59e0b" stroke="#ffffff" strokeWidth="2"/>
+    </g>
+  </svg>
+);
+
+export const BoucherieBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <circle cx="32" cy="32" r="30" fill="#991b1b"/>
+    <g stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 20 C18 24 18 34 26 42 C34 50 44 46 44 38 C44 26 34 20 28 20 C24 20 22 20 22 20 Z" fill="#dc2626"/>
+      <circle cx="28" cy="28" r="3" fill="white" stroke="none"/>
+    </g>
+  </svg>
+);
+
+// === ENSEIGNES DE RESTAURANTS & RESTAURATION (VRAIS LOGOS OFFICIELS RÉCUPÉRÉS) ===
+
+export const McDonaldsIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#264f36] p-1.5 shadow-2xs`}>
+    <img
+      src="/brand-logos/mcdonalds.svg"
+      alt="McDonald's"
+      className="w-full h-full object-contain"
+      loading="lazy"
+    />
+  </div>
+);
+
+export const BurgerKingIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+    <img
+      src="/brand-logos/burgerking.svg"
+      alt="Burger King"
+      className="w-full h-full object-contain"
+      loading="lazy"
+    />
+  </div>
+);
+
+export const KfcIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+    <img
+      src="/brand-logos/kfc.svg"
+      alt="KFC"
+      className="w-full h-full object-contain"
+      loading="lazy"
+    />
+  </div>
+);
+
+export const SubwayIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#008938] p-1 shadow-2xs`}>
+    <img
+      src="/brand-logos/subway.svg"
+      alt="Subway"
+      className="w-full h-full object-contain"
+      loading="lazy"
+    />
+  </div>
+);
+
+export const DominosPizzaIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+    <img
+      src="/brand-logos/dominos.svg"
+      alt="Domino's Pizza"
+      className="w-full h-full object-contain"
+      loading="lazy"
+    />
+  </div>
+);
+
+export const PizzaBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <circle cx="32" cy="32" r="30" fill="#c2410c"/>
+    <g transform="translate(10, 10)">
+      <path d="M22 4 L38 38 C34 42 10 42 6 38 Z" fill="#fef08a" stroke="#ffffff" strokeWidth="2" strokeLinejoin="round"/>
+      <path d="M6 38 Q22 43 38 38" stroke="#d97706" strokeWidth="4.5" fill="none" strokeLinecap="round"/>
+      <circle cx="22" cy="18" r="2.8" fill="#dc2626"/>
+      <circle cx="16" cy="28" r="2.5" fill="#dc2626"/>
+      <circle cx="27" cy="29" r="2.5" fill="#dc2626"/>
+      <circle cx="24" cy="24" r="1.5" fill="#16a34a"/>
+    </g>
+  </svg>
+);
+
+export const SushiRollIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <circle cx="32" cy="32" r="30" fill="#0f172a"/>
+    <circle cx="32" cy="32" r="18" fill="#1e293b" stroke="#334155" strokeWidth="2"/>
+    <circle cx="32" cy="32" r="14" fill="#f8fafc"/>
+    <circle cx="32" cy="32" r="6" fill="#f97316"/>
+    <circle cx="35" cy="30" r="2" fill="#22c55e"/>
+    <line x1="10" y1="12" x2="48" y2="52" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round"/>
+    <line x1="16" y1="10" x2="54" y2="50" stroke="#b45309" strokeWidth="2.5" strokeLinecap="round"/>
+  </svg>
+);
+
+export const KebabWrapIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <circle cx="32" cy="32" r="30" fill="#c2410c"/>
+    <g transform="translate(16, 14) scale(0.68)" stroke="white" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="24" y1="4" x2="24" y2="44" stroke="#fed7aa" strokeWidth="4"/>
+      <path d="M12 12 Q24 8 36 12 L32 34 Q24 38 16 34 Z" fill="#f97316"/>
+      <path d="M15 18 Q24 14 33 18" stroke="#ffffff"/>
+      <path d="M16 26 Q24 22 32 26" stroke="#ffffff"/>
+    </g>
+  </svg>
+);
+
+export const CreperieBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <circle cx="32" cy="32" r="30" fill="#ca8a04"/>
+    <ellipse cx="32" cy="34" rx="18" ry="10" fill="#fef08a" stroke="white" strokeWidth="2.5"/>
+    <path d="M22 34 Q32 39 42 34" stroke="#d97706" strokeWidth="2" fill="none"/>
+    <circle cx="28" cy="32" r="1.5" fill="#b45309"/>
+    <circle cx="35" cy="35" r="1.5" fill="#b45309"/>
+    <path d="M14 26 L22 32" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+  </svg>
+);
+
+export const StarbucksIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <circle cx="32" cy="32" r="30" fill="#006241"/>
+    <circle cx="32" cy="32" r="22" fill="none" stroke="#ffffff" strokeWidth="2"/>
+    <polygon points="32,18 35,26 43,26 37,31 39,39 32,34 25,39 27,31 21,26 29,26" fill="#ffffff"/>
+    <path d="M24 42 C 24 48, 40 48, 40 42" stroke="#ffffff" strokeWidth="2" fill="none" strokeLinecap="round"/>
+  </svg>
+);
+
+export const CoffeeShopIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <circle cx="32" cy="32" r="30" fill="#78350f"/>
+    <g stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 26 h20 v12 a8 8 0 0 1 -8 8 h-4 a8 8 0 0 1 -8 -8 v-12 z" fill="#92400e"/>
+      <path d="M40 30 h4 a4 4 0 0 1 0 8 h-4" />
+      <path d="M16 48 h28" strokeWidth="3"/>
+      <path d="M26 16 c0 3 2 4 2 6 M34 16 c0 3 2 4 2 6" stroke="#fed7aa" strokeWidth="2"/>
+    </g>
+  </svg>
+);
+
+export const BarPubIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <circle cx="32" cy="32" r="30" fill="#b45309"/>
+    <g stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 22 h16 v22 a4 4 0 0 1 -4 4 h-8 a4 4 0 0 1 -4 -4 z" fill="#f59e0b"/>
+      <path d="M38 26 h5 a4 4 0 0 1 0 8 h-5" />
+      <path d="M20 22 c0 -3 4 -4 8 -4 s8 1 8 4" fill="white" stroke="none"/>
+    </g>
+  </svg>
+);
+
+export const BrasserieIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <circle cx="32" cy="32" r="30" fill="#6b21a8"/>
+    <g stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 18 v12 a4 4 0 0 0 8 0 v-12 M22 18 v28" />
+      <path d="M42 18 v28 M42 18 c0 6 4 10 4 10 v18" />
+      <line x1="38" y1="18" x2="38" y2="46" />
+    </g>
+  </svg>
+);
+
+
 
 

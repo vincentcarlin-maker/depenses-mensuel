@@ -52,10 +52,12 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
 
   let IconComponent = visual.icon;
   let iconColorClass = visual.textColor;
+  let isFullBadge = visual.isFullBadge ?? false;
 
   if (isChristmas) {
     IconComponent = GiftIcon;
     iconColorClass = 'text-red-600';
+    isFullBadge = false;
   } else if (isBirthday) {
     IconComponent = BirthdayIcon;
   } else if (isInternet) {
@@ -328,9 +330,17 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
             </button>
           </div>
 
-          {/* Floating Icon Container */}
-          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white dark:bg-slate-800 rounded-2xl sm:rounded-3xl shadow-md border border-slate-100/80 dark:border-slate-700/80 flex items-center justify-center -mt-8 sm:-mt-10 mx-auto relative z-10">
-            <IconComponent className={`h-8 w-8 sm:h-10 sm:w-10 ${iconColorClass}`} />
+          {/* Floating Icon Container: Grand logo sans carré autour */}
+          <div className="flex items-center justify-center -mt-10 sm:-mt-12 mx-auto relative z-10">
+            {isFullBadge ? (
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden shadow-lg transition-transform hover:scale-105">
+                <IconComponent className="w-full h-full object-contain rounded-full" />
+              </div>
+            ) : (
+              <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full ${visual.color || 'bg-blue-500'} flex items-center justify-center shadow-lg transition-transform hover:scale-105`}>
+                <IconComponent className={`h-10 w-10 sm:h-12 sm:w-12 ${iconColorClass || 'text-white'}`} />
+              </div>
+            )}
           </div>
         </div>
 

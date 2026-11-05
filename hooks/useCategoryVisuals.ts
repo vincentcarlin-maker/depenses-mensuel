@@ -102,7 +102,34 @@ import {
   CryptoCurrencyIcon,
   LegalLawyerIcon,
   FineTicketIcon,
-  RetirementIcon
+  RetirementIcon,
+  LeclercIcon,
+  CarrefourIcon,
+  IntermarcheIcon,
+  LidlIcon,
+  AuchanIcon,
+  AldiIcon,
+  SuperUIcon,
+  MonoprixIcon,
+  PicardIcon,
+  GrandFraisIcon,
+  BiocoopIcon,
+  ActionStoreIcon,
+  BoulangerieBadgeIcon,
+  BoucherieBadgeIcon,
+  McDonaldsIcon,
+  BurgerKingIcon,
+  KfcIcon,
+  SubwayIcon,
+  DominosPizzaIcon,
+  PizzaBadgeIcon,
+  SushiRollIcon,
+  KebabWrapIcon,
+  CreperieBadgeIcon,
+  StarbucksIcon,
+  CoffeeShopIcon,
+  BarPubIcon,
+  BrasserieIcon
 } from '../components/icons/CategoryIcons';
 import { CustomCategoryIcon, useCustomCategoryIcons } from './useCustomCategoryIcons';
 import { getColorDef } from '../components/CategoryEditModal';
@@ -253,7 +280,34 @@ export const FULL_BADGE_ICONS = new Set<React.FC<any>>([
   CeoIcon,
   TotalEnergiesIcon,
   NetflixIcon,
-  WifiIcon
+  WifiIcon,
+  LeclercIcon,
+  CarrefourIcon,
+  IntermarcheIcon,
+  LidlIcon,
+  AuchanIcon,
+  AldiIcon,
+  SuperUIcon,
+  MonoprixIcon,
+  PicardIcon,
+  GrandFraisIcon,
+  BiocoopIcon,
+  ActionStoreIcon,
+  BoulangerieBadgeIcon,
+  BoucherieBadgeIcon,
+  McDonaldsIcon,
+  BurgerKingIcon,
+  KfcIcon,
+  SubwayIcon,
+  DominosPizzaIcon,
+  PizzaBadgeIcon,
+  SushiRollIcon,
+  KebabWrapIcon,
+  CreperieBadgeIcon,
+  StarbucksIcon,
+  CoffeeShopIcon,
+  BarPubIcon,
+  BrasserieIcon
 ]);
 
 export const PRESET_LOOKUP: Record<string, { icon: React.FC<{ className?: string }>; defaultColor: string }> = {
@@ -456,6 +510,66 @@ export const PRESET_LOOKUP: Record<string, { icon: React.FC<{ className?: string
   fineticketicon: { icon: FineTicketIcon, defaultColor: 'bg-[#ef4444]' },
   retirement: { icon: RetirementIcon, defaultColor: 'bg-[#f59e0b]' },
   retirementicon: { icon: RetirementIcon, defaultColor: 'bg-[#f59e0b]' },
+
+  // Enseignes Magasins & Supermarchés
+  leclerc: { icon: LeclercIcon, defaultColor: 'bg-[#005aa9]' },
+  leclercicon: { icon: LeclercIcon, defaultColor: 'bg-[#005aa9]' },
+  carrefour: { icon: CarrefourIcon, defaultColor: 'bg-[#003882]' },
+  carrefouricon: { icon: CarrefourIcon, defaultColor: 'bg-[#003882]' },
+  intermarche: { icon: IntermarcheIcon, defaultColor: 'bg-[#d9232a]' },
+  intermarcheicon: { icon: IntermarcheIcon, defaultColor: 'bg-[#d9232a]' },
+  lidl: { icon: LidlIcon, defaultColor: 'bg-[#0050aa]' },
+  lidlicon: { icon: LidlIcon, defaultColor: 'bg-[#0050aa]' },
+  auchan: { icon: AuchanIcon, defaultColor: 'bg-[#d9232a]' },
+  auchanicon: { icon: AuchanIcon, defaultColor: 'bg-[#d9232a]' },
+  aldi: { icon: AldiIcon, defaultColor: 'bg-[#00205b]' },
+  aldiicon: { icon: AldiIcon, defaultColor: 'bg-[#00205b]' },
+  superu: { icon: SuperUIcon, defaultColor: 'bg-[#0055a5]' },
+  superuicon: { icon: SuperUIcon, defaultColor: 'bg-[#0055a5]' },
+  monoprix: { icon: MonoprixIcon, defaultColor: 'bg-[#e3001b]' },
+  monoprixicon: { icon: MonoprixIcon, defaultColor: 'bg-[#e3001b]' },
+  picard: { icon: PicardIcon, defaultColor: 'bg-[#009fe3]' },
+  picardicon: { icon: PicardIcon, defaultColor: 'bg-[#009fe3]' },
+  grandfrais: { icon: GrandFraisIcon, defaultColor: 'bg-[#15803d]' },
+  grandfraisicon: { icon: GrandFraisIcon, defaultColor: 'bg-[#15803d]' },
+  biocoop: { icon: BiocoopIcon, defaultColor: 'bg-[#166534]' },
+  biocoopicon: { icon: BiocoopIcon, defaultColor: 'bg-[#166534]' },
+  actionstore: { icon: ActionStoreIcon, defaultColor: 'bg-[#00186b]' },
+  actionstoreicon: { icon: ActionStoreIcon, defaultColor: 'bg-[#00186b]' },
+  boulangeriebadge: { icon: BoulangerieBadgeIcon, defaultColor: 'bg-[#d97706]' },
+  boulangeriebadgeicon: { icon: BoulangerieBadgeIcon, defaultColor: 'bg-[#d97706]' },
+  boucheriebadge: { icon: BoucherieBadgeIcon, defaultColor: 'bg-[#991b1b]' },
+  boucheriebadgeicon: { icon: BoucherieBadgeIcon, defaultColor: 'bg-[#991b1b]' },
+
+  // Enseignes Restaurants & Restauration
+  mcdonalds: { icon: McDonaldsIcon, defaultColor: 'bg-[#264f36]' },
+  mcdonaldsicon: { icon: McDonaldsIcon, defaultColor: 'bg-[#264f36]' },
+  mcdo: { icon: McDonaldsIcon, defaultColor: 'bg-[#264f36]' },
+  burgerking: { icon: BurgerKingIcon, defaultColor: 'bg-[#d62300]' },
+  burgerkingicon: { icon: BurgerKingIcon, defaultColor: 'bg-[#d62300]' },
+  bk: { icon: BurgerKingIcon, defaultColor: 'bg-[#d62300]' },
+  kfc: { icon: KfcIcon, defaultColor: 'bg-[#a3080c]' },
+  kfcicon: { icon: KfcIcon, defaultColor: 'bg-[#a3080c]' },
+  subway: { icon: SubwayIcon, defaultColor: 'bg-[#008938]' },
+  subwayicon: { icon: SubwayIcon, defaultColor: 'bg-[#008938]' },
+  dominos: { icon: DominosPizzaIcon, defaultColor: 'bg-[#006491]' },
+  dominospizzaicon: { icon: DominosPizzaIcon, defaultColor: 'bg-[#006491]' },
+  pizzabadge: { icon: PizzaBadgeIcon, defaultColor: 'bg-[#ea580c]' },
+  pizzabadgeicon: { icon: PizzaBadgeIcon, defaultColor: 'bg-[#ea580c]' },
+  sushiroll: { icon: SushiRollIcon, defaultColor: 'bg-[#0f172a]' },
+  sushirollicon: { icon: SushiRollIcon, defaultColor: 'bg-[#0f172a]' },
+  kebabwrap: { icon: KebabWrapIcon, defaultColor: 'bg-[#c2410c]' },
+  kebabwrapicon: { icon: KebabWrapIcon, defaultColor: 'bg-[#c2410c]' },
+  creperiebadge: { icon: CreperieBadgeIcon, defaultColor: 'bg-[#ca8a04]' },
+  creperiebadgeicon: { icon: CreperieBadgeIcon, defaultColor: 'bg-[#ca8a04]' },
+  starbucks: { icon: StarbucksIcon, defaultColor: 'bg-[#006241]' },
+  starbucksicon: { icon: StarbucksIcon, defaultColor: 'bg-[#006241]' },
+  coffeeshop: { icon: CoffeeShopIcon, defaultColor: 'bg-[#78350f]' },
+  coffeeshopicon: { icon: CoffeeShopIcon, defaultColor: 'bg-[#78350f]' },
+  barpub: { icon: BarPubIcon, defaultColor: 'bg-[#b45309]' },
+  barpubicon: { icon: BarPubIcon, defaultColor: 'bg-[#b45309]' },
+  brasserie: { icon: BrasserieIcon, defaultColor: 'bg-[#6b21a8]' },
+  brasserieicon: { icon: BrasserieIcon, defaultColor: 'bg-[#6b21a8]' },
 };
 
 export function resolveIconAndColor(iconId: string, colorClass: string, customIcons: CustomCategoryIcon[]): CategoryVisual {
@@ -588,7 +702,151 @@ function resolveCategoryVisualInner(
     }
   }
 
-  // 2. Check custom icons (matching associated category name or custom icon name)
+  // 2. Check specific description match in customIcons (if user created an icon for this specific store/item)
+  if (description) {
+    const normDesc = normalizeText(description);
+    const matchedSpecificCustom = customIcons.find(ci => {
+      if (!ci.category) return false;
+      const normCiCat = normalizeText(ci.category);
+      return normCiCat && (normCiCat === normDesc || normDesc.includes(normCiCat));
+    });
+    if (matchedSpecificCustom) {
+      const targetIconId = matchedSpecificCustom.id?.startsWith('mapping_') ? matchedSpecificCustom.name : (matchedSpecificCustom.id || matchedSpecificCustom.name);
+      return resolveIconAndColor(targetIconId, matchedSpecificCustom.color || 'bg-[#3b82f6]', customIcons);
+    }
+  }
+
+  // 3. Check built-in description brand, store, and restaurant matching
+  const textNorm = normalizeText(description || (PRESET_CATEGORY_VISUALS[categoryName] ? '' : categoryName));
+  if (textNorm) {
+    // --- Subscriptions & Utilities ---
+    if (textNorm.includes('sfr')) {
+      return { icon: SfrIcon, color: 'bg-red-600', textColor: 'text-red-600', badgeBg: 'bg-red-50 dark:bg-red-500/10', borderColor: 'border-red-200' };
+    }
+    if (textNorm.includes('netflix')) {
+      return { icon: NetflixIcon, color: 'bg-black', textColor: 'text-slate-800', badgeBg: 'bg-slate-100', borderColor: 'border-slate-200' };
+    }
+    if (textNorm.includes('total energies') || textNorm.includes('totalenergies')) {
+      return { icon: TotalEnergiesIcon, color: 'bg-yellow-400', textColor: 'text-yellow-600', badgeBg: 'bg-yellow-50', borderColor: 'border-yellow-200' };
+    }
+    if (textNorm.includes('deezer') || textNorm.includes('spotify') || textNorm.includes('musique')) {
+      return { icon: MusicNoteIcon, color: 'bg-purple-500', textColor: 'text-purple-600', badgeBg: 'bg-purple-50', borderColor: 'border-purple-200' };
+    }
+    if (textNorm.includes('poubelle') || textNorm.includes('dechet')) {
+      return { icon: TrashBinIcon, color: 'bg-rose-500', textColor: 'text-rose-600', badgeBg: 'bg-rose-50', borderColor: 'border-rose-200' };
+    }
+    if (textNorm.includes('wifi') || textNorm.includes('internet') || textNorm.includes('fibre') || textNorm.includes('box')) {
+      return { icon: WifiIcon, color: 'bg-indigo-500', textColor: 'text-indigo-600', badgeBg: 'bg-indigo-50', borderColor: 'border-indigo-200' };
+    }
+    if (textNorm.includes('telephone') || textNorm.includes('mobile')) {
+      return { icon: PhoneOutlineIcon, color: 'bg-[#0ea5e9]', textColor: 'text-[#0284c7]', badgeBg: 'bg-[#e0f2fe]', borderColor: 'border-sky-200' };
+    }
+    if (textNorm.includes('eau') || textNorm.includes('ceo')) {
+      return { icon: CeoIcon, color: 'bg-sky-500', textColor: 'text-sky-600', badgeBg: 'bg-sky-50', borderColor: 'border-sky-200' };
+    }
+    if (textNorm.includes('assurance') || textNorm.includes('mutuelle')) {
+      return { icon: ShieldIcon, color: 'bg-emerald-500', textColor: 'text-emerald-600', badgeBg: 'bg-emerald-50', borderColor: 'border-emerald-200' };
+    }
+
+    // --- Supermarchés & Magasins alimentaires / commerces ---
+    if (textNorm.includes('leclerc')) {
+      return { icon: LeclercIcon, color: 'bg-[#005aa9]', textColor: 'text-[#005aa9] dark:text-blue-400', badgeBg: 'bg-blue-50 dark:bg-blue-950/40', borderColor: 'border-blue-200 dark:border-blue-800/40' };
+    }
+    if (textNorm.includes('carrefour')) {
+      return { icon: CarrefourIcon, color: 'bg-[#003882]', textColor: 'text-[#003882] dark:text-blue-400', badgeBg: 'bg-blue-50 dark:bg-blue-950/40', borderColor: 'border-blue-200 dark:border-blue-800/40' };
+    }
+    if (textNorm.includes('intermarche')) {
+      return { icon: IntermarcheIcon, color: 'bg-[#d9232a]', textColor: 'text-[#d9232a] dark:text-red-400', badgeBg: 'bg-red-50 dark:bg-red-950/40', borderColor: 'border-red-200 dark:border-red-800/40' };
+    }
+    if (textNorm.includes('lidl')) {
+      return { icon: LidlIcon, color: 'bg-[#0050aa]', textColor: 'text-[#0050aa] dark:text-blue-400', badgeBg: 'bg-blue-50 dark:bg-blue-950/40', borderColor: 'border-blue-200 dark:border-blue-800/40' };
+    }
+    if (textNorm.includes('auchan')) {
+      return { icon: AuchanIcon, color: 'bg-[#d9232a]', textColor: 'text-[#d9232a] dark:text-red-400', badgeBg: 'bg-red-50 dark:bg-red-950/40', borderColor: 'border-red-200 dark:border-red-800/40' };
+    }
+    if (textNorm.includes('aldi')) {
+      return { icon: AldiIcon, color: 'bg-[#00205b]', textColor: 'text-[#00205b] dark:text-blue-400', badgeBg: 'bg-blue-50 dark:bg-blue-950/40', borderColor: 'border-blue-200 dark:border-blue-800/40' };
+    }
+    if (/\b(super u|hyper u|u express|systeme u)\b/.test(textNorm) || textNorm === 'u' || textNorm.startsWith('u ')) {
+      return { icon: SuperUIcon, color: 'bg-[#0055a5]', textColor: 'text-[#0055a5] dark:text-blue-400', badgeBg: 'bg-blue-50 dark:bg-blue-950/40', borderColor: 'border-blue-200 dark:border-blue-800/40' };
+    }
+    if (textNorm.includes('monoprix')) {
+      return { icon: MonoprixIcon, color: 'bg-[#e3001b]', textColor: 'text-[#e3001b] dark:text-red-400', badgeBg: 'bg-red-50 dark:bg-red-950/40', borderColor: 'border-red-200 dark:border-red-800/40' };
+    }
+    if (textNorm.includes('grand frais')) {
+      return { icon: GrandFraisIcon, color: 'bg-[#15803d]', textColor: 'text-[#15803d] dark:text-emerald-400', badgeBg: 'bg-emerald-50 dark:bg-emerald-950/40', borderColor: 'border-emerald-200 dark:border-emerald-800/40' };
+    }
+    if (textNorm.includes('picard')) {
+      return { icon: PicardIcon, color: 'bg-[#009fe3]', textColor: 'text-[#009fe3] dark:text-sky-400', badgeBg: 'bg-sky-50 dark:bg-sky-950/40', borderColor: 'border-sky-200 dark:border-sky-800/40' };
+    }
+    if (textNorm.includes('biocoop') || textNorm.includes('naturalia') || textNorm.includes('bio c bon') || textNorm.includes('la vie claire')) {
+      return { icon: BiocoopIcon, color: 'bg-[#166534]', textColor: 'text-[#166534] dark:text-green-400', badgeBg: 'bg-green-50 dark:bg-green-950/40', borderColor: 'border-green-200 dark:border-green-800/40' };
+    }
+    if (/\baction\b/.test(textNorm)) {
+      return { icon: ActionStoreIcon, color: 'bg-[#00186b]', textColor: 'text-[#009fe3] dark:text-sky-400', badgeBg: 'bg-sky-50 dark:bg-sky-950/40', borderColor: 'border-sky-200 dark:border-sky-800/40' };
+    }
+    if (textNorm.includes('boulangerie') || textNorm.includes('paul') || textNorm.includes('marie blachere') || textNorm.includes('brioche doree') || textNorm.includes('fournil') || /\bpain\b/.test(textNorm)) {
+      return { icon: BoulangerieBadgeIcon, color: 'bg-[#d97706]', textColor: 'text-[#d97706] dark:text-amber-400', badgeBg: 'bg-amber-50 dark:bg-amber-950/40', borderColor: 'border-amber-200 dark:border-amber-800/40' };
+    }
+    if (textNorm.includes('boucherie') || textNorm.includes('boucher') || textNorm.includes('charcuterie') || textNorm.includes('poissonnerie')) {
+      return { icon: BoucherieBadgeIcon, color: 'bg-[#991b1b]', textColor: 'text-[#991b1b] dark:text-rose-400', badgeBg: 'bg-rose-50 dark:bg-rose-950/40', borderColor: 'border-rose-200 dark:border-rose-800/40' };
+    }
+    if (textNorm.includes('primeur') || textNorm.includes('maraicher')) {
+      return { icon: GrandFraisIcon, color: 'bg-[#16a34a]', textColor: 'text-[#16a34a] dark:text-emerald-400', badgeBg: 'bg-emerald-50 dark:bg-emerald-950/40', borderColor: 'border-emerald-200 dark:border-emerald-800/40' };
+    }
+    if (textNorm.includes('pharmacie') || textNorm.includes('parapharmacie')) {
+      return { icon: FirstAidIcon, color: 'bg-[#10b981]', textColor: 'text-[#059669] dark:text-emerald-400', badgeBg: 'bg-emerald-50 dark:bg-emerald-950/40', borderColor: 'border-emerald-200 dark:border-emerald-800/40' };
+    }
+
+    // --- Fast-Food, Enseignes & Types de restaurants ---
+    if (textNorm.includes('mcdo') || textNorm.includes('mcdonald') || textNorm.includes('macdo')) {
+      return { icon: McDonaldsIcon, color: 'bg-[#264f36]', textColor: 'text-[#264f36] dark:text-emerald-400', badgeBg: 'bg-emerald-50 dark:bg-emerald-950/40', borderColor: 'border-emerald-200 dark:border-emerald-800/40' };
+    }
+    if (textNorm.includes('burger king') || /\bbk\b/.test(textNorm)) {
+      return { icon: BurgerKingIcon, color: 'bg-[#d62300]', textColor: 'text-[#d62300] dark:text-red-400', badgeBg: 'bg-red-50 dark:bg-red-950/40', borderColor: 'border-red-200 dark:border-red-800/40' };
+    }
+    if (textNorm.includes('kfc') || textNorm.includes('kentucky')) {
+      return { icon: KfcIcon, color: 'bg-[#a3080c]', textColor: 'text-[#a3080c] dark:text-red-400', badgeBg: 'bg-red-50 dark:bg-red-950/40', borderColor: 'border-red-200 dark:border-red-800/40' };
+    }
+    if (textNorm.includes('subway')) {
+      return { icon: SubwayIcon, color: 'bg-[#008938]', textColor: 'text-[#008938] dark:text-green-400', badgeBg: 'bg-green-50 dark:bg-green-950/40', borderColor: 'border-green-200 dark:border-green-800/40' };
+    }
+    if (/\bquick\b/.test(textNorm)) {
+      return { icon: FastFoodIcon, color: 'bg-[#e3001b]', textColor: 'text-[#e3001b] dark:text-red-400', badgeBg: 'bg-red-50 dark:bg-red-950/40', borderColor: 'border-red-200 dark:border-red-800/40' };
+    }
+    if (textNorm.includes('domino')) {
+      return { icon: DominosPizzaIcon, color: 'bg-[#006491]', textColor: 'text-[#006491] dark:text-sky-400', badgeBg: 'bg-sky-50 dark:bg-sky-950/40', borderColor: 'border-sky-200 dark:border-sky-800/40' };
+    }
+    if (textNorm.includes('pizza') || textNorm.includes('pizzeria') || textNorm.includes('del arte')) {
+      return { icon: PizzaBadgeIcon, color: 'bg-[#ea580c]', textColor: 'text-[#ea580c] dark:text-orange-400', badgeBg: 'bg-orange-50 dark:bg-orange-950/40', borderColor: 'border-orange-200 dark:border-orange-800/40' };
+    }
+    if (textNorm.includes('sushi') || textNorm.includes('japonais') || textNorm.includes('ramen') || textNorm.includes('matsuri') || textNorm.includes('chinois') || textNorm.includes('asian') || textNorm.includes('wok') || textNorm.includes('bo bun') || textNorm.includes('nem')) {
+      return { icon: SushiRollIcon, color: 'bg-[#0f172a]', textColor: 'text-slate-800 dark:text-slate-200', badgeBg: 'bg-slate-100 dark:bg-slate-800', borderColor: 'border-slate-300 dark:border-slate-700' };
+    }
+    if (textNorm.includes('kebab') || textNorm.includes('tacos') || textNorm.includes('otacos') || textNorm.includes('shawarma') || textNorm.includes('chawarma') || textNorm.includes('doner')) {
+      return { icon: KebabWrapIcon, color: 'bg-[#c2410c]', textColor: 'text-[#c2410c] dark:text-orange-400', badgeBg: 'bg-orange-50 dark:bg-orange-950/40', borderColor: 'border-orange-200 dark:border-orange-800/40' };
+    }
+    if (textNorm.includes('creperie') || textNorm.includes('crepe') || textNorm.includes('galette')) {
+      return { icon: CreperieBadgeIcon, color: 'bg-[#ca8a04]', textColor: 'text-[#ca8a04] dark:text-amber-400', badgeBg: 'bg-amber-50 dark:bg-amber-950/40', borderColor: 'border-amber-200 dark:border-amber-800/40' };
+    }
+    if (textNorm.includes('starbucks')) {
+      return { icon: StarbucksIcon, color: 'bg-[#006241]', textColor: 'text-[#006241] dark:text-green-400', badgeBg: 'bg-green-50 dark:bg-green-950/40', borderColor: 'border-green-200 dark:border-green-800/40' };
+    }
+    if (textNorm.includes('cafe') || textNorm.includes('coffee') || textNorm.includes('salon de the') || textNorm.includes('nespresso')) {
+      return { icon: CoffeeShopIcon, color: 'bg-[#78350f]', textColor: 'text-[#78350f] dark:text-amber-400', badgeBg: 'bg-amber-50 dark:bg-amber-950/40', borderColor: 'border-amber-200 dark:border-amber-800/40' };
+    }
+    if (/\b(bar|pub|biere|tapas|apero)\b/.test(textNorm) || textNorm.includes('cave a vin')) {
+      return { icon: BarPubIcon, color: 'bg-[#b45309]', textColor: 'text-[#b45309] dark:text-amber-400', badgeBg: 'bg-amber-50 dark:bg-amber-950/40', borderColor: 'border-amber-200 dark:border-amber-800/40' };
+    }
+    if (textNorm.includes('glacier') || textNorm.includes('glace') || textNorm.includes('amorino') || textNorm.includes('haagen')) {
+      return { icon: IceCreamIcon, color: 'bg-[#ec4899]', textColor: 'text-[#ec4899] dark:text-pink-400', badgeBg: 'bg-pink-50 dark:bg-pink-950/40', borderColor: 'border-pink-200 dark:border-pink-800/40' };
+    }
+    if (textNorm.includes('brasserie') || textNorm.includes('bistrot') || textNorm.includes('bistro') || textNorm.includes('auberge') || textNorm.includes('bouchon') || textNorm.includes('courtepaille') || textNorm.includes('buffalo grill') || textNorm.includes('hippopotamus') || textNorm.includes('flunch') || textNorm.includes('traiteur')) {
+      return { icon: BrasserieIcon, color: 'bg-[#6b21a8]', textColor: 'text-[#6b21a8] dark:text-purple-400', badgeBg: 'bg-purple-50 dark:bg-purple-950/40', borderColor: 'border-purple-200 dark:border-purple-800/40' };
+    }
+  }
+
+  // 4. Check custom icons for the category (matching associated category name or custom icon name)
   const normCategoryName = normalizeCategoryName(categoryName);
   const matchedCustom = customIcons.find(ci => {
     if (!ci.category) return false;
@@ -603,39 +861,7 @@ function resolveCategoryVisualInner(
     return resolveIconAndColor(targetIconId, matchedCustom.color || 'bg-[#3b82f6]', customIcons);
   }
 
-  // 3. Check built-in description brand matching
-  if (description) {
-    const descNorm = description.toLowerCase();
-    if (descNorm.includes('sfr')) {
-      return { icon: SfrIcon, color: 'bg-red-600', textColor: 'text-red-600', badgeBg: 'bg-red-50 dark:bg-red-500/10', borderColor: 'border-red-200' };
-    }
-    if (descNorm.includes('netflix')) {
-      return { icon: NetflixIcon, color: 'bg-black', textColor: 'text-slate-800', badgeBg: 'bg-slate-100', borderColor: 'border-slate-200' };
-    }
-    if (descNorm.includes('total energies')) {
-      return { icon: TotalEnergiesIcon, color: 'bg-yellow-400', textColor: 'text-yellow-600', badgeBg: 'bg-yellow-50', borderColor: 'border-yellow-200' };
-    }
-    if (descNorm.includes('deezer') || descNorm.includes('musique') || descNorm.includes('spotify')) {
-      return { icon: MusicNoteIcon, color: 'bg-purple-500', textColor: 'text-purple-600', badgeBg: 'bg-purple-50', borderColor: 'border-purple-200' };
-    }
-    if (descNorm.includes('poubelles') || descNorm.includes('poubelle') || descNorm.includes('dechet') || descNorm.includes('déchet')) {
-      return { icon: TrashBinIcon, color: 'bg-rose-500', textColor: 'text-rose-600', badgeBg: 'bg-rose-50', borderColor: 'border-rose-200' };
-    }
-    if (descNorm.includes('wifi') || descNorm.includes('internet') || descNorm.includes('fibre') || descNorm.includes('box')) {
-      return { icon: WifiIcon, color: 'bg-indigo-500', textColor: 'text-indigo-600', badgeBg: 'bg-indigo-50', borderColor: 'border-indigo-200' };
-    }
-    if (descNorm.includes('téléphone') || descNorm.includes('telephone') || descNorm.includes('mobile')) {
-      return { icon: PhoneOutlineIcon, color: 'bg-[#0ea5e9]', textColor: 'text-[#0284c7]', badgeBg: 'bg-[#e0f2fe]', borderColor: 'border-sky-200' };
-    }
-    if (descNorm.includes('eau') || descNorm.includes('energie') || descNorm.includes('énergie') || descNorm.includes('ceo')) {
-      return { icon: CeoIcon, color: 'bg-sky-500', textColor: 'text-sky-600', badgeBg: 'bg-sky-50', borderColor: 'border-sky-200' };
-    }
-    if (descNorm.includes('assurance') || descNorm.includes('mutuelle')) {
-      return { icon: ShieldIcon, color: 'bg-emerald-500', textColor: 'text-emerald-600', badgeBg: 'bg-emerald-50', borderColor: 'border-emerald-200' };
-    }
-  }
-
-  // 4. Check direct preset match
+  // 5. Check direct preset match
   if (PRESET_CATEGORY_VISUALS[categoryName]) {
     return PRESET_CATEGORY_VISUALS[categoryName];
   }
