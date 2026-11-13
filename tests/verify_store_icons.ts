@@ -22,6 +22,7 @@ import {
   SubwayIcon,
   DominosPizzaIcon,
   PizzaBadgeIcon,
+  CinemaBadgeIcon,
   SushiRollIcon,
   KebabWrapIcon,
   CreperieBadgeIcon,
@@ -31,7 +32,11 @@ import {
   BrasserieIcon,
   GroceriesIcon,
   RestaurantIcon,
-  FirstAidIcon
+  FirstAidIcon,
+  SfrIcon,
+  DeezerIcon,
+  NetflixIcon,
+  WifiIcon
 } from '../components/icons/CategoryIcons';
 
 console.log('Testing Store and Restaurant Icon Resolution...');
@@ -93,6 +98,9 @@ const testCasesRestaurants = [
   { category: 'Restaurant', description: 'Bistrot Parisien', expectedIcon: BrasserieIcon, label: 'Bistrot Parisien' },
   { category: 'Restaurant', description: 'Brasserie Centrale', expectedIcon: BrasserieIcon, label: 'Brasserie Centrale' },
   { category: 'Restaurant', description: 'Buffalo Grill', expectedIcon: BrasserieIcon, label: 'Buffalo Grill' },
+  { category: 'Divers', description: 'Ticket de cinéma', expectedIcon: CinemaBadgeIcon, label: 'Ticket de cinéma' },
+  { category: 'Divers', description: 'UGC Ciné Cité', expectedIcon: CinemaBadgeIcon, label: 'UGC Ciné Cité' },
+  { category: 'Loisirs', description: 'Pathé Gaumont', expectedIcon: CinemaBadgeIcon, label: 'Pathé Gaumont' },
   { category: 'Restaurant', description: '', expectedIcon: RestaurantIcon, label: 'Restaurant generic fallback' },
 ];
 
@@ -132,5 +140,23 @@ assert.strictEqual(genericCoursesWithCustom.color, 'bg-[#10b981]', 'Generic Cour
 
 console.log('✓ Verified: Store and restaurant matching successfully takes precedence over generic category custom icons!');
 
+// 4. Tests abonnements & services (SFR, Deezer, Netflix, Internet)
+const testCasesSubscriptions = [
+  { category: 'Dép. récurrentes', description: 'SFR', expectedIcon: SfrIcon, label: 'SFR' },
+  { category: 'Dép. récurrentes', description: 'SFR Nathan', expectedIcon: SfrIcon, label: 'SFR Nathan' },
+  { category: 'Dép. récurrentes', description: 'Deezer', expectedIcon: DeezerIcon, label: 'Deezer' },
+  { category: 'Divers', description: 'Deezer Family', expectedIcon: DeezerIcon, label: 'Deezer Family' },
+  { category: 'Dép. récurrentes', description: 'Netflix', expectedIcon: NetflixIcon, label: 'Netflix' },
+  { category: 'Dép. récurrentes', description: 'Internet', expectedIcon: WifiIcon, label: 'Internet' },
+  { category: 'Dép. récurrentes', description: 'Fibre Orange', expectedIcon: WifiIcon, label: 'Fibre' },
+  { category: 'Divers', description: 'Box Wi-Fi', expectedIcon: WifiIcon, label: 'Box Wi-Fi' },
+];
 
-console.log('\nAll 42 store and restaurant icon resolution tests PASSED successfully!');
+for (const tc of testCasesSubscriptions) {
+  const visual = resolveCategoryVisual(tc.category, userFoyerCustomIcons, tc.description, []);
+  assert.strictEqual(visual.icon, tc.expectedIcon, `Failed for ${tc.label}: expected ${tc.expectedIcon.name}, got ${visual.icon.name}`);
+  assert.strictEqual(visual.isFullBadge, true, `Full badge check for ${tc.label}`);
+  console.log(`✓ Subscription/service match verified: ${tc.label} -> ${tc.expectedIcon.name}`);
+}
+
+console.log('\nAll store, restaurant, and subscription icon resolution tests PASSED successfully!');

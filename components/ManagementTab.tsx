@@ -919,7 +919,8 @@ const CategoryManagement: React.FC<{
         if (norm.includes('sfr')) return { iconId: 'sfr', color: 'bg-[#ef4444]' };
         if (norm.includes('netflix')) return { iconId: 'streaming', color: 'bg-black' };
         if (norm.includes('total')) return { iconId: 'energy', color: 'bg-[#f59e0b]' };
-        if (norm.includes('deezer') || norm.includes('musique') || norm.includes('spotify')) return { iconId: 'music', color: 'bg-[#a855f7]' };
+        if (norm.includes('deezer')) return { iconId: 'deezer', color: 'bg-[#a855f7]' };
+        if (norm.includes('musique') || norm.includes('spotify')) return { iconId: 'music', color: 'bg-[#a855f7]' };
         if (norm.includes('poubelle') || norm.includes('dechet')) return { iconId: 'trash', color: 'bg-[#ef4444]' };
         if (norm.includes('wifi') || norm.includes('internet')) return { iconId: 'wifi', color: 'bg-[#6366f1]' };
         if (norm.includes('téléphone') || norm.includes('mobile')) return { iconId: 'phone', color: 'bg-[#0ea5e9]' };

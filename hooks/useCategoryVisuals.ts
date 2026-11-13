@@ -13,6 +13,7 @@ import {
   BirthdayIcon,
   ShieldIcon,
   WifiIcon,
+  DeezerIcon,
   MusicNoteIcon,
   DevicePhoneMobileIcon,
   CeoIcon,
@@ -124,6 +125,7 @@ import {
   SubwayIcon,
   DominosPizzaIcon,
   PizzaBadgeIcon,
+  CinemaBadgeIcon,
   SushiRollIcon,
   KebabWrapIcon,
   CreperieBadgeIcon,
@@ -276,6 +278,7 @@ export const FULL_BADGE_ICONS = new Set<React.FC<any>>([
   TrashBinIcon,
   BirthdayIcon,
   MusicNoteIcon,
+  DeezerIcon,
   SfrIcon,
   ShieldIcon,
   CeoIcon,
@@ -303,6 +306,7 @@ export const FULL_BADGE_ICONS = new Set<React.FC<any>>([
   SubwayIcon,
   DominosPizzaIcon,
   PizzaBadgeIcon,
+  CinemaBadgeIcon,
   SushiRollIcon,
   KebabWrapIcon,
   CreperieBadgeIcon,
@@ -343,6 +347,8 @@ export const PRESET_LOOKUP: Record<string, { icon: React.FC<{ className?: string
   wifiicon: { icon: WifiIcon, defaultColor: 'bg-[#6366f1]' },
   music: { icon: MusicNoteIcon, defaultColor: 'bg-[#a855f7]' },
   musicnoteicon: { icon: MusicNoteIcon, defaultColor: 'bg-[#a855f7]' },
+  deezer: { icon: DeezerIcon, defaultColor: 'bg-[#a238ff]' },
+  deezericon: { icon: DeezerIcon, defaultColor: 'bg-[#a238ff]' },
   phone: { icon: DevicePhoneMobileIcon, defaultColor: 'bg-[#0ea5e9]' },
   devicephonemobileicon: { icon: DevicePhoneMobileIcon, defaultColor: 'bg-[#0ea5e9]' },
   water: { icon: CeoIcon, defaultColor: 'bg-[#0ea5e9]' },
@@ -560,6 +566,8 @@ export const PRESET_LOOKUP: Record<string, { icon: React.FC<{ className?: string
   dominospizzaicon: { icon: DominosPizzaIcon, defaultColor: 'bg-[#006491]' },
   pizzabadge: { icon: PizzaBadgeIcon, defaultColor: 'bg-[#ea580c]' },
   pizzabadgeicon: { icon: PizzaBadgeIcon, defaultColor: 'bg-[#ea580c]' },
+  cinemabadge: { icon: CinemaBadgeIcon, defaultColor: 'bg-[#dc2626]' },
+  cinemabadgeicon: { icon: CinemaBadgeIcon, defaultColor: 'bg-[#dc2626]' },
   sushiroll: { icon: SushiRollIcon, defaultColor: 'bg-[#0f172a]' },
   sushirollicon: { icon: SushiRollIcon, defaultColor: 'bg-[#0f172a]' },
   kebabwrap: { icon: KebabWrapIcon, defaultColor: 'bg-[#c2410c]' },
@@ -733,7 +741,10 @@ function resolveCategoryVisualInner(
     if (textNorm.includes('total energies') || textNorm.includes('totalenergies')) {
       return { icon: TotalEnergiesIcon, color: 'bg-yellow-400', textColor: 'text-yellow-600', badgeBg: 'bg-yellow-50', borderColor: 'border-yellow-200' };
     }
-    if (textNorm.includes('deezer') || textNorm.includes('spotify') || textNorm.includes('musique')) {
+    if (textNorm.includes('deezer')) {
+      return { icon: DeezerIcon, color: 'bg-[#a238ff]', textColor: 'text-[#a238ff] dark:text-purple-400', badgeBg: 'bg-purple-50 dark:bg-purple-950/40', borderColor: 'border-purple-200 dark:border-purple-800/40' };
+    }
+    if (textNorm.includes('spotify') || textNorm.includes('musique')) {
       return { icon: MusicNoteIcon, color: 'bg-purple-500', textColor: 'text-purple-600', badgeBg: 'bg-purple-50', borderColor: 'border-purple-200' };
     }
     if (textNorm.includes('poubelle') || textNorm.includes('dechet')) {
@@ -827,7 +838,7 @@ function resolveCategoryVisualInner(
     if (textNorm.includes('pizza') || textNorm.includes('pizzeria') || textNorm.includes('del arte')) {
       return { icon: PizzaBadgeIcon, color: 'bg-[#ea580c]', textColor: 'text-[#ea580c] dark:text-orange-400', badgeBg: 'bg-orange-50 dark:bg-orange-950/40', borderColor: 'border-orange-200 dark:border-orange-800/40' };
     }
-    if (textNorm.includes('sushi') || textNorm.includes('japonais') || textNorm.includes('ramen') || textNorm.includes('matsuri') || textNorm.includes('chinois') || textNorm.includes('asian') || textNorm.includes('wok') || textNorm.includes('bo bun') || textNorm.includes('nem')) {
+    if (textNorm.includes('sushi') || textNorm.includes('japonais') || textNorm.includes('ramen') || textNorm.includes('matsuri') || textNorm.includes('chinois') || textNorm.includes('asian') || textNorm.includes('wok') || textNorm.includes('bo bun') || /\bnems?\b/.test(textNorm)) {
       return { icon: SushiRollIcon, color: 'bg-[#0f172a]', textColor: 'text-slate-800 dark:text-slate-200', badgeBg: 'bg-slate-100 dark:bg-slate-800', borderColor: 'border-slate-300 dark:border-slate-700' };
     }
     if (textNorm.includes('kebab') || textNorm.includes('tacos') || textNorm.includes('otacos') || textNorm.includes('shawarma') || textNorm.includes('chawarma') || textNorm.includes('doner')) {
@@ -850,6 +861,9 @@ function resolveCategoryVisualInner(
     }
     if (textNorm.includes('brasserie') || textNorm.includes('bistrot') || textNorm.includes('bistro') || textNorm.includes('auberge') || textNorm.includes('bouchon') || textNorm.includes('courtepaille') || textNorm.includes('buffalo grill') || textNorm.includes('hippopotamus') || textNorm.includes('flunch') || textNorm.includes('traiteur')) {
       return { icon: BrasserieIcon, color: 'bg-[#6b21a8]', textColor: 'text-[#6b21a8] dark:text-purple-400', badgeBg: 'bg-purple-50 dark:bg-purple-950/40', borderColor: 'border-purple-200 dark:border-purple-800/40' };
+    }
+    if (textNorm.includes('cinema') || /\bcine\b/.test(textNorm) || textNorm.includes('ugc') || textNorm.includes('pathe') || textNorm.includes('gaumont') || /\bcgr\b/.test(textNorm) || textNorm.includes('kinepolis') || /\bmk2\b/.test(textNorm) || textNorm.includes('megarama')) {
+      return { icon: CinemaBadgeIcon, color: 'bg-[#dc2626]', textColor: 'text-[#dc2626] dark:text-red-400', badgeBg: 'bg-red-50 dark:bg-red-950/40', borderColor: 'border-red-200 dark:border-red-800/40' };
     }
   }
 
@@ -916,7 +930,10 @@ function resolveCategoryVisualInner(
   if (norm.includes('total')) {
     return { icon: TotalEnergiesIcon, color: 'bg-yellow-400', textColor: 'text-yellow-600', badgeBg: 'bg-yellow-50', borderColor: 'border-yellow-200' };
   }
-  if (norm.includes('deezer') || norm.includes('musique') || norm.includes('spotify')) {
+  if (norm.includes('deezer')) {
+    return { icon: DeezerIcon, color: 'bg-[#a238ff]', textColor: 'text-[#a238ff] dark:text-purple-400', badgeBg: 'bg-purple-50 dark:bg-purple-950/40', borderColor: 'border-purple-200 dark:border-purple-800/40' };
+  }
+  if (norm.includes('musique') || norm.includes('spotify')) {
     return { icon: MusicNoteIcon, color: 'bg-purple-500', textColor: 'text-purple-600', badgeBg: 'bg-purple-50', borderColor: 'border-purple-200' };
   }
   if (norm.includes('poubelle') || norm.includes('dechet') || norm.includes('déchet')) {

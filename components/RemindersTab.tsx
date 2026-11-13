@@ -18,8 +18,10 @@ import {
     PalmTreeIcon,
     ShieldIcon,
     WifiIcon,
+    DeezerIcon,
     MusicNoteIcon,
     SfrIcon,
+    NetflixIcon,
     CeoIcon,
     TotalEnergiesIcon,
     TrashBinIcon,
@@ -58,11 +60,8 @@ export const getReminderVisual = (reminder: { description: string; category: str
     if (lower.includes('netflix')) {
         return {
             icon: () => (
-                <div className="w-10 h-10 rounded-2xl bg-pink-50 dark:bg-pink-950/60 text-pink-500 dark:text-pink-400 flex items-center justify-center">
-                    <svg className="w-5 h-5 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <rect x="2" y="4" width="20" height="13" rx="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 21h8m-4-4v4" />
-                    </svg>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center">
+                    <NetflixIcon className="w-10 h-10" />
                 </div>
             )
         };
@@ -90,7 +89,16 @@ export const getReminderVisual = (reminder: { description: string; category: str
             )
         };
     }
-    if (lower.includes('deezer') || lower.includes('spotify') || lower.includes('musique')) {
+    if (lower.includes('deezer')) {
+        return {
+            icon: () => (
+                <div className="w-10 h-10 rounded-full flex items-center justify-center">
+                    <DeezerIcon className="w-10 h-10" />
+                </div>
+            )
+        };
+    }
+    if (lower.includes('spotify') || lower.includes('musique')) {
         return {
             icon: () => (
                 <div className="w-10 h-10 rounded-2xl bg-fuchsia-50 dark:bg-fuchsia-950/60 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center">
@@ -102,8 +110,8 @@ export const getReminderVisual = (reminder: { description: string; category: str
     if (lower.includes('sfr')) {
         return {
             icon: () => (
-                <div className="w-10 h-10 rounded-2xl bg-red-50 dark:bg-red-950/60 flex items-center justify-center">
-                    <SfrIcon className="w-6 h-6" />
+                <div className="w-10 h-10 rounded-full flex items-center justify-center">
+                    <SfrIcon className="w-10 h-10" />
                 </div>
             )
         };
@@ -111,8 +119,8 @@ export const getReminderVisual = (reminder: { description: string; category: str
     if (lower.includes('internet') || lower.includes('box') || lower.includes('fibre') || lower.includes('wifi')) {
         return {
             icon: () => (
-                <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-                    <WifiIcon className="w-6 h-6" />
+                <div className="w-10 h-10 rounded-full flex items-center justify-center">
+                    <WifiIcon className="w-10 h-10" />
                 </div>
             )
         };

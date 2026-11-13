@@ -101,13 +101,28 @@ export const ShieldIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 );
 
 export const WifiIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <circle cx="12" cy="12" r="12" fill="#6366F1"/>
-    <path d="M5 10c3-3.5 11-3.5 14 0" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-    <path d="M8 13.5c2-2.5 6-2.5 8 0" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-    <path d="M10.5 16.5c1-1 2.5-1 3.5 0" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-    <circle cx="12.2" cy="20.2" r="1.5" fill="white"/>
-  </svg>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#faf3e1] shadow-2xs`}>
+    <img
+      src="/brand-logos/internet.jpg"
+      alt="Internet"
+      className="w-full h-full object-cover scale-[1.18]"
+      loading="lazy"
+    />
+  </div>
+);
+
+export const DeezerIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1.5 shadow-2xs`}>
+    <img
+      src="/brand-logos/deezer.png"
+      alt="Deezer"
+      className="w-full h-full object-contain"
+      loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/deezer.com";
+      }}
+    />
+  </div>
 );
 
 export const MusicNoteIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
@@ -182,27 +197,17 @@ export const CeoIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 );
 
 export const SfrIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className={className}>
-        <defs>
-            <radialGradient id="sfrRedGradient" cx="50%" cy="40%" r="60%" fx="50%" fy="40%">
-                <stop offset="0%" stopColor="#f8574e"/>
-                <stop offset="100%" stopColor="#d41d14"/>
-            </radialGradient>
-        </defs>
-        <circle cx="32" cy="32" r="30" fill="url(#sfrRedGradient)"/>
-        <text
-            x="32"
-            y="32"
-            fontFamily="'Arial Black', 'Arial Bold', sans-serif"
-            fontSize="24"
-            fontWeight="900"
-            fill="white"
-            textAnchor="middle"
-            dominantBaseline="middle"
-        >
-            SFR
-        </text>
-    </svg>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-[15%] shadow-2xs`}>
+    <img
+      src="/brand-logos/sfr.png"
+      alt="SFR"
+      className="w-full h-full object-contain rounded-md"
+      loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/sfr.fr";
+      }}
+    />
+  </div>
 );
 
 export const TotalEnergiesIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
@@ -220,30 +225,17 @@ export const TrashBinIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => 
 );
 
 export const NetflixIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <defs>
-      <radialGradient id="blackGradient" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(50 50) rotate(90) scale(48)">
-        <stop offset="0%" stopColor="#1A1A1A" />
-        <stop offset="100%" stopColor="#000000" />
-      </radialGradient>
-      <linearGradient id="redSide" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#B20710" />
-        <stop offset="100%" stopColor="#E50914" />
-      </linearGradient>
-      <linearGradient id="redDiagonal" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#E50914" />
-        <stop offset="100%" stopColor="#B20710" />
-      </linearGradient>
-      <filter id="ribbonShadow" x="0" y="0" width="100%" height="100%">
-        <feDropShadow dx="-2" dy="0" stdDeviation="2" floodOpacity="0.6"/>
-      </filter>
-    </defs>
-    <circle cx="50" cy="50" r="48" fill="url(#blackGradient)" stroke="#333" strokeWidth="0.5" />
-    <path d="M30 22H41V76C38 74.5 33 74.5 30 76V22Z" fill="url(#redSide)" />
-    <path d="M59 22H70V76C67 74.5 62 74.5 59 76V22Z" fill="url(#redSide)" />
-    <path d="M30 22L70 76V62L41 22H30Z" fill="url(#redDiagonal)" filter="url(#ribbonShadow)" />
-    <circle cx="50" cy="50" r="47.5" stroke="white" strokeOpacity="0.1" fill="none" />
-  </svg>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-black shadow-2xs`}>
+    <img
+      src="/brand-logos/netflix.png"
+      alt="Netflix"
+      className="w-full h-full object-cover scale-105"
+      loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/netflix.com";
+      }}
+    />
+  </div>
 );
 
 export const PillIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
@@ -1252,17 +1244,25 @@ export const DominosPizzaIcon: React.FC<IconProps> = ({ className = "h-5 w-5" })
 );
 
 export const PizzaBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <circle cx="32" cy="32" r="30" fill="#c2410c"/>
-    <g transform="translate(10, 10)">
-      <path d="M22 4 L38 38 C34 42 10 42 6 38 Z" fill="#fef08a" stroke="#ffffff" strokeWidth="2" strokeLinejoin="round"/>
-      <path d="M6 38 Q22 43 38 38" stroke="#d97706" strokeWidth="4.5" fill="none" strokeLinecap="round"/>
-      <circle cx="22" cy="18" r="2.8" fill="#dc2626"/>
-      <circle cx="16" cy="28" r="2.5" fill="#dc2626"/>
-      <circle cx="27" cy="29" r="2.5" fill="#dc2626"/>
-      <circle cx="24" cy="24" r="1.5" fill="#16a34a"/>
-    </g>
-  </svg>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#fffbeb] shadow-2xs`}>
+    <img
+      src="/brand-logos/pizza.jpg"
+      alt="Pizza"
+      className="w-full h-full object-cover scale-115"
+      loading="lazy"
+    />
+  </div>
+);
+
+export const CinemaBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#fffbeb] shadow-2xs`}>
+    <img
+      src="/brand-logos/cinema.jpg"
+      alt="Ticket de cinéma"
+      className="w-full h-full object-cover scale-112"
+      loading="lazy"
+    />
+  </div>
 );
 
 export const SushiRollIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (

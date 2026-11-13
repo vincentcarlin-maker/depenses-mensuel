@@ -10,7 +10,7 @@ import {
     BirthdayIcon,
     ShieldIcon,
     WifiIcon,
-    MusicNoteIcon,
+    DeezerIcon,
     SfrIcon,
     CeoIcon,
     TotalEnergiesIcon,
@@ -42,9 +42,9 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
   const isChristmas = (expense.category === 'Divers' && /no[uëe]l/i.test(expense.description)) || (expense.category === 'Cadeau' && /no[uëe]l/i.test(expense.description));
   const isBirthday = /anniversaire/i.test(expense.description);
   const isMutuelle = lowerCaseDesc.includes('mutuelle');
-  const isInternet = lowerCaseDesc.includes('internet');
+  const isInternet = lowerCaseDesc.includes('internet') || lowerCaseDesc.includes('wifi') || lowerCaseDesc.includes('fibre') || /\bbox\b/.test(lowerCaseDesc);
   const isDeezer = lowerCaseDesc.includes('deezer');
-  const isSfr = lowerCaseDesc.includes('sfr nathan');
+  const isSfr = lowerCaseDesc.includes('sfr');
   const isCeo = lowerCaseDesc.includes('ceo');
   const isTotalEnergies = lowerCaseDesc.includes('total energies');
   const isPoubelles = lowerCaseDesc.includes('poubelles');
@@ -60,30 +60,39 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
     isFullBadge = false;
   } else if (isBirthday) {
     IconComponent = BirthdayIcon;
+    isFullBadge = true;
   } else if (isInternet) {
     IconComponent = WifiIcon;
     iconColorClass = '';
+    isFullBadge = true;
   } else if (isPoubelles) {
     IconComponent = TrashBinIcon;
     iconColorClass = '';
+    isFullBadge = true;
   } else if (isDeezer) {
-    IconComponent = MusicNoteIcon;
+    IconComponent = DeezerIcon;
     iconColorClass = '';
+    isFullBadge = true;
   } else if (isSfr) {
     IconComponent = SfrIcon;
     iconColorClass = '';
+    isFullBadge = true;
   } else if (isMutuelle) {
     IconComponent = ShieldIcon;
     iconColorClass = '';
+    isFullBadge = true;
   } else if (isCeo) {
     IconComponent = CeoIcon;
     iconColorClass = '';
+    isFullBadge = true;
   } else if (isTotalEnergies) {
     IconComponent = TotalEnergiesIcon;
     iconColorClass = '';
+    isFullBadge = true;
   } else if (isNetflix) {
     IconComponent = NetflixIcon;
     iconColorClass = '';
+    isFullBadge = true;
   }
 
   const hasSubtractions = expense.category === 'Courses' && expense.subtracted_items && expense.subtracted_items.length > 0;

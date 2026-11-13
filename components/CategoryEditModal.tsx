@@ -14,6 +14,7 @@ import {
   BirthdayIcon,
   ShieldIcon,
   WifiIcon,
+  DeezerIcon,
   MusicNoteIcon,
   DevicePhoneMobileIcon,
   CeoIcon,
@@ -115,7 +116,9 @@ import {
   FineTicketIcon,
   RetirementIcon,
   AmazonIcon,
-  BoulangerieBadgeIcon
+  BoulangerieBadgeIcon,
+  PizzaBadgeIcon,
+  CinemaBadgeIcon
 } from './icons/CategoryIcons';
 import { CustomCategoryIcon } from '../hooks/useCustomCategoryIcons';
 import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
@@ -160,6 +163,7 @@ export const PRESET_CATEGORY_ICONS: CategoryIconDef[] = [
   { id: 'utensils', name: 'UtensilsOutlineIcon', label: 'Couverts & Table', icon: UtensilsOutlineIcon, theme: 'food', keywords: ['fourchette', 'couteau', 'gastronomie', 'manger', 'repas'] },
   { id: 'fastfood', name: 'FastFoodIcon', label: 'Fast food & Burger', icon: FastFoodIcon, theme: 'food', keywords: ['burger', 'sandwich', 'kebab', 'tacos', 'snack'] },
   { id: 'pizza', name: 'PizzaSliceIcon', label: 'Pizza & Traiteur', icon: PizzaSliceIcon, theme: 'food', keywords: ['pizza', 'pizzeria', 'italien', 'slice'] },
+  { id: 'pizzabadge', name: 'PizzaBadgeIcon', label: 'Pizza (Couleur)', icon: PizzaBadgeIcon, theme: 'food', keywords: ['pizza', 'pizzeria', 'italien', 'marguerita', 'pepperoni'] },
   { id: 'meatfish', name: 'MeatFishIcon', label: 'Boucherie & Poisson', icon: MeatFishIcon, theme: 'food', keywords: ['viande', 'steak', 'boucher', 'poissonnerie', 'saumon'] },
   { id: 'groceryfruit', name: 'GroceryFruitIcon', label: 'Primeur & Fruits', icon: GroceryFruitIcon, theme: 'food', keywords: ['pomme', 'fruits', 'légumes', 'marché', 'bio'] },
   { id: 'icecream', name: 'IceCreamIcon', label: 'Glaces & Desserts', icon: IceCreamIcon, theme: 'food', keywords: ['glace', 'dessert', 'gourmandise', 'chocolat', 'sucré'] },
@@ -227,6 +231,7 @@ export const PRESET_CATEGORY_ICONS: CategoryIconDef[] = [
   { id: 'palm', name: 'PalmOutlineIcon', label: 'Palmier & Évasion', icon: PalmOutlineIcon, theme: 'leisure', keywords: ['vacances', 'soleil', 'détente', 'palmier'] },
   { id: 'hotel', name: 'HotelIcon', label: 'Hôtel & Séjour', icon: HotelIcon, theme: 'leisure', keywords: ['hébergement', 'chambre', 'airbnb', 'nuitée', 'resort'] },
   { id: 'cinema', name: 'CinemaIcon', label: 'Cinéma & Spectacles', icon: CinemaIcon, theme: 'leisure', keywords: ['film', 'salle', 'popcorn', 'théâtre', 'spectacle'] },
+  { id: 'cinemabadge', name: 'CinemaBadgeIcon', label: 'Ticket de Cinéma', icon: CinemaBadgeIcon, theme: 'leisure', keywords: ['cinéma', 'ticket', 'billet', 'ugc', 'pathé', 'gaumont', 'film'] },
   { id: 'concertfestival', name: 'ConcertFestivalIcon', label: 'Concert & Billets', icon: ConcertFestivalIcon, theme: 'leisure', keywords: ['musique live', 'festival', 'spectacle', 'billetterie'] },
   { id: 'guitar', name: 'GuitarMusicIcon', label: 'Musique & Instrument', icon: GuitarMusicIcon, theme: 'leisure', keywords: ['guitare', 'piano', 'cours musique', 'partition', 'groupe'] },
   { id: 'paintpalette', name: 'PaintPaletteIcon', label: 'Art & Création', icon: PaintPaletteIcon, theme: 'leisure', keywords: ['peinture', 'dessin', 'musée', 'expo', 'arts plastiques'] },
@@ -245,9 +250,10 @@ export const PRESET_CATEGORY_ICONS: CategoryIconDef[] = [
   // 6. TECH & ABONNEMENTS (tech)
   { id: 'mandatory', name: 'MandatoryIcon', label: 'Dép. Récurrentes', icon: MandatoryIcon, theme: 'tech', keywords: ['abonnement', 'mensuel', 'charge', 'fixe', 'prélèvement'] },
   { id: 'streaming', name: 'NetflixIcon', label: 'Streaming (Netflix)', icon: NetflixIcon, theme: 'tech', keywords: ['séries', 'films', 'vidéo', 'plateforme', 'netflix', 'disney'] },
+  { id: 'deezer', name: 'DeezerIcon', label: 'Deezer', icon: DeezerIcon, theme: 'tech', keywords: ['deezer', 'musique', 'streaming', 'audio'] },
   { id: 'tvsubscription', name: 'TvSubscriptionIcon', label: 'Télé & Chaînes', icon: TvSubscriptionIcon, theme: 'tech', keywords: ['télévision', 'box tv', 'bouquet', 'canal', 'iptv'] },
-  { id: 'music', name: 'MusicNoteIcon', label: 'Musique & Streaming', icon: MusicNoteIcon, theme: 'tech', keywords: ['spotify', 'deezer', 'musique', 'audio', 'apple music'] },
-  { id: 'wifi', name: 'WifiIcon', label: 'Internet & Box', icon: WifiIcon, theme: 'tech', keywords: ['box', 'fibre', 'adsl', 'connexion', 'routeur', 'opérateur'] },
+  { id: 'music', name: 'MusicNoteIcon', label: 'Musique & Streaming', icon: MusicNoteIcon, theme: 'tech', keywords: ['spotify', 'musique', 'audio', 'apple music'] },
+  { id: 'wifi', name: 'WifiIcon', label: 'Internet & Box', icon: WifiIcon, theme: 'tech', keywords: ['box', 'fibre', 'adsl', 'connexion', 'routeur', 'internet', 'opérateur'] },
   { id: 'phone', name: 'DevicePhoneMobileIcon', label: 'Téléphone / Mobile', icon: DevicePhoneMobileIcon, theme: 'tech', keywords: ['smartphone', 'forfait', 'gsm', 'mobile', 'iphone'] },
   { id: 'phoneoutline', name: 'PhoneOutlineIcon', label: 'Appels & Ligne', icon: PhoneOutlineIcon, theme: 'tech', keywords: ['télécoms', 'opérateur', 'téléphone', 'fixe'] },
   { id: 'computerlaptop', name: 'ComputerLaptopIcon', label: 'Ordinateur & PC', icon: ComputerLaptopIcon, theme: 'tech', keywords: ['pc', 'macbook', 'informatique', 'laptop', 'écran'] },
@@ -517,7 +523,9 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
         defaultIcon = 'shield'; defaultColor = 'bg-[#10b981]';
       } else if (norm.includes('internet') || norm.includes('wifi') || norm.includes('box')) {
         defaultIcon = 'wifi'; defaultColor = 'bg-[#6366f1]';
-      } else if (norm.includes('musique') || norm.includes('spotify') || norm.includes('deezer')) {
+      } else if (norm.includes('deezer')) {
+        defaultIcon = 'deezer'; defaultColor = 'bg-[#a855f7]';
+      } else if (norm.includes('musique') || norm.includes('spotify')) {
         defaultIcon = 'music'; defaultColor = 'bg-[#a855f7]';
       } else if (norm.includes('téléphone') || norm.includes('mobile') || norm.includes('forfait')) {
         defaultIcon = 'phone'; defaultColor = 'bg-[#0ea5e9]';
