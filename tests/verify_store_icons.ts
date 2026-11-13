@@ -36,7 +36,8 @@ import {
   SfrIcon,
   DeezerIcon,
   NetflixIcon,
-  WifiIcon
+  WifiIcon,
+  TotalEnergiesIcon
 } from '../components/icons/CategoryIcons';
 
 console.log('Testing Store and Restaurant Icon Resolution...');
@@ -150,6 +151,9 @@ const testCasesSubscriptions = [
   { category: 'Dép. récurrentes', description: 'Internet', expectedIcon: WifiIcon, label: 'Internet' },
   { category: 'Dép. récurrentes', description: 'Fibre Orange', expectedIcon: WifiIcon, label: 'Fibre' },
   { category: 'Divers', description: 'Box Wi-Fi', expectedIcon: WifiIcon, label: 'Box Wi-Fi' },
+  { category: 'Dép. récurrentes', description: 'TotalEnergies', expectedIcon: TotalEnergiesIcon, label: 'TotalEnergies' },
+  { category: 'Dép. récurrentes', description: 'Total Énergie', expectedIcon: TotalEnergiesIcon, label: 'Total Énergie' },
+  { category: 'Carburant', description: 'Total Access', expectedIcon: TotalEnergiesIcon, label: 'Total Access' },
 ];
 
 for (const tc of testCasesSubscriptions) {

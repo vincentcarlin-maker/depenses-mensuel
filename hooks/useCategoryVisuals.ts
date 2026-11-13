@@ -738,8 +738,8 @@ function resolveCategoryVisualInner(
     if (textNorm.includes('netflix')) {
       return { icon: NetflixIcon, color: 'bg-black', textColor: 'text-slate-800', badgeBg: 'bg-slate-100', borderColor: 'border-slate-200' };
     }
-    if (textNorm.includes('total energies') || textNorm.includes('totalenergies')) {
-      return { icon: TotalEnergiesIcon, color: 'bg-yellow-400', textColor: 'text-yellow-600', badgeBg: 'bg-yellow-50', borderColor: 'border-yellow-200' };
+    if (textNorm.includes('total energie') || textNorm.includes('totalenergie') || textNorm === 'total' || textNorm.startsWith('total ')) {
+      return { icon: TotalEnergiesIcon, color: 'bg-red-600', textColor: 'text-red-600', badgeBg: 'bg-red-50 dark:bg-red-950/40', borderColor: 'border-red-200 dark:border-red-800/40' };
     }
     if (textNorm.includes('deezer')) {
       return { icon: DeezerIcon, color: 'bg-[#a238ff]', textColor: 'text-[#a238ff] dark:text-purple-400', badgeBg: 'bg-purple-50 dark:bg-purple-950/40', borderColor: 'border-purple-200 dark:border-purple-800/40' };

@@ -143,11 +143,11 @@ export const getReminderVisual = (reminder: { description: string; category: str
             )
         };
     }
-    if (lower.includes('total energies') || lower.includes('edf') || lower.includes('electricité') || lower.includes('électricité')) {
+    if (/total\s*[eé]nergie/i.test(lower) || lower.trim() === 'total' || lower.startsWith('total ') || lower.includes('edf') || lower.includes('electricité') || lower.includes('électricité')) {
         return {
             icon: () => (
-                <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center">
-                    <TotalEnergiesIcon className="w-6 h-6" />
+                <div className="w-10 h-10 rounded-full flex items-center justify-center">
+                    <TotalEnergiesIcon className="w-10 h-10" />
                 </div>
             )
         };

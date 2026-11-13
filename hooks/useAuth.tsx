@@ -336,8 +336,13 @@ export const useAuth = () => {
         }
     }, []);
 
+    const profilesRef = useRef<Profile[]>(profiles);
+    useEffect(() => {
+        profilesRef.current = profiles;
+    }, [profiles]);
+
     // Helper to resolve an authenticated Supabase user to application profile & foyer
-    const resolveAuthUser = useCallback(async (authUser: any) => {
+    const resolveAuthUser = useCallback(async (authUser: any, isFreshSignIn = false) => {
         if (!authUser) {
             setUser(null);
             setUsername(null);
@@ -347,26 +352,30 @@ export const useAuth = () => {
         }
 
         try {
+            const userEmail = (authUser.email || '').toLowerCase().trim();
+            const metadata = authUser.user_metadata || {};
+
             // 1. Fetch from public.profiles
             let profile: Profile | null = null;
-            const { data: dbProfile } = await (supabase.from('profiles') as any)
-                .select('*')
-                .eq('id', authUser.id)
-                .maybeSingle();
+            try {
+                const { data: dbProfile } = await (supabase.from('profiles') as any)
+                    .select('*')
+                    .eq('id', authUser.id)
+                    .maybeSingle();
 
-            if (dbProfile) {
-                profile = {
-                    id: dbProfile.id,
-                    username: dbProfile.username,
-                    user: dbProfile.display_name,
-                    email: dbProfile.email || authUser.email,
-                    color: dbProfile.color,
-                    is_superadmin: Boolean(dbProfile.is_superadmin)
-                };
-            } else {
-                // Check if user email is strictly Vincent's registered admin email
-                const metadata = authUser.user_metadata || {};
-                const userEmail = (authUser.email || '').toLowerCase().trim();
+                if (dbProfile) {
+                    profile = {
+                        id: dbProfile.id,
+                        username: dbProfile.username,
+                        user: dbProfile.display_name,
+                        email: dbProfile.email || authUser.email,
+                        color: dbProfile.color,
+                        is_superadmin: Boolean(dbProfile.is_superadmin)
+                    };
+                }
+            } catch {}
+
+            if (!profile) {
                 const isVincent = userEmail === 'vincent.carlin@sfr.fr' || userEmail.includes('vincent');
                 const isSophie = userEmail.includes('sophie');
 
@@ -374,28 +383,73 @@ export const useAuth = () => {
                 const suggestedUser = rawUser;
                 const suggestedName = isVincent ? 'Vincent' : (isSophie || rawUser === 'sophie' ? 'Sophie' : (metadata.full_name || metadata.name || (rawUser.charAt(0).toUpperCase() + rawUser.slice(1))));
 
+                // Match against local profiles & INITIAL_PROFILES first
+                const allLocalProfiles = [...profilesRef.current, ...INITIAL_PROFILES];
+                let matchedProfile = allLocalProfiles.find(p =>
+                    (userEmail && p.email?.toLowerCase().trim() === userEmail) ||
+                    p.username?.toLowerCase().trim() === suggestedUser
+                );
+
+                // Fallback lookup in push_subscriptions if foyer_id isn't known yet
+                if (!matchedProfile?.foyer_id && (userEmail || suggestedUser)) {
+                    try {
+                        const lookupIds = [
+                            userEmail ? `profile_email_${userEmail}` : null,
+                            suggestedUser ? `profile_${suggestedUser}` : null
+                        ].filter(Boolean) as string[];
+                        if (lookupIds.length > 0) {
+                            const { data: subRows } = await (supabase.from('push_subscriptions') as any)
+                                .select('subscription')
+                                .in('user_id', lookupIds)
+                                .limit(1);
+                            const subProfile = subRows?.[0]?.subscription;
+                            if (subProfile && typeof subProfile === 'object') {
+                                matchedProfile = {
+                                    ...matchedProfile,
+                                    ...subProfile,
+                                    username: subProfile.username || suggestedUser,
+                                    user: subProfile.user || suggestedName,
+                                    email: subProfile.email || authUser.email
+                                };
+                            }
+                        }
+                    } catch {}
+                }
+
                 profile = {
                     id: authUser.id,
-                    username: suggestedUser,
-                    user: suggestedName,
-                    email: authUser.email,
-                    is_superadmin: isVincent
+                    username: matchedProfile?.username || suggestedUser,
+                    user: matchedProfile?.user || suggestedName,
+                    email: authUser.email || matchedProfile?.email,
+                    color: matchedProfile?.color,
+                    foyer_id: matchedProfile?.foyer_id || (isVincent || isSophie ? DEFAULT_FOYER_ID : undefined),
+                    foyer_name: matchedProfile?.foyer_name,
+                    foyer_code: matchedProfile?.foyer_code,
+                    is_superadmin: isVincent || Boolean(matchedProfile?.is_superadmin)
                 };
 
                 // Auto-provision profile row in database if possible
                 try {
                     await (supabase.from('profiles') as any).upsert({
                         id: authUser.id,
-                        username: suggestedUser,
-                        display_name: suggestedName,
+                        username: profile.username,
+                        display_name: String(profile.user),
                         email: authUser.email,
-                        is_superadmin: isVincent
+                        is_superadmin: profile.is_superadmin
                     });
                 } catch {}
             }
 
             // 2. Fetch foyer membership
-            let targetFoyerId = getStoredActiveFoyerId() || DEFAULT_FOYER_ID;
+            let rawStoredFoyerId: string | null = null;
+            try {
+                rawStoredFoyerId = localStorage.getItem('duobudget_active_foyer_id');
+            } catch {}
+
+            let targetFoyerId = isFreshSignIn
+                ? (profile.foyer_id || rawStoredFoyerId || DEFAULT_FOYER_ID)
+                : (rawStoredFoyerId || profile.foyer_id || DEFAULT_FOYER_ID);
+
             try {
                 const { data: memberRows } = await (supabase.from('foyer_members') as any)
                     .select('foyer_id, role')
@@ -407,6 +461,7 @@ export const useAuth = () => {
                 }
             } catch {}
 
+            profile = { ...profile, foyer_id: targetFoyerId };
             const loadedFoyer = await fetchFoyerById(targetFoyerId);
             const isVincent = Boolean(profile.is_superadmin) || profile.username.toLowerCase() === 'vincent';
 
@@ -442,7 +497,7 @@ export const useAuth = () => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (isMounted) {
                 if (session?.user) {
-                    resolveAuthUser(session.user).finally(() => {
+                    resolveAuthUser(session.user, false).finally(() => {
                         if (isMounted) setIsLoading(false);
                     });
                 } else {
@@ -456,7 +511,7 @@ export const useAuth = () => {
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (isMounted) {
                 if ((event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') && session?.user) {
-                    await resolveAuthUser(session.user);
+                    await resolveAuthUser(session.user, event === 'SIGNED_IN');
                 } else if (event === 'SIGNED_OUT') {
                     setUser(null);
                     setUsername(null);
@@ -475,6 +530,7 @@ export const useAuth = () => {
     // Logout
     const logout = useCallback(async () => {
         saveStoredActiveSession(null);
+        setStoredActiveFoyerId(DEFAULT_FOYER_ID);
         try {
             await supabase.auth.signOut();
         } catch {
@@ -486,6 +542,7 @@ export const useAuth = () => {
         setUser(null);
         setUsername(null);
         setCurrentUserProfile(null);
+        setCurrentFoyer(applyCustomColorsToFoyer(DEFAULT_FOYER));
         setIsAdmin(false);
         setPendingOAuthUser(null);
     }, [user]);
@@ -568,7 +625,8 @@ export const useAuth = () => {
                 setUsername(matchingProfile.username);
                 setCurrentUserProfile(matchingProfile);
                 setIsAdmin(isVincent);
-                const foyerId = getStoredActiveFoyerId() || DEFAULT_FOYER_ID;
+                const foyerId = matchingProfile.foyer_id || getStoredActiveFoyerId() || DEFAULT_FOYER_ID;
+                setStoredActiveFoyerId(foyerId);
                 const foyer = await fetchFoyerById(foyerId);
                 if (foyer) {
                     setCurrentFoyer(foyer);
@@ -616,7 +674,8 @@ export const useAuth = () => {
                     setUsername(matchingProfile.username);
                     setCurrentUserProfile(matchingProfile);
                     setIsAdmin(isVincent);
-                    const foyerId = getStoredActiveFoyerId() || DEFAULT_FOYER_ID;
+                    const foyerId = matchingProfile.foyer_id || getStoredActiveFoyerId() || DEFAULT_FOYER_ID;
+                    setStoredActiveFoyerId(foyerId);
                     const foyer = await fetchFoyerById(foyerId);
                     if (foyer) {
                         setCurrentFoyer(foyer);

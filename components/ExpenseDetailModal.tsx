@@ -46,7 +46,7 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
   const isDeezer = lowerCaseDesc.includes('deezer');
   const isSfr = lowerCaseDesc.includes('sfr');
   const isCeo = lowerCaseDesc.includes('ceo');
-  const isTotalEnergies = lowerCaseDesc.includes('total energies');
+  const isTotalEnergies = /total\s*[eé]nergie/i.test(lowerCaseDesc) || lowerCaseDesc.trim() === 'total' || lowerCaseDesc.startsWith('total ');
   const isPoubelles = lowerCaseDesc.includes('poubelles');
   const isNetflix = lowerCaseDesc.includes('netflix');
 

@@ -101,12 +101,13 @@ export const ShieldIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 );
 
 export const WifiIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#faf3e1] shadow-2xs`}>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#4f46e5] shadow-2xs`}>
     <img
       src="/brand-logos/internet.jpg"
-      alt="Internet"
-      className="w-full h-full object-cover scale-[1.18]"
+      alt="Internet Wi-Fi"
+      className="w-full h-full object-cover scale-[1.15]"
       loading="lazy"
+      referrerPolicy="no-referrer"
     />
   </div>
 );
@@ -211,10 +212,18 @@ export const SfrIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 );
 
 export const TotalEnergiesIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <circle cx="20" cy="20" r="20" fill="#FACC15"/>
-    <path d="M22 8L10 22h10l-1 10 12-14h-10z" fill="white"/>
-  </svg>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1.5 shadow-2xs`}>
+    <img
+      src="/brand-logos/totalenergies.png"
+      alt="TotalEnergies"
+      className="w-full h-full object-contain"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/totalenergies.com";
+      }}
+    />
+  </div>
 );
 
 export const TrashBinIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
