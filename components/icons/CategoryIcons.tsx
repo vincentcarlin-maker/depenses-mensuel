@@ -1144,14 +1144,29 @@ export const ActionStoreIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) 
   </div>
 );
 
+export const AmazonIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1.5 shadow-2xs`}>
+    <img
+      src="/brand-logos/amazon.png"
+      alt="Amazon"
+      className="w-full h-full object-contain"
+      loading="lazy"
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = "https://unavatar.io/amazon.fr";
+      }}
+    />
+  </div>
+);
+
 export const BoulangerieBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <circle cx="32" cy="32" r="30" fill="#b45309"/>
-    <g transform="translate(14, 14)" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 4 V32 M18 8 L14 5 M18 8 L22 5 M18 14 L12 11 M18 14 L24 11 M18 20 L13 18 M18 20 L23 18" stroke="#fef08a" strokeWidth="2.5"/>
-      <path d="M6 26 C4 18 10 12 18 12 C26 12 32 18 30 26 C27 30 22 30 18 26 C14 30 9 30 6 26 Z" fill="#f59e0b" stroke="#ffffff" strokeWidth="2"/>
-    </g>
-  </svg>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#fffbeb] shadow-2xs`}>
+    <img
+      src="/brand-logos/boulangerie.jpg"
+      alt="Boulangerie"
+      className="w-full h-full object-cover scale-105"
+      loading="lazy"
+    />
+  </div>
 );
 
 export const BoucherieBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (

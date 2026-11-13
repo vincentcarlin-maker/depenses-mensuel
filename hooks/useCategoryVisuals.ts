@@ -115,6 +115,7 @@ import {
   GrandFraisIcon,
   BiocoopIcon,
   ActionStoreIcon,
+  AmazonIcon,
   BoulangerieBadgeIcon,
   BoucherieBadgeIcon,
   McDonaldsIcon,
@@ -293,6 +294,7 @@ export const FULL_BADGE_ICONS = new Set<React.FC<any>>([
   GrandFraisIcon,
   BiocoopIcon,
   ActionStoreIcon,
+  AmazonIcon,
   BoulangerieBadgeIcon,
   BoucherieBadgeIcon,
   McDonaldsIcon,
@@ -536,6 +538,8 @@ export const PRESET_LOOKUP: Record<string, { icon: React.FC<{ className?: string
   biocoopicon: { icon: BiocoopIcon, defaultColor: 'bg-[#166534]' },
   actionstore: { icon: ActionStoreIcon, defaultColor: 'bg-[#00186b]' },
   actionstoreicon: { icon: ActionStoreIcon, defaultColor: 'bg-[#00186b]' },
+  amazon: { icon: AmazonIcon, defaultColor: 'bg-[#f59e0b]' },
+  amazonicon: { icon: AmazonIcon, defaultColor: 'bg-[#f59e0b]' },
   boulangeriebadge: { icon: BoulangerieBadgeIcon, defaultColor: 'bg-[#d97706]' },
   boulangeriebadgeicon: { icon: BoulangerieBadgeIcon, defaultColor: 'bg-[#d97706]' },
   boucheriebadge: { icon: BoucherieBadgeIcon, defaultColor: 'bg-[#991b1b]' },
@@ -785,7 +789,10 @@ function resolveCategoryVisualInner(
     if (/\baction\b/.test(textNorm)) {
       return { icon: ActionStoreIcon, color: 'bg-[#00186b]', textColor: 'text-[#009fe3] dark:text-sky-400', badgeBg: 'bg-sky-50 dark:bg-sky-950/40', borderColor: 'border-sky-200 dark:border-sky-800/40' };
     }
-    if (textNorm.includes('boulangerie') || textNorm.includes('paul') || textNorm.includes('marie blachere') || textNorm.includes('brioche doree') || textNorm.includes('fournil') || /\bpain\b/.test(textNorm)) {
+    if (textNorm.includes('amazon') || /\bamzn\b/.test(textNorm)) {
+      return { icon: AmazonIcon, color: 'bg-[#f59e0b]', textColor: 'text-[#ff9900] dark:text-amber-400', badgeBg: 'bg-amber-50 dark:bg-amber-950/40', borderColor: 'border-amber-200 dark:border-amber-800/40' };
+    }
+    if (textNorm.includes('boulanger') || textNorm.includes('patisserie') || textNorm.includes('viennoiserie') || textNorm.includes('croissant') || textNorm.includes('baguette') || textNorm.includes('banette') || textNorm.includes('feuillette') || textNorm.includes('mie caline') || textNorm.includes('paul') || textNorm.includes('marie blachere') || textNorm.includes('brioche doree') || textNorm.includes('fournil') || /\bpain\b/.test(textNorm)) {
       return { icon: BoulangerieBadgeIcon, color: 'bg-[#d97706]', textColor: 'text-[#d97706] dark:text-amber-400', badgeBg: 'bg-amber-50 dark:bg-amber-950/40', borderColor: 'border-amber-200 dark:border-amber-800/40' };
     }
     if (textNorm.includes('boucherie') || textNorm.includes('boucher') || textNorm.includes('charcuterie') || textNorm.includes('poissonnerie')) {

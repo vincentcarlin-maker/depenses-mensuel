@@ -113,7 +113,9 @@ import {
   CryptoCurrencyIcon,
   LegalLawyerIcon,
   FineTicketIcon,
-  RetirementIcon
+  RetirementIcon,
+  AmazonIcon,
+  BoulangerieBadgeIcon
 } from './icons/CategoryIcons';
 import { CustomCategoryIcon } from '../hooks/useCustomCategoryIcons';
 import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
@@ -153,6 +155,7 @@ export const PRESET_CATEGORY_ICONS: CategoryIconDef[] = [
   { id: 'groceries', name: 'GroceriesIcon', label: 'Courses', icon: GroceriesIcon, theme: 'food', keywords: ['supermarché', 'alimentation', 'nourriture', 'chariot', 'magasin'] },
   { id: 'cartoutline', name: 'CartOutlineIcon', label: 'Panier Courses', icon: CartOutlineIcon, theme: 'food', keywords: ['caddie', 'supermarché', 'chariot', 'courses', 'achats'] },
   { id: 'bakery', name: 'BakeryIcon', label: 'Boulangerie & Pain', icon: BakeryIcon, theme: 'food', keywords: ['croissant', 'baguette', 'viennoiserie', 'pâtisserie', 'boulangerie'] },
+  { id: 'boulangeriebadge', name: 'BoulangerieBadgeIcon', label: 'Boulangerie (Couleur)', icon: BoulangerieBadgeIcon, theme: 'food', keywords: ['boulangerie', 'pain', 'croissant', 'baguette', 'pâtisserie'] },
   { id: 'restaurant', name: 'RestaurantIcon', label: 'Restaurant', icon: RestaurantIcon, theme: 'food', keywords: ['repas', 'dîner', 'déjeuner', 'bistrot', 'manger'] },
   { id: 'utensils', name: 'UtensilsOutlineIcon', label: 'Couverts & Table', icon: UtensilsOutlineIcon, theme: 'food', keywords: ['fourchette', 'couteau', 'gastronomie', 'manger', 'repas'] },
   { id: 'fastfood', name: 'FastFoodIcon', label: 'Fast food & Burger', icon: FastFoodIcon, theme: 'food', keywords: ['burger', 'sandwich', 'kebab', 'tacos', 'snack'] },
@@ -266,6 +269,7 @@ export const PRESET_CATEGORY_ICONS: CategoryIconDef[] = [
   { id: 'retirement', name: 'RetirementIcon', label: 'Retraite & Rente', icon: RetirementIcon, theme: 'finance', keywords: ['retraite', 'pension', 'senior', 'per'] },
   { id: 'clothing', name: 'ClothingIcon', label: 'Vêtements & Mode', icon: ClothingIcon, theme: 'finance', keywords: ['habits', 'shopping', 'fringues', 'chaussures', 'mode'] },
   { id: 'shoppingbag', name: 'ShoppingBagOutlineIcon', label: 'Sac Shopping', icon: ShoppingBagOutlineIcon, theme: 'finance', keywords: ['boutique', 'magasin', 'achats', 'centre commercial'] },
+  { id: 'amazon', name: 'AmazonIcon', label: 'Amazon', icon: AmazonIcon, theme: 'finance', keywords: ['amazon', 'commande', 'colis', 'shopping', 'livraison', 'prime'] },
   { id: 'gift', name: 'GiftIcon', label: 'Cadeau', icon: GiftIcon, theme: 'finance', keywords: ['noël', 'présent', 'fête', 'offrir', 'anniversaire'] },
   { id: 'giftoutline', name: 'GiftOutlineIcon', label: 'Paquet Cadeau', icon: GiftOutlineIcon, theme: 'finance', keywords: ['surprise', 'fêtes', 'cadeau', 'noël'] },
   { id: 'birthday', name: 'BirthdayIcon', label: 'Anniversaire', icon: BirthdayIcon, theme: 'finance', keywords: ['gâteau', 'bougies', 'fête', 'âge', 'anniv'] },
