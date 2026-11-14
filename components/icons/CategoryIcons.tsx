@@ -106,7 +106,6 @@ export const AssuranceBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" 
       src="/brand-logos/assurance.jpg"
       alt="Assurance"
       className="w-full h-full object-cover scale-[1.42]"
-      loading="lazy"
       referrerPolicy="no-referrer"
     />
   </div>
@@ -125,7 +124,6 @@ export const WifiIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/internet.jpg"
       alt="Internet Wi-Fi"
       className="w-full h-full object-cover scale-[1.15]"
-      loading="lazy"
       referrerPolicy="no-referrer"
     />
   </div>
@@ -146,7 +144,6 @@ export const DeezerIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/deezer.png"
       alt="Deezer"
       className="w-full h-full object-contain"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/deezer.com";
       }}
@@ -231,7 +228,6 @@ export const SfrIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/sfr.png"
       alt="SFR"
       className="w-full h-full object-contain rounded-md"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/sfr.fr";
       }}
@@ -245,7 +241,6 @@ export const TotalEnergiesIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }
       src="/brand-logos/totalenergies.png"
       alt="TotalEnergies"
       className="w-full h-full object-contain"
-      loading="lazy"
       referrerPolicy="no-referrer"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/totalenergies.com";
@@ -267,7 +262,6 @@ export const NetflixIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/netflix.png"
       alt="Netflix"
       className="w-full h-full object-cover scale-105"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/netflix.com";
       }}
@@ -1011,7 +1005,6 @@ export const LeclercIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/leclerc.png"
       alt="E.Leclerc"
       className="w-full h-full object-contain"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/e.leclerc";
       }}
@@ -1025,7 +1018,6 @@ export const CarrefourIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) =>
       src="/brand-logos/carrefour.png"
       alt="Carrefour"
       className="w-full h-full object-contain"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/carrefour.fr";
       }}
@@ -1039,7 +1031,6 @@ export const IntermarcheIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) 
       src="/brand-logos/intermarche.png"
       alt="Intermarché"
       className="w-full h-full object-contain"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/intermarche.com";
       }}
@@ -1053,7 +1044,6 @@ export const LidlIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/lidl.png"
       alt="Lidl"
       className="w-full h-full object-contain"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/lidl.fr";
       }}
@@ -1067,7 +1057,6 @@ export const AuchanIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/auchan.png"
       alt="Auchan"
       className="w-full h-full object-contain"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/auchan.fr";
       }}
@@ -1081,7 +1070,6 @@ export const AldiIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/aldi.png"
       alt="Aldi"
       className="w-full h-full object-contain"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/aldi.fr";
       }}
@@ -1095,7 +1083,6 @@ export const SuperUIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/superu.png"
       alt="Super U"
       className="w-full h-full object-contain"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/magasins-u.com";
       }}
@@ -1109,7 +1096,6 @@ export const MonoprixIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => 
       src="/brand-logos/monoprix.png"
       alt="Monoprix"
       className="w-full h-full object-contain"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://www.google.com/s2/favicons?domain=monoprix.fr&sz=128";
       }}
@@ -1123,7 +1109,6 @@ export const PicardIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/picard.png"
       alt="Picard"
       className="w-full h-full object-contain"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/picard.fr";
       }}
@@ -1137,7 +1122,6 @@ export const GrandFraisIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) =
       src="/brand-logos/grandfrais.png"
       alt="Grand Frais"
       className="w-full h-full object-contain"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/grandfrais.com";
       }}
@@ -1151,7 +1135,6 @@ export const BiocoopIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/biocoop.png"
       alt="Biocoop"
       className="w-full h-full object-contain"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://www.google.com/s2/favicons?domain=biocoop.fr&sz=128";
       }}
@@ -1165,7 +1148,6 @@ export const ActionStoreIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) 
       src="/brand-logos/action.png"
       alt="Action"
       className="w-full h-full object-contain"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/action.com";
       }}
@@ -1179,7 +1161,6 @@ export const AmazonIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/amazon.png"
       alt="Amazon"
       className="w-full h-full object-contain"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/amazon.fr";
       }}
@@ -1193,7 +1174,6 @@ export const BoulangerieBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5
       src="/brand-logos/boulangerie.jpg"
       alt="Boulangerie"
       className="w-full h-full object-cover scale-105"
-      loading="lazy"
     />
   </div>
 );
@@ -1216,7 +1196,6 @@ export const McDonaldsIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) =>
       src="/brand-logos/mcdonalds.png"
       alt="McDonald's"
       className="w-full h-full object-contain"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/mcdonalds.fr";
       }}
@@ -1230,7 +1209,6 @@ export const BurgerKingIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) =
       src="/brand-logos/burgerking.png"
       alt="Burger King"
       className="w-full h-full object-contain"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/burgerking.fr";
       }}
@@ -1244,7 +1222,6 @@ export const KfcIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/kfc.png"
       alt="KFC"
       className="w-full h-full object-contain"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/kfc.fr";
       }}
@@ -1258,7 +1235,6 @@ export const SubwayIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/subway.png"
       alt="Subway"
       className="w-full h-full object-contain"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/subway.com";
       }}
@@ -1272,7 +1248,6 @@ export const DominosPizzaIcon: React.FC<IconProps> = ({ className = "h-5 w-5" })
       src="/brand-logos/dominos.png"
       alt="Domino's Pizza"
       className="w-full h-full object-contain"
-      loading="lazy"
       onError={(e) => {
         (e.target as HTMLImageElement).src = "https://unavatar.io/dominos.fr";
       }}
@@ -1285,8 +1260,7 @@ export const PizzaBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) =
     <img
       src="/brand-logos/pizza.jpg"
       alt="Pizza"
-      className="w-full h-full object-cover scale-115"
-      loading="lazy"
+      className="w-full h-full object-cover scale-[1.15]"
     />
   </div>
 );
@@ -1296,8 +1270,7 @@ export const CinemaBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) 
     <img
       src="/brand-logos/cinema.jpg"
       alt="Ticket de cinéma"
-      className="w-full h-full object-cover scale-112"
-      loading="lazy"
+      className="w-full h-full object-cover scale-[1.12]"
     />
   </div>
 );
@@ -1338,12 +1311,13 @@ export const CreperieBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }
 );
 
 export const StarbucksIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
-  <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <circle cx="32" cy="32" r="30" fill="#006241"/>
-    <circle cx="32" cy="32" r="22" fill="none" stroke="#ffffff" strokeWidth="2"/>
-    <polygon points="32,18 35,26 43,26 37,31 39,39 32,34 25,39 27,31 21,26 29,26" fill="#ffffff"/>
-    <path d="M24 42 C 24 48, 40 48, 40 42" stroke="#ffffff" strokeWidth="2" fill="none" strokeLinecap="round"/>
-  </svg>
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#006241] shadow-2xs`}>
+    <img
+      src="/brand-logos/starbucks.png"
+      alt="Starbucks"
+      className="w-full h-full object-cover"
+    />
+  </div>
 );
 
 export const CoffeeShopIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
@@ -1388,7 +1362,6 @@ export const MacifIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/macif.png"
       alt="Macif"
       className="w-full h-full object-cover"
-      loading="lazy"
       referrerPolicy="no-referrer"
     />
   </div>
@@ -1400,7 +1373,6 @@ export const DirectAssuranceIcon: React.FC<IconProps> = ({ className = "h-5 w-5"
       src="/brand-logos/directassurance.png"
       alt="Direct Assurance"
       className="w-full h-full object-cover scale-105"
-      loading="lazy"
       referrerPolicy="no-referrer"
     />
   </div>
@@ -1412,7 +1384,6 @@ export const AxaIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/axa.png"
       alt="AXA"
       className="w-full h-full object-cover"
-      loading="lazy"
       referrerPolicy="no-referrer"
     />
   </div>
@@ -1424,7 +1395,6 @@ export const MaifIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/maif.png"
       alt="MAIF"
       className="w-full h-full object-contain"
-      loading="lazy"
       referrerPolicy="no-referrer"
     />
   </div>
@@ -1436,7 +1406,6 @@ export const MatmutIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/matmut.png"
       alt="Matmut"
       className="w-full h-full object-contain"
-      loading="lazy"
       referrerPolicy="no-referrer"
     />
   </div>
@@ -1448,7 +1417,6 @@ export const AllianzIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/allianz.png"
       alt="Allianz"
       className="w-full h-full object-contain"
-      loading="lazy"
       referrerPolicy="no-referrer"
     />
   </div>
@@ -1460,7 +1428,6 @@ export const GroupamaIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => 
       src="/brand-logos/groupama.png"
       alt="Groupama"
       className="w-full h-full object-contain"
-      loading="lazy"
       referrerPolicy="no-referrer"
     />
   </div>
@@ -1472,7 +1439,6 @@ export const MaafIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/maaf.png"
       alt="MAAF"
       className="w-full h-full object-contain rounded-full"
-      loading="lazy"
       referrerPolicy="no-referrer"
     />
   </div>
@@ -1484,7 +1450,6 @@ export const GmfIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/gmf.png"
       alt="GMF"
       className="w-full h-full object-contain rounded-full"
-      loading="lazy"
       referrerPolicy="no-referrer"
     />
   </div>
@@ -1496,7 +1461,6 @@ export const OrangeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/orange.png"
       alt="Orange"
       className="w-full h-full object-cover"
-      loading="lazy"
       referrerPolicy="no-referrer"
     />
   </div>
@@ -1508,7 +1472,6 @@ export const SoshIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/sosh.png"
       alt="Sosh"
       className="w-full h-full object-cover scale-105"
-      loading="lazy"
       referrerPolicy="no-referrer"
     />
   </div>
@@ -1520,7 +1483,6 @@ export const FreeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       src="/brand-logos/free.png"
       alt="Free"
       className="w-full h-full object-contain"
-      loading="lazy"
       referrerPolicy="no-referrer"
     />
   </div>
@@ -1532,7 +1494,6 @@ export const BouyguesIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => 
       src="/brand-logos/bouygues.png"
       alt="Bouygues Telecom"
       className="w-full h-full object-contain"
-      loading="lazy"
       referrerPolicy="no-referrer"
     />
   </div>

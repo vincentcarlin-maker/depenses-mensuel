@@ -50,7 +50,7 @@ const ASSURANCE_OPTIONS: AssuranceOption[] = [
     sublabel: 'Bouclier simple',
     renderIcon: () => (
       <div className="w-9 h-9 rounded-full bg-[#10b981] text-white flex items-center justify-center shrink-0 shadow-2xs">
-        <ShieldOutlineIcon className="w-4.5 h-4.5" />
+        <ShieldOutlineIcon className="w-5 h-5" />
       </div>
     ),
   },
@@ -127,7 +127,7 @@ const INTERNET_OPTIONS: InternetOption[] = [
     sublabel: 'Wi-Fi simple',
     renderIcon: () => (
       <div className="w-9 h-9 rounded-full bg-[#6366f1] text-white flex items-center justify-center shrink-0 shadow-2xs">
-        <WifiOutlineIcon className="w-4.5 h-4.5" />
+        <WifiOutlineIcon className="w-5 h-5" />
       </div>
     ),
   },

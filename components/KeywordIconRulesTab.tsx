@@ -166,7 +166,7 @@ export const KeywordIconRulesTab: React.FC<KeywordIconRulesTabProps> = ({ setToa
                     onClick={() => setSelectedIconId(item.id)}
                     className={`flex flex-col items-center gap-1.5 p-2 rounded-2xl border transition-all shrink-0 w-16 snap-start cursor-pointer ${
                       isSelected
-                        ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 scale-102 shadow-2xs font-bold'
+                        ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 scale-[1.02] shadow-2xs font-bold'
                         : 'border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium'
                     }`}
                   >
@@ -194,7 +194,7 @@ export const KeywordIconRulesTab: React.FC<KeywordIconRulesTabProps> = ({ setToa
                     type="button"
                     onClick={() => setSelectedColor(color.bgClass)}
                     className={`w-8 h-8 rounded-full ${color.bgClass} flex items-center justify-center transition-all cursor-pointer relative shadow-2xs ${
-                      isSelected ? 'ring-2 ring-offset-2 ring-blue-500 scale-108' : 'hover:scale-105'
+                      isSelected ? 'ring-2 ring-offset-2 ring-blue-500 scale-105' : 'hover:scale-105'
                     }`}
                     title={color.label}
                   >
@@ -305,9 +305,15 @@ export const KeywordIconRulesTab: React.FC<KeywordIconRulesTabProps> = ({ setToa
                   }`}
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${colorDef.badgeBgClass} ${colorDef.textColorClass} transition-colors shadow-3xs`}>
-                      <IconComponent className="w-5 h-5" />
-                    </div>
+                    {FULL_BADGE_ICONS.has(IconComponent) ? (
+                      <div className="w-11 h-11 rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-2xs">
+                        <IconComponent className="w-11 h-11" />
+                      </div>
+                    ) : (
+                      <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${colorDef.badgeBgClass} ${colorDef.textColorClass} transition-colors shadow-2xs`}>
+                        <IconComponent className="w-5 h-5" />
+                      </div>
+                    )}
                     <div className="min-w-0">
                       <h4 className="font-extrabold text-slate-900 dark:text-slate-100 text-sm sm:text-base leading-tight">
                         {rule.keyword}

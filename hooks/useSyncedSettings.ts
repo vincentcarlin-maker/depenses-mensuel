@@ -11,17 +11,24 @@ export function useSyncedSettings<T>(key: string, initialValue: T): [T, (value: 
     }
   });
 
+  const storedValueRef = useRef<T>(storedValue);
+  storedValueRef.current = storedValue;
+
+  const initialValueRef = useRef<T>(initialValue);
+  initialValueRef.current = initialValue;
+
+  const writeQueueRef = useRef<Promise<void>>(Promise.resolve());
+
   // Keep state in sync if key changes (e.g. foyer switch)
   useEffect(() => {
     try {
       const item = window.localStorage.getItem(key);
-      if (item) {
-        setStoredValue(JSON.parse(item));
-      } else {
-        setStoredValue(initialValue);
-      }
+      const next = item ? JSON.parse(item) : initialValueRef.current;
+      storedValueRef.current = next;
+      setStoredValue(next);
     } catch {
-      setStoredValue(initialValue);
+      storedValueRef.current = initialValueRef.current;
+      setStoredValue(initialValueRef.current);
     }
   }, [key]);
 
@@ -29,44 +36,43 @@ export function useSyncedSettings<T>(key: string, initialValue: T): [T, (value: 
 
   // Sync to Cloud
   const setValue = useCallback((value: T | ((val: T) => T)) => {
-    setStoredValue((prev) => {
-      const nextValue = value instanceof Function ? value(prev) : value;
-      
-      // Save locally
+    const nextValue = value instanceof Function ? value(storedValueRef.current) : value;
+    storedValueRef.current = nextValue;
+    setStoredValue(nextValue);
+
+    // Save locally
+    try {
+      window.localStorage.setItem(key, JSON.stringify(nextValue));
+    } catch (e) {
+      console.error(e);
+    }
+
+    // Broadcast immediately
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: `sync_${key}`,
+        payload: { value: nextValue }
+      });
+    }
+
+    // Serialize Supabase writes so rapid clicks / StrictMode never create duplicate rows
+    writeQueueRef.current = writeQueueRef.current.then(async () => {
       try {
-        window.localStorage.setItem(key, JSON.stringify(nextValue));
-      } catch (e) {
-        console.error(e);
-      }
-
-      // Broadcast immediately
-      if (channelRef.current) {
-        channelRef.current.send({
-          type: 'broadcast',
-          event: `sync_${key}`,
-          payload: { value: nextValue }
+        await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `setting_${key}`);
+        await (supabase.from('push_subscriptions') as any).insert({
+          user_id: `setting_${key}`,
+          subscription: { value: nextValue },
+          created_at: new Date().toISOString()
         });
+        await (supabase.from('app_settings') as any).upsert({
+          key: key,
+          value: JSON.stringify(nextValue),
+          updated_at: new Date().toISOString()
+        });
+      } catch (e) {
+        console.warn(`Could not sync ${key} to Supabase:`, e);
       }
-
-      // Save to Supabase (using durable push_subscriptions & app_settings)
-      (async () => {
-        try {
-          await (supabase.from('push_subscriptions') as any).delete().eq('user_id', `setting_${key}`);
-          await (supabase.from('push_subscriptions') as any).insert({
-            user_id: `setting_${key}`,
-            subscription: { value: nextValue }
-          });
-          await (supabase.from('app_settings') as any).upsert({
-            key: key,
-            value: JSON.stringify(nextValue),
-            updated_at: new Date().toISOString()
-          });
-        } catch (e) {
-          console.warn(`Could not sync ${key} to Supabase:`, e);
-        }
-      })();
-
-      return nextValue;
     });
   }, [key]);
 
@@ -83,20 +89,24 @@ export function useSyncedSettings<T>(key: string, initialValue: T): [T, (value: 
         if (appData && appData.value) {
           try {
             const parsed = JSON.parse(appData.value);
+            storedValueRef.current = parsed;
             setStoredValue(parsed);
             window.localStorage.setItem(key, JSON.stringify(parsed));
             return;
           } catch {}
         }
 
-        // Fallback to push_subscriptions
-        const { data, error } = await (supabase.from('push_subscriptions') as any)
+        // Fallback to push_subscriptions (use limit(1) to tolerate any historical duplicate rows)
+        const { data: rows, error } = await (supabase.from('push_subscriptions') as any)
           .select('subscription')
           .eq('user_id', `setting_${key}`)
-          .maybeSingle();
+          .order('created_at', { ascending: false })
+          .limit(1);
 
-        if (!error && data && data.subscription && data.subscription.value !== undefined) {
-          const cloudVal = data.subscription.value;
+        const latest = Array.isArray(rows) ? rows[0] : rows;
+        if (!error && latest && latest.subscription && latest.subscription.value !== undefined) {
+          const cloudVal = latest.subscription.value;
+          storedValueRef.current = cloudVal;
           setStoredValue(cloudVal);
           window.localStorage.setItem(key, JSON.stringify(cloudVal));
         }
@@ -117,6 +127,7 @@ export function useSyncedSettings<T>(key: string, initialValue: T): [T, (value: 
       .on('broadcast', { event: `sync_${key}` }, (payload: any) => {
         const data = payload?.payload || payload;
         if (data && data.value !== undefined) {
+          storedValueRef.current = data.value;
           setStoredValue(data.value);
           window.localStorage.setItem(key, JSON.stringify(data.value));
         }
@@ -125,6 +136,7 @@ export function useSyncedSettings<T>(key: string, initialValue: T): [T, (value: 
         if (payload.new && payload.new.key === key && payload.new.value) {
           try {
             const parsed = JSON.parse(payload.new.value);
+            storedValueRef.current = parsed;
             setStoredValue(parsed);
             window.localStorage.setItem(key, JSON.stringify(parsed));
           } catch {

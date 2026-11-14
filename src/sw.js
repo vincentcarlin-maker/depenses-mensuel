@@ -1,4 +1,15 @@
-import { precacheAndRoute } from 'workbox-precaching';
+import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
+
+// Immediately activate updated Service Worker and clean stale precaches so new brand logos load immediately
+self.addEventListener('install', () => {
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+    event.waitUntil(self.clients.claim());
+});
+
+cleanupOutdatedCaches();
 
 // Precaching options provided by Vite PWA
 precacheAndRoute(self.__WB_MANIFEST || []);

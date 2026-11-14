@@ -84,7 +84,7 @@ const HistoryManagement: React.FC<{ loginHistory: LoginEvent[] }> = ({ loginHist
                 <div className="flex items-end gap-1 shrink-0 opacity-80">
                     <div className="w-1.5 h-3.5 bg-pink-200 dark:bg-pink-900/60 rounded-full" />
                     <div className="w-1.5 h-6 bg-cyan-200 dark:bg-cyan-900/60 rounded-full" />
-                    <div className="w-1.5 h-4.5 bg-emerald-200 dark:bg-emerald-900/60 rounded-full" />
+                    <div className="w-1.5 h-5 bg-emerald-200 dark:bg-emerald-900/60 rounded-full" />
                 </div>
             </div>
             

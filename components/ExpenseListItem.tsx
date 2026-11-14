@@ -91,7 +91,7 @@ const ExpenseListItem: React.FC<{
                 {/* Category Icon */}
                 <div className="shrink-0">
                     {isFullBadge ? (
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full shadow-xs">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden shadow-xs">
                             <IconComponent className="w-full h-full rounded-full" />
                         </div>
                     ) : (

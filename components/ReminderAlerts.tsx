@@ -288,7 +288,7 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     {VisualIcon && (
-                      <div className="shrink-0 scale-85 sm:scale-90">
+                      <div className="shrink-0 scale-[0.85] sm:scale-90">
                         <VisualIcon />
                       </div>
                     )}
@@ -336,7 +336,7 @@ export const ReminderAlerts: React.FC<ReminderAlertsProps> = ({
                             }}
                             autoFocus
                             onFocus={(e) => e.target.select()}
-                            className="w-18 sm:w-22 px-1.5 py-0.5 text-xs sm:text-sm font-bold text-orange-950 dark:text-orange-100 bg-orange-50/70 dark:bg-orange-950/40 rounded border border-orange-200 dark:border-orange-800 focus:outline-none focus:ring-1 focus:ring-orange-500 text-right pr-5"
+                            className="w-20 sm:w-24 px-1.5 py-0.5 text-xs sm:text-sm font-bold text-orange-950 dark:text-orange-100 bg-orange-50/70 dark:bg-orange-950/40 rounded border border-orange-200 dark:border-orange-800 focus:outline-none focus:ring-1 focus:ring-orange-500 text-right pr-5"
                             placeholder="0.00"
                           />
                           <span className="absolute right-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 pointer-events-none">

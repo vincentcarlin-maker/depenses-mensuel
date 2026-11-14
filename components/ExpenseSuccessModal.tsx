@@ -160,9 +160,15 @@ export const ExpenseSuccessModal: React.FC<ExpenseSuccessModalProps> = ({
         {/* Carte récapitulative de la dépense enregistrée */}
         <div className="mt-5 bg-[#f8fafc] dark:bg-slate-700/50 border border-slate-100/90 dark:border-slate-700 rounded-2xl p-3.5 flex items-center justify-between gap-3 text-left">
           {/* Icône de catégorie dans son badge rond coloré */}
-          <div className={`w-11 h-11 rounded-full ${badgeBgClass} ${textColorClass} flex items-center justify-center shrink-0`}>
-            <CategoryIcon className="w-6 h-6" />
-          </div>
+          {visual?.isFullBadge ? (
+            <div className="w-11 h-11 rounded-full overflow-hidden flex items-center justify-center shrink-0">
+              <CategoryIcon className="w-full h-full rounded-full" />
+            </div>
+          ) : (
+            <div className={`w-11 h-11 rounded-full ${badgeBgClass} ${textColorClass} flex items-center justify-center shrink-0`}>
+              <CategoryIcon className="w-6 h-6" />
+            </div>
+          )}
 
           {/* Nom de la catégorie et description/commerce */}
           <div className="min-w-0 flex-1">

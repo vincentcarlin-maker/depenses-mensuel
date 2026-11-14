@@ -280,7 +280,7 @@ const CategoryTotals: React.FC<CategoryTotalsProps> = ({ expenses, previousMonth
                 <div key={`budget-${b.category}`} className="p-3 bg-slate-50/70 dark:bg-slate-700/30 rounded-2xl border border-slate-100 dark:border-slate-700 space-y-2">
                   <div className="flex items-center justify-between text-xs sm:text-sm">
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${visual.isFullBadge ? '' : visual.color} text-white`}>
+                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 overflow-hidden ${visual.isFullBadge ? '' : visual.color} text-white`}>
                         <IconComponent className={visual.isFullBadge ? "w-full h-full" : "w-3.5 h-3.5"} />
                       </div>
                       <span className="font-extrabold text-slate-900 dark:text-white truncate">
