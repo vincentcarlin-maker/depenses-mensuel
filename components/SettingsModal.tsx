@@ -281,24 +281,21 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
         <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 max-w-2xl mx-auto w-full pb-36 sm:pb-40">
             {activeView === 'main' && (
               <div className="space-y-6 animate-fade-in">
-                {/* Premium header matching the Settings tab */}
-                <div className="relative overflow-hidden rounded-[26px] bg-gradient-to-br from-[#063b46] via-[#006b76] to-[#0095a0] px-5 pt-7 pb-16 sm:px-7 sm:pt-9 text-white">
-                  <div className="relative z-10">
-                    <p className="text-sm font-semibold text-white/85">▥ DuoBudget</p>
-                    <h1 className="mt-4 text-3xl sm:text-4xl font-extrabold tracking-tight">Réglages</h1>
-                    <p className="mt-1 text-sm sm:text-base text-white/85">Personnalisez votre application</p>
+                {/* Premium white DuoBudget header */}
+                <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-r from-white via-[#f3faff] to-[#fff2fa] dark:from-slate-800 dark:via-slate-800 dark:to-slate-900 px-4 py-5 border border-sky-100/70 dark:border-slate-700">
+                  <div className="absolute -right-8 -top-14 h-28 w-72 rotate-[-12deg] rounded-full bg-gradient-to-r from-sky-200/55 to-pink-200/60 blur-xl pointer-events-none" />
+                  <div className="relative z-10 flex items-center gap-3">
+                    <div className="h-12 w-12 shrink-0 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 shadow-md shadow-sky-200/60 flex items-center justify-center text-white">
+                      <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="3"/><path d="M10 2h4l.6 2.1 1.7.7 1.9-1.1 2.8 2.8-1.1 1.9.7 1.7L23 11v4l-2.1.6-.7 1.7 1.1 1.9-2.8 2.8-1.9-1.1-1.7.7L14 23h-4l-.6-2.1-1.7-.7-1.9 1.1-2.8-2.8 1.1-1.9-.7-1.7L1 15v-4l2.1-.6.7-1.7-1.1-1.9 2.8-2.8 1.9 1.1 1.7-.7L10 2Z"/></svg>
+                    </div>
+                    <div><h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">Réglages</h1><p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Personnalisez votre expérience DuoBudget</p></div>
                   </div>
-                  <svg aria-hidden="true" className="absolute right-3 top-5 h-32 w-32 text-white/15" viewBox="0 0 100 100" fill="none">
-                    <path d="M50 13l6 8 10-1 4 10 10 5-2 10 7 8-7 8 2 10-10 5-4 10-10-1-6 8-8-8-10 1-4-10-10-5 2-10-7-8 7-8-2-10 10-5 4-10 10 1 8-8Z" fill="currentColor"/>
-                    <circle cx="50" cy="53" r="15" fill="#006b76"/>
-                  </svg>
                 </div>
-
-                <div className="-mt-16 relative z-10 px-2">
+                <div className="px-1">
                 {/* Top Card: Couple Profile / Duo Card */}
                 <div 
                   onClick={() => setActiveView('users')}
-                  className="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-[24px] shadow-lg shadow-slate-900/10 border border-white/80 dark:border-slate-700/60 flex items-center justify-between transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/90 cursor-pointer group"
+                  className="bg-gradient-to-r from-[#f4faff] via-white to-[#fff0f8] dark:from-slate-800 dark:via-slate-800 dark:to-slate-800 p-4 sm:p-5 rounded-[24px] shadow-lg shadow-sky-900/10 border border-sky-100/80 dark:border-slate-700/60 flex items-center justify-between transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/90 cursor-pointer group"
                 >
                   <div className="flex items-center gap-4">
                     {/* Overlapping Avatars with heart */}
@@ -341,7 +338,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                 </div>
                 {/* Section: Personnalisation */}
                 <div className="space-y-2">
-                  <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+                  <h4 className="text-xs sm:text-sm font-bold text-[#183963] dark:text-sky-200 px-1">
                     Personnalisation
                   </h4>
                   <div className="bg-white dark:bg-slate-800 rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden">
@@ -363,7 +360,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
 
                 {/* Section: Rappels & Alertes */}
                 <div className="space-y-2">
-                  <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+                  <h4 className="text-xs sm:text-sm font-bold text-[#183963] dark:text-sky-200 px-1">
                     Rappels & Alertes
                   </h4>
                   <div className="bg-white dark:bg-slate-800 rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
@@ -412,7 +409,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
 
                 {/* Section: Gestion */}
                 <div className="space-y-2">
-                  <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+                  <h4 className="text-xs sm:text-sm font-bold text-[#183963] dark:text-sky-200 px-1">
                     Gestion
                   </h4>
                   <div className="bg-white dark:bg-slate-800 rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
@@ -472,7 +469,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
 
                 {/* Section: Support & Contact */}
                 <div className="space-y-2">
-                  <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+                  <h4 className="text-xs sm:text-sm font-bold text-[#183963] dark:text-sky-200 px-1">
                     Assistance & Support
                   </h4>
                   <div className="bg-white dark:bg-slate-800 rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden">
@@ -494,7 +491,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
 
                 {/* Section: Compte */}
                 <div className="space-y-2">
-                  <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+                  <h4 className="text-xs sm:text-sm font-bold text-[#183963] dark:text-sky-200 px-1">
                     Compte
                   </h4>
                   <div className="bg-white dark:bg-slate-800 rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden">
