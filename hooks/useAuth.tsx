@@ -101,7 +101,7 @@ const INITIAL_PROFILES: Profile[] = [
         foyer_name: DEFAULT_FOYER.name, 
         foyer_code: DEFAULT_FOYER.code,
         color: '#ec4899',
-        email: 'sophie@duobudget.app'
+        email: 'sophie.mennel@mail.fr'
     },
     { 
         username: 'vincent', 
@@ -179,12 +179,12 @@ const deduplicateProfiles = (profilesList: Profile[]): Profile[] => {
 export const useAuth = () => {
     const initialSession = useMemo(() => getStoredActiveSession(), []);
 
-    const [user, setUser] = useState<User | string | null>(() => initialSession?.user || null);
-    const [username, setUsername] = useState<string | null>(() => initialSession?.username || null);
-    const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(() => initialSession?.profile || null);
+    const [user, setUser] = useState<User | string | null>(null);
+    const [username, setUsername] = useState<string | null>(null);
+    const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(null);
     const [currentFoyer, setCurrentFoyer] = useState<Foyer>(() => applyCustomColorsToFoyer(DEFAULT_FOYER));
-    const [isAdmin, setIsAdmin] = useState<boolean>(() => Boolean(initialSession?.isAdmin || initialSession?.username?.toLowerCase() === 'vincent'));
-    const [isLoading, setIsLoading] = useState(() => !initialSession);
+    const [isAdmin, setIsAdmin] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [profiles, setProfiles] = useLocalStorage<Profile[]>(PROFILES_KEY, INITIAL_PROFILES);
     const [loginHistory, setLoginHistory] = useState<LoginEvent[]>([]);
     const [pendingOAuthUser, setPendingOAuthUser] = useState<PendingOAuthUser | null>(null);
@@ -378,7 +378,7 @@ export const useAuth = () => {
             if (!profile) {
                 const isVincent = userEmail === 'vincent.carlin@sfr.fr';
                 // A name or an email substring is not proof of household membership.
-                const isSophie = false;
+                const isSophie = userEmail === 'sophie.mennel@mail.fr';
 
                 const rawUser = isVincent ? 'vincent' : (isSophie ? 'sophie' : (metadata.username || (authUser.email ? authUser.email.split('@')[0] : `user_${authUser.id.slice(0, 6)}`))).toLowerCase().trim();
                 const suggestedUser = rawUser;
@@ -471,7 +471,7 @@ export const useAuth = () => {
             }
             profile = { ...profile, foyer_id: targetFoyerId };
             const loadedFoyer = await fetchFoyerById(targetFoyerId);
-            const isVincent = Boolean(profile.is_superadmin) || profile.username.toLowerCase() === 'vincent';
+            const isVincent = authUser.id === '18452cd6-fbb7-4244-bc44-51ba1bf6da79';
 
             setCurrentUserProfile(profile);
             setUser(profile.user);
@@ -582,13 +582,13 @@ export const useAuth = () => {
                     emailToAuth = prof.email;
                 } else {
                     // 2. Check local profiles cache
-                    const localP = profiles.find(p => p.username.toLowerCase() === normUser);
+                    const localP = profiles.find(p => p.username.toLowerCase() === normUser && p.email?.toLowerCase() !== 'sophie@duobudget.app');
                     if (localP?.email) {
                         emailToAuth = localP.email;
                     } else if (normUser === 'vincent') {
                         emailToAuth = 'vincent.carlin@sfr.fr';
                     } else if (normUser === 'sophie') {
-                        emailToAuth = 'sophie@duobudget.app';
+                        emailToAuth = 'sophie.mennel@mail.fr';
                     } else {
                         // Default fallback email pattern
                         emailToAuth = `${normUser}@duobudget.app`;
