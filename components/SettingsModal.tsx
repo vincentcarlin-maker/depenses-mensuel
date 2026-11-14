@@ -345,11 +345,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                     <SettingsItemRow
                       iconBg="bg-[#eff6ff] dark:bg-blue-950/60"
                       iconColor="text-[#3b82f6] dark:text-blue-400"
-                      icon={
-                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                      }
+                      icon={<svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19l7-7 3 3-7 7-4 1 1-4Z"/><path d="m18 13 2-2a2.12 2.12 0 0 0-3-3l-2 2"/><path d="M4 20c2-1 3-3 3-5"/></svg>}
                       title="Apparence"
                       description="Thème et mode sombre"
                       value={themeLabel}
@@ -367,11 +363,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                     <SettingsItemRow
                       iconBg="bg-[#fffbeb] dark:bg-amber-950/60"
                       iconColor="text-[#d97706] dark:text-amber-400"
-                      icon={
-                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      }
+                      icon={<svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>}
                       title="Budget mensuel & Alertes"
                       description="Définir des plafonds par catégorie et alertes"
                       value={isBudgetEnabled ? 'Activé' : 'Désactivé'}
@@ -380,12 +372,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                     <SettingsItemRow
                       iconBg="bg-[#ecfdf5] dark:bg-emerald-950/60"
                       iconColor="text-[#10b981] dark:text-emerald-400"
-                      icon={
-                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          <circle cx="16" cy="16" r="3" fill="currentColor" className="fill-[#10b981]/20 stroke-[#10b981] stroke-[1.5]" />
-                        </svg>
-                      }
+                      icon={<svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="m9 15 2 2 4-4"/></svg>}
                       title="Rappels"
                       description="Gérer les dépenses mensuelles récurrentes"
                       value={`${activeRemindersCount} actifs`}
@@ -394,11 +381,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                     <SettingsItemRow
                       iconBg="bg-[#fff1f2] dark:bg-rose-950/60"
                       iconColor="text-[#f43f5e] dark:text-rose-400"
-                      icon={
-                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                        </svg>
-                      }
+                      icon={<svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/><circle cx="19" cy="5" r="3" fill="currentColor" stroke="white"/></svg>}
                       title="Notifications Push"
                       description="Recevoir les alertes sur cet appareil"
                       value={hasPushEnabled ? 'Activées' : 'Gérer'}
@@ -416,11 +399,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                     <SettingsItemRow
                       iconBg="bg-[#ecfdf5] dark:bg-emerald-950/60"
                       iconColor="text-[#10b981] dark:text-emerald-400"
-                      icon={
-                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                        </svg>
-                      }
+                      icon={<svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.5 13.5 12 22 2 12V2h10l8.5 8.5a2.12 2.12 0 0 1 0 3Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>}
                       title="Catégories"
                       description="Personnaliser vos catégories de dépenses"
                       onClick={() => setActiveView('categories')}
@@ -428,11 +407,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                     <SettingsItemRow
                       iconBg="bg-[#e0f2fe] dark:bg-sky-950/60"
                       iconColor="text-[#0284c7] dark:text-sky-400"
-                      icon={
-                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                        </svg>
-                      }
+                      icon={<svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10h18l-2 11H5L3 10Z"/><path d="M5 10V5h14v5M9 14h6"/></svg>}
                       title="Contenu des listes"
                       description="Gérer magasins, véhicules et chauffages"
                       onClick={() => setActiveView('lists')}
@@ -440,11 +415,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                     <SettingsItemRow
                       iconBg="bg-[#f5f3ff] dark:bg-purple-950/60"
                       iconColor="text-[#8b5cf6] dark:text-purple-400"
-                      icon={
-                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z" />
-                        </svg>
-                      }
+                      icon={<svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 17.5A4.5 4.5 0 0 0 18 9a6 6 0 0 0-11.5-1A5 5 0 0 0 7 18h13"/><path d="M12 12v8m-3-3 3 3 3-3"/></svg>}
                       title="Données & sauvegarde"
                       description="Sauvegarder et restaurer vos données"
                       onClick={() => setActiveView('data')}
@@ -453,11 +424,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                       <SettingsItemRow
                         iconBg="bg-[#eef2ff] dark:bg-indigo-950/60"
                         iconColor="text-[#6366f1] dark:text-indigo-400"
-                        icon={
-                          <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                          </svg>
-                        }
+                        icon={<svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m8 8-4 4 4 4m8-8 4 4-4 4m-3-12-2 16"/></svg>}
                         title="Administration & Développement"
                         description="Outils techniques et avancés de DuoBudget"
                         value="Vincent"
@@ -476,11 +443,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                     <SettingsItemRow
                       iconBg="bg-[#eff6ff] dark:bg-sky-950/60"
                       iconColor="text-[#0284c7] dark:text-sky-400"
-                      icon={
-                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
-                      }
+                      icon={<svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.5 9 9 0 0 1-4-.9L3 21l1.9-5A9 9 0 1 1 21 11.5Z"/><path d="M8 11h.01M12 11h.01M16 11h.01"/></svg>}
                       title="Nous contacter"
                       description="Signaler un bug, poser une question ou suggérer une idée"
                       value={unreadContactRepliesCount > 0 ? `${unreadContactRepliesCount} réponse${unreadContactRepliesCount > 1 ? 's' : ''}` : undefined}
@@ -498,11 +461,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                     <SettingsItemRow
                       iconBg="bg-[#fff1f2] dark:bg-rose-950/60"
                       iconColor="text-[#f43f5e] dark:text-rose-400"
-                      icon={
-                        <svg className="w-6 h-6 stroke-[2.2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                      }
+                      icon={<svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 17l5-5-5-5m5 5H3"/><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></svg>}
                       title="Déconnexion"
                       titleColor="text-[#e11d48] dark:text-rose-400"
                       description="Se déconnecter de votre session"
