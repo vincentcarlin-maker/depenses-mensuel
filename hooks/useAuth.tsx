@@ -376,18 +376,18 @@ export const useAuth = () => {
             } catch {}
 
             if (!profile) {
-                const isVincent = userEmail === 'vincent.carlin@sfr.fr' || userEmail.includes('vincent');
-                const isSophie = userEmail.includes('sophie');
+                const isVincent = userEmail === 'vincent.carlin@sfr.fr';
+                // A name or an email substring is not proof of household membership.
+                const isSophie = false;
 
                 const rawUser = isVincent ? 'vincent' : (isSophie ? 'sophie' : (metadata.username || (authUser.email ? authUser.email.split('@')[0] : `user_${authUser.id.slice(0, 6)}`))).toLowerCase().trim();
                 const suggestedUser = rawUser;
                 const suggestedName = isVincent ? 'Vincent' : (isSophie || rawUser === 'sophie' ? 'Sophie' : (metadata.full_name || metadata.name || (rawUser.charAt(0).toUpperCase() + rawUser.slice(1))));
 
                 // Match against local profiles & INITIAL_PROFILES first
-                const allLocalProfiles = [...profilesRef.current, ...INITIAL_PROFILES];
+                const allLocalProfiles = INITIAL_PROFILES;
                 let matchedProfile = allLocalProfiles.find(p =>
-                    (userEmail && p.email?.toLowerCase().trim() === userEmail) ||
-                    p.username?.toLowerCase().trim() === suggestedUser
+                    Boolean(userEmail && p.email?.toLowerCase().trim() === userEmail)
                 );
 
                 // Fallback lookup in push_subscriptions if foyer_id isn't known yet
@@ -422,10 +422,10 @@ export const useAuth = () => {
                     user: matchedProfile?.user || suggestedName,
                     email: authUser.email || matchedProfile?.email,
                     color: matchedProfile?.color,
-                    foyer_id: matchedProfile?.foyer_id || (isVincent || isSophie ? DEFAULT_FOYER_ID : undefined),
+                    foyer_id: matchedProfile?.foyer_id,
                     foyer_name: matchedProfile?.foyer_name,
                     foyer_code: matchedProfile?.foyer_code,
-                    is_superadmin: isVincent || Boolean(matchedProfile?.is_superadmin)
+                    is_superadmin: isVincent
                 };
 
                 // Auto-provision profile row in database if possible
@@ -446,9 +446,8 @@ export const useAuth = () => {
                 rawStoredFoyerId = localStorage.getItem('duobudget_active_foyer_id');
             } catch {}
 
-            let targetFoyerId = isFreshSignIn
-                ? (profile.foyer_id || rawStoredFoyerId || DEFAULT_FOYER_ID)
-                : (rawStoredFoyerId || profile.foyer_id || DEFAULT_FOYER_ID);
+            // Only a verified membership can grant access to a household.
+            let targetFoyerId: string | null = null;
 
             try {
                 const { data: memberRows } = await (supabase.from('foyer_members') as any)
@@ -461,6 +460,15 @@ export const useAuth = () => {
                 }
             } catch {}
 
+            if (!targetFoyerId) {
+                setUser(null);
+                setUsername(null);
+                setCurrentUserProfile(null);
+                setIsAdmin(false);
+                saveStoredActiveSession(null);
+                console.warn('Authenticated account has no verified household membership.');
+                return;
+            }
             profile = { ...profile, foyer_id: targetFoyerId };
             const loadedFoyer = await fetchFoyerById(targetFoyerId);
             const isVincent = Boolean(profile.is_superadmin) || profile.username.toLowerCase() === 'vincent';
