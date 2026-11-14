@@ -46,7 +46,7 @@
         if (window.location.pathname.includes('%23access_token=')) {
           var rawFragment = window.location.pathname.split('%23')[1] + (window.location.search ? '&' + window.location.search.slice(1) : '') + (window.location.hash ? '&' + window.location.hash.slice(1) : '');
           window.location.hash = '#' + rawFragment;
-          window.history.replaceState(null, '', '/' + '#' + rawFragment);
+          window.history.replaceState(null, '', window.location.pathname.split('%23')[0] + window.location.search + '#' + rawFragment);
         }
       } catch (e) {}
       if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
