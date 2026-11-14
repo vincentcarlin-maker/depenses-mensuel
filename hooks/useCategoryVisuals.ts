@@ -867,6 +867,36 @@ function normalizeText(text: string): string {
     .trim();
 }
 
+const INTERNET_RULE_KEYWORDS = new Set(['internet', 'wifi', 'box', 'fibre']);
+const INTERNET_SELECTOR_ICON_IDS = new Set([
+  'wifi',
+  'wifioutline',
+  'orange',
+  'sosh',
+  'free',
+  'bouygues',
+  'sfr',
+]);
+const ASSURANCE_RULE_KEYWORDS = new Set(['assurance', 'assurances']);
+const ASSURANCE_SELECTOR_ICON_IDS = new Set([
+  'assurancebadge',
+  'shieldoutline',
+  'shield',
+  'macif',
+  'directassurance',
+  'axa',
+  'maif',
+  'matmut',
+  'allianz',
+  'groupama',
+  'maaf',
+  'gmf',
+]);
+
+function normalizeSelectorIconId(iconId?: string): string {
+  return (iconId || '').toLowerCase().replace(/icon$/, '');
+}
+
 function resolveCategoryVisualInner(
   categoryName: string, 
   customIcons: CustomCategoryIcon[] = [], 
@@ -885,6 +915,14 @@ function resolveCategoryVisualInner(
       return normKeyword && textToSearchNorm.includes(normKeyword);
     });
     if (matchedRule) {
+      const normKeyword = normalizeText(matchedRule.keyword);
+      const normRuleIcon = normalizeSelectorIconId(matchedRule.iconId);
+      if (INTERNET_RULE_KEYWORDS.has(normKeyword) && INTERNET_SELECTOR_ICON_IDS.has(normRuleIcon)) {
+        return resolveInternetChoiceVisual(iconPreferences.internet);
+      }
+      if (ASSURANCE_RULE_KEYWORDS.has(normKeyword) && ASSURANCE_SELECTOR_ICON_IDS.has(normRuleIcon)) {
+        return resolveAssuranceChoiceVisual(iconPreferences.assurance);
+      }
       return resolveIconAndColor(matchedRule.iconId, matchedRule.color, customIcons);
     }
   }
@@ -899,6 +937,14 @@ function resolveCategoryVisualInner(
     });
     if (matchedSpecificCustom) {
       const targetIconId = matchedSpecificCustom.id?.startsWith('mapping_') ? matchedSpecificCustom.name : (matchedSpecificCustom.id || matchedSpecificCustom.name);
+      const normCat = normalizeText(matchedSpecificCustom.category);
+      const normTarget = normalizeSelectorIconId(targetIconId);
+      if (INTERNET_RULE_KEYWORDS.has(normCat) && INTERNET_SELECTOR_ICON_IDS.has(normTarget)) {
+        return resolveInternetChoiceVisual(iconPreferences.internet);
+      }
+      if (ASSURANCE_RULE_KEYWORDS.has(normCat) && ASSURANCE_SELECTOR_ICON_IDS.has(normTarget)) {
+        return resolveAssuranceChoiceVisual(iconPreferences.assurance);
+      }
       return resolveIconAndColor(targetIconId, matchedSpecificCustom.color || 'bg-[#3b82f6]', customIcons);
     }
   }
@@ -1107,6 +1153,14 @@ function resolveCategoryVisualInner(
 
   if (matchedCustom) {
     const targetIconId = matchedCustom.id?.startsWith('mapping_') ? matchedCustom.name : (matchedCustom.id || matchedCustom.name);
+    const normCat = normalizeText(categoryName);
+    const normTarget = normalizeSelectorIconId(targetIconId);
+    if (INTERNET_RULE_KEYWORDS.has(normCat) && INTERNET_SELECTOR_ICON_IDS.has(normTarget)) {
+      return resolveInternetChoiceVisual(iconPreferences.internet);
+    }
+    if (ASSURANCE_RULE_KEYWORDS.has(normCat) && ASSURANCE_SELECTOR_ICON_IDS.has(normTarget)) {
+      return resolveAssuranceChoiceVisual(iconPreferences.assurance);
+    }
     return resolveIconAndColor(targetIconId, matchedCustom.color || 'bg-[#3b82f6]', customIcons);
   }
 
@@ -1225,9 +1279,37 @@ interface CategoryVisualsContextType {
 
 const CategoryVisualsContext = createContext<CategoryVisualsContextType | null>(null);
 
+function mapAssuranceChoiceToRuleIcon(choice: AssuranceIconChoice): { iconId: string; color: string } {
+  if (choice === 'classic') return { iconId: 'shieldoutline', color: 'bg-[#10b981]' };
+  if (choice === 'logo') return { iconId: 'assurancebadge', color: 'bg-[#10b981]' };
+  return { iconId: choice, color: PRESET_LOOKUP[choice]?.defaultColor || 'bg-[#10b981]' };
+}
+
+function mapInternetChoiceToRuleIcon(choice: InternetIconChoice): { iconId: string; color: string } {
+  if (choice === 'classic') return { iconId: 'wifioutline', color: 'bg-[#6366f1]' };
+  if (choice === 'logo') return { iconId: 'wifi', color: 'bg-[#6366f1]' };
+  return { iconId: choice, color: PRESET_LOOKUP[choice]?.defaultColor || 'bg-[#6366f1]' };
+}
+
+function mapRuleIconToInternetChoice(iconId: string): InternetIconChoice | null {
+  const norm = normalizeSelectorIconId(iconId);
+  if (norm === 'wifioutline') return 'classic';
+  if (norm === 'wifi') return 'logo';
+  if (VALID_INTERNET_CHOICES.has(norm as InternetIconChoice)) return norm as InternetIconChoice;
+  return null;
+}
+
+function mapRuleIconToAssuranceChoice(iconId: string): AssuranceIconChoice | null {
+  const norm = normalizeSelectorIconId(iconId);
+  if (norm === 'shieldoutline') return 'classic';
+  if (norm === 'assurancebadge' || norm === 'shield') return 'logo';
+  if (VALID_ASSURANCE_CHOICES.has(norm as AssuranceIconChoice)) return norm as AssuranceIconChoice;
+  return null;
+}
+
 export const CategoryVisualsProvider: React.FC<{ children: React.ReactNode; foyerId?: string }> = ({ children, foyerId }) => {
   const { customIcons, addCustomIcon, deleteCustomIcon, saveCategoryIconMapping } = useCustomCategoryIcons(foyerId);
-  const { rules, addRule, deleteRule, updateRule } = useKeywordRules(foyerId);
+  const { rules, addRule: rawAddRule, deleteRule, updateRule: rawUpdateRule } = useKeywordRules(foyerId);
   const [iconPreferences, setIconPreferences] = useSyncedSettings<SpecialIconPreferences>(
     `icon_styles_${foyerId || 'default'}`,
     DEFAULT_ICON_PREFERENCES
@@ -1249,7 +1331,16 @@ export const CategoryVisualsProvider: React.FC<{ children: React.ReactNode; foye
         ? (prev.internet as InternetIconChoice)
         : 'logo',
     }));
-  }, [setIconPreferences]);
+
+    const matchingRule = rules.find(r =>
+      ASSURANCE_RULE_KEYWORDS.has(normalizeText(r.keyword)) &&
+      ASSURANCE_SELECTOR_ICON_IDS.has(normalizeSelectorIconId(r.iconId))
+    );
+    if (matchingRule) {
+      const mapped = mapAssuranceChoiceToRuleIcon(style);
+      rawUpdateRule(matchingRule.id, matchingRule.keyword, mapped.iconId, mapped.color);
+    }
+  }, [setIconPreferences, rules, rawUpdateRule]);
 
   const setInternetIconStyle = React.useCallback((style: InternetIconChoice) => {
     setIconPreferences(prev => ({
@@ -1258,7 +1349,53 @@ export const CategoryVisualsProvider: React.FC<{ children: React.ReactNode; foye
         : 'logo',
       internet: style,
     }));
+
+    const matchingRule = rules.find(r =>
+      INTERNET_RULE_KEYWORDS.has(normalizeText(r.keyword)) &&
+      INTERNET_SELECTOR_ICON_IDS.has(normalizeSelectorIconId(r.iconId))
+    );
+    if (matchingRule) {
+      const mapped = mapInternetChoiceToRuleIcon(style);
+      rawUpdateRule(matchingRule.id, matchingRule.keyword, mapped.iconId, mapped.color);
+    }
+  }, [setIconPreferences, rules, rawUpdateRule]);
+
+  const syncSpecialPreferenceFromRule = React.useCallback((keyword: string, iconId: string) => {
+    const normKw = normalizeText(keyword);
+    if (INTERNET_RULE_KEYWORDS.has(normKw)) {
+      const choice = mapRuleIconToInternetChoice(iconId);
+      if (choice) {
+        setIconPreferences(prev => ({
+          assurance: VALID_ASSURANCE_CHOICES.has(prev?.assurance as AssuranceIconChoice)
+            ? (prev.assurance as AssuranceIconChoice)
+            : 'logo',
+          internet: choice,
+        }));
+      }
+    } else if (ASSURANCE_RULE_KEYWORDS.has(normKw)) {
+      const choice = mapRuleIconToAssuranceChoice(iconId);
+      if (choice) {
+        setIconPreferences(prev => ({
+          assurance: choice,
+          internet: VALID_INTERNET_CHOICES.has(prev?.internet as InternetIconChoice)
+            ? (prev.internet as InternetIconChoice)
+            : 'logo',
+        }));
+      }
+    }
   }, [setIconPreferences]);
+
+  const addRule = React.useCallback((keyword: string, iconId: string, color: string) => {
+    const ok = rawAddRule(keyword, iconId, color);
+    if (ok) syncSpecialPreferenceFromRule(keyword, iconId);
+    return ok;
+  }, [rawAddRule, syncSpecialPreferenceFromRule]);
+
+  const updateRule = React.useCallback((id: string, keyword: string, iconId: string, color: string) => {
+    const ok = rawUpdateRule(id, keyword, iconId, color);
+    if (ok) syncSpecialPreferenceFromRule(keyword, iconId);
+    return ok;
+  }, [rawUpdateRule, syncSpecialPreferenceFromRule]);
 
   const getVisual = React.useCallback((categoryName: string, description?: string): CategoryVisual => {
     return resolveCategoryVisual(categoryName, customIcons, description, rules, safePreferences);
