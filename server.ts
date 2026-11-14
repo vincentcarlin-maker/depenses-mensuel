@@ -7,12 +7,16 @@ import { createClient } from "@supabase/supabase-js";
 
 // VAPID KEYS
 const VAPID_PUBLIC_KEY = 'BN0Z3nqz3OLK1q2RuvukfLMAffOncCrBsvMw7GncY_9EK8u6-W0OzfIsRElejTlC-TM2uNDXCZkicnJX47pNGdc';
-const VAPID_PRIVATE_KEY = 'g1sFLkHhpqVT5NOxZIIXMrUIBXHhOi90Rcd3VD9YZHo';
-webpush.setVapidDetails(
-    'mailto:vincent.carlin@sfr.fr',
-    VAPID_PUBLIC_KEY,
-    VAPID_PRIVATE_KEY
-);
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
+if (VAPID_PRIVATE_KEY) {
+    webpush.setVapidDetails(
+        'mailto:vincent.carlin@sfr.fr',
+        VAPID_PUBLIC_KEY,
+        VAPID_PRIVATE_KEY
+    );
+} else {
+    console.warn('VAPID_PRIVATE_KEY is missing; server-side push notifications are disabled.');
+}
 
 // We define our own supabase client for the server using the anon key (which has access thanks to RLS)
 const supabaseUrl = 'https://xcdyshzyxpngbpceilym.supabase.co';
