@@ -305,15 +305,9 @@ export const KeywordIconRulesTab: React.FC<KeywordIconRulesTabProps> = ({ setToa
                   }`}
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
-                    {FULL_BADGE_ICONS.has(IconComponent) ? (
-                      <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 shadow-3xs">
-                        <IconComponent className="w-11 h-11 rounded-full" />
-                      </div>
-                    ) : (
-                      <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${colorDef.badgeBgClass} ${colorDef.textColorClass} transition-colors shadow-3xs`}>
-                        <IconComponent className="w-5 h-5" />
-                      </div>
-                    )}
+                    <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${colorDef.badgeBgClass} ${colorDef.textColorClass} transition-colors shadow-3xs`}>
+                      <IconComponent className="w-5 h-5" />
+                    </div>
                     <div className="min-w-0">
                       <h4 className="font-extrabold text-slate-900 dark:text-slate-100 text-sm sm:text-base leading-tight">
                         {rule.keyword}
