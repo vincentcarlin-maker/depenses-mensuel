@@ -119,16 +119,12 @@ async function startServer() {
                     return matchUser || matchName || matchEmail || matchFoyer;
                 });
 
-                // 2. Fallback: If no specific subscriber found (e.g. user subscribed as 'Commun' or under generic profile), notify non-admin subscribers of the foyer or all non-admin subscribers
-                if (targetSubs.length === 0) {
-                    console.log("Fallback send-contact-notification: ciblage des abonnés non-admin...");
+                // Fail closed: never broadcast a private support reply to unrelated users.
+                // If an explicit household is supplied, only its subscribers may receive it.
+                if (targetSubs.length === 0 && foyerTarget) {
                     targetSubs = subscriptions.filter((s: any) => {
                         const subObj = typeof s.subscription === 'string' ? JSON.parse(s.subscription) : s.subscription;
-                        if (!subObj || !subObj.endpoint) return false;
-                        const uId = (s.user_id || '').toLowerCase().trim();
-                        if (uId === 'vincent' || uId.includes('vincent')) return false;
-                        if (foyerTarget && subObj.foyer_id && subObj.foyer_id !== foyerTarget) return false;
-                        return true;
+                        return Boolean(subObj?.endpoint && subObj.foyer_id === foyerTarget);
                     });
                 }
             }
