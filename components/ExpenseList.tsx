@@ -36,6 +36,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({ expenses, onExpenseClick, hig
                 modificationTypes={modifiedInfo.get(expense.id)}
                 foyerMembers={foyerMembers}
                 profiles={profiles}
+                showCategory={true}
             />
         ))}
     </div>
