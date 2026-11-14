@@ -246,21 +246,24 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
 
       {/* Main Settings Menu */}
       {activeView === 'main' && (
-        <div className="space-y-5 sm:space-y-6">
-          {/* Title & Subtitle */}
-          <div className="space-y-1">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Réglages
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400 font-medium text-xs sm:text-sm">
-              Personnalisez votre expérience DuoBudget
-            </p>
+        <div className="space-y-5 sm:space-y-6 rounded-[28px] bg-[#eef5f9] dark:bg-slate-900/50 pb-6">
+          {/* Premium teal header – visual redesign only */}
+          <div className="relative overflow-hidden rounded-t-[28px] bg-gradient-to-br from-[#063b46] via-[#006b76] to-[#0095a0] px-5 pt-7 pb-16 sm:px-7 sm:pt-9 text-white">
+            <div className="relative z-10">
+              <p className="text-sm font-semibold tracking-tight text-white/85">▥ DuoBudget</p>
+              <h1 className="mt-4 text-3xl sm:text-4xl font-extrabold tracking-tight">Réglages</h1>
+              <p className="mt-1 text-sm sm:text-base text-white/85">Personnalisez votre application</p>
+            </div>
+            <svg aria-hidden="true" className="absolute right-3 top-5 h-32 w-32 text-white/15" viewBox="0 0 100 100" fill="none">
+              <path d="M50 13l6 8 10-1 4 10 10 5-2 10 7 8-7 8 2 10-10 5-4 10-10-1-6 8-8-8-10 1-4-10-10-5 2-10-7-8 7-8-2-10 10-5 4-10 10 1 8-8Z" fill="currentColor"/>
+              <circle cx="50" cy="53" r="15" fill="#006b76"/>
+            </svg>
           </div>
-
+          <div className="-mt-12 relative z-10 px-3 sm:px-5">
           {/* Top Card: Couple Profile / Duo Card */}
           <div 
             onClick={() => setView('users')}
-            className="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 flex items-center justify-between transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/90 cursor-pointer group"
+            className="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-[24px] shadow-lg shadow-slate-900/10 border border-white/80 dark:border-slate-700/60 flex items-center justify-between transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/90 cursor-pointer group"
           >
             <div className="flex items-center gap-3 sm:gap-4 min-w-0">
               {/* Dynamic Avatars */}
@@ -301,12 +304,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             </div>
           </div>
 
-          {/* Section: Personnalisation */}
+                    </div>
+
+{/* Section: Application */}
           <div className="space-y-2">
-            <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+            <h4 className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 px-2">
               Personnalisation
             </h4>
-            <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 rounded-[22px] shadow-md shadow-slate-900/5 border border-white/80 dark:border-slate-700/60 overflow-hidden">
               <SettingsItemRow
                 iconBg="bg-[#eff6ff] dark:bg-blue-950/60"
                 iconColor="text-[#3b82f6] dark:text-blue-400"
@@ -325,10 +330,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
 
           {/* Section: Notifications & Rappels */}
           <div className="space-y-2">
-            <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+            <h4 className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 px-2">
               Rappels & Alertes
             </h4>
-            <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
+            <div className="bg-white dark:bg-slate-800 rounded-[22px] shadow-md shadow-slate-900/5 border border-white/80 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
               <SettingsItemRow
                 iconBg="bg-[#fffbeb] dark:bg-amber-950/60"
                 iconColor="text-[#d97706] dark:text-amber-400"
@@ -412,10 +417,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
 
           {/* Section: Gestion */}
           <div className="space-y-2">
-            <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+            <h4 className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 px-2">
               Gestion
             </h4>
-            <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
+            <div className="bg-white dark:bg-slate-800 rounded-[22px] shadow-md shadow-slate-900/5 border border-white/80 dark:border-slate-700/60 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60">
               <SettingsItemRow
                 iconBg="bg-[#ecfdf5] dark:bg-emerald-950/60"
                 iconColor="text-[#10b981] dark:text-emerald-400"
@@ -484,10 +489,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
 
           {/* Section: Support & Contact */}
           <div className="space-y-2">
-            <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+            <h4 className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 px-2">
               Assistance & Support
             </h4>
-            <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 rounded-[22px] shadow-md shadow-slate-900/5 border border-white/80 dark:border-slate-700/60 overflow-hidden">
               <SettingsItemRow
                 iconBg="bg-[#eff6ff] dark:bg-sky-950/60"
                 iconColor="text-[#0284c7] dark:text-sky-400"
@@ -506,10 +511,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
 
           {/* Section: Compte */}
           <div className="space-y-2">
-            <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
+            <h4 className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 px-2">
               Compte
             </h4>
-            <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 rounded-[22px] shadow-md shadow-slate-900/5 border border-white/80 dark:border-slate-700/60 overflow-hidden">
               <SettingsItemRow
                 iconBg="bg-[#fff1f2] dark:bg-rose-950/60"
                 iconColor="text-[#f43f5e] dark:text-rose-400"
