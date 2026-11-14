@@ -329,7 +329,23 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
 
                     </div>
 
-{/* Section: Application */}
+{/* Password setup */}
+          <section className="mx-3 sm:mx-5 rounded-[22px] border border-cyan-100 dark:border-cyan-900/50 bg-white dark:bg-slate-800 p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="font-bold text-slate-900 dark:text-white">Connexion par mot de passe</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Définissez un mot de passe pour votre compte actuel, sans Google.</p>
+              </div>
+              <button type="button" onClick={() => { setShowPasswordSetup(v => !v); setPasswordFeedback(''); }} className="shrink-0 rounded-xl bg-teal-700 px-3 py-2 text-xs font-bold text-white">Définir mon mot de passe</button>
+            </div>
+            {showPasswordSetup && <form onSubmit={handlePasswordSetup} className="mt-4 space-y-3">
+              <input type="password" autoComplete="new-password" required minLength={8} value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Nouveau mot de passe (8 caractères minimum)" aria-label="Nouveau mot de passe" className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-3 text-sm dark:text-white" />
+              <input type="password" autoComplete="new-password" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirmer le mot de passe" aria-label="Confirmer le mot de passe" className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-3 text-sm dark:text-white" />
+              <button type="submit" disabled={passwordBusy} className="rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">{passwordBusy ? 'Enregistrement…' : 'Enregistrer mon mot de passe'}</button>
+            </form>}
+            {passwordFeedback && <p role="status" className="mt-3 text-sm text-slate-700 dark:text-slate-200">{passwordFeedback}</p>}
+          </section>
+          {/* Section: Application */}
           <div className="space-y-2">
             <h4 className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 px-2">
               Personnalisation
