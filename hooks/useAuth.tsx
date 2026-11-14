@@ -1110,7 +1110,7 @@ export const useAuth = () => {
     // Google OAuth integration via Supabase Auth
     const loginWithOAuth = useCallback(async (provider: 'google' = 'google'): Promise<{ success: boolean; error?: string; redirected?: boolean; authUrl?: string }> => {
         try {
-            const redirectTo = window.location.origin;
+            const redirectTo = 'https://vincentcarlin-maker.github.io/depenses-mensuel/';
             const isIframe = typeof window !== 'undefined' && window.self !== window.top;
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider,
