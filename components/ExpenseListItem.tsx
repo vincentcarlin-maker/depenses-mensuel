@@ -55,6 +55,9 @@ const ExpenseListItem: React.FC<{
     const isChristmas = (expense.category === 'Divers' && /no[uëe]l/i.test(expense.description || '')) || (expense.category === 'Cadeau' && /no[uëe]l/i.test(expense.description || ''));
     
     const visual = getVisual ? getVisual(expense.category, expense.description) : null;
+    // Category chip uses the category's own palette and icon, independently of the payer's colors.
+    const categoryVisual = getVisual ? getVisual(expense.category) : null;
+    const CategoryChipIcon = categoryVisual?.icon || MiscIcon;
     let IconComponent = visual?.icon || MiscIcon;
     let iconBgClass = visual?.color || 'bg-slate-500';
     let isFullBadge = visual?.isFullBadge || false;
@@ -116,8 +119,12 @@ const ExpenseListItem: React.FC<{
                     {(showCategory || showUserBadge) && (
                         <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 min-w-0 mt-0.5 sm:mt-1">
                             {showCategory && (
-                                <span className={`inline-flex max-w-full items-center rounded-full border px-2 py-0.5 text-[10px] sm:text-xs leading-tight border-current/20 bg-white/40 dark:bg-white/5 ${amountColorClass} expense-monthly-badge ${isMonthlyExpenseBold ? 'font-bold' : 'font-semibold'}`}>
-                                    {(expense.category === 'Dépenses obligatoires' || expense.category === 'Dép. récurrentes') ? 'Dép. recurentes' : expense.category}
+                                <span
+                                    className={`inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] sm:text-xs leading-tight expense-monthly-badge ${categoryVisual?.badgeBg || 'bg-slate-100 dark:bg-slate-800'} ${categoryVisual?.textColor || 'text-slate-700 dark:text-slate-200'} ${categoryVisual?.borderColor || 'border-slate-200 dark:border-slate-700'} ${isMonthlyExpenseBold ? 'font-bold' : 'font-semibold'}`}
+                                    style={categoryVisual?.customStyle}
+                                >
+                                    <CategoryChipIcon className="h-3 w-3 shrink-0" />
+                                    <span className="truncate">{(expense.category === 'Dépenses obligatoires' || expense.category === 'Dép. récurrentes') ? 'Dép. récurrentes' : expense.category}</span>
                                 </span>
                             )}
                             {showUserBadge && (
