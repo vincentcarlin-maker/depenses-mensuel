@@ -116,7 +116,7 @@ const ExpenseListItem: React.FC<{
                     {(showCategory || showUserBadge) && (
                         <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 min-w-0 mt-0.5 sm:mt-1">
                             {showCategory && (
-                                <span className={`text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 expense-monthly-badge ${isMonthlyExpenseBold ? 'font-semibold' : 'font-medium'}`}>
+                                <span className={`inline-flex max-w-full items-center rounded-full border px-2 py-0.5 text-[10px] sm:text-xs leading-tight border-current/20 bg-white/40 dark:bg-white/5 ${amountColorClass} expense-monthly-badge ${isMonthlyExpenseBold ? 'font-bold' : 'font-semibold'}`}>
                                     {(expense.category === 'Dépenses obligatoires' || expense.category === 'Dép. récurrentes') ? 'Dép. recurentes' : expense.category}
                                 </span>
                             )}
