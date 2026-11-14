@@ -7,15 +7,7 @@ import ScissorsIcon from './icons/ScissorsIcon';
 import { resolveUserTheme } from '../utils/userColors';
 import { 
     GiftIcon,
-    BirthdayIcon,
-    ShieldIcon,
-    WifiIcon,
-    DeezerIcon,
-    SfrIcon,
-    CeoIcon,
-    TotalEnergiesIcon,
-    TrashBinIcon,
-    NetflixIcon
+    BirthdayIcon
 } from './icons/CategoryIcons';
 import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
 
@@ -28,7 +20,7 @@ interface ExpenseDetailModalProps {
 }
 
 const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, history = [], onClose, onEdit, foyerMembers }) => {
-  const { getVisual } = useCategoryVisuals();
+  const { getVisual, rules } = useCategoryVisuals();
   const userTheme = resolveUserTheme(expense.user, foyerMembers);
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
@@ -37,62 +29,32 @@ const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({ expense, histor
   }, [onClose]);
 
   const visual = getVisual(expense.category, expense.description);
-  
-  const lowerCaseDesc = expense.description.toLowerCase();
+
+  const normalizedCombined = `${expense.category} ${expense.description || ''}`
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  const hasCustomKeywordRule = rules.some(r => {
+    const kw = (r.keyword || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    return kw && normalizedCombined.includes(kw);
+  });
+
   const isChristmas = (expense.category === 'Divers' && /no[uëe]l/i.test(expense.description)) || (expense.category === 'Cadeau' && /no[uëe]l/i.test(expense.description));
   const isBirthday = /anniversaire/i.test(expense.description);
-  const isMutuelle = lowerCaseDesc.includes('mutuelle');
-  const isInternet = lowerCaseDesc.includes('internet') || lowerCaseDesc.includes('wifi') || lowerCaseDesc.includes('fibre') || /\bbox\b/.test(lowerCaseDesc);
-  const isDeezer = lowerCaseDesc.includes('deezer');
-  const isSfr = lowerCaseDesc.includes('sfr');
-  const isCeo = lowerCaseDesc.includes('ceo');
-  const isTotalEnergies = /total\s*[eé]nergie/i.test(lowerCaseDesc) || lowerCaseDesc.trim() === 'total' || lowerCaseDesc.startsWith('total ');
-  const isPoubelles = lowerCaseDesc.includes('poubelles');
-  const isNetflix = lowerCaseDesc.includes('netflix');
 
   let IconComponent = visual.icon;
   let iconColorClass = visual.textColor;
   let isFullBadge = visual.isFullBadge ?? false;
 
-  if (isChristmas) {
-    IconComponent = GiftIcon;
-    iconColorClass = 'text-red-600';
-    isFullBadge = false;
-  } else if (isBirthday) {
-    IconComponent = BirthdayIcon;
-    isFullBadge = true;
-  } else if (isInternet) {
-    IconComponent = WifiIcon;
-    iconColorClass = '';
-    isFullBadge = true;
-  } else if (isPoubelles) {
-    IconComponent = TrashBinIcon;
-    iconColorClass = '';
-    isFullBadge = true;
-  } else if (isDeezer) {
-    IconComponent = DeezerIcon;
-    iconColorClass = '';
-    isFullBadge = true;
-  } else if (isSfr) {
-    IconComponent = SfrIcon;
-    iconColorClass = '';
-    isFullBadge = true;
-  } else if (isMutuelle) {
-    IconComponent = ShieldIcon;
-    iconColorClass = '';
-    isFullBadge = true;
-  } else if (isCeo) {
-    IconComponent = CeoIcon;
-    iconColorClass = '';
-    isFullBadge = true;
-  } else if (isTotalEnergies) {
-    IconComponent = TotalEnergiesIcon;
-    iconColorClass = '';
-    isFullBadge = true;
-  } else if (isNetflix) {
-    IconComponent = NetflixIcon;
-    iconColorClass = '';
-    isFullBadge = true;
+  if (!hasCustomKeywordRule) {
+    if (isChristmas) {
+      IconComponent = GiftIcon;
+      iconColorClass = 'text-red-600';
+      isFullBadge = false;
+    } else if (isBirthday) {
+      IconComponent = BirthdayIcon;
+      isFullBadge = true;
+    }
   }
 
   const hasSubtractions = expense.category === 'Courses' && expense.subtracted_items && expense.subtracted_items.length > 0;

@@ -12,7 +12,10 @@ import {
   PalmTreeIcon,
   BirthdayIcon,
   ShieldIcon,
+  AssuranceBadgeIcon,
+  ShieldOutlineIcon,
   WifiIcon,
+  WifiOutlineIcon,
   DeezerIcon,
   MusicNoteIcon,
   DevicePhoneMobileIcon,
@@ -132,11 +135,83 @@ import {
   StarbucksIcon,
   CoffeeShopIcon,
   BarPubIcon,
-  BrasserieIcon
+  BrasserieIcon,
+  MacifIcon,
+  DirectAssuranceIcon,
+  AxaIcon,
+  MaifIcon,
+  MatmutIcon,
+  AllianzIcon,
+  GroupamaIcon,
+  MaafIcon,
+  GmfIcon,
+  OrangeIcon,
+  SoshIcon,
+  FreeIcon,
+  BouyguesIcon
 } from '../components/icons/CategoryIcons';
 import { CustomCategoryIcon, useCustomCategoryIcons } from './useCustomCategoryIcons';
 import { getColorDef } from '../components/CategoryEditModal';
 import { useKeywordRules, KeywordRule } from './useKeywordRules';
+import { useSyncedSettings } from './useSyncedSettings';
+
+export type AssuranceIconChoice =
+  | 'classic'
+  | 'logo'
+  | 'macif'
+  | 'directassurance'
+  | 'axa'
+  | 'maif'
+  | 'matmut'
+  | 'allianz'
+  | 'groupama'
+  | 'maaf'
+  | 'gmf';
+
+export type InternetIconChoice =
+  | 'classic'
+  | 'logo'
+  | 'orange'
+  | 'sosh'
+  | 'free'
+  | 'bouygues'
+  | 'sfr';
+
+export type SpecialIconStyle = AssuranceIconChoice | InternetIconChoice;
+
+export const VALID_ASSURANCE_CHOICES = new Set<AssuranceIconChoice>([
+  'classic',
+  'logo',
+  'macif',
+  'directassurance',
+  'axa',
+  'maif',
+  'matmut',
+  'allianz',
+  'groupama',
+  'maaf',
+  'gmf',
+]);
+
+export const VALID_INTERNET_CHOICES = new Set<InternetIconChoice>([
+  'classic',
+  'logo',
+  'orange',
+  'sosh',
+  'free',
+  'bouygues',
+  'sfr',
+]);
+
+export interface SpecialIconPreferences {
+  assurance: AssuranceIconChoice;
+  internet: InternetIconChoice;
+}
+
+export const DEFAULT_ICON_PREFERENCES: SpecialIconPreferences = {
+  assurance: 'logo',
+  internet: 'logo',
+};
 
 export interface CategoryVisual {
   icon: React.FC<{ className?: string }>;
@@ -281,6 +356,7 @@ export const FULL_BADGE_ICONS = new Set<React.FC<any>>([
   DeezerIcon,
   SfrIcon,
   ShieldIcon,
+  AssuranceBadgeIcon,
   CeoIcon,
   TotalEnergiesIcon,
   NetflixIcon,
@@ -313,7 +389,20 @@ export const FULL_BADGE_ICONS = new Set<React.FC<any>>([
   StarbucksIcon,
   CoffeeShopIcon,
   BarPubIcon,
-  BrasserieIcon
+  BrasserieIcon,
+  MacifIcon,
+  DirectAssuranceIcon,
+  AxaIcon,
+  MaifIcon,
+  MatmutIcon,
+  AllianzIcon,
+  GroupamaIcon,
+  MaafIcon,
+  GmfIcon,
+  OrangeIcon,
+  SoshIcon,
+  FreeIcon,
+  BouyguesIcon
 ]);
 
 export const PRESET_LOOKUP: Record<string, { icon: React.FC<{ className?: string }>; defaultColor: string }> = {
@@ -343,8 +432,14 @@ export const PRESET_LOOKUP: Record<string, { icon: React.FC<{ className?: string
   birthdayicon: { icon: BirthdayIcon, defaultColor: 'bg-[#10b981]' },
   shield: { icon: ShieldIcon, defaultColor: 'bg-[#10b981]' },
   shieldicon: { icon: ShieldIcon, defaultColor: 'bg-[#10b981]' },
+  assurancebadge: { icon: AssuranceBadgeIcon, defaultColor: 'bg-[#10b981]' },
+  assurancebadgeicon: { icon: AssuranceBadgeIcon, defaultColor: 'bg-[#10b981]' },
+  shieldoutline: { icon: ShieldOutlineIcon, defaultColor: 'bg-[#10b981]' },
+  shieldoutlineicon: { icon: ShieldOutlineIcon, defaultColor: 'bg-[#10b981]' },
   wifi: { icon: WifiIcon, defaultColor: 'bg-[#6366f1]' },
   wifiicon: { icon: WifiIcon, defaultColor: 'bg-[#6366f1]' },
+  wifioutline: { icon: WifiOutlineIcon, defaultColor: 'bg-[#6366f1]' },
+  wifioutlineicon: { icon: WifiOutlineIcon, defaultColor: 'bg-[#6366f1]' },
   music: { icon: MusicNoteIcon, defaultColor: 'bg-[#a855f7]' },
   musicnoteicon: { icon: MusicNoteIcon, defaultColor: 'bg-[#a855f7]' },
   deezer: { icon: DeezerIcon, defaultColor: 'bg-[#a238ff]' },
@@ -582,7 +677,85 @@ export const PRESET_LOOKUP: Record<string, { icon: React.FC<{ className?: string
   barpubicon: { icon: BarPubIcon, defaultColor: 'bg-[#b45309]' },
   brasserie: { icon: BrasserieIcon, defaultColor: 'bg-[#6b21a8]' },
   brasserieicon: { icon: BrasserieIcon, defaultColor: 'bg-[#6b21a8]' },
+
+  // Assurances
+  macif: { icon: MacifIcon, defaultColor: 'bg-[#003a70]' },
+  macificon: { icon: MacifIcon, defaultColor: 'bg-[#003a70]' },
+  directassurance: { icon: DirectAssuranceIcon, defaultColor: 'bg-[#e30613]' },
+  directassuranceicon: { icon: DirectAssuranceIcon, defaultColor: 'bg-[#e30613]' },
+  axa: { icon: AxaIcon, defaultColor: 'bg-[#00008f]' },
+  axaicon: { icon: AxaIcon, defaultColor: 'bg-[#00008f]' },
+  maif: { icon: MaifIcon, defaultColor: 'bg-[#e30613]' },
+  maificon: { icon: MaifIcon, defaultColor: 'bg-[#e30613]' },
+  matmut: { icon: MatmutIcon, defaultColor: 'bg-[#0066b3]' },
+  matmuticon: { icon: MatmutIcon, defaultColor: 'bg-[#0066b3]' },
+  allianz: { icon: AllianzIcon, defaultColor: 'bg-[#003781]' },
+  allianzicon: { icon: AllianzIcon, defaultColor: 'bg-[#003781]' },
+  groupama: { icon: GroupamaIcon, defaultColor: 'bg-[#16a34a]' },
+  groupamaicon: { icon: GroupamaIcon, defaultColor: 'bg-[#16a34a]' },
+  maaf: { icon: MaafIcon, defaultColor: 'bg-[#009688]' },
+  maaficon: { icon: MaafIcon, defaultColor: 'bg-[#009688]' },
+  gmf: { icon: GmfIcon, defaultColor: 'bg-[#0055a5]' },
+  gmficon: { icon: GmfIcon, defaultColor: 'bg-[#0055a5]' },
+
+  // Opérateurs Internet & Télécoms
+  orange: { icon: OrangeIcon, defaultColor: 'bg-[#ff7900]' },
+  orangeicon: { icon: OrangeIcon, defaultColor: 'bg-[#ff7900]' },
+  sosh: { icon: SoshIcon, defaultColor: 'bg-[#00b4e5]' },
+  soshicon: { icon: SoshIcon, defaultColor: 'bg-[#00b4e5]' },
+  free: { icon: FreeIcon, defaultColor: 'bg-[#cc0000]' },
+  freeicon: { icon: FreeIcon, defaultColor: 'bg-[#cc0000]' },
+  bouygues: { icon: BouyguesIcon, defaultColor: 'bg-[#009fe3]' },
+  bouyguesicon: { icon: BouyguesIcon, defaultColor: 'bg-[#009fe3]' },
 };
+
+export function resolveAssuranceChoiceVisual(choice: AssuranceIconChoice): CategoryVisual {
+  switch (choice) {
+    case 'classic':
+      return { icon: ShieldOutlineIcon, color: 'bg-[#10b981]', textColor: 'text-[#059669] dark:text-emerald-400', badgeBg: 'bg-emerald-50 dark:bg-emerald-950/60', borderColor: 'border-emerald-200 dark:border-emerald-800/40' };
+    case 'macif':
+      return { icon: MacifIcon, color: 'bg-[#003a70]', textColor: 'text-[#003a70] dark:text-sky-400', badgeBg: 'bg-sky-50 dark:bg-sky-950/60', borderColor: 'border-sky-200 dark:border-sky-800/40' };
+    case 'directassurance':
+      return { icon: DirectAssuranceIcon, color: 'bg-[#e30613]', textColor: 'text-[#e30613] dark:text-red-400', badgeBg: 'bg-red-50 dark:bg-red-950/60', borderColor: 'border-red-200 dark:border-red-800/40' };
+    case 'axa':
+      return { icon: AxaIcon, color: 'bg-[#00008f]', textColor: 'text-[#00008f] dark:text-blue-400', badgeBg: 'bg-blue-50 dark:bg-blue-950/60', borderColor: 'border-blue-200 dark:border-blue-800/40' };
+    case 'maif':
+      return { icon: MaifIcon, color: 'bg-[#e30613]', textColor: 'text-[#e30613] dark:text-red-400', badgeBg: 'bg-red-50 dark:bg-red-950/60', borderColor: 'border-red-200 dark:border-red-800/40' };
+    case 'matmut':
+      return { icon: MatmutIcon, color: 'bg-[#0066b3]', textColor: 'text-[#0066b3] dark:text-sky-400', badgeBg: 'bg-sky-50 dark:bg-sky-950/60', borderColor: 'border-sky-200 dark:border-sky-800/40' };
+    case 'allianz':
+      return { icon: AllianzIcon, color: 'bg-[#003781]', textColor: 'text-[#003781] dark:text-blue-400', badgeBg: 'bg-blue-50 dark:bg-blue-950/60', borderColor: 'border-blue-200 dark:border-blue-800/40' };
+    case 'groupama':
+      return { icon: GroupamaIcon, color: 'bg-[#16a34a]', textColor: 'text-[#16a34a] dark:text-emerald-400', badgeBg: 'bg-emerald-50 dark:bg-emerald-950/60', borderColor: 'border-emerald-200 dark:border-emerald-800/40' };
+    case 'maaf':
+      return { icon: MaafIcon, color: 'bg-[#009688]', textColor: 'text-[#009688] dark:text-teal-400', badgeBg: 'bg-teal-50 dark:bg-teal-950/60', borderColor: 'border-teal-200 dark:border-teal-800/40' };
+    case 'gmf':
+      return { icon: GmfIcon, color: 'bg-[#0055a5]', textColor: 'text-[#0055a5] dark:text-blue-400', badgeBg: 'bg-blue-50 dark:bg-blue-950/60', borderColor: 'border-blue-200 dark:border-blue-800/40' };
+    case 'logo':
+    default:
+      return { icon: AssuranceBadgeIcon, color: 'bg-emerald-500', textColor: 'text-emerald-600 dark:text-emerald-400', badgeBg: 'bg-emerald-50 dark:bg-emerald-950/60', borderColor: 'border-emerald-200 dark:border-emerald-800/40' };
+  }
+}
+
+export function resolveInternetChoiceVisual(choice: InternetIconChoice): CategoryVisual {
+  switch (choice) {
+    case 'classic':
+      return { icon: WifiOutlineIcon, color: 'bg-[#6366f1]', textColor: 'text-[#4f46e5] dark:text-indigo-400', badgeBg: 'bg-indigo-50 dark:bg-indigo-950/60', borderColor: 'border-indigo-200 dark:border-indigo-800/40' };
+    case 'orange':
+      return { icon: OrangeIcon, color: 'bg-[#ff7900]', textColor: 'text-[#ff7900] dark:text-orange-400', badgeBg: 'bg-orange-50 dark:bg-orange-950/60', borderColor: 'border-orange-200 dark:border-orange-800/40' };
+    case 'sosh':
+      return { icon: SoshIcon, color: 'bg-[#00b4e5]', textColor: 'text-[#0090c5] dark:text-sky-400', badgeBg: 'bg-sky-50 dark:bg-sky-950/60', borderColor: 'border-sky-200 dark:border-sky-800/40' };
+    case 'free':
+      return { icon: FreeIcon, color: 'bg-[#cc0000]', textColor: 'text-[#cc0000] dark:text-red-400', badgeBg: 'bg-red-50 dark:bg-red-950/60', borderColor: 'border-red-200 dark:border-red-800/40' };
+    case 'bouygues':
+      return { icon: BouyguesIcon, color: 'bg-[#009fe3]', textColor: 'text-[#009fe3] dark:text-sky-400', badgeBg: 'bg-sky-50 dark:bg-sky-950/60', borderColor: 'border-sky-200 dark:border-sky-800/40' };
+    case 'sfr':
+      return { icon: SfrIcon, color: 'bg-red-600', textColor: 'text-red-600 dark:text-red-400', badgeBg: 'bg-red-50 dark:bg-red-500/10', borderColor: 'border-red-200 dark:border-red-800/40' };
+    case 'logo':
+    default:
+      return { icon: WifiIcon, color: 'bg-indigo-500', textColor: 'text-indigo-600 dark:text-indigo-400', badgeBg: 'bg-indigo-50 dark:bg-indigo-950/60', borderColor: 'border-indigo-200 dark:border-indigo-800/40' };
+  }
+}
 
 export function resolveIconAndColor(iconId: string, colorClass: string, customIcons: CustomCategoryIcon[]): CategoryVisual {
   let targetIconId = iconId;
@@ -671,9 +844,10 @@ export function resolveCategoryVisual(
   categoryName: string, 
   customIcons: CustomCategoryIcon[] = [], 
   description?: string,
-  keywordRules: KeywordRule[] = []
+  keywordRules: KeywordRule[] = [],
+  iconPreferences: SpecialIconPreferences = DEFAULT_ICON_PREFERENCES
 ): CategoryVisual {
-  const result = resolveCategoryVisualInner(categoryName, customIcons, description, keywordRules);
+  const result = resolveCategoryVisualInner(categoryName, customIcons, description, keywordRules, iconPreferences);
   result.isFullBadge = FULL_BADGE_ICONS.has(result.icon) || result.isCustomImage || result.isCustomSvg;
   if (!result.pieColor) {
     const colorDef = getColorDef(result.color);
@@ -697,7 +871,8 @@ function resolveCategoryVisualInner(
   categoryName: string, 
   customIcons: CustomCategoryIcon[] = [], 
   description?: string,
-  keywordRules: KeywordRule[] = []
+  keywordRules: KeywordRule[] = [],
+  iconPreferences: SpecialIconPreferences = DEFAULT_ICON_PREFERENCES
 ): CategoryVisual {
   if (!categoryName) return PRESET_CATEGORY_VISUALS["Divers"];
 
@@ -732,9 +907,59 @@ function resolveCategoryVisualInner(
   const textNorm = normalizeText(description || (PRESET_CATEGORY_VISUALS[categoryName] ? '' : categoryName));
   if (textNorm) {
     // --- Subscriptions & Utilities ---
-    if (textNorm.includes('sfr')) {
-      return { icon: SfrIcon, color: 'bg-red-600', textColor: 'text-red-600', badgeBg: 'bg-red-50 dark:bg-red-500/10', borderColor: 'border-red-200' };
+    // Opérateurs Internet & Télécoms (prioritaires sur l'icône internet générique)
+    if (textNorm.includes('sfr') || textNorm.includes('red by sfr')) {
+      return resolveInternetChoiceVisual('sfr');
     }
+    if (textNorm.includes('sosh')) {
+      return resolveInternetChoiceVisual('sosh');
+    }
+    if (
+      textNorm.includes('livebox') ||
+      (/\borange\b/.test(textNorm) &&
+        !textNorm.includes('jus') &&
+        !textNorm.includes('fruit') &&
+        !textNorm.includes('fleur') &&
+        !textNorm.includes('orangeade'))
+    ) {
+      return resolveInternetChoiceVisual('orange');
+    }
+    if (textNorm.includes('freebox') || textNorm.includes('free mobile') || /\bfree\b/.test(textNorm)) {
+      return resolveInternetChoiceVisual('free');
+    }
+    if (textNorm.includes('bouygues') || textNorm.includes('bbox')) {
+      return resolveInternetChoiceVisual('bouygues');
+    }
+
+    // Assurances par marque (prioritaires sur l'icône assurance générique)
+    if (textNorm.includes('macif')) {
+      return resolveAssuranceChoiceVisual('macif');
+    }
+    if (textNorm.includes('direct assurance') || textNorm.includes('directassurance')) {
+      return resolveAssuranceChoiceVisual('directassurance');
+    }
+    if (/\baxa\b/.test(textNorm)) {
+      return resolveAssuranceChoiceVisual('axa');
+    }
+    if (/\bmaif\b/.test(textNorm)) {
+      return resolveAssuranceChoiceVisual('maif');
+    }
+    if (textNorm.includes('matmut')) {
+      return resolveAssuranceChoiceVisual('matmut');
+    }
+    if (textNorm.includes('allianz')) {
+      return resolveAssuranceChoiceVisual('allianz');
+    }
+    if (textNorm.includes('groupama')) {
+      return resolveAssuranceChoiceVisual('groupama');
+    }
+    if (/\bmaaf\b/.test(textNorm)) {
+      return resolveAssuranceChoiceVisual('maaf');
+    }
+    if (/\bgmf\b/.test(textNorm)) {
+      return resolveAssuranceChoiceVisual('gmf');
+    }
+
     if (textNorm.includes('netflix')) {
       return { icon: NetflixIcon, color: 'bg-black', textColor: 'text-slate-800', badgeBg: 'bg-slate-100', borderColor: 'border-slate-200' };
     }
@@ -751,7 +976,7 @@ function resolveCategoryVisualInner(
       return { icon: TrashBinIcon, color: 'bg-rose-500', textColor: 'text-rose-600', badgeBg: 'bg-rose-50', borderColor: 'border-rose-200' };
     }
     if (textNorm.includes('wifi') || textNorm.includes('internet') || textNorm.includes('fibre') || textNorm.includes('box')) {
-      return { icon: WifiIcon, color: 'bg-indigo-500', textColor: 'text-indigo-600', badgeBg: 'bg-indigo-50', borderColor: 'border-indigo-200' };
+      return resolveInternetChoiceVisual(iconPreferences.internet);
     }
     if (textNorm.includes('telephone') || textNorm.includes('mobile')) {
       return { icon: PhoneOutlineIcon, color: 'bg-[#0ea5e9]', textColor: 'text-[#0284c7]', badgeBg: 'bg-[#e0f2fe]', borderColor: 'border-sky-200' };
@@ -759,7 +984,10 @@ function resolveCategoryVisualInner(
     if (textNorm.includes('eau') || textNorm.includes('ceo')) {
       return { icon: CeoIcon, color: 'bg-sky-500', textColor: 'text-sky-600', badgeBg: 'bg-sky-50', borderColor: 'border-sky-200' };
     }
-    if (textNorm.includes('assurance') || textNorm.includes('mutuelle')) {
+    if (textNorm.includes('assurance')) {
+      return resolveAssuranceChoiceVisual(iconPreferences.assurance);
+    }
+    if (textNorm.includes('mutuelle')) {
       return { icon: ShieldIcon, color: 'bg-emerald-500', textColor: 'text-emerald-600', badgeBg: 'bg-emerald-50', borderColor: 'border-emerald-200' };
     }
 
@@ -922,8 +1150,29 @@ function resolveCategoryVisualInner(
 
   // Built-in fallback named brand/service matchings
   if (norm.includes('sfr')) {
-    return { icon: SfrIcon, color: 'bg-red-600', textColor: 'text-red-600', badgeBg: 'bg-red-50 dark:bg-red-500/10', borderColor: 'border-red-200' };
+    return resolveInternetChoiceVisual('sfr');
   }
+  if (norm.includes('sosh')) {
+    return resolveInternetChoiceVisual('sosh');
+  }
+  if (norm.includes('livebox') || /\borange\b/.test(norm)) {
+    return resolveInternetChoiceVisual('orange');
+  }
+  if (norm.includes('freebox') || /\bfree\b/.test(norm)) {
+    return resolveInternetChoiceVisual('free');
+  }
+  if (norm.includes('bouygues') || norm.includes('bbox')) {
+    return resolveInternetChoiceVisual('bouygues');
+  }
+  if (norm.includes('macif')) return resolveAssuranceChoiceVisual('macif');
+  if (norm.includes('direct assurance') || norm.includes('directassurance')) return resolveAssuranceChoiceVisual('directassurance');
+  if (/\baxa\b/.test(norm)) return resolveAssuranceChoiceVisual('axa');
+  if (/\bmaif\b/.test(norm)) return resolveAssuranceChoiceVisual('maif');
+  if (norm.includes('matmut')) return resolveAssuranceChoiceVisual('matmut');
+  if (norm.includes('allianz')) return resolveAssuranceChoiceVisual('allianz');
+  if (norm.includes('groupama')) return resolveAssuranceChoiceVisual('groupama');
+  if (/\bmaaf\b/.test(norm)) return resolveAssuranceChoiceVisual('maaf');
+  if (/\bgmf\b/.test(norm)) return resolveAssuranceChoiceVisual('gmf');
   if (norm.includes('netflix')) {
     return { icon: NetflixIcon, color: 'bg-black', textColor: 'text-slate-800', badgeBg: 'bg-slate-100', borderColor: 'border-slate-200' };
   }
@@ -940,7 +1189,7 @@ function resolveCategoryVisualInner(
     return { icon: TrashBinIcon, color: 'bg-rose-500', textColor: 'text-rose-600', badgeBg: 'bg-rose-50', borderColor: 'border-rose-200' };
   }
   if (norm.includes('wifi') || norm.includes('internet') || norm.includes('fibre') || norm.includes('box')) {
-    return { icon: WifiIcon, color: 'bg-indigo-500', textColor: 'text-indigo-600', badgeBg: 'bg-indigo-50', borderColor: 'border-indigo-200' };
+    return resolveInternetChoiceVisual(iconPreferences.internet);
   }
   if (norm.includes('téléphone') || norm.includes('telephone') || norm.includes('mobile')) {
     return { icon: PhoneOutlineIcon, color: 'bg-[#0ea5e9]', textColor: 'text-[#0284c7]', badgeBg: 'bg-[#e0f2fe]', borderColor: 'border-sky-200' };
@@ -948,7 +1197,10 @@ function resolveCategoryVisualInner(
   if (norm.includes('eau') || norm.includes('energie') || norm.includes('énergie') || norm.includes('ceo')) {
     return { icon: CeoIcon, color: 'bg-sky-500', textColor: 'text-sky-600', badgeBg: 'bg-sky-50', borderColor: 'border-sky-200' };
   }
-  if (norm.includes('assurance') || norm.includes('mutuelle')) {
+  if (norm.includes('assurance')) {
+    return resolveAssuranceChoiceVisual(iconPreferences.assurance);
+  }
+  if (norm.includes('mutuelle')) {
     return { icon: ShieldIcon, color: 'bg-emerald-500', textColor: 'text-emerald-600', badgeBg: 'bg-emerald-50', borderColor: 'border-emerald-200' };
   }
 
@@ -960,6 +1212,9 @@ interface CategoryVisualsContextType {
   getVisual: (categoryName: string, description?: string) => CategoryVisual;
   customIcons: CustomCategoryIcon[];
   rules: KeywordRule[];
+  iconPreferences: SpecialIconPreferences;
+  setAssuranceIconStyle: (style: AssuranceIconChoice) => void;
+  setInternetIconStyle: (style: InternetIconChoice) => void;
   addRule: (keyword: string, iconId: string, color: string) => boolean;
   deleteRule: (id: string) => void;
   updateRule: (id: string, keyword: string, iconId: string, color: string) => boolean;
@@ -973,15 +1228,49 @@ const CategoryVisualsContext = createContext<CategoryVisualsContextType | null>(
 export const CategoryVisualsProvider: React.FC<{ children: React.ReactNode; foyerId?: string }> = ({ children, foyerId }) => {
   const { customIcons, addCustomIcon, deleteCustomIcon, saveCategoryIconMapping } = useCustomCategoryIcons(foyerId);
   const { rules, addRule, deleteRule, updateRule } = useKeywordRules(foyerId);
+  const [iconPreferences, setIconPreferences] = useSyncedSettings<SpecialIconPreferences>(
+    `icon_styles_${foyerId || 'default'}`,
+    DEFAULT_ICON_PREFERENCES
+  );
+
+  const safePreferences: SpecialIconPreferences = useMemo(() => ({
+    assurance: VALID_ASSURANCE_CHOICES.has(iconPreferences?.assurance as AssuranceIconChoice)
+      ? (iconPreferences.assurance as AssuranceIconChoice)
+      : 'logo',
+    internet: VALID_INTERNET_CHOICES.has(iconPreferences?.internet as InternetIconChoice)
+      ? (iconPreferences.internet as InternetIconChoice)
+      : 'logo',
+  }), [iconPreferences]);
+
+  const setAssuranceIconStyle = React.useCallback((style: AssuranceIconChoice) => {
+    setIconPreferences(prev => ({
+      assurance: style,
+      internet: VALID_INTERNET_CHOICES.has(prev?.internet as InternetIconChoice)
+        ? (prev.internet as InternetIconChoice)
+        : 'logo',
+    }));
+  }, [setIconPreferences]);
+
+  const setInternetIconStyle = React.useCallback((style: InternetIconChoice) => {
+    setIconPreferences(prev => ({
+      assurance: VALID_ASSURANCE_CHOICES.has(prev?.assurance as AssuranceIconChoice)
+        ? (prev.assurance as AssuranceIconChoice)
+        : 'logo',
+      internet: style,
+    }));
+  }, [setIconPreferences]);
 
   const getVisual = React.useCallback((categoryName: string, description?: string): CategoryVisual => {
-    return resolveCategoryVisual(categoryName, customIcons, description, rules);
-  }, [customIcons, rules]);
+    return resolveCategoryVisual(categoryName, customIcons, description, rules, safePreferences);
+  }, [customIcons, rules, safePreferences]);
 
   const value = useMemo(() => ({
     getVisual,
     customIcons,
     rules,
+    iconPreferences: safePreferences,
+    setAssuranceIconStyle,
+    setInternetIconStyle,
     addRule,
     deleteRule,
     updateRule,
@@ -992,6 +1281,9 @@ export const CategoryVisualsProvider: React.FC<{ children: React.ReactNode; foye
     getVisual,
     customIcons,
     rules,
+    safePreferences,
+    setAssuranceIconStyle,
+    setInternetIconStyle,
     addRule,
     deleteRule,
     updateRule,
@@ -1010,10 +1302,13 @@ export function useCategoryVisuals(): CategoryVisualsContextType {
   // Safe static fallback without conditional hooks
   return {
     getVisual: (categoryName: string, description?: string): CategoryVisual => {
-      return resolveCategoryVisual(categoryName, [], description, []);
+      return resolveCategoryVisual(categoryName, [], description, [], DEFAULT_ICON_PREFERENCES);
     },
     customIcons: [],
     rules: [],
+    iconPreferences: DEFAULT_ICON_PREFERENCES,
+    setAssuranceIconStyle: () => {},
+    setInternetIconStyle: () => {},
     addRule: () => false,
     deleteRule: () => {},
     updateRule: () => false,

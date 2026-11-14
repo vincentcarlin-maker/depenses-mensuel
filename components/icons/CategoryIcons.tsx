@@ -100,6 +100,25 @@ export const ShieldIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
     </svg>
 );
 
+export const AssuranceBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#10b981] shadow-2xs`}>
+    <img
+      src="/brand-logos/assurance.jpg"
+      alt="Assurance"
+      className="w-full h-full object-cover scale-[1.42]"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+    />
+  </div>
+);
+
+export const ShieldOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6l7-3z" />
+    <path d="M9.5 12l1.8 1.8 3.7-3.8" />
+  </svg>
+);
+
 export const WifiIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#4f46e5] shadow-2xs`}>
     <img
@@ -110,6 +129,15 @@ export const WifiIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
       referrerPolicy="no-referrer"
     />
   </div>
+);
+
+export const WifiOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+    <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+    <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+    <circle cx="12" cy="20" r="1.2" fill="currentColor" stroke="none" />
+  </svg>
 );
 
 export const DeezerIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
@@ -1352,6 +1380,160 @@ export const BrasserieIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) =>
   </svg>
 );
 
+// === LOGOS DE MARQUES ASSURANCE & INTERNET (PNG UNIQUEMENT, SANS SVG) ===
 
+export const MacifIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#003a70] shadow-2xs`}>
+    <img
+      src="/brand-logos/macif.png"
+      alt="Macif"
+      className="w-full h-full object-cover"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+    />
+  </div>
+);
 
+export const DirectAssuranceIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#e30613] shadow-2xs`}>
+    <img
+      src="/brand-logos/directassurance.png"
+      alt="Direct Assurance"
+      className="w-full h-full object-cover scale-105"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+    />
+  </div>
+);
 
+export const AxaIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#00008f] shadow-2xs`}>
+    <img
+      src="/brand-logos/axa.png"
+      alt="AXA"
+      className="w-full h-full object-cover"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+    />
+  </div>
+);
+
+export const MaifIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+    <img
+      src="/brand-logos/maif.png"
+      alt="MAIF"
+      className="w-full h-full object-contain"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+    />
+  </div>
+);
+
+export const MatmutIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1.5 shadow-2xs`}>
+    <img
+      src="/brand-logos/matmut.png"
+      alt="Matmut"
+      className="w-full h-full object-contain"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+    />
+  </div>
+);
+
+export const AllianzIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
+    <img
+      src="/brand-logos/allianz.png"
+      alt="Allianz"
+      className="w-full h-full object-contain"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+    />
+  </div>
+);
+
+export const GroupamaIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+    <img
+      src="/brand-logos/groupama.png"
+      alt="Groupama"
+      className="w-full h-full object-contain"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+    />
+  </div>
+);
+
+export const MaafIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
+    <img
+      src="/brand-logos/maaf.png"
+      alt="MAAF"
+      className="w-full h-full object-contain rounded-full"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+    />
+  </div>
+);
+
+export const GmfIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
+    <img
+      src="/brand-logos/gmf.png"
+      alt="GMF"
+      className="w-full h-full object-contain rounded-full"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+    />
+  </div>
+);
+
+export const OrangeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#ff7900] shadow-2xs`}>
+    <img
+      src="/brand-logos/orange.png"
+      alt="Orange"
+      className="w-full h-full object-cover"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+    />
+  </div>
+);
+
+export const SoshIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#00b4e5] shadow-2xs`}>
+    <img
+      src="/brand-logos/sosh.png"
+      alt="Sosh"
+      className="w-full h-full object-cover scale-105"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+    />
+  </div>
+);
+
+export const FreeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1.5 shadow-2xs`}>
+    <img
+      src="/brand-logos/free.png"
+      alt="Free"
+      className="w-full h-full object-contain"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+    />
+  </div>
+);
+
+export const BouyguesIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
+    <img
+      src="/brand-logos/bouygues.png"
+      alt="Bouygues Telecom"
+      className="w-full h-full object-contain"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+    />
+  </div>
+);

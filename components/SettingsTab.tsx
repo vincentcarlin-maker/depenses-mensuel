@@ -20,6 +20,7 @@ import { DEFAULT_FOYER_ID } from '../utils/foyerService';
 import CategoryBudgetsTab from './CategoryBudgetsTab';
 import { useCategoryBudgets } from '../hooks/useCategoryBudgets';
 import { useSyncedSettings } from '../hooks/useSyncedSettings';
+import { SpecialIconStyleSelector } from './SpecialIconStyleSelector';
 
 export type SettingsViewType = 'main' | 'appearance' | 'reminders' | 'budgets' | 'notifications' | 'users' | 'categories' | 'lists' | 'data' | 'admin' | 'keywords' | 'contact' | 'management';
 
@@ -558,6 +559,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
             </div>
             <ThemeSelector />
           </div>
+
+          <SpecialIconStyleSelector setToastInfo={props.setToastInfo} />
 
           {/* Subview: Style du texte dans dépenses du mois (réservé aux utilisateurs du foyer principal) */}
           {isMainFoyer && (

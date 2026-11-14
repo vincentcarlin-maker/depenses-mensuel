@@ -25,7 +25,8 @@ import {
     CeoIcon,
     TotalEnergiesIcon,
     TrashBinIcon,
-    PillIcon
+    PillIcon,
+    AssuranceBadgeIcon
 } from './icons/CategoryIcons';
 
 interface RemindersTabProps {
@@ -56,6 +57,75 @@ const CategoryVisuals: { [key: string]: { icon: React.FC<{ className?: string }>
 
 export const getReminderVisual = (reminder: { description: string; category: string }, getVisualFunc?: (cat: string, desc?: string) => any) => {
     const lower = reminder.description.toLowerCase();
+
+    const renderDynamicVisual = (visual: any) => {
+        const IconCmp = visual.icon;
+        if (visual.isFullBadge) {
+            return {
+                icon: () => (
+                    <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shadow-2xs">
+                        <IconCmp className="w-10 h-10 rounded-full" />
+                    </div>
+                )
+            };
+        }
+        return {
+            icon: () => (
+                <div className={`w-10 h-10 rounded-2xl ${visual.badgeBg || visual.bgColor || 'bg-slate-100 dark:bg-slate-700/50'} ${visual.textColor || visual.color || 'text-slate-600'} flex items-center justify-center`}>
+                    <IconCmp className="w-5 h-5" />
+                </div>
+            )
+        };
+    };
+
+    if (
+        lower.includes('assurance') ||
+        lower.includes('macif') ||
+        lower.includes('direct assurance') ||
+        /\baxa\b/.test(lower) ||
+        /\bmaif\b/.test(lower) ||
+        lower.includes('matmut') ||
+        lower.includes('allianz') ||
+        lower.includes('groupama') ||
+        /\bmaaf\b/.test(lower) ||
+        /\bgmf\b/.test(lower)
+    ) {
+        if (getVisualFunc) {
+            return renderDynamicVisual(getVisualFunc(reminder.category, reminder.description));
+        }
+        return {
+            icon: () => (
+                <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shadow-2xs">
+                    <AssuranceBadgeIcon className="w-10 h-10" />
+                </div>
+            )
+        };
+    }
+
+    if (
+        lower.includes('internet') ||
+        lower.includes('box') ||
+        lower.includes('fibre') ||
+        lower.includes('wifi') ||
+        lower.includes('livebox') ||
+        lower.includes('sosh') ||
+        lower.includes('freebox') ||
+        /\bfree\b/.test(lower) ||
+        lower.includes('bouygues') ||
+        lower.includes('bbox') ||
+        /\borange\b/.test(lower)
+    ) {
+        if (getVisualFunc) {
+            return renderDynamicVisual(getVisualFunc(reminder.category, reminder.description));
+        }
+        return {
+            icon: () => (
+                <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center">
+                    <WifiIcon className="w-10 h-10" />
+                </div>
+            )
+        };
+    }
     
     if (lower.includes('netflix')) {
         return {
@@ -66,7 +136,7 @@ export const getReminderVisual = (reminder: { description: string; category: str
             )
         };
     }
-    if (lower.includes('assurance') || lower.includes('voiture') || lower.includes('auto') || reminder.category === 'Réparation voitures') {
+    if (lower.includes('voiture') || lower.includes('auto') || reminder.category === 'Réparation voitures') {
         return {
             icon: () => (
                 <div className="w-10 h-10 rounded-2xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center">
@@ -116,15 +186,6 @@ export const getReminderVisual = (reminder: { description: string; category: str
             )
         };
     }
-    if (lower.includes('internet') || lower.includes('box') || lower.includes('fibre') || lower.includes('wifi')) {
-        return {
-            icon: () => (
-                <div className="w-10 h-10 rounded-full flex items-center justify-center">
-                    <WifiIcon className="w-10 h-10" />
-                </div>
-            )
-        };
-    }
     if (lower.includes('mutuelle') || lower.includes('santé') || lower.includes('secu')) {
         return {
             icon: () => (
@@ -164,14 +225,7 @@ export const getReminderVisual = (reminder: { description: string; category: str
 
     // Default to category visual
     const visual = getVisualFunc ? getVisualFunc(reminder.category, reminder.description) : (CategoryVisuals[reminder.category] || CategoryVisuals["Divers"]);
-    const IconCmp = visual.icon;
-    return {
-        icon: () => (
-            <div className={`w-10 h-10 rounded-2xl ${visual.badgeBg || visual.bgColor || 'bg-slate-100 dark:bg-slate-700/50'} ${visual.textColor || visual.color || 'text-slate-600'} flex items-center justify-center`}>
-                <IconCmp className="w-5 h-5" />
-            </div>
-        )
-    };
+    return renderDynamicVisual(visual);
 };
 
 const ReminderForm: React.FC<{ 

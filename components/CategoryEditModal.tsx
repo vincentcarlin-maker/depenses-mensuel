@@ -13,7 +13,10 @@ import {
   PalmTreeIcon,
   BirthdayIcon,
   ShieldIcon,
+  AssuranceBadgeIcon,
+  ShieldOutlineIcon,
   WifiIcon,
+  WifiOutlineIcon,
   DeezerIcon,
   MusicNoteIcon,
   DevicePhoneMobileIcon,
@@ -118,7 +121,20 @@ import {
   AmazonIcon,
   BoulangerieBadgeIcon,
   PizzaBadgeIcon,
-  CinemaBadgeIcon
+  CinemaBadgeIcon,
+  MacifIcon,
+  DirectAssuranceIcon,
+  AxaIcon,
+  MaifIcon,
+  MatmutIcon,
+  AllianzIcon,
+  GroupamaIcon,
+  MaafIcon,
+  GmfIcon,
+  OrangeIcon,
+  SoshIcon,
+  FreeIcon,
+  BouyguesIcon
 } from './icons/CategoryIcons';
 import { CustomCategoryIcon } from '../hooks/useCustomCategoryIcons';
 import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
@@ -253,7 +269,8 @@ export const PRESET_CATEGORY_ICONS: CategoryIconDef[] = [
   { id: 'deezer', name: 'DeezerIcon', label: 'Deezer', icon: DeezerIcon, theme: 'tech', keywords: ['deezer', 'musique', 'streaming', 'audio'] },
   { id: 'tvsubscription', name: 'TvSubscriptionIcon', label: 'Télé & Chaînes', icon: TvSubscriptionIcon, theme: 'tech', keywords: ['télévision', 'box tv', 'bouquet', 'canal', 'iptv'] },
   { id: 'music', name: 'MusicNoteIcon', label: 'Musique & Streaming', icon: MusicNoteIcon, theme: 'tech', keywords: ['spotify', 'musique', 'audio', 'apple music'] },
-  { id: 'wifi', name: 'WifiIcon', label: 'Internet & Box', icon: WifiIcon, theme: 'tech', keywords: ['box', 'fibre', 'adsl', 'connexion', 'routeur', 'internet', 'opérateur'] },
+  { id: 'wifi', name: 'WifiIcon', label: 'Internet (Logo)', icon: WifiIcon, theme: 'tech', keywords: ['box', 'fibre', 'adsl', 'connexion', 'routeur', 'internet', 'opérateur', 'logo'] },
+  { id: 'wifioutline', name: 'WifiOutlineIcon', label: 'Internet (Classique)', icon: WifiOutlineIcon, theme: 'tech', keywords: ['wifi', 'internet', 'box', 'fibre', 'classique', 'réseau'] },
   { id: 'phone', name: 'DevicePhoneMobileIcon', label: 'Téléphone / Mobile', icon: DevicePhoneMobileIcon, theme: 'tech', keywords: ['smartphone', 'forfait', 'gsm', 'mobile', 'iphone'] },
   { id: 'phoneoutline', name: 'PhoneOutlineIcon', label: 'Appels & Ligne', icon: PhoneOutlineIcon, theme: 'tech', keywords: ['télécoms', 'opérateur', 'téléphone', 'fixe'] },
   { id: 'computerlaptop', name: 'ComputerLaptopIcon', label: 'Ordinateur & PC', icon: ComputerLaptopIcon, theme: 'tech', keywords: ['pc', 'macbook', 'informatique', 'laptop', 'écran'] },
@@ -261,6 +278,10 @@ export const PRESET_CATEGORY_ICONS: CategoryIconDef[] = [
   { id: 'cloudserver', name: 'CloudServerIcon', label: 'Cloud & Stockage', icon: CloudServerIcon, theme: 'tech', keywords: ['icloud', 'google drive', 'backup', 'serveur', 'hébergement'] },
   { id: 'smartwatch', name: 'SmartwatchIcon', label: 'Montre Connectée', icon: SmartwatchIcon, theme: 'tech', keywords: ['apple watch', 'garmin', 'bracelet', 'gadget'] },
   { id: 'sfr', name: 'SfrIcon', label: 'SFR (Badge)', icon: SfrIcon, theme: 'tech', keywords: ['sfr', 'opérateur', 'box sfr', 'forfait sfr'] },
+  { id: 'orange', name: 'OrangeIcon', label: 'Orange', icon: OrangeIcon, theme: 'tech', keywords: ['orange', 'livebox', 'fibre orange', 'opérateur', 'internet', 'forfait'] },
+  { id: 'sosh', name: 'SoshIcon', label: 'Sosh', icon: SoshIcon, theme: 'tech', keywords: ['sosh', 'boite sosh', 'internet', 'fibre', 'forfait', 'opérateur'] },
+  { id: 'free', name: 'FreeIcon', label: 'Free', icon: FreeIcon, theme: 'tech', keywords: ['free', 'freebox', 'free mobile', 'fibre', 'internet', 'opérateur'] },
+  { id: 'bouygues', name: 'BouyguesIcon', label: 'Bouygues Telecom', icon: BouyguesIcon, theme: 'tech', keywords: ['bouygues', 'bbox', 'fibre', 'internet', 'forfait', 'opérateur'] },
 
   // 7. FINANCES & SHOPPING (finance)
   { id: 'bankfinance', name: 'BankFinanceIcon', label: 'Banque & Frais', icon: BankFinanceIcon, theme: 'finance', keywords: ['carte', 'frais bancaires', 'crédit', 'compte', 'banque'] },
@@ -282,7 +303,18 @@ export const PRESET_CATEGORY_ICONS: CategoryIconDef[] = [
   { id: 'schoolsupplies', name: 'SchoolSuppliesIcon', label: 'École & Fournitures', icon: SchoolSuppliesIcon, theme: 'finance', keywords: ['scolaire', 'cahier', 'stylos', 'rentrée', 'papeterie'] },
   { id: 'graduation', name: 'GraduationIcon', label: 'Études & Diplôme', icon: GraduationOutlineIcon, theme: 'finance', keywords: ['université', 'école', 'formation', 'cours', 'études'] },
   { id: 'donationcharity', name: 'DonationCharityIcon', label: 'Dons & Entraide', icon: DonationCharityIcon, theme: 'finance', keywords: ['association', 'caritatif', 'solidarité', 'don', 'aide'] },
-  { id: 'shield', name: 'ShieldIcon', label: 'Assurance & Sécurité', icon: ShieldIcon, theme: 'finance', keywords: ['mutuelle', 'protection', 'sécurité', 'assurance', 'sinistre'] },
+  { id: 'assurancebadge', name: 'AssuranceBadgeIcon', label: 'Assurance (Logo)', icon: AssuranceBadgeIcon, theme: 'finance', keywords: ['assurance', 'protection', 'bouclier', 'auto', 'habitation', 'logo'] },
+  { id: 'shieldoutline', name: 'ShieldOutlineIcon', label: 'Assurance (Classique)', icon: ShieldOutlineIcon, theme: 'finance', keywords: ['assurance', 'protection', 'sécurité', 'bouclier', 'classique'] },
+  { id: 'macif', name: 'MacifIcon', label: 'Macif Assurance', icon: MacifIcon, theme: 'finance', keywords: ['macif', 'assurance', 'auto', 'habitation', 'mutuelle'] },
+  { id: 'directassurance', name: 'DirectAssuranceIcon', label: 'Direct Assurance', icon: DirectAssuranceIcon, theme: 'finance', keywords: ['direct assurance', 'assurance', 'auto', 'habitation'] },
+  { id: 'axa', name: 'AxaIcon', label: 'AXA Assurance', icon: AxaIcon, theme: 'finance', keywords: ['axa', 'assurance', 'auto', 'habitation', 'santé'] },
+  { id: 'maif', name: 'MaifIcon', label: 'MAIF Assurance', icon: MaifIcon, theme: 'finance', keywords: ['maif', 'assurance', 'auto', 'habitation'] },
+  { id: 'matmut', name: 'MatmutIcon', label: 'Matmut Assurance', icon: MatmutIcon, theme: 'finance', keywords: ['matmut', 'assurance', 'auto', 'habitation'] },
+  { id: 'allianz', name: 'AllianzIcon', label: 'Allianz Assurance', icon: AllianzIcon, theme: 'finance', keywords: ['allianz', 'assurance', 'auto', 'habitation'] },
+  { id: 'groupama', name: 'GroupamaIcon', label: 'Groupama Assurance', icon: GroupamaIcon, theme: 'finance', keywords: ['groupama', 'assurance', 'auto', 'habitation'] },
+  { id: 'maaf', name: 'MaafIcon', label: 'MAAF Assurance', icon: MaafIcon, theme: 'finance', keywords: ['maaf', 'assurance', 'auto', 'habitation'] },
+  { id: 'gmf', name: 'GmfIcon', label: 'GMF Assurance', icon: GmfIcon, theme: 'finance', keywords: ['gmf', 'assurance', 'auto', 'habitation'] },
+  { id: 'shield', name: 'ShieldIcon', label: 'Mutuelle & Santé', icon: ShieldIcon, theme: 'finance', keywords: ['mutuelle', 'protection', 'sécurité', 'santé', 'croix'] },
   { id: 'misc', name: 'MiscIcon', label: 'Divers', icon: MiscIcon, theme: 'finance', keywords: ['autre', 'imprévu', 'général', 'extra'] },
   { id: 'moredots', name: 'MoreDotsOutlineIcon', label: 'Autres / Plus', icon: MoreDotsOutlineIcon, theme: 'finance', keywords: ['extra', 'options', 'complémentaire', 'points'] },
 ];
@@ -520,7 +552,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
       } else if (norm.includes('anniversaire') || norm.includes('anniv')) {
         defaultIcon = 'birthday'; defaultColor = 'bg-[#10b981]';
       } else if (norm.includes('assurance') || norm.includes('assur')) {
-        defaultIcon = 'shield'; defaultColor = 'bg-[#10b981]';
+        defaultIcon = 'assurancebadge'; defaultColor = 'bg-[#10b981]';
       } else if (norm.includes('internet') || norm.includes('wifi') || norm.includes('box')) {
         defaultIcon = 'wifi'; defaultColor = 'bg-[#6366f1]';
       } else if (norm.includes('deezer')) {

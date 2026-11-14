@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { useCategoryVisuals } from '../hooks/useCategoryVisuals';
+import { useCategoryVisuals, FULL_BADGE_ICONS } from '../hooks/useCategoryVisuals';
 import { KeywordRule } from '../hooks/useKeywordRules';
 import { PRESET_CATEGORY_ICONS, CATEGORY_COLORS, getColorDef } from './CategoryEditModal';
 import { MiscIcon } from './icons/CategoryIcons';
 import ConfirmationModal from './ConfirmationModal';
+import { SpecialIconStyleSelector } from './SpecialIconStyleSelector';
 
 interface KeywordIconRulesTabProps {
   setToastInfo: (info: { message: string; type: 'info' | 'error' }) => void;
@@ -125,6 +126,9 @@ export const KeywordIconRulesTab: React.FC<KeywordIconRulesTabProps> = ({ setToa
         </p>
       </div>
 
+      {/* Sélecteur rapide Logo vs Icône classique pour Assurance & Internet */}
+      <SpecialIconStyleSelector setToastInfo={setToastInfo} />
+
       {/* Add / Edit Rule Card */}
       <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 sm:p-6 border border-slate-100/90 dark:border-slate-700/60 shadow-xs space-y-4">
         <h3 className="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg flex items-center gap-2">
@@ -211,11 +215,17 @@ export const KeywordIconRulesTab: React.FC<KeywordIconRulesTabProps> = ({ setToa
               Aperçu en direct
             </label>
             <div className="bg-slate-50/70 dark:bg-slate-700/40 rounded-2xl p-3.5 border border-slate-100/90 dark:border-slate-700/60 flex items-center gap-3.5">
-              <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${colorDef.badgeBgClass} ${colorDef.textColorClass} transition-colors shadow-2xs`}
-              >
-                <IconPreviewComponent className="w-5 h-5" />
-              </div>
+              {FULL_BADGE_ICONS.has(IconPreviewComponent) ? (
+                <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 shadow-2xs">
+                  <IconPreviewComponent className="w-12 h-12" />
+                </div>
+              ) : (
+                <div
+                  className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${colorDef.bgClass} text-white transition-colors shadow-2xs`}
+                >
+                  <IconPreviewComponent className="w-6 h-6" />
+                </div>
+              )}
               <div className="min-w-0 flex-1">
                 <h4 className="font-bold text-slate-900 dark:text-white text-base leading-snug truncate">
                   {keyword.trim() || 'Mot-clé'}

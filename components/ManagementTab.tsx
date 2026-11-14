@@ -839,7 +839,7 @@ const CategoryManagement: React.FC<{
     onUpdateCategory: (oldName: string, newName: string) => boolean;
     onDeleteCategory: (name: string) => void;
 }> = ({ categories, onAddCategory, onUpdateCategory, onDeleteCategory }) => {
-    const { customIcons, saveCategoryIconMapping } = useCategoryVisuals();
+    const { customIcons, saveCategoryIconMapping, iconPreferences, rules } = useCategoryVisuals();
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
@@ -917,15 +917,36 @@ const CategoryManagement: React.FC<{
             return { iconId: 'pill', color: 'bg-[#10b981]' };
         }
         if (norm.includes('sfr')) return { iconId: 'sfr', color: 'bg-[#ef4444]' };
+        if (norm.includes('sosh')) return { iconId: 'sosh', color: 'bg-[#00b4e5]' };
+        if (norm.includes('orange')) return { iconId: 'orange', color: 'bg-[#ff7900]' };
+        if (norm.includes('free')) return { iconId: 'free', color: 'bg-[#cc0000]' };
+        if (norm.includes('bouygues') || norm.includes('bbox')) return { iconId: 'bouygues', color: 'bg-[#009fe3]' };
+        if (norm.includes('macif')) return { iconId: 'macif', color: 'bg-[#003a70]' };
+        if (norm.includes('direct assurance')) return { iconId: 'directassurance', color: 'bg-[#e30613]' };
+        if (/\baxa\b/.test(norm)) return { iconId: 'axa', color: 'bg-[#00008f]' };
+        if (/\bmaif\b/.test(norm)) return { iconId: 'maif', color: 'bg-[#e30613]' };
+        if (norm.includes('matmut')) return { iconId: 'matmut', color: 'bg-[#0066b3]' };
+        if (norm.includes('allianz')) return { iconId: 'allianz', color: 'bg-[#003781]' };
+        if (norm.includes('groupama')) return { iconId: 'groupama', color: 'bg-[#16a34a]' };
+        if (/\bmaaf\b/.test(norm)) return { iconId: 'maaf', color: 'bg-[#009688]' };
+        if (/\bgmf\b/.test(norm)) return { iconId: 'gmf', color: 'bg-[#0055a5]' };
         if (norm.includes('netflix')) return { iconId: 'streaming', color: 'bg-black' };
         if (norm.includes('total')) return { iconId: 'energy', color: 'bg-[#f59e0b]' };
         if (norm.includes('deezer')) return { iconId: 'deezer', color: 'bg-[#a855f7]' };
         if (norm.includes('musique') || norm.includes('spotify')) return { iconId: 'music', color: 'bg-[#a855f7]' };
         if (norm.includes('poubelle') || norm.includes('dechet')) return { iconId: 'trash', color: 'bg-[#ef4444]' };
-        if (norm.includes('wifi') || norm.includes('internet')) return { iconId: 'wifi', color: 'bg-[#6366f1]' };
+        if (norm.includes('wifi') || norm.includes('internet')) {
+            const pref = iconPreferences.internet;
+            const mappedIconId = pref === 'classic' ? 'wifioutline' : pref === 'logo' ? 'wifi' : pref;
+            return { iconId: mappedIconId, color: 'bg-[#6366f1]' };
+        }
         if (norm.includes('téléphone') || norm.includes('mobile')) return { iconId: 'phone', color: 'bg-[#0ea5e9]' };
         if (norm.includes('eau') || norm.includes('ceo')) return { iconId: 'water', color: 'bg-[#0ea5e9]' };
-        if (norm.includes('assurance')) return { iconId: 'shield', color: 'bg-[#10b981]' };
+        if (norm.includes('assurance')) {
+            const pref = iconPreferences.assurance;
+            const mappedIconId = pref === 'classic' ? 'shieldoutline' : pref === 'logo' ? 'assurancebadge' : pref;
+            return { iconId: mappedIconId, color: 'bg-[#10b981]' };
+        }
 
         return { iconId: 'misc', color: 'bg-[#3b82f6]' };
     };
@@ -971,7 +992,7 @@ const CategoryManagement: React.FC<{
             {/* List of Category Cards */}
             <div className="space-y-2.5 sm:space-y-3 pt-1">
                 {categories.map(c => {
-                    const visual = resolveCategoryVisual(c, customIcons);
+                    const visual = resolveCategoryVisual(c, customIcons, undefined, rules, iconPreferences);
                     const displayName = formatCategoryDisplayName(c);
                     const VisualIcon = visual.icon;
 
