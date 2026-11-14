@@ -103,7 +103,7 @@ export const ShieldIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const AssuranceBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#10b981] shadow-2xs`}>
     <img
-      src="/brand-logos/assurance.jpg"
+      src={`${import.meta.env.BASE_URL}brand-logos/assurance.jpg`}
       alt="Assurance"
       className="w-full h-full object-cover scale-[1.42]"
       referrerPolicy="no-referrer"
@@ -121,7 +121,7 @@ export const ShieldOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }
 export const WifiIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#4f46e5] shadow-2xs`}>
     <img
-      src="/brand-logos/internet.jpg"
+      src={`${import.meta.env.BASE_URL}brand-logos/internet.jpg`}
       alt="Internet Wi-Fi"
       className="w-full h-full object-cover scale-[1.15]"
       referrerPolicy="no-referrer"
@@ -141,7 +141,7 @@ export const WifiOutlineIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) 
 export const DeezerIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1.5 shadow-2xs`}>
     <img
-      src="/brand-logos/deezer.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/deezer.png`}
       alt="Deezer"
       className="w-full h-full object-contain"
       onError={(e) => {
@@ -225,7 +225,7 @@ export const CeoIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const SfrIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-[15%] shadow-2xs`}>
     <img
-      src="/brand-logos/sfr.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/sfr.png`}
       alt="SFR"
       className="w-full h-full object-contain rounded-md"
       onError={(e) => {
@@ -238,7 +238,7 @@ export const SfrIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const TotalEnergiesIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1.5 shadow-2xs`}>
     <img
-      src="/brand-logos/totalenergies.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/totalenergies.png`}
       alt="TotalEnergies"
       className="w-full h-full object-contain"
       referrerPolicy="no-referrer"
@@ -259,7 +259,7 @@ export const TrashBinIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => 
 export const NetflixIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-black shadow-2xs`}>
     <img
-      src="/brand-logos/netflix.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/netflix.png`}
       alt="Netflix"
       className="w-full h-full object-cover scale-105"
       onError={(e) => {
@@ -1002,7 +1002,7 @@ export const RetirementIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) =
 export const LeclercIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white`}>
     <img
-      src="/brand-logos/leclerc.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/leclerc.png`}
       alt="E.Leclerc"
       className="w-full h-full object-contain"
       onError={(e) => {
@@ -1015,7 +1015,7 @@ export const LeclercIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const CarrefourIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/carrefour.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/carrefour.png`}
       alt="Carrefour"
       className="w-full h-full object-contain"
       onError={(e) => {
@@ -1028,7 +1028,7 @@ export const CarrefourIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) =>
 export const IntermarcheIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/intermarche.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/intermarche.png`}
       alt="Intermarché"
       className="w-full h-full object-contain"
       onError={(e) => {
@@ -1041,7 +1041,7 @@ export const IntermarcheIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) 
 export const LidlIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white`}>
     <img
-      src="/brand-logos/lidl.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/lidl.png`}
       alt="Lidl"
       className="w-full h-full object-contain"
       onError={(e) => {
@@ -1054,7 +1054,7 @@ export const LidlIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const AuchanIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/auchan.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/auchan.png`}
       alt="Auchan"
       className="w-full h-full object-contain"
       onError={(e) => {
@@ -1067,7 +1067,7 @@ export const AuchanIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const AldiIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/aldi.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/aldi.png`}
       alt="Aldi"
       className="w-full h-full object-contain"
       onError={(e) => {
@@ -1080,7 +1080,7 @@ export const AldiIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const SuperUIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/superu.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/superu.png`}
       alt="Super U"
       className="w-full h-full object-contain"
       onError={(e) => {
@@ -1093,7 +1093,7 @@ export const SuperUIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const MonoprixIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/monoprix.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/monoprix.png`}
       alt="Monoprix"
       className="w-full h-full object-contain"
       onError={(e) => {
@@ -1106,7 +1106,7 @@ export const MonoprixIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => 
 export const PicardIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/picard.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/picard.png`}
       alt="Picard"
       className="w-full h-full object-contain"
       onError={(e) => {
@@ -1119,7 +1119,7 @@ export const PicardIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const GrandFraisIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/grandfrais.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/grandfrais.png`}
       alt="Grand Frais"
       className="w-full h-full object-contain"
       onError={(e) => {
@@ -1132,7 +1132,7 @@ export const GrandFraisIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) =
 export const BiocoopIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/biocoop.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/biocoop.png`}
       alt="Biocoop"
       className="w-full h-full object-contain"
       onError={(e) => {
@@ -1145,7 +1145,7 @@ export const BiocoopIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const ActionStoreIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/action.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/action.png`}
       alt="Action"
       className="w-full h-full object-contain"
       onError={(e) => {
@@ -1158,7 +1158,7 @@ export const ActionStoreIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) 
 export const AmazonIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1.5 shadow-2xs`}>
     <img
-      src="/brand-logos/amazon.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/amazon.png`}
       alt="Amazon"
       className="w-full h-full object-contain"
       onError={(e) => {
@@ -1171,7 +1171,7 @@ export const AmazonIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const BoulangerieBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#fffbeb] shadow-2xs`}>
     <img
-      src="/brand-logos/boulangerie.jpg"
+      src={`${import.meta.env.BASE_URL}brand-logos/boulangerie.jpg`}
       alt="Boulangerie"
       className="w-full h-full object-cover scale-105"
     />
@@ -1193,7 +1193,7 @@ export const BoucherieBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" 
 export const McDonaldsIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#264f36] p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/mcdonalds.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/mcdonalds.png`}
       alt="McDonald's"
       className="w-full h-full object-contain"
       onError={(e) => {
@@ -1206,7 +1206,7 @@ export const McDonaldsIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) =>
 export const BurgerKingIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/burgerking.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/burgerking.png`}
       alt="Burger King"
       className="w-full h-full object-contain"
       onError={(e) => {
@@ -1219,7 +1219,7 @@ export const BurgerKingIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) =
 export const KfcIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/kfc.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/kfc.png`}
       alt="KFC"
       className="w-full h-full object-contain"
       onError={(e) => {
@@ -1232,7 +1232,7 @@ export const KfcIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const SubwayIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#008938] p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/subway.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/subway.png`}
       alt="Subway"
       className="w-full h-full object-contain"
       onError={(e) => {
@@ -1245,7 +1245,7 @@ export const SubwayIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const DominosPizzaIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/dominos.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/dominos.png`}
       alt="Domino's Pizza"
       className="w-full h-full object-contain"
       onError={(e) => {
@@ -1258,7 +1258,7 @@ export const DominosPizzaIcon: React.FC<IconProps> = ({ className = "h-5 w-5" })
 export const PizzaBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#fffbeb] shadow-2xs`}>
     <img
-      src="/brand-logos/pizza.jpg"
+      src={`${import.meta.env.BASE_URL}brand-logos/pizza.jpg`}
       alt="Pizza"
       className="w-full h-full object-cover scale-[1.15]"
     />
@@ -1268,7 +1268,7 @@ export const PizzaBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) =
 export const CinemaBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#fffbeb] shadow-2xs`}>
     <img
-      src="/brand-logos/cinema.jpg"
+      src={`${import.meta.env.BASE_URL}brand-logos/cinema.jpg`}
       alt="Ticket de cinéma"
       className="w-full h-full object-cover scale-[1.12]"
     />
@@ -1313,7 +1313,7 @@ export const CreperieBadgeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }
 export const StarbucksIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#006241] shadow-2xs`}>
     <img
-      src="/brand-logos/starbucks.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/starbucks.png`}
       alt="Starbucks"
       className="w-full h-full object-cover"
     />
@@ -1359,7 +1359,7 @@ export const BrasserieIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) =>
 export const MacifIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#003a70] shadow-2xs`}>
     <img
-      src="/brand-logos/macif.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/macif.png`}
       alt="Macif"
       className="w-full h-full object-cover"
       referrerPolicy="no-referrer"
@@ -1370,7 +1370,7 @@ export const MacifIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const DirectAssuranceIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#e30613] shadow-2xs`}>
     <img
-      src="/brand-logos/directassurance.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/directassurance.png`}
       alt="Direct Assurance"
       className="w-full h-full object-cover scale-105"
       referrerPolicy="no-referrer"
@@ -1381,7 +1381,7 @@ export const DirectAssuranceIcon: React.FC<IconProps> = ({ className = "h-5 w-5"
 export const AxaIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#00008f] shadow-2xs`}>
     <img
-      src="/brand-logos/axa.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/axa.png`}
       alt="AXA"
       className="w-full h-full object-cover"
       referrerPolicy="no-referrer"
@@ -1392,7 +1392,7 @@ export const AxaIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const MaifIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
     <img
-      src="/brand-logos/maif.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/maif.png`}
       alt="MAIF"
       className="w-full h-full object-contain"
       referrerPolicy="no-referrer"
@@ -1403,7 +1403,7 @@ export const MaifIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const MatmutIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1.5 shadow-2xs`}>
     <img
-      src="/brand-logos/matmut.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/matmut.png`}
       alt="Matmut"
       className="w-full h-full object-contain"
       referrerPolicy="no-referrer"
@@ -1414,7 +1414,7 @@ export const MatmutIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const AllianzIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/allianz.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/allianz.png`}
       alt="Allianz"
       className="w-full h-full object-contain"
       referrerPolicy="no-referrer"
@@ -1425,7 +1425,7 @@ export const AllianzIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const GroupamaIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
     <img
-      src="/brand-logos/groupama.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/groupama.png`}
       alt="Groupama"
       className="w-full h-full object-contain"
       referrerPolicy="no-referrer"
@@ -1436,7 +1436,7 @@ export const GroupamaIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => 
 export const MaafIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/maaf.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/maaf.png`}
       alt="MAAF"
       className="w-full h-full object-contain rounded-full"
       referrerPolicy="no-referrer"
@@ -1447,7 +1447,7 @@ export const MaafIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const GmfIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-0.5 shadow-2xs`}>
     <img
-      src="/brand-logos/gmf.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/gmf.png`}
       alt="GMF"
       className="w-full h-full object-contain rounded-full"
       referrerPolicy="no-referrer"
@@ -1458,7 +1458,7 @@ export const GmfIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const OrangeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#ff7900] shadow-2xs`}>
     <img
-      src="/brand-logos/orange.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/orange.png`}
       alt="Orange"
       className="w-full h-full object-cover"
       referrerPolicy="no-referrer"
@@ -1469,7 +1469,7 @@ export const OrangeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const SoshIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-[#00b4e5] shadow-2xs`}>
     <img
-      src="/brand-logos/sosh.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/sosh.png`}
       alt="Sosh"
       className="w-full h-full object-cover scale-105"
       referrerPolicy="no-referrer"
@@ -1480,7 +1480,7 @@ export const SoshIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const FreeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1.5 shadow-2xs`}>
     <img
-      src="/brand-logos/free.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/free.png`}
       alt="Free"
       className="w-full h-full object-contain"
       referrerPolicy="no-referrer"
@@ -1491,7 +1491,7 @@ export const FreeIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
 export const BouyguesIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
   <div className={`${className} flex items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-2xs`}>
     <img
-      src="/brand-logos/bouygues.png"
+      src={`${import.meta.env.BASE_URL}brand-logos/bouygues.png`}
       alt="Bouygues Telecom"
       className="w-full h-full object-contain"
       referrerPolicy="no-referrer"
