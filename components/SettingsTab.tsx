@@ -122,6 +122,29 @@ export const SettingsTab: React.FC<SettingsTabProps> = (props) => {
   } = props;
   const [activeView, setActiveView] = useState<SettingsViewType>(props.initialView || 'main');
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [showPasswordSetup, setShowPasswordSetup] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordBusy, setPasswordBusy] = useState(false);
+  const [passwordFeedback, setPasswordFeedback] = useState('');
+  const handlePasswordSetup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordFeedback('');
+    if (newPassword.length < 8) { setPasswordFeedback('Choisissez au moins 8 caractères.'); return; }
+    if (newPassword !== confirmPassword) { setPasswordFeedback('Les mots de passe ne correspondent pas.'); return; }
+    setPasswordBusy(true);
+    try {
+      const { supabase } = await import('../supabase/client');
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      setNewPassword(''); setConfirmPassword('');
+      setPasswordFeedback('Mot de passe enregistré. Vous pouvez désormais utiliser votre identifiant habituel.');
+      setShowPasswordSetup(false);
+    } catch (err: any) {
+      setPasswordFeedback(err?.message || 'Impossible de définir le mot de passe.');
+    } finally { setPasswordBusy(false); }
+  };
+
   const { themeSetting, isMonthlyExpenseBold, changeMonthlyExpenseBold } = useTheme();
 
   const isMainFoyer = props.isMainFoyer !== undefined
