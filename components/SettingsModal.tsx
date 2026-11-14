@@ -280,20 +280,24 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
         <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 max-w-2xl mx-auto w-full pb-36 sm:pb-40">
             {activeView === 'main' && (
               <div className="space-y-6 animate-fade-in">
-                {/* Title & Subtitle */}
-                <div className="space-y-1">
-                  <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                    Réglages
-                  </h1>
-                  <p className="text-slate-500 dark:text-slate-400 font-medium text-sm sm:text-base">
-                    Personnalisez votre expérience DuoBudget
-                  </p>
+                {/* Premium header matching the Settings tab */}
+                <div className="relative overflow-hidden rounded-[26px] bg-gradient-to-br from-[#063b46] via-[#006b76] to-[#0095a0] px-5 pt-7 pb-16 sm:px-7 sm:pt-9 text-white">
+                  <div className="relative z-10">
+                    <p className="text-sm font-semibold text-white/85">▥ DuoBudget</p>
+                    <h1 className="mt-4 text-3xl sm:text-4xl font-extrabold tracking-tight">Réglages</h1>
+                    <p className="mt-1 text-sm sm:text-base text-white/85">Personnalisez votre application</p>
+                  </div>
+                  <svg aria-hidden="true" className="absolute right-3 top-5 h-32 w-32 text-white/15" viewBox="0 0 100 100" fill="none">
+                    <path d="M50 13l6 8 10-1 4 10 10 5-2 10 7 8-7 8 2 10-10 5-4 10-10-1-6 8-8-8-10 1-4-10-10-5 2-10-7-8 7-8-2-10 10-5 4-10 10 1 8-8Z" fill="currentColor"/>
+                    <circle cx="50" cy="53" r="15" fill="#006b76"/>
+                  </svg>
                 </div>
 
+                <div className="-mt-16 relative z-10 px-2">
                 {/* Top Card: Couple Profile / Duo Card */}
                 <div 
                   onClick={() => setActiveView('users')}
-                  className="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-[26px] shadow-xs border border-slate-100/90 dark:border-slate-700/60 flex items-center justify-between transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/90 cursor-pointer group"
+                  className="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-[24px] shadow-lg shadow-slate-900/10 border border-white/80 dark:border-slate-700/60 flex items-center justify-between transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/90 cursor-pointer group"
                 >
                   <div className="flex items-center gap-4">
                     {/* Overlapping Avatars with heart */}
@@ -333,6 +337,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                   </div>
                 </div>
 
+                </div>
                 {/* Section: Personnalisation */}
                 <div className="space-y-2">
                   <h4 className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 px-1">
