@@ -1095,6 +1095,20 @@ const MainApp: React.FC<{
     setExpenses(prev => [optimisticExpense, ...prev]);
     highlightExpense(newId);
 
+    let { data, error } = await supabase.from('expenses').insert(expenseData).select().single();
+    if (error && (error.code === 'PGRST204' || error.code === '42501' || error.message?.includes('foyer_id') || error.message?.includes('row-level security') || error.message?.includes('policy'))) {
+        const { foyer_id: _, ...fallbackExpense } = expenseData;
+        const fallbackRes = await supabase.from('expenses').insert(fallbackExpense).select().single();
+        data = fallbackRes.data ? { ...fallbackRes.data, foyer_id: activeFoyerId } : fallbackRes.data;
+        error = fallbackRes.error;
+    }
+      
+    if (error) {
+      console.error('Error adding expense:', error.message || error);
+      setToastInfo({ message: "Erreur lors de l'ajout de la dépense.", type: 'error' });
+      setExpenses(prev => prev.filter(e => e.id !== newId));
+      return false;
+    } else {
     const potImpact = getMoneyPotImpactForAdd(expense);
     if (potImpact !== null) {
         const description = expense.amount < 0
@@ -1108,19 +1122,6 @@ const MainApp: React.FC<{
         });
     }
 
-    let { data, error } = await supabase.from('expenses').insert(expenseData).select().single();
-    if (error && (error.code === 'PGRST204' || error.code === '42501' || error.message?.includes('foyer_id') || error.message?.includes('row-level security') || error.message?.includes('policy'))) {
-        const { foyer_id: _, ...fallbackExpense } = expenseData;
-        const fallbackRes = await supabase.from('expenses').insert(fallbackExpense).select().single();
-        data = fallbackRes.data ? { ...fallbackRes.data, foyer_id: activeFoyerId } : fallbackRes.data;
-        error = fallbackRes.error;
-    }
-      
-    if (error) {
-      console.error('Error adding expense:', error.message || error);
-      setToastInfo({ message: "Erreur lors de l'ajout de la dépense.", type: 'error' });
-      setExpenses(prev => prev.filter(e => e.id !== newId));
-    } else {
       const createdExpense: Expense = (data as Expense) || optimisticExpense;
       // Notification Push unifiée et hautement configurée
       dispatchPushNotification({
@@ -1149,6 +1150,7 @@ const MainApp: React.FC<{
       broadcastChange('expenses', 'INSERT', createdExpense, user);
       await logActivity({ type: 'add', expense: createdExpense, performedBy: user });
     }
+    return true;
   };
   
   const _performDelete = async (id: string, actionId: string) => {
