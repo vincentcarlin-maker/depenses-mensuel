@@ -13,7 +13,7 @@ const SUPPLEMENT_STORES = ['Nutripure', 'Nutri&co', 'Greenwhey', 'Prozis', 'Autr
 const SUPPLEMENT_TYPES = ['Oméga 3', 'Vitamine C', 'Vitamine D', 'Magnésium', 'Autres'] as const;
 
 interface ExpenseFormProps {
-  onAddExpense: (expense: Omit<Expense, 'id' | 'created_at'>) => void;
+  onAddExpense: (expense: Omit<Expense, 'id' | 'created_at'>) => Promise<boolean>;
   expenses: Expense[];
   initialData?: Omit<Expense, 'id' | 'date' | 'created_at'> | null;
   loggedInUser: User | string;
@@ -102,6 +102,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   const [createExpenseForItem, setCreateExpenseForItem] = useState(true);
 
   const [error, setError] = useState('');
+  const [isSavingExpense, setIsSavingExpense] = useState(false);
+  const savingExpenseRef = useRef(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   
   const [duplicateConfirmationOpen, setDuplicateConfirmationOpen] = useState(false);
@@ -293,7 +295,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     }
   };
 
-  const submitExpense = (expenseData: Omit<Expense, 'id' | 'created_at'>) => {
+  const submitExpense = async (expenseData: Omit<Expense, 'id' | 'created_at'>) => {
+    if (savingExpenseRef.current) return;
+    savingExpenseRef.current = true;
+    setIsSavingExpense(true);
+    setError('');
+    try {
     let finalSubtractedItems: SubtractedItem[] = [];
 
     if (expenseData.subtracted_items && expenseData.subtracted_items.length > 0) {
@@ -317,10 +324,14 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         });
     }
 
-    onAddExpense({
+    const saved = await onAddExpense({
         ...expenseData,
         subtracted_items: finalSubtractedItems
     });
+    if (!saved) {
+        setError('La dépense n’a pas été enregistrée. Vérifiez votre connexion et réessayez.');
+        return;
+    }
 
     // Réinitialisation propre
     if (!initialData) {
@@ -354,6 +365,13 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
     // Fermeture du bottom sheet après enregistrement
     onClose();
+    } catch (err) {
+      console.error('Expense save failed:', err);
+      setError('Enregistrement impossible. Réessayez sans ressaisir la dépense.');
+    } finally {
+      savingExpenseRef.current = false;
+      setIsSavingExpense(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -569,16 +587,16 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     <button
       type="submit"
       form={isInline ? "inline-expense-form" : "bottom-sheet-expense-form"}
-      disabled={disabled || (!showSubtractions && (!amount || parseFloat(amount.replace(',', '.')) <= 0))}
+      disabled={disabled || isSavingExpense || (!showSubtractions && (!amount || parseFloat(amount.replace(',', '.')) <= 0))}
       className="w-full flex items-center justify-center gap-2.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-extrabold py-3.5 sm:py-4 px-6 rounded-2xl shadow-lg shadow-blue-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base sm:text-lg cursor-pointer select-none"
     >
-      {disabled ? (
+      {disabled || isSavingExpense ? (
         <>
           <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <span>Synchronisation...</span>
+          <span>{isSavingExpense ? 'Enregistrement…' : 'Synchronisation...'}</span>
         </>
       ) : (
         <>
